@@ -603,7 +603,7 @@ npx claude-flow hook pre-task --description "Build REST API"
 
 // Internally calls MCP tools:
 mcp__claude-flow__agent_spawn {
-  type: "backend-dev",
+  agentType: "backend-dev",
   capabilities: ["api", "database", "testing"]
 }
 

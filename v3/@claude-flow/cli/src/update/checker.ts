@@ -33,7 +33,7 @@ const DEFAULT_CONFIG: UpdateConfig = {
   enabled: true,
   checkIntervalHours: 24,
   autoUpdate: {
-    patch: true,
+    patch: false,
     minor: false,
     major: false,
   },
@@ -81,7 +81,7 @@ async function fetchPackageInfo(packageName: string): Promise<NpmPackageInfo | n
   }
 }
 
-function getUpdateType(
+export function getUpdateType(
   current: string,
   latest: string
 ): 'major' | 'minor' | 'patch' | 'none' {
@@ -89,7 +89,9 @@ function getUpdateType(
     return 'none';
   }
 
-  if (semver.eq(current, latest)) {
+  // An update is a strictly newer version. Comparing the parts one by one called 3.60.0 (running) against 3.59.17 (latest) a
+  // 'patch' update, since 17 > 0, and the startup check then auto-installed the older version: a downgrade.
+  if (!semver.gt(latest, current)) {
     return 'none';
   }
 
@@ -110,15 +112,9 @@ function getUpdateType(
 
 function shouldAutoUpdate(
   updateType: 'major' | 'minor' | 'patch' | 'none',
-  priority: 'critical' | 'high' | 'normal' | 'low',
   config: UpdateConfig
 ): boolean {
   if (updateType === 'none') return false;
-
-  // Critical security packages always auto-update patches
-  if (priority === 'critical' && updateType === 'patch') {
-    return true;
-  }
 
   // Check config
   if (updateType === 'major') return config.autoUpdate.major;
@@ -218,7 +214,7 @@ export async function checkForUpdates(
         latestVersion,
         updateType,
         priority,
-        shouldAutoUpdate: shouldAutoUpdate(updateType, priority, config),
+        shouldAutoUpdate: shouldAutoUpdate(updateType, config),
       });
     })
   );
@@ -260,7 +256,7 @@ export async function checkSinglePackage(
     latestVersion,
     updateType,
     priority,
-    shouldAutoUpdate: shouldAutoUpdate(updateType, priority, config),
+    shouldAutoUpdate: shouldAutoUpdate(updateType, config),
   };
 }
 

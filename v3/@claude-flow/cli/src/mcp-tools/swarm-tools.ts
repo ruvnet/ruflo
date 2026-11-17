@@ -10,15 +10,16 @@ import {
   existsSync,
   mkdirSync,
   openSync,
-  readFileSync,
   renameSync,
   statSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
+import { nullPrototypeRecords, readPreservedJsonStore } from './record-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier } from './validate-input.js';
+import { noteFirstAgentRun } from '../funnel/activation.js';
 import {
   createApscState,
   isApscAgentEligible,
@@ -134,13 +135,22 @@ function reconcileOrphanSwarms(store: SwarmStore): number {
 // #2085 — exported so `agent-tools.ts agent_spawn` can push into
 // `swarm.agents` (the field `swarm_status` reads).
 export function loadSwarmStore(): SwarmStore {
-  let store: SwarmStore = { swarms: {}, version: '3.0.0' };
-  try {
-    const path = getSwarmStatePath();
-    if (existsSync(path)) {
-      store = JSON.parse(readFileSync(path, 'utf-8'));
-    }
-  } catch { /* fall through with default */ }
+  // #4737: a parse error used to fall through to an empty store, and the next
+  // save (or orphan reconcile) overwrote swarm-state.json. Only a missing
+  // file is empty; corrupt bytes are copied aside and the error is reported.
+  const store = readPreservedJsonStore(
+    getSwarmStatePath(),
+    'swarm',
+    () => ({ swarms: {}, version: '3.0.0' }),
+    (candidate) => {
+      const swarms = candidate.swarms as unknown;
+      return swarms === undefined || (!!swarms && typeof swarms === 'object' && !Array.isArray(swarms));
+    },
+  );
+  if (!store.swarms) store.swarms = {};
+  // Record ids come from MCP input. A null prototype stops `__proto__` and
+  // `constructor` from resolving onto Object.prototype.
+  store.swarms = nullPrototypeRecords(store.swarms);
 
   // #1799 — reconcile orphans on every load and persist if anything changed.
   // Cheap (process.kill(pid, 0) is sub-millisecond) and means
@@ -324,6 +334,7 @@ export const swarmTools: MCPTool[] = [
       store.swarms[swarmId] = swarmState;
       saveSwarmStore(store);
 
+      noteFirstAgentRun('cli'); // activation funnel (opt-in; no-op without telemetry consent)
       return {
         success: true,
         swarmId,
@@ -410,14 +421,19 @@ export const swarmTools: MCPTool[] = [
       const store = loadSwarmStore();
       const swarmId = input.swarmId as string;
 
-      if (swarmId && store.swarms[swarmId]) {
+      if (swarmId && !store.swarms[swarmId]) {
+        return { success: false, error: `Swarm ${swarmId} not found` };
+      }
+
+      const { getLiveAgentIds } = await import('./agent-tools.js');
+      if (swarmId) {
         const swarm = store.swarms[swarmId];
         return {
           swarmId: swarm.swarmId,
           status: swarm.status,
           topology: swarm.topology,
           maxAgents: swarm.maxAgents,
-          agentCount: swarm.agents.length,
+          agentCount: getLiveAgentIds(swarm.agents).length,
           taskCount: swarm.tasks.length,
           config: swarm.config,
           apsc: apscStateOf(swarm),
@@ -445,7 +461,7 @@ export const swarmTools: MCPTool[] = [
         status: latest.status,
         topology: latest.topology,
         maxAgents: latest.maxAgents,
-        agentCount: latest.agents.length,
+        agentCount: getLiveAgentIds(latest.agents).length,
         taskCount: latest.tasks.length,
         config: latest.config,
         apsc: apscStateOf(latest),
@@ -478,7 +494,7 @@ export const swarmTools: MCPTool[] = [
 
       // Find the swarm
       let target: SwarmState | undefined;
-      if (swarmId && store.swarms[swarmId]) {
+      if (swarmId) {
         target = store.swarms[swarmId];
       } else {
         // Shutdown most recent running swarm
@@ -503,6 +519,20 @@ export const swarmTools: MCPTool[] = [
         };
       }
 
+      const { agentTools, getLiveAgentIds } = await import('./agent-tools.js');
+      const terminateAgent = agentTools.find(tool => tool.name === 'agent_terminate')!;
+      let agentsTerminated = 0;
+      for (const agentId of getLiveAgentIds(target.agents)) {
+        const result = await terminateAgent.handler({
+          agentId,
+          force: input.graceful === false,
+        }) as { success: boolean; error?: string };
+        if (!result.success) {
+          return { success: false, swarmId: target.swarmId, agentsTerminated, error: result.error };
+        }
+        agentsTerminated++;
+      }
+
       target.status = 'terminated';
       target.updatedAt = new Date().toISOString();
       saveSwarmStore(store);
@@ -512,7 +542,7 @@ export const swarmTools: MCPTool[] = [
         swarmId: target.swarmId,
         terminated: true,
         graceful: (input.graceful as boolean) ?? true,
-        agentsTerminated: target.agents.length,
+        agentsTerminated,
         terminatedAt: target.updatedAt,
       };
     },

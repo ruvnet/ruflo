@@ -1,0 +1,128 @@
+{
+  "sourceCommit": "0677967f4b30cdaa2946efeb43d0e729a8244bd8",
+  "node": "20.20.2",
+  "memory": "3.0.9",
+  "backendTests": {
+    "passed": 199,
+    "files": 11,
+    "seconds": 6.77,
+    "testHarnessCorrection": "Emit worker JavaScript instead of relying on Node24 source TypeScript support"
+  },
+  "sourceNativeWrite": {
+    "mode": "write",
+    "syntheticFixtures": true,
+    "modelCalls": 0,
+    "defaultsChanged": false,
+    "verifiedRows": 3,
+    "indexMs": [
+      3716.9965199999997,
+      312.9204900000004,
+      168.51188000000002
+    ],
+    "nativeReplayRows": 3,
+    "workers": 1,
+    "advisoryStrategy": "fixture",
+    "passed": true,
+    "indexedRows": 3,
+    "allDurableWithEmbedding": true
+  },
+  "sourceNativeRestartRecall": {
+    "mode": "recall",
+    "syntheticFixtures": true,
+    "modelCalls": 0,
+    "defaultsChanged": false,
+    "verifiedRows": 3,
+    "recalled": 3,
+    "backend": "ruflo-memory-child",
+    "similarityIsVerification": false,
+    "advisoryStrategy": "fixture",
+    "passed": true
+  },
+  "compiledNativeWrite": {
+    "mode": "write",
+    "syntheticFixtures": true,
+    "modelCalls": 0,
+    "defaultsChanged": false,
+    "verifiedRows": 3,
+    "indexMs": [
+      1630.54065,
+      394.0604199999998,
+      249.2598399999997
+    ],
+    "nativeReplayRows": 3,
+    "workers": 1,
+    "advisoryStrategy": "fixture",
+    "passed": true,
+    "indexedRows": 3,
+    "allDurableWithEmbedding": true
+  },
+  "compiledNativeRestartRecall": {
+    "mode": "recall",
+    "syntheticFixtures": true,
+    "modelCalls": 0,
+    "defaultsChanged": false,
+    "verifiedRows": 3,
+    "recalled": 3,
+    "backend": "ruflo-memory-child",
+    "similarityIsVerification": false,
+    "advisoryStrategy": "fixture",
+    "passed": true
+  },
+  "nativeMcpCycle": {
+    "passed": true,
+    "phase": "actual MCP native feedback cycle",
+    "phases": [
+      "admitted",
+      "recorded",
+      "indexed",
+      "recalled",
+      "recommended"
+    ],
+    "duplicates": 3,
+    "indexed": 3,
+    "recalled": 3,
+    "defaultsChanged": false
+  },
+  "verifierLoop": {
+    "schema": "ruflo.managed-verifier-e2e/v1",
+    "assertions": 86,
+    "verifiedSubprocessReceipts": 18,
+    "cyclePhases": [
+      "admitted",
+      "recorded",
+      "recommended",
+      "evaluated"
+    ],
+    "replayedDuplicates": 18,
+    "deniedCycleWrites": 0,
+    "training": 6,
+    "pairedHoldout": 6,
+    "advisoryEligible": true,
+    "measuredBaselineP95Ms": 1258,
+    "measuredCandidateP95Ms": 242,
+    "defaultsChanged": false,
+    "costOrigin": "synthetic-fixture",
+    "limitations": "Real verifier subprocesses, signatures, file persistence, feedback cycle and heldout gates; synthetic workload and cost fixture only. No live provider quality, billing savings, universal safety or native vector backend is claimed."
+  },
+  "sourceQualification": "Base feature commit plus the Node20 worker test harness correction and offline Transformers.js configuration; exact final worker hash below.",
+  "consoleTests": {
+    "passed": 150,
+    "files": 8,
+    "seconds": 17.51
+  },
+  "offlineNativeValidation": {
+    "workerSha256": "542c929ec1482562964169d3ae083612e1f52fbd4685834c246c07870748d54c",
+    "sourceWriteRows": 3,
+    "sourceReplayRows": 3,
+    "workers": 1,
+    "sourceIndexMs": [
+      3030.97137,
+      469.28666,
+      482.79537
+    ],
+    "compiledRestartRecallRows": 3,
+    "passed": true,
+    "configuration": "Resolve AgentDB transformer module identities and disable allowRemoteModels before native registry initialization",
+    "boundary": "Linux source and emitted JavaScript native runtime exercised; no full monorepo build or operating system network sandbox claim"
+  }
+}

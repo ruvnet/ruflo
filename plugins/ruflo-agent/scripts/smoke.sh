@@ -7,11 +7,11 @@ step() { printf "→ %s ... " "$1"; }
 ok()   { printf "PASS\n"; PASS=$((PASS+1)); }
 bad()  { printf "FAIL: %s\n" "$1"; FAIL=$((FAIL+1)); }
 
-step "1. plugin.json is ruflo-agent 0.2.1 with both-runtime keywords"
+step "1. plugin.json is ruflo-agent 0.4.2 with both-runtime keywords"
 P="$ROOT/.claude-plugin/plugin.json"
 v=$(grep -E '"version"' "$P" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 n=$(grep -E '"name"' "$P" | grep -oE 'ruflo-agent' | head -1)
-if [[ "$v" != "0.2.1" ]]; then bad "expected version 0.2.1, got '$v'";
+if [[ "$v" != "0.4.2" ]]; then bad "expected version 0.4.2, got '$v'";
 elif [[ "$n" != "ruflo-agent" ]]; then bad "expected name ruflo-agent";
 else
   miss=""
@@ -88,17 +88,39 @@ for f in "$ROOT"/skills/*/SKILL.md; do
 done
 [[ -z "$bad_skills" ]] && ok || bad "wildcard:$bad_skills"
 
-step "12. managed-agent (cloud runtime) skill + command + all 6 managed_agent_* tools referenced (ADR-115)"
+step "12. managed-agent (cloud runtime) skill + command + all 10 managed_agent_* tools referenced (ADR-115)"
 miss=""
 [[ -f "$ROOT/skills/managed-agent/SKILL.md" ]] || miss="$miss missing-skill"
 [[ -f "$ROOT/commands/managed-agent.md" ]] || miss="$miss missing-command"
-for t in managed_agent_create managed_agent_prompt managed_agent_status managed_agent_events managed_agent_list managed_agent_terminate; do
+for t in managed_agent_control managed_agent_learning managed_agent_capabilities managed_agent_create managed_agent_prompt managed_agent_status managed_agent_events managed_agent_list managed_agent_terminate managed_agent_interrupt; do
   grep -rq "$t" "$ROOT/skills" "$ROOT/commands" || miss="$miss no-ref-$t"
 done
 # the cloud-runtime skill must keep an explicit allowed-tools list (no wildcard) and offer the wasm fallback
 grep -q '^allowed-tools:[[:space:]]*\*' "$ROOT/skills/managed-agent/SKILL.md" 2>/dev/null && miss="$miss wildcard"
 grep -q 'wasm_agent_create' "$ROOT/skills/managed-agent/SKILL.md" 2>/dev/null || miss="$miss no-wasm-fallback-ref"
 [[ -z "$miss" ]] && ok || bad "$miss"
+
+# M1. The mod (ADR-445 pattern): hooks module registered, files within the 500-line rule
+step "M1. mod: hooks.json names register.ts, every hook file is present and under 500 lines"
+mod_ok=1
+grep -q '"./register.ts"' "$ROOT/hooks/hooks.json" || mod_ok=0
+for f in options screen guard command status managed register; do
+  [[ -f "$ROOT/hooks/$f.ts" ]] || mod_ok=0
+  [[ $(wc -l < "$ROOT/hooks/$f.ts" 2>/dev/null || echo 9999) -le 500 ]] || mod_ok=0
+done
+[[ $mod_ok -eq 1 ]] && ok || bad "mod hooks incomplete or too long"
+
+step "M2. mod: userConfig defaults are safe (guard on, dynamic and inline off)"
+node -e '
+const c = require(process.argv[1]).userConfig || {}
+process.exit(c.guard?.default === "on" && c.managedWorkflows?.default === "off" && c.allowInlineAgents?.default === "off" && c.maxBudgetCents?.default === "2500" ? 0 : 1)
+' "$ROOT/.claude-plugin/plugin.json" && ok || bad "userConfig defaults wrong"
+
+step "M3. mod: hooks never touch the network or spawn a process"
+if grep -nE '\$\.(http|process)\.|child_process|fetch\(' "$ROOT"/hooks/*.ts >/dev/null; then bad "network or process call in hooks"; else ok; fi
+
+step "M4. mod: /agent-mod is registered and collides with no command or skill of the plugin"
+if grep -q "name: 'agent-mod'" "$ROOT/hooks/register.ts" && [[ ! -e "$ROOT/commands/agent-mod.md" && ! -e "$ROOT/skills/agent-mod" ]]; then ok; else bad "command name missing or taken"; fi
 
 printf "\n%s passed, %s failed\n" "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]] || exit 1

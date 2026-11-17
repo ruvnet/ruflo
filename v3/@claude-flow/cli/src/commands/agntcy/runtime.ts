@@ -27,6 +27,28 @@
  * pre-release channel, pin deliberately rather than floating) until the fix
  * is promoted to `latest`, tracked by the same issue.
  *
+ * UPDATE (2026-10-22, #4371): `2.0.0-alpha.5`'s own `optionalDependencies`
+ * claimed `@agntcy/slim-bindings-linux-arm64-musl@2.0.0-alpha.5`, but that
+ * platform package was never published upstream (its own first version is
+ * `2.1.1-rc.2` — confirmed via `npm view @agntcy/slim-bindings-linux-arm64-musl
+ * versions`, which is also true of every other `2.0.0-alpha.*`/`2.0.0`/`2.1.0`
+ * release). npm tolerates an unresolvable optional dependency and silently
+ * skips it, so this never surfaced in this repo's own npm-based CI, but
+ * strict resolvers (`mise`'s `aube` backend, pnpm in some modes) fail the
+ * whole install. `package.json` now pins `2.1.1` — the earliest release where
+ * every platform's optional package actually exists at that exact version
+ * (verified against the live registry for all 8 platforms). Re-verified live
+ * under plain Node against the real installed `2.1.1` package: the dynamic
+ * `import()` resolves with zero errors (same module shape — a `Session`/
+ * `Channel`/`App`-class-based SDK, not the `joinGroup`/`createSlimTransport`/
+ * `publishAgentRecord` flat functions `transport.ts`/`swarm-join.ts`/
+ * `publish.ts` call. Confirmed this mismatch predates this pin change — it
+ * was equally absent from `2.0.0-alpha.5` — so it's a pre-existing gap this
+ * version bump does not introduce or worsen; tracked separately in #4376),
+ * and the full
+ * `__tests__/agntcy/agntcy-commands.test.ts` suite (19 tests, including the
+ * real-resolution "configured: true" case) passes against this version.
+ *
  * This module's existing graceful-degradation design already handled this
  * correctly without any change to its logic: `detectAgntcyRuntime()`'s
  * catch-all branch (anything other than MODULE_NOT_FOUND) reports the real
@@ -93,10 +115,14 @@ export interface AgntcyRuntimeStatus {
  * @param packageName Injectable for tests (to simulate "package not
  *   installed" without needing to actually uninstall the real optional
  *   dependency); defaults to {@link AGNTCY_PACKAGE_NAME}.
+ * @param requiredExports Function names the caller will use. A resolved module
+ *   missing any of them is reported as not configured, with the missing names
+ *   in `reason`, instead of failing later at the call site.
  */
 export async function detectAgntcyRuntime(
   env: NodeJS.ProcessEnv = process.env,
   packageName: string = AGNTCY_PACKAGE_NAME,
+  requiredExports: readonly string[] = [],
 ): Promise<AgntcyRuntimeStatus> {
   const endpoint = env[AGNTCY_ENDPOINT_ENV];
   if (!endpoint) {
@@ -109,7 +135,19 @@ export async function detectAgntcyRuntime(
     // `await import('pg')`). Never a static `import` — a static import
     // would make @claude-flow/cli fail to build/run when the package is
     // absent, which is the one thing ADR-150/ADR-380 forbid.
-    await import(packageName);
+    const mod = await import(packageName);
+    if (requiredExports.length > 0) {
+      const missing = requiredExports.filter(
+        (name) => typeof (mod as Record<string, unknown>)[name] !== 'function',
+      );
+      if (missing.length > 0) {
+        return {
+          configured: false,
+          reason: `${packageName} resolved but does not export ${missing.join(', ')}; the installed SDK API is not the one this command implements`,
+          endpoint,
+        };
+      }
+    }
     return { configured: true, reason: `${packageName} resolved`, endpoint };
   } catch (error) {
     const code = (error as NodeJS.ErrnoException | undefined)?.code;

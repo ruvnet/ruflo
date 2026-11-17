@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/hooks",
-  "version": "3.0.0-alpha.7",
+  "version": "3.0.3",
   "description": "V3 Hooks System - Event-driven lifecycle hooks with ReasoningBank learning integration",
   "type": "module",
   "main": "./dist/index.js",
@@ -60,11 +60,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@claude-flow/memory": "^3.0.0-alpha.2",
-    "@claude-flow/neural": "^3.0.0-alpha.2",
-    "@claude-flow/security": "^3.0.0-alpha.12",
-    "@claude-flow/shared": "^3.0.0-alpha.1",
-    "zod": "^3.23.0"
+    "@claude-flow/memory": "^3.0.0",
+    "@claude-flow/neural": "^3.0.0",
+    "@claude-flow/security": "^3.0.0",
+    "@claude-flow/shared": "^3.0.0"
   },
   "optionalDependencies": {
     "better-sqlite3": "^11.0.0"
@@ -76,29 +75,35 @@
     "vitest": "^4.1.0"
   },
   "peerDependencies": {
-    "@claude-flow/shared": "^3.0.0-alpha.1"
+    "@claude-flow/shared": "^3.0.0"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
     "hooks",
+    "lifecycle-hooks",
     "daemons",
     "statusline",
     "reasoningbank",
     "mcp",
-    "agents"
+    "agents",
+    "claude-code"
   ],
   "author": "Claude Flow Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/@claude-flow/hooks"
   },
   "publishConfig": {
-    "access": "public",
-    "tag": "v3alpha"
+    "access": "public"
+  },
+  "homepage": "https://ruv.io",
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
   }
 }

@@ -7,6 +7,793 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- `@claude-flow/plugin-agent-federation`: `signatureMode` defaults to `require-jcs`. A legacy-v1 signature covers only `id` and `type`, so `payload`, `targetNodeId` and `sessionId` went unsigned (#4748). **Breaking:** a peer that does not advertise `ruflo-signature-jcs-v1` (an older release, or one joined by endpoint without a verified manifest) can no longer exchange heartbeat or status messages. Set `signatureMode: 'prefer-jcs'` to allow legacy-v1 for those two types again.
+
+## [3.71.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.71.0 — automatic context delegation through ruflo-mods 0.15.0 (ADR-522). Off by default.
+
+### Added
+- **`contextDelegation` mod option** (`off` | `observe` | `enforce`). ruflo-mods automates ADR-521:
+  - **What qualifies:** a main-loop, whole-file `Read` of a 14–120 KB file, for a prompt that routes to research or review and asks for no change.
+  - **What happens:** it is answered by a no-tools haiku completion on the session's own credentials, so no API key is needed. Every quoted line is checked against the file, and the model sees only the cited passages (the file's own lines), with a header saying how to read the rest.
+  - **Why edits still work:** the real `Read` always runs first. Any failure shows the whole file.
+  - **`observe`** changes nothing and records what would have been delegated in `.claude-flow/metrics/context-delegation.json`.
+- **Live A/B result** (real binary, haiku main loop, 6 real repo files of 17–83 KB): 6/6 correct with delegation off and with it on, 6/6 reads delegated, total cost (main loop plus worker) −22.5%, main-loop input tokens −21.5%, wall time +6.5%. These are samples, not a statistical result; raw rows are in `benchmarks/context-delegation/results-mod-live.json`.
+
+### Security
+- **Mod contract:** the "no model calls" check allows exactly one `$.model.complete`, in the opt-in module, and fails if that module is not gated on the option.
+- **No forged quotes reach the model:** a quote whose words differ from the file never reaches it, because what is shown is always the file's own lines.
+
+## [3.70.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.70.0 — governed context delegation (ADR-521, #4648). Nothing changes by default.
+
+### Added
+- **Bounded context delegation.** New public APIs `planContextRead` / `delegateContextRead` and the `ruflo hooks context-plan` command. A large analysis read (many files, bulk search) can be handed to a cheaper worker that returns only cited findings. Every finding must quote whole source lines that match a SHA-256-identified snapshot, so a forged or partial quote is rejected. Routing modes:
+  - `legacy`, the default: unchanged behaviour, zero adapter calls.
+  - `observe`: records the routing decision only.
+  - `enforce`: delegates; must be explicitly enabled.
+  Edits, debugging, architecture work, targeted reads, nested workers and small inputs always read directly.
+- **`createAnthropicContextAdapter`.** An optional governed transport:
+  - Fixed `api.anthropic.com` endpoints, API version `2026-10-21`, no redirects and no custom endpoint.
+  - A one-use grant goes through the host policy gate, and the user-global AI fuse is the default.
+  - Response size, timeout and output tokens are bounded; truncation, refusal, tool content, unknown usage and a model mismatch all fail closed.
+  - Usage is recorded as priced from operator-supplied prices, not as billed cost.
+- **Benchmark protocol** (`v3/@claude-flow/cli/benchmarks/context-delegation/`, not in the npm tarball): 30 fixed lookups × 10 repetitions, 300/300 exact quotes. Coordinator payload is −97.6%; total bytes crossing the core boundary are +3.8% (both disclosed). Added local processing is about 0.1 ms p50. This is deterministic protocol evidence, not a live cost or quality result: no live provider call has succeeded yet.
+
+### Security
+- Pilot runners pass the spawned CLI an allowlisted environment, not the whole shell. The `--runtime` entry is contained and hashed before it is imported.
+
+### Fixed
+- `hooks context-plan --worker-available` is honoured through the CLI parser (camelCased flag).
+
+## [3.69.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.69.0 on agentdb 3.3.0 (ADR-520), with the 2026-11-01 issue and Dream Cycle sweep. Leaves published alongside: `@claude-flow/memory` 3.2.2, `@claude-flow/neural` 3.0.2, `@claude-flow/swarm` 3.0.4.
+
+### Added
+- **Episode get / list / update / delete** — `agentdb_episode-get`, `agentdb_episode-list`, `agentdb_episode-update`, `agentdb_episode-delete` over agentdb 3.3's ReflexionMemory (ADR-520). Mark a verified session's episode `success: true` with a critique in place; the id is kept and recall re-ranks it immediately. Strict integer ids; on agentdb < 3.3 the tools say so instead of half-working (#4642).
+- `agentdb` ^3.3.0 (full CRUD for episodes, patterns and skills; agentdb ADR-017), ruflo override `>=3.3.0`; marketplace `agentdb` plugin → `plugin-v3.3.0`.
+
+### Security
+- `hooks_codemod` resolves symlinks before its project-root check, so a link inside the project can no longer redirect a write outside it (CWE-59, #4346, #4636).
+- Raft consensus requires a strict majority; a leader's own vote plus a rejecting peer no longer accepts a proposal (#4458, #4636; `@claude-flow/swarm` 3.0.4).
+- Config MCP tools reject `__proto__` / `constructor` / `prototype` scope names and only read own scopes (prototype pollution, #4635 — the first fix opened by the new daily security scan).
+- Federation: `trust-change` / `topology-change` messages need TRUSTED, with a configurable `minTrustLevelForAdmin` floor (#4633, #4634).
+
+### Fixed
+- AgentDB SQL-fallback persistence in `@claude-flow/memory` actually writes (it checked for a `run` method the handle never has, and `references` was unquoted) (#4410, #4639).
+- Session-end consolidation runs (it looked for `.consolidate`, which no controller has) (#3908, #4638).
+- `session_save` keeps distinct memory rows whose namespace or key contains `::` (#4404, #4638).
+- `CLAUDE_FLOW_FISHER_DECAY` sets the EWC Fisher decay rate (#3475, #4638).
+- `agent_spawn` enforces the active swarm's `maxAgents` (#4572, #4640).
+- MoE load-balance loss uses the mean router probability; cache size accounting reuses stored sizes (#4381, #4481, #4639).
+- `workflow_run` creates a ready workflow instead of a fake running one (#4609, #4612); round-robin load balancing rotates (#4621); `daa_knowledge_share` same-millisecond entries no longer overwrite each other (#4601); `daa_workflow_create` keeps object step names (#4599); `claims_handoff` keeps recorded progress (#4596); the ruflo-core launcher explains a stale local build and falls back to npx (#4607); statusline DDD metric (#1047, #4615); bundled SKILL.md names (#1054, #4616).
+- CI: the RaBitQ auto-build test no longer times out on loaded runners (#4640). Still open: #4643 (#2226 pattern search, fails only in the full CI run; the published CLI passes the same check).
+
+## [3.68.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.68.0 on agentdb 3.2.0 (ADR-519).
+
+### Added
+- **`agentdb_episode-recall` MCP tool.** It recalls past episodes (session summaries and `memory distill` output) relevant to a task. Ranking is agentdb 3.2's keyword + vector search, so an exact name such as a ticket id or function name is found as well as a paraphrase. `rerank: true` adds a local cross-encoder, at about 200 ms per call and a 23 MB model on first use. On LongMemEval_M, recall_all@5 is 0.630 with vector search only, 0.719 with hybrid, and 0.789 with rerank (agentdb ADR-016).
+- **`agentdb_session-start` accepts `recall: true`**, with `k`, `hybrid` and `rerank`, and returns past episodes related to the session context.
+
+### Fixed
+- **Session episodes are stored.** The session bridge called `ReflexionMemory.startEpisode`/`endEpisode`, which do not exist, so `agentdb_session-*` and `hooks session-*` never wrote an episode. A session end with a summary now stores one. It is stored as neutral (reward 0), because the outcome is unverified.
+- A failing secondary write during session start or end no longer discards an episode that was already stored or recalled.
+
+### Changed
+- agentdb `^3.2.0` in the CLI and the `claude-flow` umbrella; the `ruflo` wrapper's override is `>=3.2.0`. This brings in ruvector 0.3.5.
+
+## [3.67.0] - 2026-10-31
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.67.0, with standalone `@claude-flow/aidefence` 3.1.0 and `@claude-flow/memory` 3.2.1. It rides on the ecosystem releases agentdb 3.0.0, agentic-flow 3.0.0 and npm `aidefence` 3.0.1 (ADR-513 to ADR-517).
+
+### Security
+- **Prompt-injection detection runs the AIMDS pattern packs** (`@claude-flow/aidefence` 3.1.0, ADR-517). Six packs and 53 patterns now run alongside the built-in regexes, covering tool-invocation, exfiltration-URL, encoded, markup-carrier, multilingual and Slack-forgery injections. On the AIMDS corpus, detection goes from 8/55 to 55/55, with the same 2 known false positives. Turn the packs off with `createAIDefence({ packs: false })`. A quadratic leet normaliser found while vendoring them is fixed here and upstream (npm `aidefence` 3.0.1).
+- **aidefence restored to source** (3.0.4 → 3.1.0, ADR-516). npm `latest` 3.0.3 carried ADR-118 detection that was never committed; it is ported back alongside main's #3177 ReDoS bounds. The CLI had pinned 3.0.2, so ruflo users get both for the first time.
+- **A fresh install's dependency tree converges** (ADR-513). agentdb 3.0.0 is stable, so the optional peer ranges that excluded `3.0.0-alpha.20` now match it. One AgentDB copy is installed instead of three, and agentic-flow 3.0.0 replaces the March 3.0.0-alpha.2, which pulled `protobufjs@6` (critical).
+  - Measured on a fresh install: `npm audit --omit=dev` went from 70 advisories (1 critical, 17 high) on 3.66.1 to 11 (0 critical) with these packages. The remaining high advisory is zod 3.
+- **agentic-flow 3.0.0 defaults** (ADR-515, agentic-flow ADR-079): proxies bind loopback with a per-run token, agents no longer bypass permissions, and a cloned repo's `.env` or router config can no longer redirect API keys. The release also fixes path traversal in its agent tools and code execution through `statusline.sh`.
+- **agentdb 3.0.0** (ADR-514): `agentdb_init` no longer deletes arbitrary files, filter-key SQL injection is closed, and the model cache is private instead of shared `/tmp`.
+
+### Fixed
+- **AgentDB controllers get an embedder** (`@claude-flow/memory` 3.2.1). LearningSystem, NightlyLearner, ExplainableRecall and the graph transformer were built with the database only, so their first call threw. CausalMemoryGraph also gets the shared vector backend.
+- **Memory search through AgentDB returns results.** agentdb 3.0.0's default RuVector backend never awaited its search, so reflexion, skills and causal-graph recall came back empty. LearningSystem also now keeps its feedback.
+- **Autopilot learning works.** `autopilot learn/predict/recall` load the restored AutopilotLearning from agentic-flow 3.0.0 on the real AgentDB. Under the March alpha it always ran on an in-memory fallback. Library timers no longer keep short-lived CLI commands alive.
+- **stdio MCP stays JSON-only.** AgentDB diagnostics go to stderr; the #4622 lock-reason capture reads both streams.
+- `neural-tools` stores embeddings as arrays: agentic-flow returns a `Float32Array`, which `JSON.stringify` wrote as `{"0":…}`.
+
+### Changed
+- The CLI and the `claude-flow` umbrella declare `agentic-flow ^3.0.0`; the update validator requires at least 3.0.0.
+- **No more alpha tags** (ADR-513). Releases go to `latest` only. The `alpha` and `v3alpha` dist-tags stay frozen at 3.66.2, so old `@alpha` installs still resolve. CLAUDE.md documents that `overrides` never reach users.
+
+## [3.66.2] - 2026-10-31
+
+Security patch: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.2, with the bundled `@claude-flow/mcp` 3.1.5 and `@claude-flow/security` 3.0.6 (also published standalone).
+
+### Security
+- **Bearer tokens are parsed in linear time** (`@claude-flow/mcp`). The HTTP and WebSocket transports matched `Authorization` with `/^Bearer\s+(.+)$/i`. That pattern backtracks quadratically on a long run of whitespace followed by a line break (CodeQL js/polynomial-redos). Node's HTTP parser already rejects line breaks in header values, so this is hardening rather than a reachable denial of service. Both transports now use a prefix compare and `trimStart`, and refuse headers over 8 KB.
+- **Verification codes are uniform** (`@claude-flow/security`). `TokenGenerator.generateVerificationCode()` used `byte % 10`, so digits 0-5 came up 26/256 of the time and 6-9 only 25/256. Each digit now comes from `crypto.randomInt(10)`.
+- **`sanitizeString` cannot be tricked into rebuilding a protocol** (`@claude-flow/security`). One pass turned `javajavascript:script:` into `javascript:`. It now strips `javascript:`, `vbscript:` and `data:` until none remain.
+- `terminal_create` session ids come from `crypto.randomBytes` rather than `Math.random`.
+
+## [3.66.1] - 2026-10-31
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.1, plus standalone `@claude-flow/memory` 3.2.0 and `@claude-flow/plugin-agent-federation` 1.0.4.
+
+### Security
+- **Federation trust thresholds are now enforced** (#4618, #4619). `SecurityPolicy.minTrustLevelForWrite`, `minTrustLevelForMemory` and `minTrustLevelForSpawn` were declared and accepted as overrides but never checked.
+  - Before: `memory-query` and `memory-response` passed at `ATTESTED`, below the default policy's own `TRUSTED` minimum.
+  - Now: `PolicyEngine.evaluateMessage()` checks the configured minimum for write, memory and spawn messages. The check adds to the built-in capability gates; a looser policy cannot bypass them.
+
+### Fixed
+- **A memory store locked by another process now says so** (#4622). Separate stdio MCP servers opening one store contend for its native vector store.
+  - Before: AgentDB fell back to a backend that rejected the locked file as the wrong format, and only that error was reported. The registry was still treated as available, and memory operations then failed with an unrelated sql.js WAL refusal.
+  - Now: `ControllerRegistry.getAgentDBInitError()` (`@claude-flow/memory` 3.2.0) keeps the first backend's failure, such as `Database already open. Cannot acquire lock`. It names the fix: run one owner with `ruflo mcp start --transport http` and point every client at it. The CLI bridge records that reason and adds it to the fallback's refusal. `isBridgeAvailable()` returns false when AgentDB did not open.
+  - `memory_list` reports a failed query as `success: false` with its error, not as an empty inventory.
+
+## [3.66.0] - 2026-10-31
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.0, plus ruflo-mods plugin 0.14.0. It contains 3.65.1 and the learning-loop follow-ups to #4581.
+
+### Added
+- **The learning loop on classic hooks, for every ruflo project** (ADR-512, #4604).
+  - Until now only projects with the opt-in ruflo-mods plugin recorded verified turns and showed lessons. Every `ruflo init` project now does the same through its classic hooks.
+  - The hooks replay the session transcript through the mod's own record and lesson code, bundled as the signed helper `.claude/helpers/learning-loop.cjs`.
+  - `route` records the finished turns, then prints the lessons that fit the new prompt. `session-end` records the rest and starts a detached `ruflo hooks verified-ingest --quiet`.
+  - Existing projects get the new helper the next time a newer CLI refreshes their helpers; `settings.json` is not rewritten.
+  - When the mod's loop is on, it announces `learning-loop` in `RUFLO_MODS_OWNS`, so no turn is recorded twice.
+  - To opt out, set `.claude-flow/config.json` `learningLoop.enabled` to `false`, or `RUFLO_LEARNING_LOOP=0`.
+- **Lessons say where the fix goes** (ADR-511, #4603).
+  - A verified turn records the source files its edits changed. Absolute, `..`, dot-file, secret-shaped, test and verifier-config paths are screened out.
+  - A lesson names the three files its passing fixes edited most, and leads with them.
+  - Lesson matching weighs rare words up and leaves out matches far below the best one.
+  - Files count per pattern and anchor SONA patterns, so the same task worded differently reinforces one lesson; tasks naming disjoint paths never merge.
+- **The learning-loop eval uses the flywheel sequential-evidence gate** (#4602). `scripts/eval-learning-loop.mjs` prints the minimum informative pairs a run needs and refuses, before any spend, an eval split that can never reach it.
+
+### Fixed
+- **The startup update check now skips CI runs where `CI=1`** (#4608). Before, only `CI=true` was recognised, so a `CI=1` run could `npm install` the newest CLI into the working directory during `ruflo init`. Any `CI` or `CONTINUOUS_INTEGRATION` value other than empty, `0` or `false` now counts as CI.
+
+## [3.65.1] - 2026-10-30
+
+Security patch: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.65.1. Contains 3.65.0 plus this one fix (#4605).
+
+### Security
+- **`http_fetch` SSRF via DNS** (CWE-918, CWE-350).
+  - Before: the MCP tool refused loopback, RFC-1918 and link-local hosts only by the URL's hostname text, then let `fetch()` resolve the name itself. A hostname that resolves, or rebinds, to `127.0.0.1`, a private address or `169.254.169.254` reached it without `CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE`.
+  - Now: every connection resolves through a lookup hook. The hook refuses the host if any resolved address is private, and the socket connects only to addresses it checked. Every redirect hop is checked the same way.
+  - The address check also covers `::`, IPv4-compatible and NAT64/6to4 IPv6 forms, `fe80::/10`, `fec0::/10`, `ff00::/8`, IPv4 multicast/reserved, `198.18.0.0/15` and `*.localhost`.
+
+## [3.65.0] - 2026-10-30
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.65.0, plus ruflo-mods plugin 0.12.0. This release ships the eight follow-ups to #4581 on how ruflo integrates with Claude Code mods (ADR-503 to ADR-510, #4585).
+
+### Added
+- **Learning-loop gaming defences** (ADR-503, #4590).
+  - A verified-success turn is tainted when it edited tests (`edited-tests`), edited a verifier's config (`edited-verifier-config`), or ran a narrowed or weakened check (`narrowed-verifier`).
+  - Tainted records never train unless `.claude-flow/config.json` `learningLoop.allowTaint` lists their classes.
+  - An opt-in rotating re-verify step (`learningLoop.reverify`, off by default) re-runs an allowlisted check in a temporary worktree.
+  - An anomaly gate holds back lessons whose evidence looks gamed.
+  - `scripts/eval-learning-loop.mjs` is a manual, paid evaluation harness.
+- **Real-binary test tier** (ADR-504, #4589). This runs the real `claude` binary with ruflo-mods against a scripted mock of the Anthropic Messages API, with no API key needed. The contracts check that:
+  - every mod loads;
+  - the learning loop records outcomes;
+  - lessons reach the model;
+  - the guard denies risky commands;
+  - route context is added.
+  
+  It runs as the CI job `mods-real-binary` and as `npm run test:real-binary`.
+- **`compactSnapshot`** (ruflo-mods option, default on; ADR-505, #4591).
+  - Before compaction, the mod saves a screened transcript to rotating slots under `.claude-flow/sessions/compactions/`.
+  - After compaction, it adds one bounded `[RUFLO_AFTER_COMPACT]` block with recent lessons and outcomes, open swarm and claim ids, and the snapshot path.
+  - `ruflo doctor --component compact-snapshots` warns when snapshots exist but `.claude-flow/` is not gitignored.
+- **Plugin secrets via `userConfig` `sensitive: true`** (ADR-506, #4587).
+  - The cost-tracker, metaharness and x-gateway plugins read their keys through a shared `readSecret` helper. It checks the masked plugin option first and falls back to the environment.
+  - A new `scripts/audit-plugin-secrets.mjs` CI gate fails on secret-named options that are not marked sensitive, and on literal secrets in manifests.
+- **Plugin footprint cut** (ADR-507, #4588).
+  - Operational skills are user-invoked only (`disable-model-invocation: true`).
+  - Long skill and command descriptions are trimmed to one sentence, with a ceiling enforced by an audit.
+  - `scripts/measure-plugin-footprint.mjs` reports the result, with before and after numbers in `v3/docs/validation/`.
+- **Cost budgets that can feed a gateway** (ADR-508, #4592).
+  - `.claude-flow/cost/budget.json` holds the budget windows.
+  - `ruflo cost budget set` writes it.
+  - `ruflo cost budget export --gateway litellm [--apply]` produces LiteLLM `budget_limits` and per-model budget fallbacks. `--apply` requires HTTPS except on loopback, and reads the key from an environment variable only.
+  - `ruflo cost report` breaks spend down by agent and by tool.
+  - New ruflo-mods option `costLedger` (default on).
+  - `--gateway meta-llm` refuses until meta-llm documents a budget API.
+- **Plugin trust** (ADR-509, #4593).
+  - Plugins carry Ed25519 `signature.json` manifests, signed with the existing helpers key.
+  - `ruflo plugins verify` checks a plugin against its manifest and reports verified, modified, unsigned or bad-signature.
+  - A static scan runs before `mods install`, `init` or `plugins install`. A high finding stops the install unless you pass `--accept-risk <plugin>`.
+  - `ruflo init` stops on risky project auto-approve keys (`enableAllProjectMcpServers`, `bypassPermissions`, wildcard Bash and others). `--keep-risky-settings` and `--drop-risky-settings` let you continue.
+  - Under `modTrust: refuse-risky`, a modified ruflo plugin is refused.
+- **Headless plugin staging** (ADR-510, #4586).
+  - `resolvePluginPaths` finds ruflo plugins in a local checkout, the marketplace clone or the install cache.
+  - Headless `claude -p` workers now get `--plugin-dir` for ruflo-mods automatically.
+  - `ruflo plugins paths [--json]` prints the resolved folders for Agent SDK `{ type: "local", path }` callers.
+  - `ruflo doctor --component headless-plugins` checks this setup.
+
+### Not yet
+- Per-skill trimming (`skillTrim`) was not built: Claude Code exposes no hook that hides a skill from the model's list.
+- The 30-task learning-loop evaluation from #4581 §7 has still not been run. The loop stays on by default, as the maintainers decided in ADR-502 §6.
+
+## [3.64.0] - 2026-10-29
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.64.0; ruflo-mods plugin 0.8.0.
+
+### Added
+- **Verified-outcome learning loop** (#4581, #4583, ADR-502), **on by default** (ruflo-mods `learningLoop`; set it to `false` to turn it off).
+  - The mod records each main-loop turn. Its outcome is decided only by the exit status of a test, build, typecheck or lint command run after the turn's last edit.
+  - `|| true`, pipes and `;` verify nothing, and the model's own words are never read.
+  - `ruflo hooks verified-ingest`, the MCP tool `hooks_intelligence_verified-ingest`, and automatic ingest in `hooks_route` and `hooks_session-end` all train SONA on verified turns only. Unverified turns are counted and never trained.
+  - Learned lessons at or above the 0.6 routing gate are written to `.claude-flow/data/learned-lessons.json`. The mod cites at most three of them in a prompt they match.
+  - `ruflo doctor --component learning-loop` reports whether outcomes are reaching SONA.
+
+### Not yet
+- #4581 stages 5–7 (console pane, autonomous `/loop-run`, GEPA self-tuning) are not built.
+- The #4581 §7 evaluation (30+ tasks, baseline vs loop-enabled) has not been run; the default is on by maintainer decision ahead of it (ADR-502 §6).
+
+## [3.63.9] - 2026-10-29
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.9.
+
+### Security
+
+- `github_repo_analyze` no longer returns credentials embedded in the origin remote. A remote such as `https://x-access-token:<token>@github.com/...` was echoed verbatim in `remoteUrl`, putting the token into tool output. URL userinfo is now stripped; scp-form remotes (`git@host:o/r`) are unchanged (#4577).
+
+### Fixed
+
+- `migrate run --dry-run` and `migrate fix --agents --dry-run` (or `-d`) preview instead of migrating. Both read a flag key the parser never set, so a dry run overwrote `.claude-flow/config.json` and wrote restored agent files (#4568).
+- `github_repo_analyze` reads repository names that contain a dot (`vercel/next.js`, `socketio/socket.io`) from the origin remote instead of filing them all under `local/repo` (#4571).
+- `hooks_worker-detect` with `autoDispatch` marks its worker records and response as `synthetic` with a note, instead of reporting a completed worker when no executor ran (#4576).
+
+### Changed
+
+- The `agentic-qe-fleet` marketplace entry is pinned to Agentic QE v3.15.17 (#4574).
+
+## [3.63.8] - 2026-10-28
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.8, plus standalone `@claude-flow/memory` 3.1.0.
+
+### Fixed
+
+- `@claude-flow/memory` 3.1.0 adds `ControllerRegistry.set()`. The CLI's memory bridge already called it to register controllers it builds itself, but the method did not exist, so those registrations were silently dropped. `set()` closes any instance it replaces. The agentdb the CLI installs (3.0.0-alpha.20) does not ship the MutationGuard, AttestationLog or GuardedVectorBackend files, so those stay off. What does change: when agentdb's own ReasoningBank is unavailable, the intelligence module's local ReasoningBank is now really registered (#4549, #4550).
+- `agentdb_pattern-store` and `agentdb_pattern-search` use the same backend when that local ReasoningBank is registered. Before, the store wrote to the SQL `pattern` namespace while search read the local bank, so a stored pattern could not be found once the bank held other patterns. Search also falls back to the SQL namespace when the bank has no match (#4567).
+
+## [3.63.7] - 2026-10-28
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.7.
+
+### Fixed
+
+- `agent_spawn` accepts `type` as an alias for `agentType`, so projects set up with older agent and command docs can spawn agents again. `agentType` wins when both are sent. A call with neither now says `agentType is required` instead of `type: Required`. 443 `agent_spawn` calls in the shipped agent, command and skill docs now pass `agentType` (#4542, #4543, #4564).
+- `coordination_sync` `trigger` refuses instead of waiting 50 ms and reporting a sync that never happened. The tool's description now says so (#4557, #4559, #4564).
+- `agent_pool` `fill` is implemented instead of returning "Unknown action" (#4555, #4561).
+- `hooks_build-agents` writes under the project, validates `outputDir`, and no longer reports invented stats (#4558, #4562).
+- `performance_metrics` reports recorded latency and throughput instead of fixed figures (#4554, #4556).
+- The daemon's local audit worker no longer reports a clean scan it did not run (#4563).
+- `session_info` and `session_current` read the session records that hooks write (#4548).
+- The GitHub skills use registered MCP tools (#4141, #4541). A new check fails when a shipped skill runs a CLI command that does not exist (#4552, #4553).
+
+## [3.63.6] - 2026-10-27
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.6.
+
+### Fixed
+
+- ruflo-console 0.49.7: Claude can clear Project Anatole alerts through the console again. Before, `console_run anatole-ack-<id>` failed with "command.run: called from a tool.call hook, it would wait on the turn this hook is holding", so every alert stayed open. The console now sends `/protector` without waiting inside Claude's tool call, and Claude's reply says the action is queued. The ack is applied when the turn ends (#4545).
+- `claims_rebalance` no longer overfills one agent (#4547).
+- `@claude-flow/aidefence` is declared as an optional dependency of the CLI (#4445).
+- The hooks-automation skill uses the `hooks` command and the real MCP tool names (#4538, #4540).
+
+## [3.63.5] - 2026-10-27
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.5, plus standalone `@claude-flow/neural` 3.0.1.
+
+### Security
+
+- `http_fetch` now validates every redirect target, not only the first URL. A public URL can no longer redirect to loopback, private ranges, cloud metadata or `file://`. Redirects are capped at 10 hops, and `Authorization`/`Cookie` headers are dropped on cross-origin hops (#4534).
+
+### Fixed
+
+- SONA EWC++: `SONAManager` now records Fisher importance and anchor values after each learning cycle; before, they were always empty. The anchor is the parameter value at consolidation, so the penalty starts at zero (#4531, #4532, `@claude-flow/neural` 3.0.1). The penalty is still not applied to the learning update.
+- `task_list` status filter matches status aliases (#4536).
+- Workflow condition steps can read an earlier step's output via `step-N.output` (#4530).
+- `task_summary` counts cancelled tasks, so the counts add up to the total (#4489).
+- `hooks_worker-status` summary counts pending workers (#4529).
+- `doctor` recognizes matching npm launchers on Windows (#4473).
+- ruflo-console 0.49.5 keeps a project copy of the mission ledger, so a mission survives a restart that loads the console from a different source (#4524).
+
+## [3.63.4] - 2026-10-26
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.4, plus standalone `@claude-flow/mcp` 3.1.4, `@claude-flow/plugin-agent-federation` 1.0.3 and `@claude-flow/shared` 3.0.6. Follow-ups to the 3.63.3 security fixes.
+
+### Security
+
+- `mcp start -t http|websocket` with no token now uses a per-user token in `~/.claude-flow/mcp-http-token` (mode 0600, created on first use), so a loopback server is no longer open to every local process. Set `RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP=1` to run without one. The standalone WebSocket transport now checks the token when the connection upgrades (`Authorization: Bearer` or `?token=`), and `--auth-token` works with it (#4516). **Breaking:** HTTP/WebSocket clients must send the token.
+- Federation: `VERIFIED` and `ATTESTED` trust now require the key pinned for the peer in the `trustedPeerKeys` config (node id to hex public key); a self-signed manifest or a handshake response only proves possession of the key it carries. A handshake response must come from the node that was challenged, the listener defaults to `127.0.0.1`, and nonces use crypto randomness (#4514). **Breaking:** peers that relied on self-asserted trust need a `trustedPeerKeys` entry.
+- A file in `.claude-flow/daemon-queue/` no longer counts as a manual trigger, so it cannot skip the supervisor gate (#4515).
+- `@claude-flow/shared` 3.0.6 carries the same Origin/Host guard and WebSocket token check as `@claude-flow/mcp` (#4517).
+- AgentBBS: a `..` in a room label can no longer move the room log outside its base path (#4518).
+
+## [3.63.3] - 2026-10-26
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.3, plus standalone `@claude-flow/mcp` 3.1.3 and `@claude-flow/plugin-agent-federation` 1.0.2. Security fixes from a private report.
+
+### Security
+
+- A cloned project's config can no longer turn on AI workers: `daemon.aiWorkers.enabled` is honoured only from the `--headless` flag, `RUFLO_DAEMON_AI_WORKERS=1` or `~/.claude-flow/config.json`; a project file can only say `false`. The audit worker no longer globs `**/.env*` (#4509). If you relied on a project file to enable AI workers, move the setting to your user config.
+- `@claude-flow/mcp` 3.1.3: HTTP and WebSocket transports with no token now refuse requests and upgrades from a web page (any `Origin` not listed by exact name; `*` does not count) or with a non-loopback `Host`, and refuse to listen beyond loopback without a token unless `allowUnauthenticated` is set (#4510). A local process can still call a token-less loopback server; set a token.
+- `@claude-flow/plugin-agent-federation` 1.0.2: a policy denial of `task-assignment`, `memory-query`, `context-share`, `trust-change`, `topology-change`, `agent-spawn`, `claim-event` or `agent-handoff` is final in `legacy` and `observe` mode too, and an evaluator error refuses them (#4511). Still open: the listener defaults to `0.0.0.0`, and discovery manifests are verified against their own key.
+
+## [3.63.2] - 2026-10-26
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.2. No leaf package published.
+
+### Security
+
+- `http_fetch` no longer lets IPv6 literals past its SSRF guard: brackets are stripped before matching, so the `fc00::/7` and `fe80::/10` checks now work, and IPv4-mapped forms such as `::ffff:127.0.0.1` and `::ffff:169.254.169.254` are decoded and checked against the IPv4 rules (#4503, #4504). Still open: `::`, multicast and NAT64 ranges, and redirect re-validation.
+
+### Fixed
+
+- **ruflo-console 0.49.4**: the mission plan is submitted from a file, which fixes "command line is too long" on Windows (#4506).
+- CI gates helper sync on import and manifest checks (#4507).
+
+## [3.63.1] - 2026-10-25
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.1. No leaf package published (the swarm fixes below live in `@claude-flow/swarm`, which the CLI does not depend on).
+
+### Fixed
+
+- **ruflo-console 0.49.3**: the install record for a plugin installed more than once no longer comes from another project; with none applying the console says "not installed here", and the record with the longest `projectPath` wins (#4496, #4497). Also in this train: Windows path and autopilot guard fixes (0.49.1/0.49.2, #4490, #4491, #4494).
+- `flywheel run` skips the directory fsync on Windows so it can commit (#4492, #4493).
+- `federation_bbs_watch` pages forward from `sinceEnvelopeId` (#4480).
+- Managed agents refuse `.` and `..` resource ids and the guard reads common argument wrappers (`ruflo-agent` 0.4.1, #4478).
+- `ruflo-mods` 0.7.1 loads again (#4485, #4487).
+- Swarm (source only, unpublished): downgraded topology leaders wire only to the leader, consensus waits on events instead of polling, retries release the old domain slot (#4483, #4498, #4499).
+
+## [3.63.0] - 2026-10-25
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.0. Adds four MCP tools for Anthropic Claude Managed Agents (`managed_agent_capabilities`, `managed_agent_control`, `managed_agent_learning`, `managed_agent_interrupt`). No leaf package changed, so no standalone publishes.
+
+### Added
+
+- **Managed cloud agents: dynamic workflows, controls and verified advisory learning** (`ruflo-agent` 0.4.0, `ruflo-workflows` 0.7.0, `ruflo-console` 0.49.0; ADR 0003 and 0004). Everything is opt-in. A cloud agent can run bounded dynamic workflows (`dynamicWorkflows: true` with a mandatory `budgetCents`, limited networking, optional `predefinedAgents`); provider completion is reported as `verification: "unverified"`. Managed sessions show up in the console's Workflows page with their budget, blockers and worker counts, with zero provider traffic from the panels. `managed_agent_control` inspects, interrupts or terminates one session only when the host sets `RUFLO_MANAGED_CONTROL=1` and lists the session in `RUFLO_MANAGED_CONTROL_SESSIONS`, after a fresh read of the provider's state. With `RUFLO_MANAGED_LEARNING=1` and a host-configured `RUFLO_MANAGED_VERIFIER_PUBLIC_KEY`, `managed_agent_learning` admits signed outcomes (unsigned ones stay quarantined), recommends a strategy and evaluates paired holdouts; nothing changes routing on its own.
+- User guide: a "Managed cloud agents" section in `docs/USERGUIDE.md`.
+
+### Fixed
+
+- `memory_search_unified` dropped an entry whenever the same key existed in two namespaces; it now deduplicates on namespace and key (#4470, thanks @kevin9327).
+- Before this release shipped, an independent review of the managed-agent change found and fixed: `managed_agent_interrupt` had no host policy gate (it now uses the `managed_agent_control` path, and `managed_agent_terminate` obeys the same allowlist, deleting only the session's own environment, once `RUFLO_MANAGED_CONTROL=1`); `managed_agent_prompt` could report the previous turn's answer as finished on a later poll; several valid base64 spellings of one verifier signature were stored as separate ledger records; and the console showed rescheduling, budget-stopped and action-blocked sessions as finished.
+
+### Notes
+
+- **Known limits (ADR 0004):** the verifier signs with a key in the same user account as the checks it runs, so run only host-authored checks, never ones an agent produced; evidence is only partly bound to what ran; a crashed process can leave a lock file that needs removing by hand; a session in an `error` state cannot be controlled. Live execution against the Anthropic Managed Agents beta has **not** been exercised (it needs an executor key), so treat the cloud runtime as unproven in production.
+- `ruflo-ai-team` 0.3.5 (#4475) also changed in this tree.
+- `RUFLO_MANAGED_AGENTS_BASE_URL` is an operator-only override of the API origin (an HTTPS origin, no credentials, path or redirects); it is never a tool argument.
+
+## [3.62.0] - 2026-10-24
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.62.0. Adds one MCP tool (`rure_cuda_launch_plan`). No leaf package changed, so no standalone publishes.
+
+### Added
+
+- **ruRE: CUDA launch plan** (ruflo-rure 0.6.0, ADR-501). New read-only MCP tool `rure_cuda_launch_plan` turns what `rure_analyze_cuda` found into a plan for measuring: per architecture and kernel, how many blocks and warps fit on one multiprocessor at each block size, which resource sets the limit (registers, shared memory, warps, block slots, barriers), the best block sizes and flags. Eight architectures have a table (`sm_70` to `sm_120`); any other gets no figure rather than a guess. It still parses and never runs: `includeHarness` only returns the text of a small CUDA program for you to build and run yourself. The occupancy model matches NVIDIA's `cuda_occupancy.h` on 1.77 million combinations and the CUDA driver on five real GPUs (ADR-501, ADR-500).
+
+### Fixed
+
+- `rure_analyze_cuda` reported the wrong architecture (`sm_5`) for a standalone `.cubin` built with CUDA 12 for `sm_70` to `sm_90`; the SM number sits in a different byte depending on the cubin's OS ABI. Cubins inside a fatbin or host binary were not affected.
+- The worker daemon let a `maxConcurrent` or `workerTimeoutMs` saved in `daemon-state.json` override the same setting in `config.json`; an explicit value now wins (constructor, then config file, then saved state, then default) (#4462).
+- Cancelling a headless worker now settles its execution and escalates to SIGKILL when the child ignores SIGTERM; the fallback timer no longer keeps the host alive, and a timed-out child no longer gets a second SIGTERM (#4463).
+
+### Notes
+
+- Plugins in this tree that changed: `ruflo-rure` 0.6.0, `ruflo-ai-team` 0.3.4, `ruflo-browser` 0.3.7 (doctor path from other working directories), `ruflo-x-gateway` 0.10.2. The x.ruv.io gateway itself (0.9.1) is a separate deployment.
+- `@claude-flow/swarm` changes (#4456, #4457) are not a CLI dependency and are not part of this release.
+
+## [3.61.1] - 2026-10-24
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.61.1. No leaf package changed, so no standalone publishes.
+
+### Added
+
+- `ruflo-console` 0.48.0 (ADR-499): the ruRE page can read a folder outside the project that you allow. New plugin option `rureFolders` (`name=/absolute/folder` pairs); a sample then names it as `@name/sub/file`. Absolute paths, `..` and odd characters in a sample are still refused; the folder and every part below it must not be a link; and changing the option is an install-class write that always asks you first (Claude's console tools can only propose it at the full control level). ruRE still only parses. This is the version that `ruflo tui` ships, which is why it needs a CLI release.
+
+### Notes
+
+- CI: plugin pull requests now fail unless the plugin's `plugin.json` version rises when shipped files change (#4447).
+- `@claude-flow/plugins` (#4451, registry caches no longer re-run a surviving plugin's `register*` methods) is not a CLI dependency and is not part of this release.
+
+## [3.61.0] - 2026-10-23
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.61.0. Adds one MCP tool (`rure_analyze_cuda`). No leaf package changed, so no standalone publishes.
+
+### Added
+
+- **ruRE: CUDA static analysis** (ruflo-rure 0.5.0, plugin ADR-0006). New read-only MCP tool `rure_analyze_cuda` reads the GPU code inside a CUDA fatbin, cubin or PTX file: fatbin entries (PTX or cubin, target architecture, LZ4/zstd compression), each kernel with register count, code size and constant/shared/local memory, and PTX version, target and kernel names. It parses only; nothing is executed, and strings taken from the file pass the AIDefence gate. Checked against real nvcc 12.8 and 13.0 output. Not included: SASS decoding, `cuobjdump` shell-out. zstd entries need Node 22.15+.
+- `ruflo-console` 0.47.0: a CUDA row on the ruRE page, DETECT routes for `.cubin`, `.fatbin` and `.ptx`, and a hint on a native binary that holds a CUDA fatbin (ADR-495..497). The ruRE page refuses a sample that is a symlink, wraps long lists, and shows Claude a structured `rure` block in `console_state`.
+- `ruflo-mods` 0.7.0: opt-in `rureOffer` (off by default, ADR-498) adds one line under an answer when the model touched a binary, library, `.asar` or CUDA file, saying ruRE can inspect it without running it. Offer only; the mods plugin is not part of the CLI tarball.
+
+### Fixed
+
+- Dependency audit: `zod` 4.6.7 in `ruflo-graph-intelligence` and `@claude-flow/browser` (GHSA-mrhx-c7xc-m3w5). Nested zod 3 copies stay under two time-boxed accepted findings that expire 2026-11-23 (#4442, #4444).
+
+## [3.60.1] - 2026-10-23
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.60.1. No leaf package changed, so no standalone publishes.
+
+### Fixed
+
+- `ruflo cleanup --force --keep-config` deleted the config files it is meant to keep (`claude-flow.config.json`, the `hooks`/`claudeFlow` blocks of `.claude/settings.json`): the parser stores the flag as `keepConfig` and the action read `keep-config` (#4435).
+- `ruflo-console` 0.45.1: ADR init, saves and exports work on Windows. The write layer shelled out to `dd`, `install` and `sh`, which do not exist there; a new `host-fs` write flavor uses the host filesystem (#4433, #4434, carries #4429).
+- `ruflo-console`: the autopilot envelope accepts Windows paths (`C:\work\app`, UNC) and compares them ignoring case and separator style; a POSIX-rooted path containing a backslash is still refused (#4436). Autopilot start stays gated off on Windows.
+
+## [3.60.0] - 2026-10-23
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.60.0, with `@claude-flow/hooks` 3.0.2 and `@claude-flow/mcp` 3.1.2 published standalone. Backward-compatible additions (six new reverse-engineering MCP tools, a ruRE page in the console) plus security and correctness fixes. The 3.59.x patch releases are not itemised here; this lists what changed since 3.59.17.
+
+### Added
+
+- **ruRE: static reverse engineering** (ruflo-rure 0.4.2, ADR-0001..0005 of the plugin). Six read-only MCP tools — `rure_extract_asar`, `rure_analyze_js_app`, `rure_find_feature`, `rure_analyze_binary` (ELF, PE, Mach-O), `rure_analyze_dotnet` (metadata only) and `rure_analyze_evm` (bytecode inventory) — that parse a file and never run it. Every string taken from the analyzed file passes the AIDefence gate; results say `screened: false` when the scanner is unavailable. New dependency: `@electron/asar`. Known gaps: EVM and P/Invoke handling validated on built fixtures only; the `.asar` scratch folder is not cleaned up; the tools read any path the process can read.
+- `ruflo-console` 0.45.0: a **ruRE** page in the TOOLS group (ADR-494) with a row per tool, a project-relative `sample` field, and results cleaned of terminal escapes. The tools are needed in the CLI: on 3.59.17 and older the rows say to update.
+- `agentic-qe-fleet` marketplace pin moved to v3.15.12 (#4419).
+
+### Fixed
+
+- **Security**: `agentbbs` accepted `..` in a room id, letting a room log path escape `.agentbbs` (#4416).
+- **Security** (`@claude-flow/mcp` 3.1.2): MCP session ids were a counter, a timestamp and six `Math.random()` characters, so they were guessable; they now use `crypto.randomUUID()` (#4418).
+- `neural_compress` with `method: "prune"` deleted every stored neural pattern and reported success, because pattern usage is never recorded; it now refuses and leaves the store untouched (#4428, #4423).
+- `github_pr_manage` merge/close and `github_issue_track` update/close reported success when `gh` failed or no record matched, and PR actions ignored `owner`/`repo`; they now fail with `gh`'s error and pass `--repo` (#4425, #4424).
+- `daa_agent_adapt` recorded `performanceScore: 0`, and an omitted score, as a 0.8 success; 0 is now a failure, an omitted score records none, and an out-of-range score is rejected (#4427, #4426).
+- The bridge search looked at only the newest 1000 rows, hiding older ones; the window is back to 10000 and configurable with `CLAUDE_FLOW_SEARCH_WINDOW` (#4405, #4397).
+- The cost-tracker Stop hook stored its record in the session's project instead of `CLAUDE_FLOW_CWD` (#4407), and `doctor` could not read the version of a `claude.cmd` shim on Windows (#4408) (#4397).
+- The AgentDB embedder rescue applied only to the first store in a process (#4421).
+- `transport use slim`, `agent publish` and `swarm join` now report "not configured" when the installed AGNTCY SDK lacks the function they call, instead of failing at the call site (#4409, #4376).
+- `update all` honours `--dry-run` (#4398).
+- `WorkerDaemon` kept two timers for a worker enabled twice (#4412). In `@claude-flow/hooks` 3.0.2: an explicit stop is no longer undone by a pending auto-restart (#4413), a duplicate cluster is counted once (#4415), and fallback embeddings no longer block the event loop for up to 10 s (#4422).
+- `ruflo-ai-team`'s `annotation-review.md` missed two tools (#4394); the federation peer's standalone TLS lock moved to patched rustls, webpki and quinn-proto (#4414).
+
+## [3.58.1] - 2026-10-20
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.58.1. Bug fixes only.
+
+### Fixed
+
+- **Security**: `hooks_codemod`'s `resolveTargets()` path-containment check used an unanchored `abs.startsWith(cwd)` string-prefix comparison — a sibling directory merely starting with the project directory's name (e.g. `cwd`-staging) passed containment, letting this live, CLAUDE.md-recommended tool read **and write** outside the project root (CWE-22). Anchored both call sites at a path-separator boundary, matching the already-correct `isWithinPrefix()` pattern used elsewhere in this codebase (#4312/#4313).
+- `CommandParser.parse()` flipped `parsingFlags = false` on every literal `--` token it saw, not just the first — a later `--` supplied as an ordinary operand (e.g. a search query of exactly `--`) was silently swallowed instead of being kept as a positional (#4310/#4314).
+- `TokenOptimizer.optimizedEdit()` called `agentBooster.editCode()`, a method that has never existed on `agentic-flow/agent-booster`'s real exports; a separate bug in the same file's `initialize()` picked the un-instantiated `AgentBooster` class instead of calling the package's `getAgentBooster()` factory. Published standalone as `@claude-flow/integration@3.0.2` (#4311/#4315).
+- CI reliability: `scripts/__tests__/probe-mod-guards.test.mjs` (a `node:test` file) was never categorized into either the vitest-baseline or vitest-excluded list, causing an intermittent, unrelated "no test suite found" failure on PRs that don't touch it (#4316).
+
+### Added
+
+- `ruflo-console` 0.44.6: the compact nav's menu, groups, search and page tabs are now separated by a dim `│` bar instead of just a gap (#3664).
+
+## [3.58.0] - 2026-10-20
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.58.0. Backward-compatible additions (new `memory peek` command, a Codex session activity viewer, configurable MCP rate limits) plus a critical install-breaking fix and a round of correctness fixes.
+
+### Fixed
+
+- **Critical**: `@claude-flow/cli@3.57.2` pinned `@claude-flow/memory@3.0.6`, which had never been published, so every fresh install of the 3.57.x line failed with `ETARGET` (#4303). Published `@claude-flow/memory@3.0.6` standalone (verified against a clean install) and added `scripts/audit-leaf-versions-published.mjs` — a new, now-required CI check that queries the live npm registry for every non-bundled leaf pin so a PR that bumps a pin ahead of its own leaf's publish fails before merge, not after release (#4304).
+- `agent spawn --name` was accepted and echoed by the CLI but never persisted to the `AgentRecord`, so `ruflo-console` could only label agents by type (#4300/#4301).
+- `agent list --all` sent a literal `status: 'all'` that `agent_list` doesn't recognize, filtering out every agent; `agent list --type` was accepted but never read (#4302).
+- `claims_claim`'s `expiresAt` was declared but unsettable by any handler, and the claims-load utilization math duplicated the max-claims threshold as a second magic literal (#3180/#3927).
+- A stale docstring on `InMemoryClaimRepository` claimed SQLite-backed persistence that doesn't exist in this package (#3179/#3926).
+- The persistent embedding cache raced concurrent cold callers into redundant SQLite initializations, and its FNV-1a cache key could collide for distinct equal-length inputs, including the lone-surrogate case (#3685, #3681).
+- The embedding model cache directory could be unwritable for non-root runtime users, permanently caching the mock fallback with no retry path (#3692/#3831).
+- `ruflo-mods`' risky-call/event classifier was missing several calls and hook events (`agent.register`, `tool.call`, `session.append`, read-side forgery vectors like `fs.read`/`env.get`, and more) that can rewrite or forge what other mods decide by — strictly widened, nothing un-flagged (#3802).
+- `ruflo-x-gateway` could crash on a malformed relay frame instead of failing fast on the one relay connection affected (#3921).
+- The standalone terminal console (`npx ruflo tui`) gave no on-screen indication that mouse support is off by default, silently dropped the `0 menu` hint from the footer below 80 columns, and dropped a mouse press+release pair when a terminal (tmux especially) coalesced them into one data chunk (#4305).
+- CI reliability, found while validating this release (#4307): `v3/@claude-flow/memory`'s FTS5 tests located `sql-wasm.wasm` via a `sql.js/package.json` subpath resolve, which sql.js 1.14's tightened `exports` map rejects even though the file exists — now resolves `sql.js/dist/sql-wasm.wasm` directly; `plugins/ruflo-business-pods/scripts/pod-tick.test.mjs` (a `node:test` file) was miscategorized into the vitest-can-run-it baseline instead of the node:test-only exclusion list (#4308); `plugins/ruflo-graph-intelligence`'s knowledge-graph adapter built its optional `@claude-flow/cli` import specifier as a string literal that a bundler's static scan could eagerly (and wrongly) try to resolve during test collection, outside the method's own try/catch — now built from joined parts; the root test-suite ratchet's default vitest worker count intermittently crashed with `ERR_IPC_CHANNEL_CLOSED` partway through the ~9500-test suite — capped at 2 workers as a stopgap pending real root-cause work; `tests/all-plugins-smoke-workflow.test.mjs`'s hardcoded `timeout-minutes: 10` expectation went stale when #3950 raised the real value to 15 for the new external-plugin smoke step.
+
+### Added
+
+- `memory peek` — a read-only command that reports which store files the current directory resolves to, row counts, last-write time, and WAL state, without ever creating, initializing, or migrating anything (#3508/#3620).
+- `@claude-flow/codex activity` — inspect a Codex helper's assignment, recorded state, progress, and tool calls/results from an existing session, with symlink-safe, TOCTOU-resistant file access and best-effort credential masking in previews (#3930/#3962).
+- `mcp start` now supports configurable HTTP and per-session rate limits (#3694).
+
+## [3.57.2] - 2026-10-19
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.57.2. `@claude-flow/cli-core` 3.7.5 (#4295, #4296) published standalone and pinned exactly. A large community PR batch — mostly correctness fixes to error reporting, memory/graph boundary handling, and CLI diagnostics.
+
+### Fixed
+
+- `agentdb_graph-query`/`agentdb_graph-pathfinder` resolved the memory DB path ad hoc instead of through the shared `resolveDbPath()` priority order, so an explicit `CLAUDE_FLOW_DB_PATH` binding could silently read a different store than the one selected (#4291, #4298).
+- `backupMemoryDb()` fell back to a raw file copy after *any* native online-backup failure — including ordinary `SQLITE_BUSY`/disk errors on an unencrypted source — and reported `backedUp: true` regardless; the fallback is now gated on a confirmed-encrypted source with no active WAL, and the result records which method actually completed (#4287, #4297).
+- `JsonMemoryBackend.isExpired()` used a falsy check on `ttlSeconds`, so an explicit `ttl: 0` never expired (`cli-core` 3.7.5, #4295, #4296).
+- `RvfBackend`'s native `@ruvector/rvf` branch could never succeed (wrong `open()` call) and silently fell back to the pure-TS path; the dead native branch is removed rather than half-wired (#4278, #4279, #4280).
+- `ReasoningBank.consolidate()` deleted pruned/deduplicated patterns from storage but never called `hnswIndex.removePoint(id)`, so the HNSW index filled with orphans until `storePattern()` started throwing permanently (#4270, #4271).
+- `TopologyManager`'s queen/coordinator failover never promoted a replacement after death despite `failoverEnabled: true`, silently falling through to generic mesh-style ranking (#4285, #4286).
+- `memory export`, `memory import`, and `memory_migrate` reported fabricated success text instead of the tool's real error or migrated count (#4204/#4207, #4194/#4209, and the memory-import tool failure fix).
+- `hooks worker dispatch` printed `Status: completed` even when no daemon ran anything (#4196/#4208).
+- `hooks_intelligence_attention` accepted unimplemented modes instead of rejecting them (#4193).
+- `init upgrade` now refreshes `intelligence.cjs`/session companions instead of leaving stale copies behind (#4198/#4220).
+- SmartRetrieval collapsed multi-result searches down to one (#4192); the ReasoningBank embedder used a hash fallback instead of the real embedder (#4191); `@claude-flow/cli`'s own `package.json` wasn't exported for consumers resolving it directly (#4190).
+- `ruvocal`'s MCP server merge dropped a base server's credentials when the browser echoed the server back without headers (#4281).
+- `ruflo-x-gateway` now advertises `offline_access` so OAuth clients can refresh silently instead of re-authenticating on every access-token expiry (#4256).
+- `workflow list/status/stop/run` now read the actual shape and errors the workflow tools return (#4268); stale task owners are released on terminal states (#4272); unregistering a swarm agent now removes its domain-pool membership (#4269); orphaned atomic-write temp files under the policy lock are reaped (#3164/#4273); one-shot CLI runs now flush learned patterns before `process.exit(0)` instead of losing them while `stats.json` keeps counting (#4283/#4284).
+- `ruflo-console`'s mission ledger no longer leaks a mission from one project into every other project's cockpit (#4254/#4276).
+- Command examples in the user guide that failed when copied are fixed (#4275); a stray `npx` invocation referencing a nonexistent unscoped package is corrected to `@claude-flow/codex` (#4265).
+- `scripts/build-codex-mod-hooks.mjs` now rebuilds the codex-mod bundle the same way on every OS (#4292).
+
+## [3.57.1] - 2026-10-19
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.57.1. `@claude-flow/cli-core` 3.7.4 (#4229, #4230) was published earlier and is pinned exactly.
+
+### Security
+
+- `DENYLISTED_ENV_NAMES` now blocks the credential/command-hijack and interpreter-flag-injection vars that 2026-09-21's env-sanitizer fix missed: `GIT_ASKPASS`, `GIT_PROXY_COMMAND`, `GIT_CONFIG_NOSYSTEM`, `PERL5OPT`, `RUBYOPT`, `JAVA_TOOL_OPTIONS`, `_JAVA_OPTIONS`, `JDK_JAVA_OPTIONS`, `PYTHONHOME`, `CLASSPATH`, `PYTHONSTARTUP`, plus git's numbered `GIT_CONFIG_(COUNT|KEY_\d+|VALUE_\d+)` family via a new regex (`cli-core` 3.7.4, #4229, #4230).
+
+### Fixed
+
+- `all-plugins-smoke`: the adr/ddd/sparc codex-mod native hook bundles are rebuilt, clearing the native-bundle-drift failure that had been hitting every push to `main`; `scripts/build-codex-mod-hooks.mjs` also no longer hard-fails on Windows, where `execFileSync` can't invoke a `.cmd` shim directly (#4266, #4277, @uyg7x).
+
+## [3.57.0] - 2026-10-17
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.57.0. A batch of community and dream-cycle fixes (#4210-#4252) plus a policy-ledger integrity fix (#3892). No standalone leaf republish needed this round.
+
+### Security
+
+- `ruflo init` / `init --dual` / `@claude-flow/codex init` no longer write a permissive `.codex/config.toml` by default. The generated file now uses `sandbox_mode = "workspace-write"`, `approval_policy = "on-request"` and `web_search = "cached"` (**standard** trust); the old `danger-full-access` / `never` / `live` file needs an explicit `--codex-trust full` (or `RUFLO_CODEX_TRUST=full`). `init` prints which level was written, an existing `.codex/config.toml` is never rewritten (not even with `--force`), and a kept permissive file is flagged with how to tighten it. Found by the three-host e2e run (ADR-490). `@claude-flow/codex` 3.0.4 (bundled, ships with the next train).
+- The MCP bridge on loopback no longer accepts tool-call requests from an arbitrary web page: local-only mode now requires the `Host` to be loopback (blocks DNS rebinding) and the `Origin` to be loopback-or-allowlisted when no `MCP_AUTH_TOKEN` is set (#4226, #4243, @kevin9327).
+- The policy ledger now authenticates a retained/pruned ledger against its independent on-disk archive anchor instead of trusting the mutable `state.json` alone, and streams full audits through fenced writers. Fixes `policy-ledger-verification-failed` on any install whose ledger has already been pruned (#3892, #4216, @proffesor-for-testing).
+
+### Added
+
+- `ruflo doctor` reports `better-sqlite3` copies compiled against Node 24.19+ headers when running Node 24.19–24.21, where they can abort the process (`Assertion failed: (env) != nullptr`, nodejs/node#65446), with the documented workarounds. `doctor --component native-addon` runs it alone (#4055, reported by @ronmikailov).
+- `ruflo doctor` reports health checks as versioned JSON output (#4228, @bryanbans).
+
+### Fixed
+
+- `@metaharness/darwin` pin bumped from `~0.10.2` to `~0.12.0`, unblocking the `metaharness-pin-drift` CI gate repo-wide (#3219, #4252).
+- Swarm: subscriber delivery is cancelled cleanly at shutdown, acknowledgements are tracked per recipient, urgent messages survive queue overflow, and failed/cancelled task workers release their slot (#4233, #4234, #4235, #4236, @rudycelekli). Coordinator cancellation stays terminal (#4244, @rudycelekli); domain pools stop creating unregistered agents and release agents after terminal tasks (#4246, #4247, @Tong-bit-art); shared worker reservations are honored across agent pools, fixing a case where that bookkeeping change would have silently defeated the domain-pool-release fix above (#4245, @rudycelekli).
+- Learning stats read-merge-write transactions are serialized across processes, fixing lost concurrent increments (#4217, #4240, @rudycelekli).
+- Claude memories refresh across project and worktree roots (#4210, @rudycelekli); the secret screen no longer treats a hyphen-named memory key as a credential field (#4202, #4211, @akushonkamen).
+- Hook lifecycle events are distinguished during deduplication, fixing the Stop hook claiming the session-end de-dup key so later hooks never ran (#4206, #4212, @dajiaohuang); `init` omits unimplemented generated hooks (#4200, #4213, @dajiaohuang) and stops granting blanket execution of project helpers (#4221, @xiajiahang).
+- Intelligence: trajectories are forwarded using the ruvllm contract (#4222, @xiajiahang); neural quantization reports unchanged persisted storage instead of a false delta (#4224, @dajiaohuang).
+- Console: Mission Control's prose wraps at 80 columns (#3899, #4225, console 0.44.3, @korjavin); the mission ledger is keyed per project instead of leaking one project's active mission into every other (#4237, #4242, @kevin9327).
+- `daemon status` reports the running daemon's actual TTL instead of a stale `--ttl 0` default (#4238, #4241, @kevin9327).
+- CLI: `--no-color` is honored for help and version output, and `--no-update` is honored before the startup update check runs (#4248, #4251, @shuaiyafei).
+- `dream(performance)`: `RaftConsensus.awaitConsensus()` is event-driven instead of busy-polling (#4214, #4215).
+- Docs: 25 user guide links repaired to v3 packages (#4223, @ketpatil77); ABP-governed SGit memory checkpoints and Ruflo CLI recovery validation documented (#4239, @mondweep).
+
+Not included: #4220 (helper-execution-permission fix) touches a signed helper manifest and needs a re-sign with the private key before merge, held for a follow-up release. #4216's own large diff (ledger integrity) was reviewed in depth separately before merging, given it gates MCP tool-call authorization.
+
+## [Unreleased]
+
+### Fixed
+
+- `@claude-flow/shared` 3.0.4: RVF event log no longer loses appends after a damaged tail (#4031, @rudycelekli). A partial length prefix, a partial payload or a record cut short is truncated on open, so later appends are readable; an unwritable log (EACCES/EROFS/EPERM) keeps its readable history and rejects appends explicitly. A tail whose length prefix is over the 100 MB limit is no longer accepted silently (found by @martinvlad): the bytes are kept and `append()` rejects until repaired, or set `repairOversizedTail: true` to truncate it. `append()` also refuses a record the replay limit would never read back. A fresh install can now import the package root and its tarball ships no test files: `zod`, `express`, `cors`, `helmet`, `ws` and `@types/ws` are declared dependencies, Express 5 bodiless POST and malformed-JSON requests get JSON-RPC 400s (#4091/#4089, @proffesor-for-testing).
+
+Batch of reviewed fixes from @rudycelekli (PRs #4020-#4026, #4028-#4030, #4032, #4033, #4035, #4037; #4027 and #4034 landed earlier):
+
+- `@claude-flow/cli-core` 3.7.1: JSON memory backend owns its snapshots, rejects invalid entry containers, measures size in UTF-8 bytes, omits non-matching substring results and lets expired keys be reused; output formatter honours progress controls, empty totals, table padding, coloured header widths, and suppresses progress in quiet or redirected output.
+- `@claude-flow/shared` 3.0.3: RVF event log honours zero limits, rebuilds indexes on retried initialization and isolates persisted records from caller mutation; circuit breaker returns independent date snapshots and expires rolling requests on completion.
+- `ruflo-adr` 0.5.5 (see its changelog).
+- Not included: #4031 (RVF truncated-tail recovery) is waiting on the author for a read-only-log fallback.
+
+## [3.56.10] - 2026-10-14
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.56.10. `@claude-flow/memory` 3.0.5 (#4183) was published earlier and is pinned exactly. `@claude-flow/cli-core` 3.7.3 (#3987) was also published earlier and is pinned exactly.
+
+### Added
+
+- `ruflo tui` draws the console's pictures, looks and motion (console 0.44.0, #4182). The bundled `tui.mjs` is rebuilt. The TUI draws at the default size when the terminal reports 0 columns (#4160, @martinvlad).
+
+### Changed
+
+- `ruflo init`: the v3 implementation skills are opt-in, like `agents.v3` (#4140, #4139, @z4forzubair).
+
+### Fixed
+
+- The MCP server starts in the session project, `CLAUDE_FLOW_CWD` naming the home directory or a filesystem root is ignored (`cli-core` 3.7.3), user-level claims resolve through `os.homedir()` on Windows, and duplicate or zombie daemons per workspace are stopped (#3987, @socrates6969). Trajectory counts persist across processes and daemon jobs feed learning (#3988, @socrates6969). One node process per MCP session: the launcher runs the resolved local CLI in-process and keeps `node:http` and the security barrel off the startup path (#3989, @socrates6969; ruflo-core plugin 0.2.10).
+- The console reads the project on Windows: a drive path is absolute, so the cwd is not prefixed twice (#4177, #4175). The neural data directory resolves through the project cwd, and stored worker error text is capped.
+- Hooks and core: failed tool outcomes are recorded, hooks run from the project root, and telemetry stays off the tool path (#4178).
+- Memory: calibrated default search threshold with near-miss hints (#4184, #4129); `memory_export` reads the CLI store as well as the AgentDB store (#4186, #4148); the AgentDB directory is created before the bridge opens it (#4155, #4132, @martinvlad); `TieredMemoryStore` recalls multi-word and natural-language queries (`memory` 3.0.5, #4183, #4152).
+- Intelligence: long memories are recalled for short route prompts (#4172, @rudycelekli); SONA reinforces the nearest pattern for near-identical tasks (#4185, #4134); AIDefence learns missed threats and autopilot learning loads (#4187, #4147, #4146).
+- Workflow: invalid gates and unsupported steps fail closed (#4164, @rudycelekli). Agent health derives from observed execution outcomes (#4167, @rudycelekli).
+- Analyze: diff content and commit subjects drive classification, safe Git revision ranges are accepted, encryption paths are flagged security-sensitive, and the reviewer-role docs are accurate (#4165, #4162, #4169, #4163, @rudycelekli).
+- Security scan: interpolated `exec` calls after imports are detected (#4166, @rudycelekli); a failed `npm audit` reports "could not scan" instead of a clean tree (#4154, #4124, @martinvlad).
+- A clear "not installed" message for `@ruvector/rvagent-wasm`, and only new patterns are counted (#4179, #3979).
+- Skills, plugin contracts and ruvector/neural/kg surfaces (#4181; #4126, #4133, #4135, #4149, #4156-#4159, #4161).
+
+## [3.56.9] - 2026-10-12
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.56.9, with the bundled leaves `@claude-flow/security` 3.0.5 and `@claude-flow/codex` 3.0.5 published standalone and pinned exactly, and `@claude-flow/shared` 3.0.5 / `@claude-flow/cli-core` 3.7.2 (published earlier) pinned. Signed helpers changed (`hook-handler.cjs`, re-signed in #4096).
+
+### Fixed
+
+- **Policy envelope** (`security` 3.0.5): explicit envelope ceilings require metering, and unmetered worker ceilings stay opt-in (#3503, @rudycelekli).
+- **Codex MCP backend** (`codex` 3.0.5, ruflo wrapper bridge): the opt-in `codex` backend no longer launches `@openai/codex mcp-server`, which current Codex CLI dropped, so it is retired without a startup stall (#3522, @rudycelekli; reported in #3509 by @pacphi).
+- **CLI parser, retry, rate-limit, monitoring and config fixes**: a batch of review findings (#4107; #4000-#4003, #4006-#4011, #4013, #4016, #4017, @rudycelekli and others).
+- `analyze diff` renders the `analyze_diff` result shape (#4102, #4101, @z4forzubair).
+- `shared` 3.0.5 and `cli-core` 3.7.2: narrow-column truncation, rate-window retry times, structured network error codes (#4014, #4015, #4018, @rudycelekli).
+- **ruflo-mods guards** (#4096, @proffesor-for-testing): the root-delete guard no longer misses brace, nesting and fork-bomb forms, the screen `.env` check is fixed, and `init`-generated hooks carry the changes.
+- **Console** (marketplace plugin; its `tui.mjs` is bundled into the CLI): worktree removal runs no fsmonitor or hooks and keeps untracked files (#4092), expired confirm cards are reported by `console_state` (#4067), pictures draw as SVG on Claude Code Desktop (#4112), all by @proffesor-for-testing; the Skills page pins its skills CLI (#4113, @martinvlad).
+- CI: the v3 root suite runs every test file and a crashed run is no longer accepted as a pass (#4099, @proffesor-for-testing); this does not ship in the package.
+
+## [3.56.8] - 2026-10-12
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.56.8. `@claude-flow/shared` 3.0.4 was published earlier and is now pinned exactly (3.56.7 still pinned 3.0.3). No other published package changed since 3.56.7; signed helpers did not change.
+
+### Fixed
+
+- `@claude-flow/shared` 3.0.4: the RVF event log repairs an incomplete or damaged tail before appending (#4031 by @rudycelekli); a clean install can import `.`, `./core` and `./mcp` because zod and express are now declared, and the tarball no longer ships compiled tests (#4089, #4091 by @proffesor-for-testing; the fresh-consumer finding came from @martinvlad, with `scripts/smoke-shared-fresh-consumer.mjs`).
+- `hooks coverage-gaps`: files with no executable lines are no longer reported as 0%, overall coverage is line-weighted, the command reads `coverage-final.json`, and the report size is capped (#4082-#4084, reported by @ronmikailov; #4097). Plugin workflow contracts for `ruflo-testgen` and `ruflo-sparc` were corrected in the same change (#4085-#4088; marketplace plugins, not npm).
+
+## [3.56.7] - 2026-10-11
+
+Minor-feature patch: `@claude-flow/codex` 3.0.4 (published standalone; the CLI and root pin it exactly) and `@claude-flow/cli`, `claude-flow`, `ruflo` 3.56.7. Signed helpers changed (#4071, re-signed there).
+
+### Added
+
+- `ruflo tui`: the ruflo console in a terminal of its own (ADR-489, #4059, #4075, #4076). Six pages, opened with `--view` or keys 1-6: Overview, Cost, Swarm, Events, Missions (read-only) and an AI page that asks Codex (pinned 0.162.0, read-only) or OpenRouter, each question after a confirm card; `--no-ai` turns it off and `--max-spend-usd` (default 0.5) stops sending to OpenRouter once the provider-reported spend reaches it. `--plain` prints one frame and exits 0; without a terminal it exits 2 with a hint. `prepare-publish` stages the bundled `plugins/ruflo-console/dist/tui.mjs` (about 1.27 MB, 446 KB gzipped) into the CLI tarball (about 0.4 MB larger, 3.9 MB packed). Console 0.42.7 is a marketplace plugin, not npm.
+- MCP resources capability on the CLI server, and a three-host integration loop (Claude Code, Codex, OpenRouter) with ADR-490/491 (#4068).
+- `doctor` flags a better-sqlite3 built against Node 24.19+ headers on Node 24.19-24.21 (#4069, #4074; reported in #4055 by @ronmikailov).
+- `ruflo mods`: doctor repairs that repair, `--strict`, atomic install, startup self-check (#4073).
+
+### Fixed
+
+- Auto-memory hooks deliver their subcommand, sync sees learnings, worktrees share the main memory dir, store writes are atomic (#4071, #4058 by @ronmikailov).
+- `memory purge` keeps the on-disk format on sql.js write-back (#4057); command recording has an off switch and redaction, and `memory cleanup --expired-only` reaches the bridge store (#4056, #4072; both reported by @ronmikailov).
+- `init --dual` writes a safe default `.codex/config.toml`; the previous permissive values now need `--codex-trust full` (#4070).
+
+### Known
+
+- Nested better-sqlite3 11.x copies under agentdb and agentic-flow still ship; fixing that needs an agentdb release depending on better-sqlite3 ^12. `doctor` warns on affected Node versions.
+
+## [3.56.6] - 2026-10-11
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.56.6, with the already-published leaves `@claude-flow/cli-core` 3.7.1 and `@claude-flow/shared` 3.0.3 now pinned exactly. Signed helpers changed (`hook-handler.cjs`) and were re-signed in #4053.
+
+### Fixed
+
+- Windows hooks launch through `node -e` instead of `cmd /c`, which started an interactive cmd that executed the hook JSON payload and created stray files (#4045).
+- The settings.json risk scanner now runs on the automatic SessionStart hook; both scanners match encoded PowerShell in linear time (#4052, #4053).
+- Trajectory-end feedback is indexed even when steps were recorded (#3662, #4051).
+- `@claude-flow/cli-core` 3.7.1 and `@claude-flow/shared` 3.0.3: JSON memory backend, table/progress output, RVF event log and circuit breaker fixes from a reviewed batch by @rudycelekli (#4061; PRs #4020-#4026, #4028-#4030, #4032, #4033, #4035, #4037).
+
+### Plugins (no npm impact)
+
+- `ruflo-cost-tracker`: preserve Codex usage ownership (#4048, @Devesh-Maheshwari). `ruflo-swarm`: host-specific no-op manifest for native Codex hook discovery (#4050). `ruflo-adr` 0.5.5.
+
+## [3.56.5] - 2026-10-11
+
+Patch release: one fix in `@claude-flow/cli`. No leaf package changed since 3.56.4 (`git diff v3.56.4..HEAD -- v3/@claude-flow` touches only `cli`; the `integration` change drops `publishConfig.tag` and has no runtime effect).
+
+### Fixed
+
+- The graph-edge-writer encryption-header sniff no longer closes the raw DB file descriptor, which dropped live SQLite POSIX locks; the header is read in a bounded child process (#4044, fixes #4040).
+
+## [3.56.4] - 2026-10-10
+
+Patch release: security hardening of the plugin-trust and helper paths, MCP/task fixes, and the Node 24 sqlite fix. Standalone leaves published first: `@claude-flow/memory` 3.0.4, `@claude-flow/integration` 3.0.1, `@claude-flow/plugins` 3.0.2, `@claude-flow/mcp` 3.1.1 (bundled; republished standalone), `@claude-flow/security` 3.0.4 (bundled; republished standalone). Then `@claude-flow/cli`, `claude-flow`, `ruflo` 3.56.4.
+
+### Security
+
+- Plugin registry trust: a placeholder (all-zero) trust anchor is a small-order Ed25519 key and no longer vouches for anything; signature verification uses strict (non-ZIP-215) rules; an unsigned registry no longer grants "official" trust (#3948).
+- `plugins upgrade` no longer runs the new version's `postinstall` or registers `shell:exec` hooks without the install-time gate (#3951).
+- Plugin and helper locators stop walking up at `node_modules`, so a project-local install cannot reach project `plugins/ruflo-*` code (#3986, replaces #3954).
+- Helpers: session ids and session paths are validated, module roots are no longer project-chosen (#3949); the statusline no longer interpolates `HELPER_ROOT` into a shell string, and `npx` runs the helper CLI from the helper root (#3990, replaces #3953).
+- User-level settings pin home helpers (#3952).
+- `task_assign` rejects `__proto__` agent ids that wrote onto `Object.prototype` (#3967).
+
+### Fixed
+
+- Node 24: `better-sqlite3` is routed to a build that does not abort at exit (#3955).
+- Importing the `agentic-flow` root entry no longer runs its CLI (#3958).
+- MCP resource cache: stale writes are fenced after invalidation (#4019). `security scan` code patterns no longer report the false positives seen on a real tree (#3999).
+- MCP, task and CLI fixes: #3975, #3974, #3970, #3969, #3968, #3980, #3947; graph path search ~94x faster at n=3200 (#3977).
+
+## [3.56.3] - 2026-10-09
+
+Patch release: AgentDB `3.0.0-alpha.20` update. `@claude-flow/memory` 3.0.3 (published standalone; the CLI pins it exactly) and `@claude-flow/cli` 3.56.3. `neural`, `shared` and `cli-core` are unchanged.
+
+### Changed
+
+- AgentDB floor raised from `^3.0.0-alpha.17` to `^3.0.0-alpha.20` (`memory`, `cli`, root, `ruflo`). alpha.20 swaps `@xenova/transformers` for `@huggingface/transformers`, `@ruvector/rvf` 0.1.9 -> 0.2.3 and `ruvector` -> 0.2.x. Semantic search scores shift slightly (same-text cosine ~0.992 against alpha.17 embeddings); an entry scored just under the 0.3 default threshold under alpha.17 can now appear just above it, ranked far below the exact-keyword hit.
+
+### Fixed
+
+- Dev tree only: `v3/package.json` gains a `pnpm.packageExtensions` entry declaring `onnxruntime-common` 1.24.3 for `@huggingface/transformers@4.2.0` (it imports it without declaring it, so pnpm's hoist gave it 1.14.0 and AgentDB silently fell back to mock embeddings in the pnpm workspace; npm installs were not affected).
+- AgentDB alpha.20 refuses a sql.js save when the database changed under an open handle or when `<db>.agentdb.lock` exists, and a lock left by a crashed writer was never cleared, so every later save failed and the database file was never created. `@claude-flow/memory` now removes that lock only when it is provably stale (regular file named exactly `<db>.agentdb.lock`, numeric PID that is dead, older than 10 s, re-verified after an atomic rename-aside), retries once, and otherwise throws `AgentdbLockError`. A failed persist on shutdown is surfaced (`ControllerRegistry`, `AgentDBBackend`, `HybridBackend`, `shutdownBridge`), never swallowed. This only affects the sql.js path (no native better-sqlite3).
+
+## [3.56.2] - 2026-10-09
+
+Patch release: one bug fix in `@claude-flow/cli`. No leaf package changed since 3.56.1 (`git diff v3.56.1..HEAD -- v3/@claude-flow` touches only `cli`). The `ruflo-console` fixes merged since 3.56.1 (console 0.40.4-0.40.8, #3933, #3935, #3938, #3941, #3942) and `ruflo-swarm` 0.3.6 ship through the plugin marketplace, not this npm release.
+
+### Fixed
+
+- `task_update` accepts only the five task statuses; a task stored as `complete` is no longer shown as pending or re-dispatched (#3932, fixes #3931).
+
+## [3.56.1] - 2026-10-08
+
+Patch release: five bug fixes (four in `@claude-flow/cli`, one console). No leaf package changed since 3.56.0 (`git diff v3.56.0..HEAD -- v3/@claude-flow` touches only `cli`), and no behaviour is removed. The `ruflo-console` plugin fixes merged since 3.56.0 (console 0.40.2/0.40.3, #3917, #3924) ship through the plugin marketplace, not this npm release.
+
+### Fixed
+
+- The policy trust mirror and key now honour `HOME` and `XDG_CONFIG_HOME` instead of a fixed home directory, so a throwaway `HOME` no longer yields `policy-anchor-log-missing` (#3922, fixes #3919, reported by @HF-teamdev).
+- `ensureSchemaColumns` rewrites the store only when a column was actually added; an up-to-date encrypted memory store is no longer rewritten by a read such as `memory stats` (#3923, fixes #3918, reported by @HF-teamdev).
+- `config reset --section <name>` resets only that section and removes the matching flat overrides, preserving unrelated configuration (#3901, @rudycelekli).
+- MCP config tools (`config_get/set/list/export/import/reset`) now work on the plain nested JSON document written by the `config` CLI command instead of assuming a `{values, scopes}` envelope; existing envelope stores keep their format (#3902, @rudycelekli). This does not change how the daemon reads `config.json` (see #3192, #3449, #3239).
+- Console approvals badge counts only rows that have an approve or deny action (#3924, fixes #3920, reported by @HF-teamdev); delivered as `ruflo-console` 0.40.3 via the plugin marketplace.
+
+## [3.56.0] - 2026-10-08
+
+Minor release: a hardening and correctness batch from @rudycelekli, @nicholas-ruest, @martinvlad, @HF-teamdev, @drakeo338 and @stuinfla. Several fixes change behaviour on purpose (see Behaviour changes). Integrated by merging each PR head, so authorship is preserved.
+
+### Behaviour changes
+
+- **Unknown ids and value-less options are now errors (#3911, @martinvlad)** — `agent status` / `task status` with an unknown id print `not found` and exit 1; a declared string/number option with no value (`hooks route --task`) now reports `Option --task needs a value` instead of silently becoming `true`. Applies to every command.
+- **`session_save` captures the persisted task/agent/memory stores by default, and `session_import` rejects malformed stores (#3489, #3490)**; explicit `false` still excludes a store.
+- **Default project memory backup snapshots both `memory.db` and `agentdb-memory.db` (#3903)**; explicit `--db` and a non-blank `CLAUDE_FLOW_DB_PATH` still select one file.
+- **Agent pool scale-to-zero is honored and invalid targets fail before writing (#3488)**; a zero fallback retry budget is honored (#3496).
+- **Project path validators block sensitive directory names anywhere under the project root, not only at the leaf (#3504, `@claude-flow/security` 3.0.3)**.
+- **The OAuth callback server retains an early callback and ignores unrelated requests (#3507, `@claude-flow/security` 3.0.3)**.
+- **Provider selection honors an explicit execution provider (#3493) and Anthropic gateway credentials/endpoint (`ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`; #3494, fixes #3100)**; provider timeouts now cover reading the response body (#3495).
+- **`hooks_route` consults persisted SONA outcome patterns before local routing (#3904)** — only a supported agent at confidence >= 0.6 is used; `useSemanticRouter: false` keeps keyword routing. **With the opt-in neural router, selection uses calibrated quality predictions (#3498)** so calibration can move the pick across the quality bar.
+- **The WAL-sidecar safety gate is liveness-based (#3894, fixes #3161)** — leftover `-wal`/`-shm` files from a closed connection no longer block `memory store`/`list`; a genuinely open holder is still refused.
+- **`ruflo init` no longer pins a Claude model in generated `.claude/settings.json` (#3528, fixes #3527)**.
+- **The `ruflo` wrapper pins the matching `@claude-flow/cli` and warns when the resolved CLI version differs (#3438, fixes #3306)**; it warns and continues, it does not refuse.
+- **Claims are stored in one lossless format shared by CLI and MCP; unreadable stores are refused rather than replaced (#3502)**.
+- **Native immutable conditional append for `memory store` (`--append-only`, `--append-conditions`, `--require-native`, `--no-embedding`; #3750, @stuinfla)** — additive, CLI only.
+
+### Fixed
+
+- Shipped `.claude/settings.json` had unescaped quotes in hook commands and did not parse (#3895, fixes #3888, @nicholas-ruest); a new test checks that every shipped settings/plugin JSON parses.
+- Remaining `better-sqlite3` opens go through the shared loader (#3896, fixes #3883's sites, @nicholas-ruest); an RFE1-encrypted store is reported as encrypted, not broken (#3906, fixes #2889, @nicholas-ruest); the demo-registry fallback is labelled as unverified (#3897, @martinvlad).
+- `analyze` preserves machine-readable JSON (#3910); `doctor` rejects unsupported component selections (#3907) and loads MetaHarness modules via file URLs on Windows (#3523, fixes #3186); `daemon start` honors explicit scheduled workers (#3586).
+- Unreadable task/agent records are preserved, not overwritten (#3484); async agent-registry updates do not revive retired agents (#3492); fallback learning is attributed to each attempted model (#3497).
+- Workflow step boundaries are validated (#3491), persisted workflows resume without duplicate executors (#3500) and keep control signals and sibling state across awaits (#3505).
+- Memory JSON import reports rejected writes accurately (#3499); export reads all pages only after successful reads (#3501); concurrent rotating-token refreshes coalesce (#3506).
+- Test fixtures no longer break under pnpm's `NODE_PATH` (#3543, fixes #3529) and the vitest runner is resolved via `package.json`.
+- `@claude-flow/memory` 3.0.2: cache admission accounts for replacement sizes (#3679, fixes #3678) and invalidation matches each key independently (#3687, fixes #3686).
+- Removed an empty `.claude/agents/tmp.json` that shipped in the CLI tarball.
+
+### Not included
+
+#3503 (fail-closed policy envelope: it would deny MCP dispatch for any envelope with a ceiling because dispatch does not supply the metering), #3892, #3831, #3879, #3835, #3751, #3694, #3909 and the draft security PRs: see each PR for the status.
+
+### Leaf packages published with this release
+
+`@claude-flow/memory` 3.0.2, `@claude-flow/security` 3.0.3.
+
+## [3.55.0] - 2026-10-07
+
+Minor release. Contains a security behaviour change: `ruflo mcp start -t http` on a non-loopback host now refuses to start without a token (see Security and Breaking changes).
+
+### Security
+
+- **MCP HTTP transport: refuse unauthenticated non-loopback binds, optional bearer-token auth (#3598, #3599)** — `ruflo mcp start -t http --host 0.0.0.0` (or any non-loopback host) now exits 1 unless a token is set (`RUFLO_MCP_HTTP_TOKEN`, `--auth-token-file`, `--auth-token`) or the operator opts out with `RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP=1`. With a token, `/rpc`, `/mcp` and `/info` need `Authorization: Bearer <token>` (constant-time compare); `/health` stays public and minimal. Also fixes a fail-open in `@claude-flow/mcp` where auth enabled with an empty token list accepted any bearer value. **Not closed:** loopback with no token is still unauthenticated (any local process can call every tool, and DNS rebinding is not blocked because there is no `Host` allow-list); set a token whenever the HTTP transport is used. A valid token grants every tool (no per-tool authorization).
+- **Hive-mind gating that keeps local users working (ADR-476, #3338, #3339)** — `hive-mind_init` no longer returns `hiveToken`, and `spawn`, `consensus` `propose`, `broadcast`, `shutdown`, `memory` `set`/`delete` and `optimize-memory` (plus the existing `join`/`leave`/`vote`) now require an operator credential from **remote** callers (HTTP/WebSocket MCP). Local stdio MCP, `ruflo mcp exec`, the `hive-mind` CLI and in-process callers need no credential and no extra step. Remote clients set `RUFLO_HIVE_BOOTSTRAP_SECRET` (or read `.claude-flow/hive-mind/bootstrap.secret`, created 0600 by the first local `hive-mind init`) and send it as `bootstrapSecret`; `RUFLO_HIVE_REQUIRE_AUTH=1` applies the same rule to stdio on bridged servers. `state.json` is now written 0600 atomically and the hive directory 0700. Migration: clients that read `hiveToken` from the `init` response must drop that (it is `undefined`); over stdio they omit it everywhere. This is a speed bump, not a boundary, against a local prompt-injected agent that can read the files.
+- **Policy ledger anchor can no longer be deleted and silently re-established (#3602, #3886, ADR-475)** — `policy verify` no longer trusts an anchor stored only in `state.json`. A second, hash-chained anchor log plus a mirror under `~/.config/ruflo/policy-trust/` now detect truncation, and `policy verify --establish-anchor` (interactive TTY only) is the logged repair path. Limit: this does not defend against an attacker who can rewrite both the project directory and `~/.config/ruflo`; stronger evidence needs an external witness. A pre-#3568 ledger with receipts and no anchor now fails policy transactions with `policy-ledger-anchor-missing` until repaired. Ships in `@claude-flow/security` 3.0.2.
+
+### Fixed
+
+- **Resilience batch (#3885; fixes #3676 #3674 #3668 #3670 #3682 #3672 #3593 #3592; thanks @rudycelekli)** — `@claude-flow/shared` 3.0.2: event-store pagination, bulkhead sync-throw handling, retry timeout cleanup, connection-pool reservation (also in `@claude-flow/mcp`); cli: production retry on non-Error rejections, worker-queue terminal outcomes and cancelled head, bounded worker pool with an already-aborted input.
+- **`@claude-flow/memory` 3.0.1 — `mmrRerank()` caches embedding-cosine max-similarity across rounds (#3516, #3517)**.
+- **`@claude-flow/swarm` 3.0.1** — Byzantine quorums now intersect for every cluster size (#3560, #3587, @rudycelekli); `spawnAgent()` auto-domain branch registers the agent in its pool (#3538, #3539); `MessageBus` is event-driven instead of a 10 ms unconditional poll (#3563).
+- **`@claude-flow/plugin-agent-federation` 1.0.1** — outbound sends are authorized with the peer's current trust, not a stale snapshot (#3561, #3588, @rudycelekli).
+- **CLI string options keep their declared value (#3594, #3601)**, **config cache is isolated per project directory (#3590, #3591)**, **nested config defaults are cloned (#3595, #3600)** — all @rudycelekli.
+- **Hive consensus commands fail when the hive rejects the operation (#3609, #3654, @rudycelekli)**.
+- **`daemon start --workers` selection reaches the WorkerDaemon (#3547, #3875)**.
+- **Plugins run the installed ruflo CLI before `npx @claude-flow/cli@latest` (#3558, #3559, @HF-teamdev)** — ruflo-cost-tracker 0.27.2, ruflo-adr 0.5.4, ruflo-metaharness 0.2.4, ruflo-goals 0.4.3.
+- **ruflo-adr edge keys use a separator the memory validator accepts (#3633, #3636, @drakeo338)**.
+- ruflo-console 0.36.1: Settings lists Claude control and spending first (#3887).
+
+### Breaking changes
+
+- Binding the MCP HTTP transport off loopback (for example Docker with `--host 0.0.0.0`) now requires `RUFLO_MCP_HTTP_TOKEN` (and clients must send the header) or `RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP=1`; otherwise `mcp start` exits with an error. Loopback users are unaffected.
+- `hive-mind_init` no longer returns `hiveToken` (ADR-476).
+
+### Leaf packages published with this release
+
+`@claude-flow/shared` 3.0.2, `@claude-flow/memory` 3.0.1, `@claude-flow/swarm` 3.0.1, `@claude-flow/security` 3.0.2, `@claude-flow/mcp` 3.1.0, `@claude-flow/plugin-agent-federation` 1.0.1.
+
 ## [3.34.0] - 2026-07-31
 
 ### Added

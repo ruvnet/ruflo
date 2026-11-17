@@ -4,10 +4,13 @@
  */
 
 import type { Command, CommandContext, CommandResult } from '../types.js';
+import { validateFeedbackPatterns } from '../memory/feedback-patterns.js';
+import { readCoverageFromDisk } from './coverage-reader.js';
 import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
 import { storeCommand } from './transfer-store.js';
+import { contextPlanCommand } from './context-plan.js';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -25,210 +28,6 @@ import {
 function safeNum(value: unknown, fallback = 0): number {
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) ? n : fallback;
-}
-
-// ============================================================================
-// Coverage Data Reader - reads Jest/Istanbul coverage files from disk
-// ============================================================================
-
-interface CoverageFileEntry {
-  filePath: string;
-  lines: number;
-  branches: number;
-  functions: number;
-  statements: number;
-}
-
-interface CoverageData {
-  found: boolean;
-  source: string;
-  entries: CoverageFileEntry[];
-  summary: {
-    totalFiles: number;
-    overallLineCoverage: number;
-    overallBranchCoverage: number;
-    overallFunctionCoverage: number;
-    overallStatementCoverage: number;
-  };
-}
-
-/**
- * Read coverage data from disk. Checks these locations in order:
- * 1. coverage/coverage-summary.json (Jest/Istanbul)
- * 2. coverage/lcov.info (lcov format)
- * 3. .nyc_output/out.json (nyc)
- */
-function readCoverageFromDisk(): CoverageData {
-  const cwd = process.cwd();
-  const noData: CoverageData = {
-    found: false,
-    source: 'none',
-    entries: [],
-    summary: { totalFiles: 0, overallLineCoverage: 0, overallBranchCoverage: 0, overallFunctionCoverage: 0, overallStatementCoverage: 0 },
-  };
-
-  // 1. Try coverage-summary.json (Jest/Istanbul)
-  for (const relPath of ['coverage/coverage-summary.json', 'coverage-summary.json']) {
-    const summaryPath = join(cwd, relPath);
-    if (existsSync(summaryPath)) {
-      try {
-        const raw = JSON.parse(readFileSync(summaryPath, 'utf-8'));
-        return parseCoverageSummaryJson(raw, relPath);
-      } catch {
-        // malformed, try next
-      }
-    }
-  }
-
-  // 2. Try lcov.info
-  for (const relPath of ['coverage/lcov.info', 'lcov.info']) {
-    const lcovPath = join(cwd, relPath);
-    if (existsSync(lcovPath)) {
-      try {
-        const raw = readFileSync(lcovPath, 'utf-8');
-        return parseLcovInfo(raw, relPath);
-      } catch {
-        // malformed, try next
-      }
-    }
-  }
-
-  // 3. Try .nyc_output/out.json
-  const nycPath = join(cwd, '.nyc_output', 'out.json');
-  if (existsSync(nycPath)) {
-    try {
-      const raw = JSON.parse(readFileSync(nycPath, 'utf-8'));
-      return parseCoverageSummaryJson(raw, '.nyc_output/out.json');
-    } catch {
-      // malformed
-    }
-  }
-
-  return noData;
-}
-
-function parseCoverageSummaryJson(data: Record<string, unknown>, source: string): CoverageData {
-  const entries: CoverageFileEntry[] = [];
-  let totalLines = 0, coveredLines = 0;
-  let totalBranches = 0, coveredBranches = 0;
-  let totalFunctions = 0, coveredFunctions = 0;
-  let totalStatements = 0, coveredStatements = 0;
-
-  for (const [filePath, metrics] of Object.entries(data)) {
-    if (filePath === 'total') continue;
-    const m = metrics as Record<string, { total?: number; covered?: number; pct?: number }>;
-    if (!m || typeof m !== 'object') continue;
-
-    const linePct = m.lines?.pct ?? m.lines?.covered != null ? ((m.lines?.covered ?? 0) / Math.max(m.lines?.total ?? 1, 1)) * 100 : 0;
-    const branchPct = m.branches?.pct ?? (m.branches?.total ? ((m.branches?.covered ?? 0) / m.branches.total) * 100 : 100);
-    const funcPct = m.functions?.pct ?? (m.functions?.total ? ((m.functions?.covered ?? 0) / m.functions.total) * 100 : 100);
-    const stmtPct = m.statements?.pct ?? (m.statements?.total ? ((m.statements?.covered ?? 0) / m.statements.total) * 100 : 100);
-
-    entries.push({ filePath, lines: linePct, branches: branchPct, functions: funcPct, statements: stmtPct });
-
-    totalLines += m.lines?.total ?? 0;
-    coveredLines += m.lines?.covered ?? 0;
-    totalBranches += m.branches?.total ?? 0;
-    coveredBranches += m.branches?.covered ?? 0;
-    totalFunctions += m.functions?.total ?? 0;
-    coveredFunctions += m.functions?.covered ?? 0;
-    totalStatements += m.statements?.total ?? 0;
-    coveredStatements += m.statements?.covered ?? 0;
-  }
-
-  // Also read the total key if present
-  const total = data['total'] as Record<string, { pct?: number }> | undefined;
-  const overallLine = total?.lines?.pct ?? (totalLines > 0 ? (coveredLines / totalLines) * 100 : 0);
-  const overallBranch = total?.branches?.pct ?? (totalBranches > 0 ? (coveredBranches / totalBranches) * 100 : 0);
-  const overallFunction = total?.functions?.pct ?? (totalFunctions > 0 ? (coveredFunctions / totalFunctions) * 100 : 0);
-  const overallStatement = total?.statements?.pct ?? (totalStatements > 0 ? (coveredStatements / totalStatements) * 100 : 0);
-
-  // Sort by lowest line coverage
-  entries.sort((a, b) => a.lines - b.lines);
-
-  return {
-    found: true,
-    source,
-    entries,
-    summary: {
-      totalFiles: entries.length,
-      overallLineCoverage: overallLine,
-      overallBranchCoverage: overallBranch,
-      overallFunctionCoverage: overallFunction,
-      overallStatementCoverage: overallStatement,
-    },
-  };
-}
-
-function parseLcovInfo(raw: string, source: string): CoverageData {
-  const entries: CoverageFileEntry[] = [];
-  let currentFile = '';
-  let linesHit = 0, linesFound = 0;
-  let branchesHit = 0, branchesFound = 0;
-  let functionsHit = 0, functionsFound = 0;
-
-  const flushRecord = () => {
-    if (currentFile) {
-      entries.push({
-        filePath: currentFile,
-        lines: linesFound > 0 ? (linesHit / linesFound) * 100 : 0,
-        branches: branchesFound > 0 ? (branchesHit / branchesFound) * 100 : 100,
-        functions: functionsFound > 0 ? (functionsHit / functionsFound) * 100 : 100,
-        statements: linesFound > 0 ? (linesHit / linesFound) * 100 : 0,
-      });
-    }
-  };
-
-  for (const line of raw.split('\n')) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('SF:')) {
-      currentFile = trimmed.slice(3);
-      linesHit = 0; linesFound = 0;
-      branchesHit = 0; branchesFound = 0;
-      functionsHit = 0; functionsFound = 0;
-    } else if (trimmed.startsWith('LH:')) {
-      linesHit = parseInt(trimmed.slice(3), 10) || 0;
-    } else if (trimmed.startsWith('LF:')) {
-      linesFound = parseInt(trimmed.slice(3), 10) || 0;
-    } else if (trimmed.startsWith('BRH:')) {
-      branchesHit = parseInt(trimmed.slice(4), 10) || 0;
-    } else if (trimmed.startsWith('BRF:')) {
-      branchesFound = parseInt(trimmed.slice(4), 10) || 0;
-    } else if (trimmed.startsWith('FNH:')) {
-      functionsHit = parseInt(trimmed.slice(4), 10) || 0;
-    } else if (trimmed.startsWith('FNF:')) {
-      functionsFound = parseInt(trimmed.slice(4), 10) || 0;
-    } else if (trimmed === 'end_of_record') {
-      flushRecord();
-      currentFile = '';
-    }
-  }
-  flushRecord();
-
-  entries.sort((a, b) => a.lines - b.lines);
-
-  let totalLH = 0, totalLF = 0, totalBH = 0, totalBF = 0;
-  for (const e of entries) {
-    // Approximate from percentages (we lost exact counts after flush, but summaries are okay)
-    totalLH += e.lines;
-    totalLF += 100;
-    totalBH += e.branches;
-    totalBF += 100;
-  }
-  const n = entries.length || 1;
-
-  return {
-    found: true,
-    source,
-    entries,
-    summary: {
-      totalFiles: entries.length,
-      overallLineCoverage: totalLH / n,
-      overallBranchCoverage: totalBH / n,
-      overallFunctionCoverage: 0,
-      overallStatementCoverage: totalLH / n,
-    },
-  };
 }
 
 /**
@@ -667,6 +466,11 @@ const postCommandCommand: Command = {
       short: 'd',
       description: 'Execution duration in milliseconds',
       type: 'number'
+    },
+    {
+      name: 'ttl',
+      description: 'Command history lifetime in seconds (default: 30 days)',
+      type: 'number'
     }
   ],
   examples: [
@@ -700,14 +504,28 @@ const postCommandCommand: Command = {
         success,
         exitCode: ctx.flags.exitCode || 0,
         duration: ctx.flags.duration,
+        ttl: ctx.flags.ttl,
         timestamp: Date.now(),
       });
 
+      // #4056: recording switched off on purpose is not a failure.
+      const recordingOff = (result as { disabled?: boolean }).disabled === true;
+
       if (ctx.flags.format === 'json') {
         output.printJson(result);
+        const ok = result.recorded || recordingOff;
+        return { success: ok, exitCode: ok ? 0 : 1, data: result };
+      }
+
+      if (recordingOff) {
+        output.printInfo('Command recording is switched off (CLAUDE_FLOW_HOOKS_RECORD_COMMANDS / CLAUDE_FLOW_HOOKS_ENABLED / hooks.recordCommands); nothing was stored.');
         return { success: true, data: result };
       }
 
+      if (!result.recorded) {
+        output.printError('Command outcome could not be recorded');
+        return { success: false, exitCode: 1, data: result };
+      }
       output.writeln();
       output.printSuccess('Command outcome recorded');
 
@@ -816,7 +634,7 @@ const routeCommand: Command = {
     const parallel = Math.max(2, parallelRaw);
     const consensus = (ctx.flags.consensus as string) || 'majority-vote';
 
-    if (!task) {
+    if (!task || !task.trim()) {
       output.printError('Task description is required. Use --task or -t flag.');
       return { success: false, exitCode: 1 };
     }
@@ -834,6 +652,9 @@ const routeCommand: Command = {
           throughput: string;
         };
         matchedPattern?: string;
+        /** #3567: false when nothing matched; the agent shown is only a default. */
+        matched?: boolean;
+        note?: string;
         semanticMatches?: Array<{
           pattern: string;
           score: number;
@@ -849,7 +670,7 @@ const routeCommand: Command = {
           reason: string;
         }>;
         estimatedMetrics: {
-          successProbability: number;
+          successProbability: number | null;
           estimatedDuration: string;
           complexity: 'low' | 'medium' | 'high';
         };
@@ -907,7 +728,7 @@ const routeCommand: Command = {
       if (result.routing) {
         output.writeln();
         output.writeln(output.bold('Routing Method'));
-        const methodDisplay = result.routing.method.startsWith('semantic')
+        const methodDisplay = result.routing.method.startsWith('semantic') || result.routing.method === 'centroid'
           ? output.success(`${result.routing.method} (${result.routing.backend || 'semantic'})`)
           : 'keyword';
         output.printList([
@@ -928,13 +749,14 @@ const routeCommand: Command = {
       }
 
       output.writeln();
+      const noMatch = result.matched === false;
       output.printBox(
         [
           `Agent: ${output.highlight(result.primaryAgent.type)}`,
-          `Confidence: ${(result.primaryAgent.confidence * 100).toFixed(1)}%`,
+          `Confidence: ${(result.primaryAgent.confidence * 100).toFixed(1)}%${noMatch ? ' (no match: default only)' : ''}`,
           `Reason: ${result.primaryAgent.reason}`
         ].join('\n'),
-        'Primary Recommendation'
+        noMatch ? 'Default Suggestion (nothing matched)' : 'Primary Recommendation'
       );
 
       if (result.alternativeAgents.length > 0) {
@@ -954,7 +776,9 @@ const routeCommand: Command = {
         output.writeln();
         output.writeln(output.bold('Estimated Metrics'));
         output.printList([
-          `Success Probability: ${(result.estimatedMetrics.successProbability * 100).toFixed(1)}%`,
+          `Success Probability: ${result.estimatedMetrics.successProbability === null
+            ? 'unknown (nothing matched)'
+            : `${(result.estimatedMetrics.successProbability * 100).toFixed(1)}%`}`,
           `Estimated Duration: ${result.estimatedMetrics.estimatedDuration}`,
           `Complexity: ${result.estimatedMetrics.complexity.toUpperCase()}`
         ]);
@@ -1380,6 +1204,14 @@ const buildAgentsCommand: Command = {
         format: configFormat,
         includePretrained: true,
       });
+
+      // #4558: the tool now rejects an invalid outputDir with { success: false, error }.
+      const failed = result as { success?: boolean; error?: string };
+      if (failed.success === false) {
+        spinner.fail('Agent config generation failed');
+        output.printError(`Build agents error: ${failed.error}`);
+        return { success: false, exitCode: 1 };
+      }
 
       spinner.succeed(`Generated ${result.agents.length} agent configs`);
 
@@ -2095,6 +1927,7 @@ const postTaskCommand: Command = {
   name: 'post-task',
   description: 'Record task completion for learning',
   options: [
+    { name: 'patterns', description: 'JSON array of learned pattern strings for feedback and skill creation', type: 'string' },
     {
       name: 'task-id',
       short: 'i',
@@ -2182,17 +2015,22 @@ const postTaskCommand: Command = {
     output.printInfo(`Recording outcome for task: ${output.highlight(taskId)}`);
 
     try {
+      const patterns = validateFeedbackPatterns(ctx.flags.patterns === undefined ? undefined : JSON.parse(ctx.flags.patterns as string));
       const result = await callMCPTool<{
         taskId: string;
         success: boolean;
         duration: number;
         learningUpdates: {
           patternsUpdated: number;
-          newPatterns: number;
-          trajectoryId: string;
+          newPatterns: number | null;
+          trajectoryId: string | null;
+          available?: boolean;
+          reason?: string;
         };
+        trajectory?: { recorded: boolean };
       }>('hooks_post-task', {
         taskId,
+        patterns,
         success,
         quality: ctx.flags.quality,
         agent: ctx.flags.agent,
@@ -2221,6 +2059,13 @@ const postTaskCommand: Command = {
       output.writeln();
       output.printSuccess(`Task outcome recorded: ${success ? 'SUCCESS' : 'FAILED'}`);
 
+      // #3353: only show observed learning results; say so when degraded.
+      const lu = result.learningUpdates;
+      if (lu.available === false) {
+        output.writeln();
+        output.printWarning(`Learning degraded: ${lu.reason ?? 'feedback not recorded'} — no pattern updates were observed`);
+      }
+
       output.writeln();
       output.writeln(output.bold('Learning Updates'));
       output.printTable({
@@ -2229,10 +2074,10 @@ const postTaskCommand: Command = {
           { key: 'value', header: 'Value', width: 20, align: 'right' }
         ],
         data: [
-          { metric: 'Patterns Updated', value: result.learningUpdates.patternsUpdated },
-          { metric: 'New Patterns', value: result.learningUpdates.newPatterns },
+          { metric: 'Patterns Updated', value: lu.patternsUpdated },
+          { metric: 'New Patterns', value: lu.newPatterns ?? 'unknown' },
+          { metric: 'Trajectory Recorded', value: result.trajectory ? (result.trajectory.recorded ? 'yes' : 'no') : 'unknown' },
           { metric: 'Duration', value: `${(result.duration / 1000).toFixed(1)}s` },
-          { metric: 'Trajectory ID', value: result.learningUpdates.trajectoryId }
         ]
       });
 
@@ -2966,6 +2811,20 @@ const workerListCommand: Command = {
   }
 };
 
+// Render the status hooks_worker-dispatch actually returned. Only a status that
+// means work finished may read as "completed" (#4196).
+function dispatchStatusLabel(status: string): string {
+  switch (status) {
+    case 'dispatched': return output.highlight('dispatched (background)');
+    case 'queued': return output.highlight('queued (daemon)');
+    case 'no-daemon': return output.warning('no-daemon (not run)');
+    case 'mcp-only': return output.warning('mcp-only (not queued)');
+    case 'synthetic-completed': return output.warning('recorded (no work executed)');
+    case 'completed': return output.success('completed');
+    default: return output.dim(String(status));
+  }
+}
+
 const workerDispatchCommand: Command = {
   name: 'dispatch',
   description: 'Dispatch a background worker for analysis/optimization',
@@ -3009,6 +2868,7 @@ const workerDispatchCommand: Command = {
           capabilities: string[];
         };
         status: string;
+        note?: string;
         error?: string;
       }>('hooks_worker-dispatch', {
         trigger,
@@ -3038,9 +2898,16 @@ const workerDispatchCommand: Command = {
           { field: 'Description', value: result.config.description },
           { field: 'Est. Duration', value: result.config.estimatedDuration },
           { field: 'Capabilities', value: result.config.capabilities.join(', ') },
-          { field: 'Status', value: result.status === 'dispatched' ? output.highlight('dispatched (background)') : output.success('completed') },
+          { field: 'Status', value: dispatchStatusLabel(result.status) },
         ],
       });
+
+      // The tool says why it could not run the worker (e.g. no daemon); show it
+      // rather than letting a recorded-only dispatch read as finished work (#4196).
+      if (result.note) {
+        output.writeln();
+        output.printWarning(result.note);
+      }
 
       if (background) {
         output.writeln();
@@ -3099,6 +2966,7 @@ const workerStatusCommand: Command = {
         }>;
         summary?: {
           total: number;
+          pending: number;
           running: number;
           completed: number;
           failed: number;
@@ -3155,7 +3023,7 @@ const workerStatusCommand: Command = {
 
         if (result.summary) {
           output.writeln();
-          output.writeln(`Total: ${result.summary.total} | Running: ${output.highlight(String(result.summary.running))} | Completed: ${output.success(String(result.summary.completed))} | Failed: ${output.error(String(result.summary.failed))}`);
+          output.writeln(`Total: ${result.summary.total} | Pending: ${String(result.summary.pending ?? 0)} | Running: ${output.highlight(String(result.summary.running))} | Completed: ${output.success(String(result.summary.completed))} | Failed: ${output.error(String(result.summary.failed))}`);
         }
       } else {
         output.writeln();
@@ -3187,8 +3055,8 @@ const workerDetectCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const prompt = ctx.flags['prompt'] as string;
-    const autoDispatch = ctx.flags['auto-dispatch'] as boolean;
-    const minConfidence = parseFloat(ctx.flags['min-confidence'] as string || '0.5');
+    const autoDispatch = (ctx.flags.autoDispatch ?? ctx.flags['auto-dispatch']) as boolean | undefined;
+    const minConfidence = parseFloat(String(ctx.flags.minConfidence ?? ctx.flags['min-confidence'] ?? 0.5) || '0.5');
 
     if (!prompt) {
       output.printError('--prompt is required');
@@ -3214,6 +3082,8 @@ const workerDetectCommand: Command = {
           priority: string;
         }>;
         autoDispatched?: boolean;
+        autoDispatchStatus?: string;
+        note?: string;
         workerIds?: string[];
       }>('hooks_worker-detect', {
         prompt,
@@ -3250,7 +3120,11 @@ const workerDetectCommand: Command = {
 
       if (result.autoDispatched && result.workerIds) {
         output.writeln();
-        output.writeln(output.success('Workers auto-dispatched:'));
+        if (result.autoDispatchStatus === 'synthetic-completed') {
+          output.printWarning(result.note ?? 'No executor ran. Worker records are synthetic placeholders.');
+        } else {
+          output.writeln(output.success('Workers auto-dispatched:'));
+        }
         result.workerIds.forEach(id => {
           output.writeln(`  - ${id}`);
         });
@@ -3596,7 +3470,7 @@ const coverageRouteCommand: Command = {
         'c8:       npx c8 npm test',
       ]);
       output.writeln();
-      output.writeln(output.dim('Expected files: coverage/coverage-summary.json, coverage/lcov.info, or .nyc_output/out.json'));
+      output.writeln(output.dim('Expected files: coverage/coverage-summary.json, coverage/lcov.info, coverage/coverage-final.json, or .nyc_output/out.json'));
       return { success: false, exitCode: 1 };
     }
   }
@@ -3831,7 +3705,7 @@ const coverageSuggestCommand: Command = {
         'c8:       npx c8 npm test',
       ]);
       output.writeln();
-      output.writeln(output.dim('Expected files: coverage/coverage-summary.json, coverage/lcov.info, or .nyc_output/out.json'));
+      output.writeln(output.dim('Expected files: coverage/coverage-summary.json, coverage/lcov.info, coverage/coverage-final.json, or .nyc_output/out.json'));
       return { success: false, exitCode: 1 };
     }
   }
@@ -3868,8 +3742,8 @@ const coverageGapsCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const threshold = ctx.flags.threshold as number ?? 80;
-    const groupByAgent = ctx.flags['group-by-agent'] !== false;
-    const criticalOnly = ctx.flags['critical-only'] as boolean || false;
+    const groupByAgent = (ctx.flags.groupByAgent ?? ctx.flags['group-by-agent']) !== false;
+    const criticalOnly = (ctx.flags.criticalOnly ?? ctx.flags['critical-only']) === true;
 
     const spinner = output.createSpinner({ text: 'Analyzing project coverage gaps...' });
     spinner.start();
@@ -4090,7 +3964,7 @@ const coverageGapsCommand: Command = {
         'c8:       npx c8 npm test',
       ]);
       output.writeln();
-      output.writeln(output.dim('Expected files: coverage/coverage-summary.json, coverage/lcov.info, or .nyc_output/out.json'));
+      output.writeln(output.dim('Expected files: coverage/coverage-summary.json, coverage/lcov.info, coverage/coverage-final.json, or .nyc_output/out.json'));
       return { success: false, exitCode: 1 };
     }
   }
@@ -4587,13 +4461,16 @@ const statuslineCommand: Command = {
       const securityCompact = security.findings > 0
         ? `Findings:${security.findings}`
         : `Security:${security.status}`;
-      const line = `DDD:${progress.domainsCompleted}/${progress.totalDomains} ${securityCompact} Swarm:${swarm.activeAgents}/${swarm.maxAgents} Ctx:${system.contextPct}% Int:${system.intelligencePct}%`;
+      // #1047: this tier is derived from memory pattern-count thresholds, not
+      // Domain-Driven-Design domain completion — label it for what it is.
+      const line = `Learning:${progress.domainsCompleted}/${progress.totalDomains} ${securityCompact} Swarm:${swarm.activeAgents}/${swarm.maxAgents} Ctx:${system.contextPct}% Int:${system.intelligencePct}%`;
       output.writeln(line);
       return { success: true, data: statusData };
     }
 
     // Full colored output
-    const noColor = ctx.flags['no-color'] || ctx.flags.noColor;
+    // The parser stores `--no-color` as `color: false`.
+    const noColor = ctx.flags['no-color'] || ctx.flags.noColor || ctx.flags.color === false;
     const c = noColor ? {
       reset: '', bold: '', dim: '', red: '', green: '', yellow: '', blue: '',
       purple: '', cyan: '', brightRed: '', brightGreen: '', brightYellow: '',
@@ -4760,7 +4637,10 @@ const statuslineCommand: Command = {
       perfIndicator = `${c.brightYellow}📚 ${patternsK} patterns${c.reset}`;
     }
 
-    const line1 = `${c.brightCyan}🏗️  DDD Domains${c.reset}    ${progressBar(progress.domainsCompleted, progress.totalDomains)}  ` +
+    // #1047: renamed from "DDD Domains" — this tier comes from memory
+    // pattern-count thresholds (see getV3Progress above), not actual
+    // Domain-Driven-Design domain completion. "Learning Tier" says what it is.
+    const line1 = `${c.brightCyan}🏗️  Learning Tier${c.reset}    ${progressBar(progress.domainsCompleted, progress.totalDomains)}  ` +
       `${domainsColor}${progress.domainsCompleted}${c.reset}/${c.brightWhite}${progress.totalDomains}${c.reset}    ` +
       perfIndicator;
 
@@ -4777,10 +4657,19 @@ const statuslineCommand: Command = {
       `${c.brightCyan}💾 ${system.memoryMB}MB${c.reset}    ` +
       `${c.brightPurple}🧠 ${String(system.intelligencePct).padStart(3)}%${c.reset}`;
 
-    const dddColor = progress.dddProgress >= 50 ? c.brightGreen : progress.dddProgress > 0 ? c.yellow : c.red;
+    // #1047: "DDD ●XX%" previously showed a fake architecture-progress
+    // percentage that was really just the memory pattern count run through
+    // getV3Progress's bucket thresholds — it has no connection to actual DDD
+    // domain completion. Show the real number it was derived from instead,
+    // per the issue's own recommendation ("Memory entries: 290" instead of
+    // "DDD ●80%").
+    const memoryColor = progress.patternsLearned >= 50 ? c.brightGreen : progress.patternsLearned > 0 ? c.yellow : c.red;
+    const patternsDisplay = progress.patternsLearned >= 1000
+      ? `${(progress.patternsLearned / 1000).toFixed(1)}k`
+      : String(progress.patternsLearned);
     const line3 = `${c.brightPurple}🔧 Architecture${c.reset}    ` +
       `${c.cyan}ADRs${c.reset} ${c.dim}●0/0${c.reset}  ${c.dim}│${c.reset}  ` +
-      `${c.cyan}DDD${c.reset} ${dddColor}●${String(progress.dddProgress).padStart(3)}%${c.reset}  ${c.dim}│${c.reset}  ` +
+      `${c.cyan}Memory${c.reset} ${memoryColor}●${patternsDisplay}${c.reset}  ${c.dim}│${c.reset}  ` +
       `${c.cyan}Security${c.reset} ${securityColor}●${security.status}${c.reset}`;
 
     const vectorColor = agentdbStats.vectorCount > 0 ? c.brightGreen : c.dim;
@@ -4914,15 +4803,14 @@ const tokenOptimizeCommand: Command = {
     try {
       // Check if agentic-flow v3 is available
       const rb = await import('agentic-flow/reasoningbank').catch(() => null);
+      // No root-entry fallback: importing 'agentic-flow' runs its CLI main()
+      // in 3.0.0-alpha.x, and the root re-exports this same reasoningbank
+      // module, so it cannot load when this subpath did not.
       if (rb) {
         agenticFlowAvailable = true;
         if (typeof rb.retrieveMemories === 'function') {
           reasoningBank = rb;
         }
-      } else {
-        // Legacy check for older agentic-flow
-        const af = await import('agentic-flow').catch(() => null);
-        if (af) agenticFlowAvailable = true;
       }
 
       const versionLabel = agenticFlowAvailable ? `agentic-flow v3 detected (ReasoningBank: ${reasoningBank ? 'active' : 'unavailable'})` : 'agentic-flow not available (using fallbacks)';
@@ -5039,7 +4927,7 @@ const modelRouteCommand: Command = {
     { name: 'task', short: 't', type: 'string', description: 'Task description to route', required: true },
     { name: 'context', short: 'c', type: 'string', description: 'Additional context' },
     { name: 'prefer-cost', type: 'boolean', description: 'Prefer lower cost models' },
-    { name: 'prefer-quality', type: 'boolean', description: 'Prefer higher quality models' },
+    { name: 'prefer-speed', type: 'boolean', description: 'Prefer faster models when possible' },
   ],
   examples: [
     { command: 'claude-flow hooks model-route -t "fix typo"', description: 'Route simple task (likely haiku)' },
@@ -5065,8 +4953,8 @@ const modelRouteCommand: Command = {
       }>('hooks_model-route', {
         task,
         context: ctx.flags.context,
-        preferCost: ctx.flags['prefer-cost'],
-        preferQuality: ctx.flags['prefer-quality'],
+        preferCost: ctx.flags.preferCost,
+        preferSpeed: ctx.flags.preferSpeed,
       });
 
       if (ctx.flags.format === 'json') {
@@ -5564,8 +5452,22 @@ const refreshFunnelCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     try {
-      const { refreshRemoteMessages } = await import('../funnel/index.js');
-      const result = await refreshRemoteMessages();
+      const { refreshRemoteMessages, resolveFunnelEnabled, hasConsent, flushEvents } = await import('../funnel/index.js');
+      // `ruflo funnel disable` (and every other opt-out source) must stop the
+      // network call, not only the promo row (ADR-309 operational telemetry).
+      const decision = resolveFunnelEnabled();
+      const result: Record<string, unknown> = decision.enabled
+        ? await refreshRemoteMessages()
+        : { refreshed: false, skipped: 'funnel-disabled', decidedBy: decision.decidedBy };
+      // Opt-in event telemetry (ADR-305/309): only with an explicit, current
+      // telemetry consent receipt; flushEvents re-checks consent itself.
+      if (decision.enabled && hasConsent('telemetry')) {
+        const { rufloPackageVersion } = await import('../mcp-protocol.js');
+        // Activation funnel: one "active today" marker per day (7-day retention).
+        const { recordSessionActive } = await import('../funnel/activation.js');
+        recordSessionActive(rufloPackageVersion());
+        result.events = await flushEvents({ release: rufloPackageVersion() });
+      }
       if (!ctx.flags.quiet) {
         output.writeln(JSON.stringify(result));
       }
@@ -5621,6 +5523,54 @@ const refreshAdvisorCommand: Command = {
   }
 };
 
+// #4581 / ADR-502: fold the ruflo-mods learning loop's verified outcomes into SONA.
+const verifiedIngestCommand: Command = {
+  name: 'verified-ingest',
+  description: 'Train SONA from the learning loop\'s verified turns (tests/build exit status); unverified turns never train',
+  options: [
+    { name: 'dry-run', description: 'Count only: train nothing and write nothing', type: 'boolean', default: false },
+    { name: 'force', description: 'Re-read the file even if unchanged since the last ingest', type: 'boolean', default: false },
+    { name: 'quiet', description: 'Suppress output (used when spawned detached from a hook)', type: 'boolean', default: false },
+  ],
+  examples: [
+    { command: 'ruflo hooks verified-ingest', description: 'Ingest new verified outcomes and refresh learned-lessons.json' },
+    { command: 'ruflo hooks verified-ingest --dry-run', description: 'Show what would be trained' },
+  ],
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    try {
+      const result = await callMCPTool<{
+        ingested: { verifiedSuccess: number; verifiedFailure: number; unknown: number; rejected: number; tainted?: number };
+        skipped: string | null; lessons: number; cautions: number; belowGate: number; sonaAvailable: boolean;
+        held?: Array<{ id: string; reason: string }>;
+        reverify?: { enabled: boolean; ran: number; passed: number; downgraded: number; deferred: number };
+        totals: { verifiedSuccess: number; verifiedFailure: number; unknown: number; tainted?: number };
+      }>('hooks_intelligence_verified-ingest', { dryRun: ctx.flags['dry-run'] === true || ctx.flags.dryRun === true, force: ctx.flags.force === true });
+      if (ctx.flags.quiet) return { success: true, data: result };
+      if (ctx.flags.format === 'json') {
+        output.printJson(result);
+        return { success: true, data: result };
+      }
+      if (result.skipped === 'no-file') {
+        output.printInfo('No recorded turns yet (.claude-flow/data/verified-trajectories.jsonl). The classic hooks and the ruflo-mods learningLoop option both record them.');
+        return { success: true, data: result };
+      }
+      if (!result.sonaAvailable) output.printWarning('SONA unavailable: verified outcomes wait for the next ingest');
+      const i = result.ingested;
+      output.printSuccess(`Ingested ${i.verifiedSuccess} verified success, ${i.verifiedFailure} verified failure; ${i.unknown} unverified (not trained), ${i.tainted ?? 0} tainted (not trained), ${i.rejected} malformed${result.skipped === 'unchanged' ? ' (file unchanged)' : ''}`);
+      output.writeln(`Lessons at or above the 0.6 gate: ${result.lessons}; cautions: ${result.cautions}; verified patterns below the gate: ${result.belowGate}`);
+      // ADR-503 §2.4: patterns the anomaly gate kept out of the prompt (they stay in SONA).
+      for (const h of result.held ?? []) output.writeln(`held: ${h.id} (${h.reason})`);
+      const rv = result.reverify;
+      if (rv?.enabled) output.writeln(`Re-verify: ${rv.ran} check(s) run, ${rv.passed} passed, ${rv.downgraded} downgraded to unverified${rv.deferred ? `, ${rv.deferred} waiting` : ''}`);
+      output.writeln(output.dim(`All time: ${result.totals.verifiedSuccess} success / ${result.totals.verifiedFailure} failure trained, ${result.totals.unknown} unverified, ${result.totals.tainted ?? 0} tainted`));
+      return { success: true, data: result };
+    } catch (error) {
+      output.printError(`verified-ingest failed: ${error instanceof Error ? error.message : String(error)}`);
+      return { success: false, exitCode: 1 };
+    }
+  },
+};
+
 // Main hooks command
 export const hooksCommand: Command = {
   name: 'hooks',
@@ -5652,6 +5602,7 @@ export const hooksCommand: Command = {
     coverageGapsCommand,
     // Token optimization
     tokenOptimizeCommand,
+    contextPlanCommand,
     // Model routing (tiny-dancer integration)
     modelRouteCommand,
     modelOutcomeCommand,
@@ -5668,6 +5619,8 @@ export const hooksCommand: Command = {
     refreshFunnelCommand,
     // Advisor co-pilot tip background refresh — ADR-316
     refreshAdvisorCommand,
+    // Verified-outcome learning loop — #4581
+    verifiedIngestCommand,
   ],
   options: [],
   examples: [

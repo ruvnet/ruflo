@@ -3,7 +3,7 @@
  * `npx @claude-flow/cli@latest <subcommand>` in Claude settings has the same
  * cold-process cost, not only the historical `hooks` form.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -15,7 +15,6 @@ type HealthCheck = { name: string; status: 'pass' | 'warn' | 'fail'; message: st
 type DoctorData = { results: HealthCheck[] };
 
 const ORIGINAL_CWD = process.cwd();
-const ORIGINAL_HOME = process.env.HOME;
 let workdir: string;
 
 async function runStaleSettingsCheck(): Promise<HealthCheck> {
@@ -38,13 +37,13 @@ describe('doctor #2677 — stale npx detection covers every subcommand', () => {
     workdir = mkdtempSync(join(tmpdir(), 'doctor-2677-settings-'));
     process.chdir(workdir);
     // Keep the test isolated from a developer's real ~/.claude/settings.json.
-    process.env.HOME = join(workdir, 'home');
+    vi.stubEnv('HOME', join(workdir, 'home'));
+    vi.stubEnv('USERPROFILE', join(workdir, 'home'));
   });
 
   afterEach(() => {
     process.chdir(ORIGINAL_CWD);
-    if (ORIGINAL_HOME === undefined) delete process.env.HOME;
-    else process.env.HOME = ORIGINAL_HOME;
+    vi.unstubAllEnvs();
     rmSync(workdir, { recursive: true, force: true });
   });
 
@@ -69,6 +68,19 @@ describe('doctor #2677 — stale npx detection covers every subcommand', () => {
     expect((await runStaleSettingsCheck()).status).toBe('pass');
   });
 
+  it.runIf(process.platform === 'win32')('checks user settings with HOME unset', async () => {
+    vi.stubEnv('HOME', undefined);
+    const homeSettings = join(workdir, 'home', '.claude');
+    mkdirSync(homeSettings, { recursive: true });
+    writeFileSync(join(homeSettings, 'settings.json'), JSON.stringify({
+      statusLine: { command: 'npx @claude-flow/cli@latest hooks statusline' },
+    }));
+
+    const check = await runStaleSettingsCheck();
+    expect(check.status).toBe('fail');
+    expect(check.message).toContain(join(homeSettings, 'settings.json'));
+  });
+
   it('upgrade removes sibling npx hooks and regenerates the statusline', async () => {
     writeSettings({
       statusLine: { command: 'npx @claude-flow/cli@latest memory retrieve --key status' },
@@ -85,7 +97,11 @@ describe('doctor #2677 — stale npx detection covers every subcommand', () => {
       },
     });
 
-    const upgraded = await executeUpgrade(workdir, true);
+    // `node custom-notification.cjs` is a non-ruflo hook: since ADR-509 the upgrade stops on it by default.
+    const stopped = await executeUpgrade(workdir, true);
+    expect(stopped.stoppedOnRiskySettings).toBe(true);
+    expect(stopped.riskySettings).toEqual([expect.stringContaining('node custom-notification.cjs')]); // the old npx hooks are ruflo's own
+    const upgraded = await executeUpgrade(workdir, true, 'keep');
     expect(upgraded.success).toBe(true);
     const settings = JSON.parse(readFileSync(join(workdir, '.claude', 'settings.json'), 'utf8'));
     expect(settings.statusLine.command).toContain('.claude/helpers/statusline.cjs');

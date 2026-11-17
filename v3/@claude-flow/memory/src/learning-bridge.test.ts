@@ -51,7 +51,13 @@ function createMockBackend(): IMemoryBackend & { storedEntries: MemoryEntry[] } 
       storedEntries.push(entry);
     }),
     get: vi.fn().mockResolvedValue(null),
-    getByKey: vi.fn().mockResolvedValue(null),
+    // Mirrors the real backend's keyIndex lookup (agentdb-backend.ts) so tests
+    // that store() a full entry and then look it up by its `key` (as
+    // AutoMemoryBridge does — see resolveConsolidationReward's id/key note)
+    // exercise the real distinction between `entry.id` and `entry.key`.
+    getByKey: vi.fn().mockImplementation(async (namespace: string, key: string) => {
+      return storedEntries.find((e) => e.namespace === namespace && e.key === key) ?? null;
+    }),
     update: vi.fn().mockImplementation(async (id: string, upd: MemoryEntryUpdate) => {
       const entry = storedEntries.find(e => e.id === id);
       if (!entry) return null;
@@ -154,6 +160,7 @@ describe('LearningBridge', () => {
         consolidationThreshold: 20,
       });
       expect(custom.getStats().totalTrajectories).toBe(0);
+      expect(custom.getSonaMode()).toBe('research');
       custom.destroy();
     });
 
@@ -165,6 +172,64 @@ describe('LearningBridge', () => {
       await disabled.onInsightRecorded(createTestInsight(), 'entry-1');
       expect(neural.beginTask).not.toHaveBeenCalled();
       disabled.destroy();
+    });
+  });
+
+  // ===== sonaMode resolution (RUFLO_INTELLIGENCE_MODE) =====
+
+  describe('sonaMode resolution', () => {
+    const ENV_KEY = 'RUFLO_INTELLIGENCE_MODE';
+    let originalEnv: string | undefined;
+
+    beforeEach(() => {
+      originalEnv = process.env[ENV_KEY];
+    });
+
+    afterEach(() => {
+      if (originalEnv === undefined) delete process.env[ENV_KEY];
+      else process.env[ENV_KEY] = originalEnv;
+    });
+
+    it('falls back to balanced when RUFLO_INTELLIGENCE_MODE is unset', () => {
+      delete process.env[ENV_KEY];
+      const b = new LearningBridge(backend);
+      expect(b.getSonaMode()).toBe('balanced');
+      b.destroy();
+    });
+
+    it('reads RUFLO_INTELLIGENCE_MODE set before construction', () => {
+      process.env[ENV_KEY] = 'research';
+      const b = new LearningBridge(backend);
+      expect(b.getSonaMode()).toBe('research');
+      b.destroy();
+    });
+
+    it('reads RUFLO_INTELLIGENCE_MODE freshly on each construction, not just at module load', () => {
+      // Regression test: the env var must be re-read per-instance, not captured
+      // once into a module-scope default the first time this file is imported.
+      delete process.env[ENV_KEY];
+      const before = new LearningBridge(backend);
+      expect(before.getSonaMode()).toBe('balanced');
+      before.destroy();
+
+      process.env[ENV_KEY] = 'research';
+      const after = new LearningBridge(backend);
+      expect(after.getSonaMode()).toBe('research');
+      after.destroy();
+    });
+
+    it('ignores an unrecognised RUFLO_INTELLIGENCE_MODE value', () => {
+      process.env[ENV_KEY] = 'not-a-real-mode';
+      const b = new LearningBridge(backend);
+      expect(b.getSonaMode()).toBe('balanced');
+      b.destroy();
+    });
+
+    it('an explicit config.sonaMode wins over RUFLO_INTELLIGENCE_MODE', () => {
+      process.env[ENV_KEY] = 'research';
+      const b = new LearningBridge(backend, { sonaMode: 'edge' });
+      expect(b.getSonaMode()).toBe('edge');
+      b.destroy();
     });
   });
 
@@ -264,6 +329,24 @@ describe('LearningBridge', () => {
       expect(backend.update).toHaveBeenCalledWith('entry-1', {
         metadata: expect.objectContaining({ confidence: 0.53 }),
       });
+    });
+
+    it('should resolve a stored key and update the entry by its internal id', async () => {
+      const entry = createTestEntry({
+        id: 'internal-1',
+        key: 'insight:debugging:12345:0',
+        metadata: { confidence: 0.5 },
+      });
+      backend.storedEntries.push(entry);
+
+      await bridge.onInsightAccessed(entry.key);
+
+      expect(backend.getByKey).toHaveBeenCalledWith('learnings', entry.key);
+      expect(backend.get).not.toHaveBeenCalled();
+      expect(backend.update).toHaveBeenCalledWith('internal-1', {
+        metadata: expect.objectContaining({ confidence: 0.53 }),
+      });
+      expect(entry.metadata?.confidence).toBeCloseTo(0.53);
     });
 
     it('should cap confidence at maxConfidence', async () => {
@@ -442,6 +525,115 @@ describe('LearningBridge', () => {
       expect(result.trajectoriesCompleted).toBe(9);
     });
 
+    function createLowThresholdBridge(threshold = 1) {
+      return new LearningBridge(backend, {
+        consolidationThreshold: threshold,
+        neuralLoader: createNeuralLoader(neural),
+      });
+    }
+
+    // These reproduce the real AutoMemoryBridge flow: the backend entry's
+    // internal `id` (a UUID) is DIFFERENT from the human-readable `key` it
+    // was stored under, and it is the `key` — not the `id` — that flows
+    // into onInsightRecorded/activeTrajectories/consolidate as "entryId".
+    // Storing via backend.store() and looking up via the real getByKey
+    // mock (keyed by namespace+key, not id) proves the fix resolves reward
+    // through the correct index rather than merely satisfying a mock that
+    // doesn't distinguish id from key.
+    it('should pass the entry\'s current confidence as the completion reward, looked up by key (not id)', async () => {
+      const lowThresholdBridge = createLowThresholdBridge();
+      const entry = createTestEntry({
+        id: 'uuid-independent-of-key',
+        key: 'insight:debugging:1:0',
+        metadata: { confidence: 0.42 },
+      });
+      await backend.store(entry);
+      neural.beginTask.mockReturnValueOnce('traj-0');
+      await lowThresholdBridge.onInsightRecorded(createTestInsight(), entry.key);
+
+      await lowThresholdBridge.consolidate();
+
+      expect(backend.getByKey).toHaveBeenCalledWith('learnings', entry.key);
+      expect(neural.completeTask).toHaveBeenCalledWith('traj-0', 0.42);
+      lowThresholdBridge.destroy();
+    });
+
+    it('should differentiate reward per trajectory based on each entry\'s confidence', async () => {
+      const lowThresholdBridge = createLowThresholdBridge(2);
+      const entryA = createTestEntry({ id: 'uuid-a', key: 'insight:a:1:0', metadata: { confidence: 0.9 } });
+      const entryB = createTestEntry({ id: 'uuid-b', key: 'insight:b:2:1', metadata: { confidence: 0.2 } });
+      await backend.store(entryA);
+      await backend.store(entryB);
+      neural.beginTask.mockReturnValueOnce('traj-0').mockReturnValueOnce('traj-1');
+      await lowThresholdBridge.onInsightRecorded(createTestInsight(), entryA.key);
+      await lowThresholdBridge.onInsightRecorded(createTestInsight({ summary: 'S2' }), entryB.key);
+
+      await lowThresholdBridge.consolidate();
+
+      expect(neural.completeTask).toHaveBeenCalledWith('traj-0', 0.9);
+      expect(neural.completeTask).toHaveBeenCalledWith('traj-1', 0.2);
+      lowThresholdBridge.destroy();
+    });
+
+    it('should fall back to reward=1.0 when no entry was ever stored under that key (unchanged prior behavior)', async () => {
+      const lowThresholdBridge = createLowThresholdBridge();
+      neural.beginTask.mockReturnValueOnce('traj-0');
+      await lowThresholdBridge.onInsightRecorded(createTestInsight(), 'insight:never-stored:1:0');
+
+      const result = await lowThresholdBridge.consolidate();
+
+      expect(neural.completeTask).toHaveBeenCalledWith('traj-0', 1.0);
+      expect(result.trajectoriesCompleted).toBe(1);
+      expect(result.patternsLearned).toBe(1);
+      lowThresholdBridge.destroy();
+    });
+
+    it('should fall back to reward=1.0 when the stored entry lacks numeric confidence', async () => {
+      const lowThresholdBridge = createLowThresholdBridge();
+      const entry = createTestEntry({ id: 'uuid-c', key: 'insight:c:1:0', metadata: {} });
+      await backend.store(entry);
+      neural.beginTask.mockReturnValueOnce('traj-0');
+      await lowThresholdBridge.onInsightRecorded(createTestInsight(), entry.key);
+
+      await lowThresholdBridge.consolidate();
+
+      expect(neural.completeTask).toHaveBeenCalledWith('traj-0', 1.0);
+      lowThresholdBridge.destroy();
+    });
+
+    it('should fall back to reward=1.0 when the backend lookup throws', async () => {
+      const lowThresholdBridge = createLowThresholdBridge();
+      neural.beginTask.mockReturnValueOnce('traj-0');
+      await lowThresholdBridge.onInsightRecorded(createTestInsight(), 'insight:d:1:0');
+      (backend.getByKey as any).mockRejectedValueOnce(new Error('DB unavailable'));
+
+      const result = await lowThresholdBridge.consolidate();
+
+      expect(neural.completeTask).toHaveBeenCalledWith('traj-0', 1.0);
+      expect(result.trajectoriesCompleted).toBe(1);
+      lowThresholdBridge.destroy();
+    });
+
+    it('should respect a custom insightNamespace when resolving reward', async () => {
+      const customNsBridge = new LearningBridge(backend, {
+        consolidationThreshold: 1,
+        insightNamespace: 'custom-ns',
+        neuralLoader: createNeuralLoader(neural),
+      });
+      const entry = createTestEntry({
+        id: 'uuid-e', key: 'insight:e:1:0', namespace: 'custom-ns', metadata: { confidence: 0.77 },
+      });
+      await backend.store(entry);
+      neural.beginTask.mockReturnValueOnce('traj-0');
+      await customNsBridge.onInsightRecorded(createTestInsight(), entry.key);
+
+      await customNsBridge.consolidate();
+
+      expect(backend.getByKey).toHaveBeenCalledWith('custom-ns', entry.key);
+      expect(neural.completeTask).toHaveBeenCalledWith('traj-0', 0.77);
+      customNsBridge.destroy();
+    });
+
     it('should respect custom consolidationThreshold', async () => {
       const customBridge = new LearningBridge(backend, {
         consolidationThreshold: 2,
@@ -454,6 +646,164 @@ describe('LearningBridge', () => {
       const result = await customBridge.consolidate();
       expect(result.trajectoriesCompleted).toBe(2);
       customBridge.destroy();
+    });
+  });
+
+  // ===== reopen after consolidation (#4884) =====
+
+  describe('onInsightAccessed after consolidation (#4884)', () => {
+    let lowBridge: LearningBridge;
+
+    beforeEach(() => {
+      lowBridge = new LearningBridge(backend, {
+        consolidationThreshold: 1,
+        neuralLoader: createNeuralLoader(neural),
+      });
+    });
+
+    afterEach(() => {
+      lowBridge.destroy();
+    });
+
+    async function recordAndConsolidate(entryId = 'entry-1') {
+      neural.beginTask.mockReturnValueOnce('traj-original');
+      await lowBridge.onInsightRecorded(createTestInsight(), entryId);
+      const result = await lowBridge.consolidate();
+      expect(result.trajectoriesCompleted).toBe(1);
+      expect(lowBridge.getStats().activeTrajectories).toBe(0);
+      vi.clearAllMocks();
+    }
+
+    it('reopens a trajectory and records the access step for a consolidated insight', async () => {
+      await recordAndConsolidate();
+      neural.beginTask.mockReturnValueOnce('traj-reopened');
+      (backend.get as any).mockResolvedValueOnce(
+        createTestEntry({ metadata: { confidence: 0.8, summary: 'Reused insight summary' } }),
+      );
+
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(neural.beginTask).toHaveBeenCalledTimes(1);
+      expect(neural.beginTask).toHaveBeenCalledWith('Reused insight summary', 'general');
+      expect(neural.recordStep).toHaveBeenCalledTimes(1);
+      expect(neural.recordStep).toHaveBeenCalledWith('traj-reopened', {
+        action: 'access',
+        reward: 0.03,
+        stateEmbedding: expect.any(Float32Array),
+      });
+      const stats = lowBridge.getStats();
+      expect(stats.activeTrajectories).toBe(1);
+      expect(stats.totalTrajectories).toBe(2);
+    });
+
+    it('emits insight:learning-reopened when a trajectory is reopened', async () => {
+      await recordAndConsolidate();
+      (backend.get as any).mockResolvedValueOnce(createTestEntry());
+      const handler = vi.fn();
+      lowBridge.on('insight:learning-reopened', handler);
+
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(handler).toHaveBeenCalledWith({ entryId: 'entry-1' });
+    });
+
+    it('falls back to entry content when metadata has no summary', async () => {
+      await recordAndConsolidate();
+      (backend.get as any).mockResolvedValueOnce(
+        createTestEntry({ content: 'Content only', metadata: { confidence: 0.8 } }),
+      );
+
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(neural.beginTask).toHaveBeenCalledWith('Content only', 'general');
+    });
+
+    it('records later accesses on the reopened trajectory without opening another', async () => {
+      await recordAndConsolidate();
+      neural.beginTask.mockReturnValueOnce('traj-reopened');
+      (backend.get as any).mockResolvedValue(createTestEntry());
+
+      await lowBridge.onInsightAccessed('entry-1');
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(neural.beginTask).toHaveBeenCalledTimes(1);
+      expect(neural.recordStep).toHaveBeenLastCalledWith('traj-reopened', {
+        action: 'access',
+        reward: 0.03,
+      });
+      expect(lowBridge.getStats().activeTrajectories).toBe(1);
+    });
+
+    it('completes the reopened trajectory on the next consolidation (no unbounded growth)', async () => {
+      await recordAndConsolidate();
+      neural.beginTask.mockReturnValueOnce('traj-reopened');
+      (backend.get as any).mockResolvedValueOnce(createTestEntry());
+      await lowBridge.onInsightAccessed('entry-1');
+
+      const result = await lowBridge.consolidate();
+
+      expect(result.trajectoriesCompleted).toBe(1);
+      expect(neural.completeTask).toHaveBeenCalledWith('traj-reopened', expect.any(Number));
+      expect(lowBridge.getStats().activeTrajectories).toBe(0);
+      expect(lowBridge.getStats().completedTrajectories).toBe(2);
+    });
+
+    it('can reopen again after a second consolidation', async () => {
+      await recordAndConsolidate();
+      neural.beginTask.mockReturnValueOnce('traj-2').mockReturnValueOnce('traj-3');
+      (backend.get as any).mockResolvedValue(createTestEntry());
+
+      await lowBridge.onInsightAccessed('entry-1');
+      await lowBridge.consolidate();
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(neural.beginTask).toHaveBeenCalledTimes(2);
+      expect(neural.recordStep).toHaveBeenLastCalledWith('traj-3', expect.objectContaining({
+        action: 'access',
+      }));
+    });
+
+    it('does not open a trajectory for an entry never recorded through the bridge', async () => {
+      await recordAndConsolidate('entry-1');
+      (backend.get as any).mockResolvedValueOnce(createTestEntry({ id: 'other' }));
+
+      await lowBridge.onInsightAccessed('other');
+
+      expect(neural.beginTask).not.toHaveBeenCalled();
+      expect(neural.recordStep).not.toHaveBeenCalled();
+    });
+
+    it('survives beginTask throwing on reopen and retries on the next access', async () => {
+      await recordAndConsolidate();
+      (backend.get as any).mockResolvedValue(createTestEntry());
+      neural.beginTask
+        .mockImplementationOnce(() => { throw new Error('neural down'); })
+        .mockReturnValueOnce('traj-retry');
+
+      await expect(lowBridge.onInsightAccessed('entry-1')).resolves.toBeUndefined();
+      expect(lowBridge.getStats().activeTrajectories).toBe(0);
+
+      await lowBridge.onInsightAccessed('entry-1');
+      expect(neural.recordStep).toHaveBeenCalledWith('traj-retry', expect.objectContaining({
+        action: 'access',
+      }));
+    });
+
+    it('control: access before consolidation records on the original trajectory only', async () => {
+      neural.beginTask.mockReturnValueOnce('traj-original');
+      await lowBridge.onInsightRecorded(createTestInsight(), 'entry-1');
+      vi.clearAllMocks();
+      (backend.get as any).mockResolvedValueOnce(createTestEntry());
+
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(neural.beginTask).not.toHaveBeenCalled();
+      expect(neural.recordStep).toHaveBeenCalledTimes(1);
+      expect(neural.recordStep).toHaveBeenCalledWith('traj-original', {
+        action: 'access',
+        reward: 0.03,
+      });
+      expect(lowBridge.getStats().activeTrajectories).toBe(1);
     });
   });
 
@@ -717,6 +1067,45 @@ describe('LearningBridge', () => {
 
       expect(loaderFn).toHaveBeenCalledTimes(1);
       expect(b.getStats().neuralAvailable).toBe(false);
+      b.destroy();
+    });
+  });
+
+  // ===== Real @claude-flow/neural construction shape (no injected loader) =====
+
+  describe('default neural loader (real @claude-flow/neural import)', () => {
+    afterEach(() => {
+      vi.doUnmock('@claude-flow/neural');
+    });
+
+    it('constructs NeuralLearningSystem with a bare mode string, not a config object', async () => {
+      // Regression test: loadNeural() used to call
+      // `new NeuralLearningSystem({ mode, ewcLambda })`, but the real
+      // constructor is `constructor(mode: SONAMode = 'balanced')` — a bare
+      // string. Passing an object never throws (SONAManager's
+      // `MODE_CONFIGS[mode]` lookup just silently misses and falls back to
+      // `{}`), so this had to be caught by inspecting the actual argument,
+      // not by whether construction succeeds.
+      const ctorArgs: unknown[][] = [];
+      vi.doMock('@claude-flow/neural', () => ({
+        NeuralLearningSystem: class {
+          constructor(...args: unknown[]) {
+            ctorArgs.push(args);
+          }
+          initialize = vi.fn().mockResolvedValue(undefined);
+        },
+      }));
+      vi.resetModules();
+
+      const { LearningBridge: FreshLearningBridge } = await import('./learning-bridge.js');
+      const freshBackend = createMockBackend();
+      const b = new FreshLearningBridge(freshBackend, { sonaMode: 'research' });
+
+      await b.onInsightRecorded(createTestInsight(), 'entry-1');
+
+      expect(ctorArgs).toHaveLength(1);
+      expect(ctorArgs[0]).toEqual(['research']);
+      expect(b.getStats().neuralAvailable).toBe(true);
       b.destroy();
     });
   });

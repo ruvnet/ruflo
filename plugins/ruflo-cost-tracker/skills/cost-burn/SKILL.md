@@ -3,6 +3,7 @@ name: cost-burn
 description: Burn-rate trend over time with optional drift-alert exit code. Bins session spend into buckets, surfaces window-over-window delta, and can exit 1 when latest bucket exceeds prior mean by a configurable %. Distinct from `cost-trend` (benchmark drift); this tracks PRODUCTION spend trajectory.
 argument-hint: "[--bucket 1d] [--lookback 14d] [--alert-on-acceleration-pct 50] [--format table|json]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 Burn-rate trend observability. The fourth leg of the cost-tracker forward-cost stack:

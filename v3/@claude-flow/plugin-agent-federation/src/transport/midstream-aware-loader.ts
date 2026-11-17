@@ -180,7 +180,9 @@ class WebSocketFallbackTransport implements AgentTransport {
     this.handlers.push(handler);
   }
 
-  async listen(port = Number(this.config.port ?? 0), host = String(this.config.host ?? '0.0.0.0')): Promise<void> {
+  // Loopback unless a host is configured, like the plugin listener; an empty
+  // host would bind every interface, so it counts as unset.
+  async listen(port = Number(this.config.port ?? 0), host = this.config.host || '127.0.0.1'): Promise<void> {
     const { WebSocketServer } = await import('ws');
     const server = new WebSocketServer({ port, host }) as WebSocketServerLike;
     this.server = server;

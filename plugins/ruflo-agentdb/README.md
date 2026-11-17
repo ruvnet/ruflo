@@ -1,6 +1,6 @@
 # ruflo-agentdb
 
-The substrate plugin for Ruflo memory. Wraps three CLI MCP families — `agentdb_*` (controller bridge, 15 tools), `embeddings_*` (RuVector ONNX engine, 10 tools), and `ruvllm_hnsw_*` (WASM-backed pattern router, 3 tools) — into discoverable skills and commands. Other plugins (`ruflo-browser`, `ruflo-rag-memory`, `ruflo-intelligence`) compose this substrate; this plugin owns the namespace convention and the smoke contract for the substrate as a whole.
+The substrate plugin for Ruflo memory. Wraps three CLI MCP families — `agentdb_*` (controller bridge, 20 tools), `embeddings_*` (RuVector ONNX engine, 10 tools), and `ruvllm_hnsw_*` (WASM-backed pattern router, 3 tools) — into discoverable skills and commands. Other plugins (`ruflo-browser`, `ruflo-rag-memory`, `ruflo-intelligence`) compose this substrate; this plugin owns the namespace convention and the smoke contract for the substrate as a whole.
 
 > **Status:** ADR-0001 implemented. Plugin v0.3.0 targets `@claude-flow/cli` v3.6.x with bundled `agentdb@^3.0.0-alpha.11`. The smoke contract (13 numbered checks + 3 documentation invariants) is the verification mechanism — see [docs/adrs/0001-agentdb-optimization.md](./docs/adrs/0001-agentdb-optimization.md).
 
@@ -14,12 +14,12 @@ The substrate plugin for Ruflo memory. Wraps three CLI MCP families — `agentdb
 ## Compatibility
 
 - **CLI:** pinned to `@claude-flow/cli` v3.6 major+minor. Patch bumps within v3.6 are expected to be no-op.
-- **AgentDB:** the CLI bundles `agentdb@^3.0.0-alpha.11`. The plugin does **not** pin the npm package — internals (alpha.11 → alpha.12 etc.) are not the plugin's contract.
-- **Verification:** the bundled smoke script is the source of truth (`bash plugins/ruflo-agentdb/scripts/smoke.sh`). If smoke passes against your CLI version, the plugin's contract holds.
+- **AgentDB:** the CLI reaches AgentDB through `@claude-flow/memory`, which declares `agentdb@^3.3.0` (a fresh install resolves the latest 3.x). The plugin does **not** pin the npm package; internals are not the plugin's contract. For AgentDB's own MCP server pinned to an exact version, install the external `agentdb` plugin from this marketplace (`/plugin install agentdb@ruflo`); the two can run side by side.
+- **Verification:** `bash plugins/ruflo-agentdb/scripts/smoke.sh` checks the plugin's structure and documented surface offline; `--live` also exercises the real AgentDB tools. Passing the offline run does not prove the substrate works.
 
 ## Features
 
-- **Controller bridge**: 15 `agentdb_*` MCP tools (hierarchical store/recall, semantic routing, pattern store/search, causal edges, context synthesis, batch ops, consolidation, feedback, sessions).
+- **Controller bridge**: 20 `agentdb_*` MCP tools (hierarchical store/recall/delete, semantic routing, pattern store/search, causal edges and their deletes, graph query and pathfinder, context synthesis, batch ops, consolidation, feedback, sessions).
 - **RuVector embeddings**: 10 `embeddings_*` MCP tools — 384-dim ONNX (all-MiniLM-L6-v2), HNSW search, hyperbolic (Poincare), neural substrate, and **RaBitQ 1-bit quantization (32× memory reduction)**.
 - **HNSW pattern router**: 3 `ruvllm_hnsw_*` tools (WASM-backed, ≤11 high-priority patterns — distinct from the large-scale embeddings HNSW path).
 - **Causal knowledge graphs**: `agentdb_causal-edge` (graph-node backend with bridge fallback per ADR-087).
@@ -60,7 +60,7 @@ Initialization order per ADR-053 (`controller-registry.ts:160-174`):
 
 ## Commands
 
-- `/agentdb` — AgentDB health, controller status, session management
+- `/agentdb-mod` — AgentDB health, controller status, session management
 - `/embeddings` — RuVector embedding engine status and operations
 
 ## Skills
@@ -153,6 +153,19 @@ Implication for consumer plugins:
 - **Don't refresh `claude-memories` yourself.** It auto-imports on every SessionStart. Manual `memory_import_claude` is for force-refresh, not steady-state.
 - **Surface fallback responses.** When `controller: 'memory-store-fallback'` comes back from `agentdb_pattern-store`, the data still landed — see "Pattern-store fallback" below.
 
+## AgentDB 3.4 capabilities
+
+What agentdb 3.4.0 adds, and how it reaches this plugin:
+
+| Capability | How to use it here | Notes |
+|---|---|---|
+| Exact graph min cut (`@ruvector/mincut-wasm`) | `agentdb_graph-pathfinder` with `algorithm: "dynamic-mincut"` (`@claude-flow/cli` 3.72.1+) | Returns the seed's side of the cut plus `cutValue`, `cutEdges` and `backend` (`mincut-wasm` or `js-fallback`, which is limited to 300-node neighbourhoods). The `graph-mincut` skill from `ruflo init` covers reading the result |
+| Personalized PageRank | `agentdb_graph-pathfinder` (default `personalized-pagerank`) | Ranked neighbours from a seed node |
+| Prompt-injection guard on memory writes | Start Claude Code with `AGENTDB_INJECTION_GUARD=warn` or `block` | AgentDB scans text written by ReasoningBank, ReflexionMemory and SkillLibrary (so `agentdb_pattern-store` writes) with aidefence's detector. `block` refuses the write with `INJECTION_DETECTED` and fails closed if `aidefence` is not installed. Default `off`. See the `injection-defense` skill |
+| RaBitQ 1-bit index | `embeddings_rabitq_build` / `_search` / `_status` | AgentDB's own `AGENTDB_QUANTIZED_INDEX=rabitq` switch applies to its `SqlJsRvfBackend`, which ruflo's bridge does not use; ruflo's RaBitQ path is the `embeddings_rabitq_*` trio. See the `vector-quantization` skill |
+
+Security: agentdb 3.4.0 declared the optional `@ruvector/attention@^0.1.2` (resolves 0.1.32, covered by [GHSA-p62c-q7fc-qmg9](https://github.com/advisories/GHSA-p62c-q7fc-qmg9)); agentdb 3.5.0 and later declare `^2.2.3` and `@ruvector/graph-node@^2.1.2` ([GHSA-h928-qgv7-pq8g](https://github.com/advisories/GHSA-h928-qgv7-pq8g)). Use agentdb >= 3.5.0. Check a tree with `npm ls @ruvector/attention @ruvector/graph-node`.
+
 ## Operational fallbacks
 
 Three fallbacks exist in the bridge code; consumers should branch on them rather than treat them as soft failures.
@@ -200,13 +213,37 @@ Replacement table for bridge-unavailable mode:
 
 ```bash
 bash plugins/ruflo-agentdb/scripts/smoke.sh
-# Expected: "10 passed, 0 failed"
+# Expected: "0 failed" (offline checks); add --live to exercise the real tools
 ```
 
-The smoke script is the contract. It calls each documented MCP tool, exercises the RaBitQ workflow, and source-inspects the fallback path (no env-var gate exists to force the fallback live).
+The default smoke run is an offline structure and documentation check: it greps the plugin's docs, manifest, commands and the CLI tool source, and it does not call any MCP tool, so it passes even when the AgentDB substrate is broken. `bash plugins/ruflo-agentdb/scripts/smoke.sh --live` adds a live check in a throwaway directory: `agentdb_health` must report `available` and `durable`, and a `agentdb_hierarchical-store` then `agentdb_hierarchical-recall` round trip must return the stored entry. The RaBitQ workflow and the fallback path are only source-inspected (no env-var gate exists to force the fallback live).
+
+## As a mod (0.4.7, ADR-445)
+
+A function-hook mod ships beside the skills. Needs a Claude Code with mods (2.1.287+); older builds ignore it.
+
+| Piece | Default | What it does |
+|---|---|---|
+| **Secret guard** | on | Refuses a memory write (`agentdb_hierarchical-store`, `agentdb_pattern-store`, `agentdb_batch`, `agentdb_causal-edge`, `memory_store`, `hooks_remember`, `hooks_intelligence_pattern-store`, `agentdb_feedback`, `agentdb_session-end`, `hive-mind_memory`, `session_save`) that holds a private key, cloud/GitHub/Slack token, bearer token, JWT or key-like assignment. The secret is never echoed. The shared screen (`hooks/screen.ts`, copied to every mod by `scripts/sync-mod-screen.mjs`) judges an assignment by its value: calls, env references, identifier paths, placeholders, UUIDs, secret-manager paths and hyphenated names are not secrets; a literal needs two character classes (one a digit or symbol) and at least 2.5 bits of entropy per character. Vendor keys (Stripe, npm, HuggingFace, SendGrid, Twilio, Slack webhooks) and `scheme://user:pass@host` URLs are matched by shape; input is scanned in one pass up to 200 KB (head and tail beyond that). |
+| **Import file screen** | on (with the guard) | `memory_import` takes only a path, so the guard also reads the file at `inputPath` and refuses the import when it holds a secret (same message, never echoing it). Best effort, not a gate, and it **fails open**: a file over 1 MB, a directory, a missing or unreadable file, a path outside the project root and your home, a path with `..`, a backslash or a null byte, a non-string path, or a stat/read error all let the import proceed unread. Symlinks are not resolved. `rvf_ingest` is still unguarded. |
+| **Recall into prompts** | **off** | Attaches the best 1–5 memories to each prompt as framed, per-prompt context (the prompt cache is not disturbed). Read through the already-connected tools, in order: `memory_search` (semantic: the only reader that finds a paraphrase; its 60-character cut is completed with `memory_retrieve`), `agentdb_hierarchical-recall` and `agentdb_pattern-search` (substring matches, so also asked with the prompt's salient words), ruvector `hooks_recall`. A result scoring under 0.25 is noise and skipped. No CLI, no network. Skipped for slash commands, `!` lines and short prompts; gives up after `recallDeadlineMs` (800; the first recall of a fresh session takes 0.5–1.5 s, so consider 1500); cached 10 minutes. |
+| **Untrusted memory** | always | A retrieved memory with a secret or an instruction-to-the-model phrase is dropped; the rest are control-character-stripped, capped (5 items, 400 chars each, 1500 total) and framed as data. |
+| **`/agentdb-mod`** | — | `status`, `recall <text>`, `scan <text>`, `recent`; answered locally, no model call. |
+| **Status file** | — | `.claude-flow/agentdb-mod/status.json` (counts and short snippets); the ruflo console's Memory page shows it. |
+
+**Permissions:** the mod's reads go through Claude Code's permission rules, and a headless (`-p`) or fresh session refuses a tool nobody allowed. Allow the readers you use, e.g. `mcp__<server>__memory_search`, `memory_retrieve`, `agentdb_hierarchical-recall`, `agentdb_pattern-search`. A refusal is counted in `errors` and named in `lastError` in the status file; before 0.4.1 it read as "nothing relevant".
+
+Options (`userConfig`): `recall` off|on, `recallLimit` 1–5, `recallDeadlineMs` 200–3000, `guard` on|off, `source` auto|agentdb|ruvector|none.
+
+```bash
+claude plugin test plugins/ruflo-agentdb      # 109 tests: screening, recall, reader fallback, guard, /agentdb-mod, deadline, cache, live-run findings
+scripts/live-agentdb-recall.sh                 # live harness against a real AgentDB (haiku, about $1); results in v3/docs/validation/agentdb-recall-live-2026-10.md
+node plugins/ruflo-agentdb/scripts/bench.mjs  # per-call cost of the pure paths (tens of µs)
+```
 
 ## Architecture Decisions
 
+- [`ADR-445` — AgentDB as a mod](../../v3/docs/adr/ADR-445-agentdb-as-a-mod.md)
 - [`ADR-0001` — Optimize ruflo-agentdb (accurate surface, RaBitQ, namespacing, smoke contract)](./docs/adrs/0001-agentdb-optimization.md)
 
 ## Related Plugins
@@ -215,6 +252,7 @@ The smoke script is the contract. It calls each documented MCP tool, exercises t
 - `ruflo-intelligence` — SONA neural patterns; consumes the `pattern` reserved namespace via ReasoningBank
 - `ruflo-browser` — composes the namespace convention for `browser-sessions/-selectors/-templates/-cookies` (ADR-0001 §3 there)
 - `ruflo-ruvector` — pinned ruvector CLI; sibling substrate plugin
+- `agentdb` (external, this marketplace) — AgentDB's own MCP server pinned to agentdb 3.6.0, with an `injection_guard` option
 
 ## License
 

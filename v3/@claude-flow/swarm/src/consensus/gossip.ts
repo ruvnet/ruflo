@@ -198,7 +198,10 @@ export class GossipConsensus extends EventEmitter {
     this.node.neighbors.delete(nodeId);
   }
 
-  async propose(value: unknown): Promise<ConsensusProposal> {
+  async propose(
+    value: unknown,
+    weights?: Map<string, number>
+  ): Promise<ConsensusProposal> {
     this.proposalCounter++;
     const proposalId = `gossip_${this.node.id}_${this.proposalCounter}`;
 
@@ -210,6 +213,7 @@ export class GossipConsensus extends EventEmitter {
       timestamp: new Date(),
       votes: new Map(),
       status: 'pending',
+      weights,
     };
 
     this.proposals.set(proposalId, proposal);
@@ -272,40 +276,59 @@ export class GossipConsensus extends EventEmitter {
     const startTime = Date.now();
     const maxWait = this.config.timeoutMs ?? 30000;
 
-    return new Promise((resolve, reject) => {
-      const checkInterval = setInterval(() => {
-        const proposal = this.proposals.get(proposalId);
-        if (!proposal) {
-          clearInterval(checkInterval);
-          reject(new Error(`Proposal ${proposalId} not found`));
+    const proposal = this.proposals.get(proposalId);
+    if (!proposal) {
+      throw new Error(`Proposal ${proposalId} not found`);
+    }
+
+    if (proposal.status !== 'pending') {
+      return this.createResult(proposal, Date.now() - startTime);
+    }
+
+    // checkConvergence() already emits 'consensus.achieved' when the vote
+    // ratio crosses the configured threshold. Wait for that event plus one
+    // expiry timer instead of polling this.proposals with setInterval.
+    return new Promise(resolve => {
+      const cleanup = (): void => {
+        clearTimeout(timer);
+        this.off('consensus.achieved', onAchieved);
+      };
+
+      const onAchieved = (event: { proposalId: string }): void => {
+        if (event.proposalId !== proposalId) return;
+        cleanup();
+        resolve(this.createResult(this.proposals.get(proposalId) ?? proposal, Date.now() - startTime));
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        const current = this.proposals.get(proposalId) ?? proposal;
+
+        if (current.status !== 'pending') {
+          resolve(this.createResult(current, Date.now() - startTime));
           return;
         }
 
-        if (proposal.status !== 'pending') {
-          clearInterval(checkInterval);
-          resolve(this.createResult(proposal, Date.now() - startTime));
-          return;
-        }
-
-        // Check convergence
-        this.checkConvergence(proposalId);
-
-        if (Date.now() - startTime > maxWait) {
-          clearInterval(checkInterval);
-          // Gossip is eventually consistent, so mark as accepted if threshold met
-          const totalNodes = this.nodes.size + 1;
-          const votes = proposal.votes.size;
-          const threshold = this.config.convergenceThreshold ?? 0.9;
-
-          if (votes / totalNodes >= threshold) {
-            proposal.status = 'accepted';
-          } else {
-            proposal.status = 'expired';
+        // Preserve the old timeout fallback: run convergence once more, then
+        // accept when the participation ratio meets the threshold, otherwise
+        // expire.
+        void this.checkConvergence(proposalId).then(() => {
+          if (current.status === 'pending') {
+            const totalNodes = this.nodes.size + 1;
+            const votes = current.votes.size;
+            const threshold = this.config.convergenceThreshold ?? 0.9;
+            current.status = votes / totalNodes >= threshold ? 'accepted' : 'expired';
           }
+          resolve(this.createResult(current, Date.now() - startTime));
+        }).catch(() => {
+          if (current.status === 'pending') {
+            current.status = 'expired';
+          }
+          resolve(this.createResult(current, Date.now() - startTime));
+        });
+      }, maxWait);
 
-          resolve(this.createResult(proposal, Date.now() - startTime));
-        }
-      }, 50);
+      this.on('consensus.achieved', onAchieved);
     });
   }
 
@@ -496,6 +519,16 @@ export class GossipConsensus extends EventEmitter {
     }
   }
 
+  // Dream Cycle 2026-08-24 (swarm): per-voter weight for weighted consensus,
+  // clamped to [0,1] (same safety rationale as byzantine.ts's f-faulty-node
+  // quorum — a vote can never count for more than one unweighted vote).
+  // Missing weights/voter defaults to 1 (flat vote), reproducing today's
+  // behavior exactly when no weights map is supplied.
+  private voteWeight(proposal: ConsensusProposal, voterId: string): number {
+    const w = proposal.weights?.get(voterId) ?? 1;
+    return Math.max(0, Math.min(1, w));
+  }
+
   private async checkConvergence(proposalId: string): Promise<void> {
     const proposal = this.proposals.get(proposalId);
     if (!proposal || proposal.status !== 'pending') {
@@ -507,13 +540,21 @@ export class GossipConsensus extends EventEmitter {
     const threshold = this.config.convergenceThreshold ?? 0.9;
     const approvalThreshold = this.config.threshold ?? 0.66;
 
-    // Check if we've converged (enough nodes have voted)
+    // Check if we've converged (enough nodes have voted) — participation is
+    // a network-topology property (has everyone been heard from), so it
+    // stays an unweighted vote count; only the approve/reject decision below
+    // uses weighted approval share.
     if (votes / totalNodes >= threshold) {
-      const approvingVotes = Array.from(proposal.votes.values()).filter(
-        v => v.approve
-      ).length;
+      const castVotes = Array.from(proposal.votes.values());
+      const approvingWeight = castVotes
+        .filter(v => v.approve)
+        .reduce((sum, v) => sum + this.voteWeight(proposal, v.voterId), 0);
+      const totalCastWeight = castVotes.reduce(
+        (sum, v) => sum + this.voteWeight(proposal, v.voterId),
+        0
+      );
 
-      if (approvingVotes / votes >= approvalThreshold) {
+      if (totalCastWeight > 0 && approvingWeight / totalCastWeight >= approvalThreshold) {
         proposal.status = 'accepted';
         this.emit('consensus.achieved', { proposalId, approved: true });
       } else {
@@ -525,16 +566,19 @@ export class GossipConsensus extends EventEmitter {
 
   private createResult(proposal: ConsensusProposal, durationMs: number): ConsensusResult {
     const totalNodes = this.nodes.size + 1;
-    const approvingVotes = Array.from(proposal.votes.values()).filter(
-      v => v.approve
-    ).length;
+    const castVotes = Array.from(proposal.votes.values());
+    const approvingWeight = castVotes
+      .filter(v => v.approve)
+      .reduce((sum, v) => sum + this.voteWeight(proposal, v.voterId), 0);
+    const totalCastWeight = castVotes.reduce(
+      (sum, v) => sum + this.voteWeight(proposal, v.voterId),
+      0
+    );
 
     return {
       proposalId: proposal.id,
       approved: proposal.status === 'accepted',
-      approvalRate: proposal.votes.size > 0
-        ? approvingVotes / proposal.votes.size
-        : 0,
+      approvalRate: totalCastWeight > 0 ? approvingWeight / totalCastWeight : 0,
       participationRate: proposal.votes.size / totalNodes,
       finalValue: proposal.value,
       rounds: this.node.version,

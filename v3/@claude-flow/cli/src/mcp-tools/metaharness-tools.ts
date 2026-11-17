@@ -53,7 +53,10 @@ import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
+import { ownPluginDirs } from '../plugins/own-install.js';
 import { runFlywheelWorker } from '../services/harness-flywheel-runtime.js';
+import { benchVerify, gepaOp } from '../metaharness/darwin-lib.js';
 import { evaluatePolicyRequest } from '../services/policy-runtime.js';
 import {
   listFlywheelReceipts,
@@ -76,16 +79,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * script.
  */
 function locatePluginScripts(requiredScript?: string): string | null {
-  const candidates: string[] = [];
-  let p = resolve(__dirname);
-  for (let i = 0; i < 8; i++) {
-    candidates.push(join(p, 'plugins', 'ruflo-metaharness', 'scripts'));
-    candidates.push(join(p, '..', 'plugins', 'ruflo-metaharness', 'scripts'));
-    p = dirname(p);
-  }
-  const cwd = getProjectCwd();
-  candidates.push(join(cwd, 'plugins', 'ruflo-metaharness', 'scripts'));
-  candidates.push(join(cwd, 'node_modules', '@claude-flow', 'cli', 'plugins', 'ruflo-metaharness', 'scripts'));
+  // Bounded at node_modules: a project-local install must not reach the project.
+  const candidates: string[] = ownPluginDirs(__dirname, 'ruflo-metaharness', 'scripts');
+  // Scripts found here are executed, so they come from this CLI's own install
+  // (or the user's marketplace checkout), never from the project's cwd.
+  candidates.push(join(homedir(), '.claude', 'plugins', 'marketplaces', 'ruflo', 'plugins', 'ruflo-metaharness', 'scripts'));
   for (const c of candidates) {
     if (!existsSync(join(c, '_harness.mjs'))) continue;
     if (requiredScript && !existsSync(join(c, requiredScript))) continue;
@@ -387,7 +385,7 @@ export const metaharnessTools: MCPTool[] = [
   },
   // ───────────────────────────────────────────────────────────────────────
   // ADR-153 — @metaharness/darwin integration (3 tools).
-  // Backed by the separate `@metaharness/darwin@~0.8.0` npm package, NOT
+  // Backed by the separate `@metaharness/darwin@~0.14.0` npm package, NOT
   // the umbrella `metaharness`. Plugin scripts shell out via _darwin.mjs.
   // Same {success, data, degraded, exitCode} contract.
   // ───────────────────────────────────────────────────────────────────────
@@ -486,6 +484,12 @@ export const metaharnessTools: MCPTool[] = [
       required: ['op'],
     },
     handler: async (input) => {
+      // ADR-526: verify runs in-process (darwin is a regular dependency);
+      // create still goes through the darwin CLI, which owns the scaffold task.
+      if (input.op === 'verify') {
+        const inProc = await benchVerify(String(input.suite ?? ''));
+        if (inProc) return { success: inProc.exitCode === 0, data: inProc.json, degraded: false, exitCode: inProc.exitCode };
+      }
       const args: string[] = ['--op', String(input.op)];
       if (input.repo) args.push('--repo', String(input.repo));
       if (input.suite) args.push('--suite', String(input.suite));
@@ -608,6 +612,16 @@ export const metaharnessTools: MCPTool[] = [
       required: ['op'],
     },
     handler: async (input) => {
+      // ADR-526: GEPA genome ops run in-process; the plugin script is the fallback.
+      const inProc = await gepaOp({
+        op: String(input.op),
+        path: input.path ? String(input.path) : undefined,
+        transcript: input.transcript ? String(input.transcript) : undefined,
+        ext: input.ext ? String(input.ext) : undefined,
+        glob: input.glob ? String(input.glob) : undefined,
+        alertOnInvalid: input.alertOnInvalid === true,
+      });
+      if (inProc) return { success: inProc.exitCode === 0, data: inProc.json, degraded: false, exitCode: inProc.exitCode };
       const args: string[] = ['--op', String(input.op)];
       if (input.path) args.push('--path', String(input.path));
       if (input.transcript) args.push('--transcript', String(input.transcript));

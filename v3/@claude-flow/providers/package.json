@@ -1,14 +1,23 @@
 {
   "name": "@claude-flow/providers",
-  "version": "3.0.0-alpha.6",
+  "version": "3.0.1",
   "description": "Multi-LLM Provider System for Claude Flow V3",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/providers"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.js",
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
   },
@@ -28,17 +37,18 @@
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
-    "claude-flow",
     "llm",
-    "provider",
+    "llm-providers",
+    "multi-provider",
     "anthropic",
     "openai",
-    "google",
-    "cohere",
+    "gemini",
     "ollama",
-    "multi-provider",
+    "failover",
     "load-balancing",
-    "failover"
+    "claude",
+    "claude-flow",
+    "ruflo"
   ],
   "author": "Claude Flow Team",
   "license": "MIT",
@@ -53,7 +63,7 @@
     "vitest": "^4.1.0"
   },
   "peerDependencies": {
-    "@ruvector/ruvllm": "^0.2.3"
+    "@ruvector/ruvllm": "^4.1.0"
   },
   "peerDependenciesMeta": {
     "@ruvector/ruvllm": {
@@ -64,7 +74,6 @@
     "node": ">=20.0.0"
   },
   "publishConfig": {
-    "access": "public",
-    "tag": "v3alpha"
+    "access": "public"
   }
 }

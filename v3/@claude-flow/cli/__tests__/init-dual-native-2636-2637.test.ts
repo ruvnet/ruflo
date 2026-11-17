@@ -25,9 +25,14 @@ import { initCommand } from '../src/commands/init.js';
 import { executeInit, MINIMAL_INIT_OPTIONS } from '../src/init/index.js';
 
 let projectPath: string;
+let savedConfigDir: string | undefined;
 
 beforeEach(() => {
   projectPath = mkdtempSync(join(tmpdir(), 'dual-native-2636-'));
+  // #2640: init defers to installed ruflo plugins; keep the machine's own
+  // Claude Code plugins out of these tests.
+  savedConfigDir = process.env.CLAUDE_CONFIG_DIR;
+  process.env.CLAUDE_CONFIG_DIR = join(projectPath, '.claude-config-isolated');
   codexMock.initialize.mockImplementation(async (options: Record<string, unknown>) => {
     const target = String(options.projectPath);
     mkdirSync(join(target, '.agents'), { recursive: true });
@@ -43,6 +48,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  if (savedConfigDir === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+  else process.env.CLAUDE_CONFIG_DIR = savedConfigDir;
   rmSync(projectPath, { recursive: true, force: true });
 });
 
@@ -77,8 +84,23 @@ describe('native dual initialization (#2636)', () => {
     expect(codexMock.initialize).toHaveBeenCalledWith(expect.objectContaining({
       projectPath,
       template: 'minimal',
-      dual: false,
+      dual: true,
     }));
+  });
+});
+
+describe('generated runtime config (#3193)', () => {
+  it('does not advertise a memory.persistPath that getMemoryRoot ignores', async () => {
+    const options = structuredClone(MINIMAL_INIT_OPTIONS);
+    options.targetDir = projectPath;
+    options.skipGlobalClaudeMd = true;
+
+    const result = await executeInit(options);
+
+    expect(result.success).toBe(true);
+    const cfg = readFileSync(join(projectPath, '.claude-flow', 'config.yaml'), 'utf8');
+    expect(cfg).not.toMatch(/^\s*persistPath:/m);
+    expect(cfg).toContain('claude-flow.config.json');
   });
 });
 
@@ -98,5 +120,21 @@ describe('root secret ignore (#2637)', () => {
     expect(gitignore).toContain('.env.local');
     expect(gitignore).toContain('.claude-flow/data/');
     expect(result.created.files).toContain('.gitignore (updated)');
+  });
+});
+
+describe('.claude-flow/.gitignore template (ruflo-console 0.36 history folder)', () => {
+  it('ignores console/ (the console\'s own events, lanes, prefs and exports) along with the other runtime folders', async () => {
+    const options = structuredClone(MINIMAL_INIT_OPTIONS);
+    options.targetDir = projectPath;
+    options.skipGlobalClaudeMd = true;
+
+    const result = await executeInit(options);
+
+    expect(result.success).toBe(true);
+    const lines = readFileSync(join(projectPath, '.claude-flow', '.gitignore'), 'utf8').split('\n');
+    for (const entry of ['data/', 'logs/', 'sessions/', 'neural/', 'console/', '*.log', '*.tmp']) {
+      expect(lines).toContain(entry);
+    }
   });
 });

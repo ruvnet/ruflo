@@ -11,11 +11,13 @@
  * @module v3/cli/intelligence
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { resolveTrainingBackend } from '../ruvector/lora-adapter.js';
+import { getProjectCwd } from '../mcp-tools/types.js';
+import { withStatsFileLock } from './stats-file-lock.js';
 
 // ============================================================================
 // Persistence Configuration
@@ -27,7 +29,11 @@ import { resolveTrainingBackend } from '../ruvector/lora-adapter.js';
  * falling back to home directory
  */
 function getDataDir(): string {
-  const cwd = process.cwd();
+  // Every MCP tool resolves `.claude-flow/` against the project root
+  // (CLAUDE_FLOW_CWD when set), so the neural stats/patterns must too —
+  // otherwise an MCP server whose process cwd differs from the project
+  // writes learning state where nothing reads it.
+  const cwd = getProjectCwd();
   const localDir = join(cwd, '.claude-flow', 'neural');
   const homeDir = join(homedir(), '.claude-flow', 'neural');
 
@@ -360,10 +366,20 @@ class LocalSonaCoordinator {
 
           // Check EWC penalty before applying update
           if (ewcConsolidator) {
-            const oldWeights = [oldConfidence];
             const proposedConfidence = Math.min(1.0, oldConfidence + this.config.loraLearningRate * reward);
-            const newWeights = [proposedConfidence];
-            const penalty = ewcConsolidator.getPenalty(oldWeights, newWeights);
+            // Use computeConfidencePenalty (averages the full Fisher diagonal),
+            // not getPenalty([oldConf],[newConf]) — that call shape collapses
+            // to fisherDiag[0] only (Math.min(1,1,384) === 1), an arbitrary
+            // single dimension instead of the full accumulated Fisher signal.
+            // computeConfidencePenalty exists precisely for this
+            // scalar-confidence case (see its docstring) but was unwired.
+            // Note: neither call shape differentiates between patterns — both
+            // take only a confidence delta, not a per-pattern embedding, so
+            // two patterns with the same delta under the same consolidator
+            // state get the same penalty either way. This fix corrects which
+            // shared Fisher signal informs that penalty; it does not add
+            // per-pattern discrimination (see ewc-distill-confidence-gate.test.ts).
+            const penalty = ewcConsolidator.computeConfidencePenalty(oldConfidence, proposedConfidence);
             totalEwcPenalty += penalty;
 
             // If penalty is too high, reduce the update magnitude
@@ -393,15 +409,14 @@ class LocalSonaCoordinator {
       }
     }
 
-    // Update EWC Fisher matrix with confidence changes
+    // Update EWC Fisher matrix with confidence changes. updateFisherFromConfidences
+    // takes the full per-pattern embedding + confidence-delta batch directly (it
+    // computes the same squared confidence-delta-scaled-embedding gradient proxy
+    // internally) — replaces the previous per-change recordGradient loop, which
+    // updated the full 384-dim globalFisher but fed a signal that getPenalty's
+    // 1-element call shape then read back only at index 0.
     if (ewcConsolidator && confidenceChanges.length > 0) {
-      for (const change of confidenceChanges) {
-        // Use confidence delta as gradient proxy
-        const gradient = change.embedding.map(
-          e => e * Math.abs(change.newConf - change.oldConf)
-        );
-        ewcConsolidator.recordGradient(change.id, gradient, true);
-      }
+      ewcConsolidator.updateFisherFromConfidences(confidenceChanges);
     }
 
     // Persist updated patterns
@@ -441,6 +456,16 @@ class LocalReasoningBank {
   private persistenceEnabled: boolean;
   private dirty: boolean = false;
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  /** IDs changed locally since the last successful flush. */
+  private dirtyIds: Set<string> = new Set();
+  /** IDs deleted locally; a disk copy must not be resurrected. */
+  private deletedIds: Set<string> = new Set();
+  /** A local clear() must remove disk entries too. */
+  private clearRequested: boolean = false;
+  /** Message of the most recent failed flush; null after a successful one (#4880). */
+  private lastFlushError: string | null = null;
+  /** Time (ms epoch) of the most recent flush attempt that had something to write. */
+  private lastFlushAt: number | null = null;
 
   constructor(options: { maxSize: number; persistence?: boolean }) {
     this.maxSize = options.maxSize;
@@ -467,6 +492,7 @@ class LocalReasoningBank {
 
           // Group by content to deduplicate
           const byContent = new Map<string, StoredPattern>();
+          const removedIds: string[] = [];
           for (const pattern of data) {
             const key = pattern.content;
             const existing = byContent.get(key);
@@ -481,9 +507,11 @@ class LocalReasoningBank {
               ) {
                 // Merge: adopt the higher usageCount sum
                 pattern.usageCount = (pattern.usageCount ?? 0) + (existing.usageCount ?? 0);
+                removedIds.push(existing.id);
                 byContent.set(key, pattern);
               } else {
                 existing.usageCount = (existing.usageCount ?? 0) + (pattern.usageCount ?? 0);
+                removedIds.push(pattern.id);
               }
             }
           }
@@ -497,14 +525,24 @@ class LocalReasoningBank {
           const removed = totalLoaded - byContent.size;
           if (removed > 0) {
             console.log(`Deduplicated ${removed} patterns (${byContent.size} unique)`);
-            // Persist the compacted set immediately so the file shrinks on disk
+            // Persist the compacted set immediately so the file shrinks on disk.
+            // Mark every kept row dirty so this compaction wins over the disk
+            // copies, and tombstone the discarded duplicates.
+            for (const pattern of byContent.values()) this.dirtyIds.add(pattern.id);
+            for (const id of removedIds) this.deletedIds.add(id);
             this.dirty = true;
             this.flushToDisk();
           }
         }
       }
-    } catch {
-      // Ignore load errors, start fresh
+    } catch (error) {
+      // A corrupt patterns file must be preserved, not silently replaced by
+      // an empty bank on the next flush (#4735).
+      try {
+        const corruptPath = `${getPatternsPath()}.corrupt-${Date.now()}`;
+        renameSync(getPatternsPath(), corruptPath);
+        console.warn(`[intelligence] Corrupt patterns file moved to ${corruptPath}`);
+      } catch { /* already absent or rename failed — never overwrite it below */ }
     }
   }
 
@@ -528,19 +566,84 @@ class LocalReasoningBank {
 
   /**
    * Immediately flush patterns to disk
+   *
+   * Re-reads the file under the cooperating-writer lock and merges only the
+   * patterns this process changed, so a long-lived daemon cannot erase patterns
+   * written by another hook/process (#4735). Deletions and clear() are carried
+   * as tombstones; the write itself is temp-file + rename.
+   *
+   * Returns true when the patterns are on disk (or there was nothing to
+   * write) and false when the write failed. A failed flush leaves the bank
+   * dirty so the next flush retries, and records the error for
+   * getPersistenceStatus() (#4880). Never throws: the debounce timer and exit
+   * paths rely on that.
    */
-  flushToDisk(): void {
-    if (!this.persistenceEnabled || !this.dirty) return;
+  flushToDisk(): boolean {
+    if (!this.persistenceEnabled || !this.dirty) return true;
+
+    this.lastFlushAt = Date.now();
 
     try {
       ensureDataDir();
       const path = getPatternsPath();
-      writeFileSync(path, JSON.stringify(this.patternList, null, 2), 'utf-8');
-      this.dirty = false;
+      withStatsFileLock(path, (canonicalPath) => {
+        let diskPatterns: StoredPattern[] = [];
+        if (existsSync(canonicalPath)) {
+          try {
+            const parsed = JSON.parse(readFileSync(canonicalPath, 'utf-8'));
+            if (!Array.isArray(parsed)) throw new Error('patterns.json is not an array');
+            diskPatterns = parsed as StoredPattern[];
+          } catch {
+            // Preserve the corrupt original instead of overwriting it with an
+            // empty bank; the new file is written only after this rename.
+            try {
+              const corruptPath = `${canonicalPath}.corrupt-${Date.now()}`;
+              renameSync(canonicalPath, corruptPath);
+              console.warn(`[intelligence] Corrupt patterns file moved to ${corruptPath}`);
+            } catch { /* leave the original in place */ }
+          }
+        }
+
+        const merged = new Map<string, StoredPattern>();
+        if (!this.clearRequested) {
+          for (const pattern of diskPatterns) {
+            if (!this.deletedIds.has(pattern.id)) merged.set(pattern.id, pattern);
+          }
+        }
+        for (const pattern of this.patternList) {
+          if (this.clearRequested || this.dirtyIds.has(pattern.id)) {
+            merged.set(pattern.id, pattern);
+          }
+        }
+
+        const list = [...merged.values()];
+        const tmp = `${canonicalPath}.${process.pid}.${Date.now()}.tmp`;
+        writeFileSync(tmp, JSON.stringify(list, null, 2), 'utf-8');
+        renameSync(tmp, canonicalPath);
+
+        this.patterns = new Map(list.map((pattern) => [pattern.id, pattern]));
+        this.patternList = list;
+        this.dirty = false;
+        this.dirtyIds.clear();
+        this.deletedIds.clear();
+        this.clearRequested = false;
+      });
     } catch (error) {
-      // Log but don't throw - persistence failures shouldn't break training
+      // Log but don't throw - persistence failures shouldn't break training.
+      this.lastFlushError = error instanceof Error ? error.message : String(error);
       console.error('Failed to persist patterns:', error);
     }
+    // `dirty` is cleared only after the rename succeeded, so any path that did
+    // not complete the write reads as a failure here.
+    if (!this.dirty) this.lastFlushError = null;
+    return !this.dirty;
+  }
+
+  /**
+   * Read-only view of the persistence state (#4880).
+   */
+  getFlushState(): { dirty: boolean; lastFlushError: string | null; lastFlushAt: number | null } {
+    return { dirty: this.dirty, lastFlushError: this.lastFlushError, lastFlushAt: this.lastFlushAt };
   }
 
   /**
@@ -548,8 +651,12 @@ class LocalReasoningBank {
    * Deduplicates by content: if a pattern with the same content already
    * exists, the existing entry is updated (bumped usageCount, higher
    * confidence wins, refreshed lastUsedAt) instead of adding a duplicate.
+   *
+   * Returns true only when a NEW pattern was added (#3979 item 4): callers that
+   * keep a "patterns learned" counter must not count a merge or an update of an
+   * existing pattern as a newly learned one.
    */
-  store(pattern: Omit<StoredPattern, 'usageCount' | 'createdAt' | 'lastUsedAt'> & Partial<StoredPattern>): void {
+  store(pattern: Omit<StoredPattern, 'usageCount' | 'createdAt' | 'lastUsedAt'> & Partial<StoredPattern>): boolean {
     const now = Date.now();
     const stored: StoredPattern = {
       ...pattern,
@@ -569,6 +676,10 @@ class LocalReasoningBank {
       if (idx >= 0) {
         this.patternList[idx] = stored;
       }
+      this.patterns.set(pattern.id, stored);
+      this.dirtyIds.add(pattern.id);
+      this.saveToDisk();
+      return false;
     } else {
       // Check for content-duplicate before inserting a new entry
       const contentDupe = this.patternList.find(p => p.content === pattern.content);
@@ -581,8 +692,9 @@ class LocalReasoningBank {
         }
         // Keep the Map in sync with the mutated object
         this.patterns.set(contentDupe.id, contentDupe);
+        this.dirtyIds.add(contentDupe.id);
         this.saveToDisk();
-        return;
+        return false;
       }
 
       // Evict oldest if at capacity
@@ -590,24 +702,38 @@ class LocalReasoningBank {
         const oldest = this.patternList.shift();
         if (oldest) {
           this.patterns.delete(oldest.id);
+          this.deletedIds.add(oldest.id);
+          this.dirtyIds.delete(oldest.id);
         }
       }
       this.patternList.push(stored);
     }
 
     this.patterns.set(pattern.id, stored);
+    this.dirtyIds.add(stored.id);
 
     // Trigger persistence (debounced)
     this.saveToDisk();
+    return true;
   }
 
   /**
-   * Find similar patterns by embedding
+   * Find similar patterns by embedding.
+   *
+   * `confidence` on each result is the pattern's own learned reliability
+   * (unchanged from storage) — NOT how well it matches this query. The
+   * per-query cosine score is returned separately as `similarity`. Callers
+   * that want "how good a semantic match is this" must read `.similarity`;
+   * callers that want "how reliable has this pattern proven to be" read
+   * `.confidence`. Prior to this fix both were conflated (confidence was
+   * overwritten with the cosine score), which silently broke any consumer
+   * that needed to tell them apart (found during the 2026-09-12 dream-cycle
+   * intelligence-surface review).
    */
   findSimilar(
     queryEmbedding: number[],
     options: { k?: number; threshold?: number; type?: string }
-  ): StoredPattern[] {
+  ): (StoredPattern & { similarity: number })[] {
     const { k = 5, threshold = 0.5, type } = options;
 
     // Filter by type if specified
@@ -630,7 +756,7 @@ class LocalReasoningBank {
         // Update usage
         s.pattern.usageCount++;
         s.pattern.lastUsedAt = Date.now();
-        return { ...s.pattern, confidence: s.score };
+        return { ...s.pattern, similarity: s.score };
       });
   }
 
@@ -697,6 +823,8 @@ class LocalReasoningBank {
     if (idx >= 0) {
       this.patternList.splice(idx, 1);
     }
+    this.dirtyIds.delete(id);
+    this.deletedIds.add(id);
 
     this.saveToDisk();
     return true;
@@ -708,6 +836,9 @@ class LocalReasoningBank {
   clear(): void {
     this.patterns.clear();
     this.patternList = [];
+    this.dirtyIds.clear();
+    this.deletedIds.clear();
+    this.clearRequested = true;
     this.saveToDisk();
   }
 }
@@ -764,6 +895,40 @@ let globalStats = {
   lastAdaptation: null as number | null
 };
 
+type CounterKey = 'trajectoriesRecorded' | 'patternsLearned' | 'signalsProcessed';
+
+/**
+ * Increments made by THIS process that have not yet been merged into
+ * stats.json. Persistence is delta-based: several processes (MCP server,
+ * hook one-shots, the worker daemon) share one stats.json, and each holds
+ * its own module-level globalStats. Writing the local snapshot verbatim let
+ * any writer erase every other writer's progress — notably the
+ * memory-bridge `recordSignalProcessed()` path, which persists without ever
+ * loading the file, reset `trajectoriesRecorded` to 0 on disk every 16
+ * writes. Merging deltas makes the counters monotonic across processes.
+ */
+let pendingDelta: Record<CounterKey, number> = {
+  trajectoriesRecorded: 0,
+  patternsLearned: 0,
+  signalsProcessed: 0,
+};
+let persistedStatsLoaded = false;
+
+function bumpStat(key: CounterKey, n = 1): void {
+  globalStats[key] = (globalStats[key] ?? 0) + n;
+  pendingDelta[key] += n;
+}
+
+function readStatsFile(): Partial<typeof globalStats> | null {
+  try {
+    // Read-only callers keep their unavailable-on-error contract, while invalid
+    // disk values cannot poison local state and a later repaired-file flush.
+    return readStatsForWrite(getStatsPath());
+  } catch {
+    return null;
+  }
+}
+
 // ============================================================================
 // Stats Persistence
 // ============================================================================
@@ -772,35 +937,94 @@ let globalStats = {
  * Load persisted stats from disk
  */
 function loadPersistedStats(): void {
-  try {
-    const path = getStatsPath();
-    if (existsSync(path)) {
-      const data = JSON.parse(readFileSync(path, 'utf-8'));
-      if (data && typeof data === 'object') {
-        // #2245: previously only restored trajectoriesRecorded — patternsLearned
-        // and signalsProcessed reset to zero on every restart, masking real
-        // learning progress in the dashboards.
-        globalStats.trajectoriesRecorded = data.trajectoriesRecorded ?? 0;
-        globalStats.patternsLearned = data.patternsLearned ?? 0;
-        globalStats.signalsProcessed = data.signalsProcessed ?? 0;
-        globalStats.lastAdaptation = data.lastAdaptation ?? null;
-      }
-    }
-  } catch {
-    // Ignore load errors, start fresh
-  }
+  persistedStatsLoaded = true;
+  const data = readStatsFile();
+  if (!data) return;
+  // #2245: previously only restored trajectoriesRecorded — patternsLearned
+  // and signalsProcessed reset to zero on every restart, masking real
+  // learning progress in the dashboards. Unsaved local increments are
+  // re-applied on top so a late load never drops them.
+  globalStats.trajectoriesRecorded = (data.trajectoriesRecorded ?? 0) + pendingDelta.trajectoriesRecorded;
+  globalStats.patternsLearned = (data.patternsLearned ?? 0) + pendingDelta.patternsLearned;
+  globalStats.signalsProcessed = (data.signalsProcessed ?? 0) + pendingDelta.signalsProcessed;
+  globalStats.lastAdaptation = maxTimestamp(data.lastAdaptation ?? null, globalStats.lastAdaptation);
 }
 
-/**
- * Save stats to disk
- */
-function savePersistedStats(): void {
+function maxTimestamp(a: number | null, b: number | null): number | null {
+  if (a == null) return b;
+  if (b == null) return a;
+  return Math.max(a, b);
+}
+
+/** Missing files are first use; unreadable or invalid files must not be replaced. */
+function readStatsForWrite(path: string): Partial<typeof globalStats> | null {
+  let text: string;
   try {
-    ensureDataDir();
-    const path = getStatsPath();
-    writeFileSync(path, JSON.stringify(globalStats, null, 2), 'utf-8');
+    text = readFileSync(path, 'utf-8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw error;
+  }
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(text);
   } catch {
-    // Ignore save errors
+    throw Object.assign(new Error('Invalid learning stats JSON'), { code: 'EINVALIDSTATS' });
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw Object.assign(new Error('Invalid learning stats object'), { code: 'EINVALIDSTATS' });
+  }
+  for (const key of ['trajectoriesRecorded', 'patternsLearned', 'signalsProcessed']) {
+    const value = data[key];
+    // Older files may omit a counter, but present counters must be exact counts.
+    if (value === undefined) continue;
+    if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+      throw Object.assign(new Error(`Invalid learning stats field: ${key}`), { code: 'EINVALIDSTATS' });
+    }
+  }
+  const timestamp = data.lastAdaptation;
+  if (timestamp != null && (typeof timestamp !== 'number' || !Number.isFinite(timestamp) || timestamp < 0)) {
+    throw Object.assign(new Error('Invalid learning stats timestamp'), { code: 'EINVALIDSTATS' });
+  }
+  return data as Partial<typeof globalStats>;
+}
+
+/** Merge pending deltas under the cooperating-writer lock, then adopt committed totals. */
+function savePersistedStats(): void {
+  let statsPath: string | undefined;
+  try {
+    statsPath = join(ensureDataDir(), 'stats.json');
+    withStatsFileLock(statsPath, (path) => {
+      const disk = readStatsForWrite(path);
+      const merged = disk
+        ? {
+            trajectoriesRecorded: (disk.trajectoriesRecorded ?? 0) + pendingDelta.trajectoriesRecorded,
+            patternsLearned: (disk.patternsLearned ?? 0) + pendingDelta.patternsLearned,
+            signalsProcessed: (disk.signalsProcessed ?? 0) + pendingDelta.signalsProcessed,
+            lastAdaptation: maxTimestamp(disk.lastAdaptation ?? null, globalStats.lastAdaptation),
+          }
+        : { ...globalStats };
+      for (const key of ['trajectoriesRecorded', 'patternsLearned', 'signalsProcessed'] as const) {
+        if (!Number.isSafeInteger(merged[key]) || merged[key] < 0) {
+          throw Object.assign(new Error('Learning stats counter overflow'), { code: 'EINVALIDSTATS' });
+        }
+      }
+      if (merged.lastAdaptation != null &&
+          (!Number.isFinite(merged.lastAdaptation) || merged.lastAdaptation < 0)) {
+        throw Object.assign(new Error('Invalid merged learning stats timestamp'), { code: 'EINVALIDSTATS' });
+      }
+      const tmp = `${path}.${process.pid}.tmp`;
+      writeFileSync(tmp, JSON.stringify(merged, null, 2), 'utf-8');
+      renameSync(tmp, path);
+      // Commit local state before release: a failed release must not replay it.
+      globalStats = merged;
+      pendingDelta = { trajectoriesRecorded: 0, patternsLearned: 0, signalsProcessed: 0 };
+      persistedStatsLoaded = true;
+    });
+  } catch (error) {
+    const { code = 'UNKNOWN', path = statsPath || 'neural stats directory' } = error as NodeJS.ErrnoException;
+    // Do not print file contents, which may be malformed or user-controlled.
+    console.warn(`[intelligence] Could not persist learning stats at ${path} (${code}); pending increments retained`);
   }
 }
 
@@ -815,7 +1039,7 @@ function savePersistedStats(): void {
 let signalsSinceLastSave = 0;
 const SIGNAL_PERSIST_EVERY = 16;
 export function recordSignalProcessed(): number {
-  globalStats.signalsProcessed = (globalStats.signalsProcessed ?? 0) + 1;
+  bumpStat('signalsProcessed');
   signalsSinceLastSave++;
   if (signalsSinceLastSave >= SIGNAL_PERSIST_EVERY) {
     savePersistedStats();
@@ -850,6 +1074,7 @@ export interface UnifiedLearningStats {
     signalsProcessed: number;
     lastAdaptation: number | null;
     source: string;
+    scope: 'project-persisted';
   };
   sona: {
     trajectoriesTotal: number;
@@ -858,6 +1083,8 @@ export interface UnifiedLearningStats {
     avgAdaptationTimeMs: number;
     source: string;
     available: boolean;
+    scope: 'process-local';
+    metric: 'recent-buffered-trajectories';
   };
   memoryBridge: {
     totalEntries: number;
@@ -872,8 +1099,9 @@ export interface UnifiedLearningStats {
     source: string;
   };
   consistency: {
-    sonaTracksGlobal: boolean;
-    sonaTracksGlobalDelta: number;
+    /** These counters measure different lifetimes and cannot be compared. */
+    sonaTracksGlobal: null;
+    sonaTracksGlobalDelta: null;
     notes: string[];
   };
   generatedAt: string;
@@ -889,12 +1117,15 @@ export async function getUnifiedLearningStats(): Promise<UnifiedLearningStats> {
   let sonaStats = { trajectoriesTotal: 0, patternsLearned: 0, reasoningBankSize: 0, avgAdaptationTimeMs: 0 };
   if (sonaCoord) {
     try {
-      const s = (sonaCoord as unknown as { stats?: () => Record<string, number> }).stats?.() ?? {};
+      const s = sonaCoord.stats();
       sonaStats = {
-        trajectoriesTotal: Number(s.trajectoriesTotal ?? s.trajectoriesProcessed ?? 0),
-        patternsLearned: Number(s.totalPatterns ?? s.patternsLearned ?? 0),
-        reasoningBankSize: (bank as unknown as { stats?: () => { patternCount?: number } })?.stats?.()?.patternCount ?? 0,
-        avgAdaptationTimeMs: (sonaCoord as unknown as { getAvgAdaptationTime?: () => number }).getAvgAdaptationTime?.() ?? 0,
+        // LocalSonaCoordinator.stats() reports trajectoryCount, a bounded
+        // recent buffer. Reading nonexistent trajectoriesTotal / processed
+        // fields made this metric permanently 0, even after learning.
+        trajectoriesTotal: s.trajectoryCount,
+        patternsLearned: 0,
+        reasoningBankSize: bank?.stats().patternCount ?? 0,
+        avgAdaptationTimeMs: s.avgAdaptationMs,
       };
     } catch { /* SONA not yet initialised */ }
   }
@@ -917,11 +1148,12 @@ export async function getUnifiedLearningStats(): Promise<UnifiedLearningStats> {
     neuralStats = nt.getNeuralStoreStats();
   } catch { /* neural module not loadable */ }
 
-  // Consistency notes — describe (don't enforce) the cross-store relationships
-  const sonaTracksGlobalDelta = sonaStats.trajectoriesTotal - intel.trajectoriesRecorded;
+  // SONA's coordinator is recreated on each process start, while globalStats
+  // is restored from disk. Their counts can differ by thousands after a
+  // restart even when both learning paths work correctly (#3198).
   const notes: string[] = [];
-  if (sonaAvailable && Math.abs(sonaTracksGlobalDelta) > 2) {
-    notes.push(`sona.trajectoriesTotal (${sonaStats.trajectoriesTotal}) drifts from globalStats.trajectoriesRecorded (${intel.trajectoriesRecorded}) by ${sonaTracksGlobalDelta} — expected to track within ±1`);
+  if (sonaAvailable && sonaStats.trajectoriesTotal !== intel.trajectoriesRecorded) {
+    notes.push('sona.trajectoriesTotal is a process-local, bounded recent trajectory buffer; global.trajectoriesRecorded is project-persisted. These counters have different lifetimes and are not comparable.');
   }
   if (intel.patternsLearned > 0 && neuralStats.patternCount === 0) {
     notes.push(`globalStats reports ${intel.patternsLearned} patterns learned but neural_patterns store is empty — pretrain has not written here, or trajectory-end isn't promoting patterns to the neural store yet`);
@@ -937,17 +1169,20 @@ export async function getUnifiedLearningStats(): Promise<UnifiedLearningStats> {
       signalsProcessed: intel.signalsProcessed,
       lastAdaptation: intel.lastAdaptation,
       source: '.claude-flow/neural/stats.json (globalStats)',
+      scope: 'project-persisted',
     },
     sona: {
       ...sonaStats,
       source: 'sonaCoordinator (in-memory, resets per process)',
       available: sonaAvailable,
+      scope: 'process-local',
+      metric: 'recent-buffered-trajectories',
     },
     memoryBridge: bridgeStats,
     neuralPatterns: neuralStats,
     consistency: {
-      sonaTracksGlobal: sonaAvailable ? Math.abs(sonaTracksGlobalDelta) <= 1 : true,
-      sonaTracksGlobalDelta,
+      sonaTracksGlobal: null,
+      sonaTracksGlobalDelta: null,
       notes,
     },
     generatedAt: new Date().toISOString(),
@@ -1083,7 +1318,7 @@ export async function recordStep(step: TrajectoryStep): Promise<boolean> {
       globalStats.lastAdaptation = Date.now();
     }
 
-    globalStats.trajectoriesRecorded++;
+    bumpStat('trajectoriesRecorded');
     savePersistedStats();
     return true;
   } catch {
@@ -1134,7 +1369,7 @@ export async function recordTrajectory(
       if (verdict === 'success') {
         for (const step of enrichedSteps) {
           if (step.embedding && step.embedding.length > 0) {
-            reasoningBank.store({
+            const added = reasoningBank.store({
               id: `pattern-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
               type: step.type,
               content: step.content,
@@ -1143,7 +1378,10 @@ export async function recordTrajectory(
               metadata: step.metadata || {},
               createdAt: Date.now(),
             });
-            globalStats.patternsLearned++;
+            // #3979 item 4: count only patterns that were actually added. A step
+            // whose content already exists is merged into that pattern, so the
+            // counter no longer climbs once per successful step.
+            if (added) bumpStat('patternsLearned');
           }
         }
       }
@@ -1156,24 +1394,32 @@ export async function recordTrajectory(
         const avgQuality = verdict === 'success' ? 1.0 : verdict === 'partial' ? 0.5 : 0.0;
         ruvllmCoord.recordTrajectory({
           steps: enrichedSteps.map(s => ({
-            state: s.content,
-            action: s.type,
-            reward: avgQuality,
-            embedding: s.embedding || []
+            type: ['query', 'route', 'generate', 'memory', 'feedback'].includes(s.type)
+              ? s.type : 'generate',
+            input: s.content,
+            output: '',
+            durationMs: 0,
+            confidence: avgQuality
           })),
           totalReward: avgQuality,
-          success: verdict === 'success'
+          outcome: verdict
         });
       } catch {
         // ruvllm recording failed silently
       }
     }
 
-    globalStats.trajectoriesRecorded++;
+    bumpStat('trajectoriesRecorded');
     globalStats.lastAdaptation = Date.now();
+    // #4283: the bank's own save is debounced, and the one-shot bins exit as
+    // soon as the command resolves, so write the patterns now. Otherwise
+    // stats.json counts patterns that never reach patterns.json.
+    // #4880: a failed write (e.g. ENOSPC) returns false instead of claiming
+    // success for patterns that exist only in memory.
+    const persisted = reasoningBank ? reasoningBank.flushToDisk() : true;
     savePersistedStats();
 
-    return true;
+    return persisted;
   } catch {
     return false;
   }
@@ -1233,7 +1479,7 @@ export async function findSimilarPatterns(
       usageCount: r.usageCount,
       createdAt: r.createdAt,
       lastUsedAt: r.lastUsedAt,
-      similarity: (r as unknown as { similarity?: number }).similarity ?? r.confidence ?? 0.5
+      similarity: r.similarity
     }));
   } catch {
     return [];
@@ -1259,6 +1505,12 @@ export function getIntelligenceStats(): IntelligenceStats & {
   // when @ruvector/ruvllm is fully resolvable. Sync require — cheap, idempotent.
   if (!ruvllmLoaded) {
     loadRuvllmCoordinatorSync();
+  }
+  // A read-only status process (ruvllm_status, `neural status`, a fresh MCP
+  // server) has never run initializeIntelligence(); without this it reported
+  // 0 trajectories no matter what other processes had persisted.
+  if (!persistedStatsLoaded) {
+    loadPersistedStats();
   }
   const ruvllmStats = ruvllmCoordinator?.stats?.() || null;
 
@@ -1378,6 +1630,10 @@ export function clearIntelligence(): void {
     signalsProcessed: 0,
     lastAdaptation: null
   };
+  pendingDelta = { trajectoriesRecorded: 0, patternsLearned: 0, signalsProcessed: 0 };
+  // In-memory reset only: stay "loaded" so the next stats read does not
+  // immediately re-hydrate the counters this call just cleared.
+  persistedStatsLoaded = true;
 }
 
 /**
@@ -1472,12 +1728,13 @@ export async function getPatternsByType(type: string): Promise<Pattern[]> {
 /**
  * Flush patterns to disk immediately
  * Call this at the end of training to ensure all patterns are saved
+ *
+ * @returns false when the patterns could not be written (#4880)
  */
-export function flushPatterns(): void {
-  if (reasoningBank) {
-    reasoningBank.flushToDisk();
-  }
+export function flushPatterns(): boolean {
+  const persisted = reasoningBank ? reasoningBank.flushToDisk() : true;
   savePersistedStats();
+  return persisted;
 }
 
 /**
@@ -1601,10 +1858,19 @@ export function getPersistenceStatus(): {
   statsFile: string;
   patternsExist: boolean;
   statsExist: boolean;
+  /** Patterns changed in memory that are not on disk yet (#4880). */
+  dirty: boolean;
+  /** Error from the most recent failed pattern flush; null after a success. */
+  lastFlushError: string | null;
+  /** Time (ms epoch) of the most recent pattern flush attempt. */
+  lastFlushAt: number | null;
 } {
   const dataDir = getDataDir();
   const patternsFile = getPatternsPath();
   const statsFile = getStatsPath();
+  const flush = reasoningBank
+    ? reasoningBank.getFlushState()
+    : { dirty: false, lastFlushError: null, lastFlushAt: null };
 
   return {
     enabled: true,
@@ -1612,6 +1878,7 @@ export function getPersistenceStatus(): {
     patternsFile,
     statsFile,
     patternsExist: existsSync(patternsFile),
-    statsExist: existsSync(statsFile)
+    statsExist: existsSync(statsFile),
+    ...flush,
   };
 }

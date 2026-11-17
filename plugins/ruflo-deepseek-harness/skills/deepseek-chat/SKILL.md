@@ -1,6 +1,6 @@
 ---
 name: deepseek-chat
-description: "One-shot chat completion against DeepSeek's `deepseek-chat` model via the OpenAI-compatible /v1/chat/completions endpoint. Reads DEEPSEEK_API_KEY from the environment; degrades gracefully (exit 0 with a JSON status:degraded envelope) when the key is missing or the API is unreachable. Use for non-reasoning tasks — summarization, extraction, quick classification — where deepseek-reasoner would be overkill."
+description: One-shot chat completion against DeepSeek's `deepseek-chat` model. Use for non-reasoning tasks such as summarization, extraction or quick classification. Reads DEEPSEEK_API_KEY; returns status:degraded when the key is missing or the API is unreachable.
 argument-hint: "--prompt <text> [--system <text>] [--model deepseek-chat] [--temperature 0.7] [--max-tokens 1024] [--format table|json] [--alert-on-error]"
 allowed-tools: Bash
 ---
@@ -16,6 +16,10 @@ shape as the other `ruflo-*-harness` skills (see ruflo-metaharness's
 - You want the raw content back as JSON so downstream tooling can consume it.
 - For reasoning-heavy tasks (proofs, multi-step planning, hard debugging),
   use `deepseek-reason` instead — same plugin, different model.
+
+## Data handling
+
+The prompt and any `--system` text are sent over the network to `api.deepseek.com`, a third party. Do not put secrets, credentials, personal data or proprietary code you are not allowed to share into them. The API key is read from `DEEPSEEK_API_KEY` in your shell only; never paste it into a prompt, a file or a command line.
 
 ## Algorithm
 

@@ -186,12 +186,39 @@ export type {
   TieredMemoryEntry,
   TieredStoreResult,
 } from './tiered-memory.js';
+// #4712: persisted inventory + exact-ID reads
+export {
+  TieredMemoryInventoryError,
+  TieredMemoryUnsupportedError,
+  TieredMemoryCursorError,
+  TIERED_STATUS_FILTERS,
+  TIERED_LIST_MAX_LIMIT,
+} from './tiered-memory-inventory.js';
+export type {
+  TieredEntryStatus,
+  TieredStatusFilter,
+  TieredListOptions,
+  TieredListResult,
+  TieredGetOptions,
+  TieredInventoryEntry,
+  TieredInventoryErrorCode,
+} from './tiered-memory-inventory.js';
 
 // ===== Core Components =====
 export { AgentDBAdapter } from './agentdb-adapter.js';
 export type { AgentDBAdapterConfig } from './agentdb-adapter.js';
+export {
+  AgentdbLockError,
+  clearStaleAgentdbLock,
+  closeWithAgentdbLockRecovery,
+  inspectAgentdbLock,
+  isConcurrentModificationError,
+  withAgentdbLockRecovery,
+} from './agentdb-lock-guard.js';
+export type { LockInspection, LockState, LockGuardOptions } from './agentdb-lock-guard.js';
 export { AgentDBBackend } from './agentdb-backend.js';
 export type { AgentDBBackendConfig } from './agentdb-backend.js';
+export { getHostSqliteDriver, useHostSqliteDriver } from './agentdb-native-driver.js';
 export {
   AgentDbRetrievalGuard,
   createAgentDbRetrievalGuard,

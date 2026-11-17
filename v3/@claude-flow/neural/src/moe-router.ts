@@ -138,6 +138,15 @@ interface PersistedModel {
     updateCount: number;
     routingCounts: number[];
     avgReward: number;
+    // Real call count of route(), distinct from sum(routingCounts) whenever
+    // topK > 1 (each route() call increments topK routingCounts entries but
+    // totalRoutings by exactly 1). Optional for backward compatibility with
+    // model files saved before this field existed.
+    totalRoutings?: number;
+    // Running sum of each expert's gate probability over probSamples route()
+    // calls (P_i = probSums[i] / probSamples). Optional: older files lack it.
+    probSums?: number[];
+    probSamples?: number;
   };
   metadata: {
     savedAt: string;
@@ -318,6 +327,11 @@ export class MoERouter {
   // Statistics
   private routingCounts: Float32Array; // [NUM_EXPERTS]
   private totalRoutings = 0;
+  // Running sum of gate probabilities per expert and the number of route()
+  // calls it covers, so computeLoadBalanceLoss() can use the mean P_i over the
+  // same history as f_i instead of the latest call's probabilities.
+  private probSums: Float64Array = new Float64Array(NUM_EXPERTS);
+  private probSamples = 0;
   private updateCount = 0;
   private avgReward = 0;
 
@@ -326,6 +340,15 @@ export class MoERouter {
   private lastHiddenActivated: Float32Array | null = null;
   private lastProbs: Float32Array | null = null;
   private lastSelectedExperts: number[] = [];
+  // Per-expert historical load fractions (routingCounts / totalRoutings) at
+  // the moment of the most recent route() call, i.e. the exact snapshot
+  // computeLoadBalanceLoss() used to produce the loadBalanceLoss it returned.
+  // Cached so updateExpertWeights() can apply the matching gradient even if
+  // routingCounts has advanced further by the time it's called. Only ever
+  // read after a route() call has populated lastProbs (guarded below), so
+  // pre-allocating here (matching the other pre-allocated buffers above) is
+  // safe even though it holds zeros until the first route().
+  private lastLoadBalanceFractions: Float32Array = new Float32Array(NUM_EXPERTS);
 
   constructor(config: Partial<MoERouterConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -406,8 +429,17 @@ export class MoERouter {
     // Select top-k experts
     const expertIndices = this.selectTopK(this.probs, this.config.topK);
 
-    // Compute load balance loss
+    // Compute load balance loss (and cache the fraction snapshot it used, so
+    // updateExpertWeights() can apply a gradient consistent with this value
+    // rather than a possibly-drifted later routingCounts state)
     const loadBalanceLoss = this.computeLoadBalanceLoss();
+    if (this.totalRoutings > 0) {
+      for (let i = 0; i < NUM_EXPERTS; i++) {
+        this.lastLoadBalanceFractions[i] = this.routingCounts[i] / this.totalRoutings;
+      }
+    } else {
+      this.lastLoadBalanceFractions.fill(0);
+    }
 
     // Compute entropy
     const routingEntropy = entropy(this.probs);
@@ -417,6 +449,10 @@ export class MoERouter {
       this.routingCounts[idx]++;
     }
     this.totalRoutings++;
+    for (let i = 0; i < NUM_EXPERTS; i++) {
+      this.probSums[i] += this.probs[i];
+    }
+    this.probSamples++;
 
     // Cache for gradient computation
     this.lastInput = new Float32Array(input);
@@ -484,6 +520,34 @@ export class MoERouter {
         this.gradb2[i] = clampedReward * (1 - this.lastProbs[i]);
       } else {
         this.gradb2[i] = clampedReward * (-this.lastProbs[i]);
+      }
+    }
+
+    // Load-balance auxiliary gradient (Switch Transformer style), added on
+    // top of the REINFORCE reward gradient above. computeLoadBalanceLoss()
+    // computes L = NUM_EXPERTS * coef * sum_i(f_i * P_i), where f_i is the
+    // (fixed, non-differentiable) historical load fraction cached by the
+    // most recent route() call and P_i = softmax(logit/T)_i (T = temperature,
+    // see softmax()). Differentiating through the temperature-scaled softmax
+    // gives dL/dlogit_k = (1/T) * NUM_EXPERTS*coef*P_k*(f_k - S), S =
+    // sum_i(f_i*P_i) -- an earlier version of this fix omitted the 1/T
+    // factor, exact only at the default temperature=1 (caught in review).
+    // This was computed every route() call and returned in RoutingResult,
+    // but never fed back into a weight update, so the regularizer had zero
+    // actual effect. Subtracted (not added) because this method performs
+    // gradient ASCENT on reward (W += lr*grad) while the balance term is a
+    // loss to MINIMIZE (W -= lr*dL/dW).
+    if (this.config.loadBalanceCoef !== 0) {
+      const fractions = this.lastLoadBalanceFractions;
+      const invTemperature = 1 / this.config.temperature;
+      let weightedProbSum = 0;
+      for (let i = 0; i < NUM_EXPERTS; i++) {
+        weightedProbSum += fractions[i] * this.lastProbs[i];
+      }
+      for (let k = 0; k < NUM_EXPERTS; k++) {
+        const balanceGrad =
+          invTemperature * NUM_EXPERTS * this.lastProbs[k] * (fractions[k] - weightedProbSum);
+        this.gradb2[k] -= this.config.loadBalanceCoef * balanceGrad;
       }
     }
 
@@ -608,6 +672,8 @@ export class MoERouter {
   resetStats(): void {
     this.routingCounts.fill(0);
     this.totalRoutings = 0;
+    this.probSums.fill(0);
+    this.probSamples = 0;
     this.updateCount = 0;
     this.avgReward = 0;
   }
@@ -643,7 +709,22 @@ export class MoERouter {
       this.routingCounts = new Float32Array(
         model.stats.routingCounts || new Array(NUM_EXPERTS).fill(0)
       );
-      this.totalRoutings = this.routingCounts.reduce((a, b) => a + b, 0);
+      // Prefer the persisted real call count. sum(routingCounts) only equals
+      // it when topK === 1 (each route() call increments topK entries but
+      // totalRoutings by exactly 1) -- falling back to that sum is only for
+      // reading model files saved before totalRoutings was persisted, and is
+      // an approximation for any topK > 1 history in that older file.
+      this.totalRoutings =
+        typeof model.stats.totalRoutings === 'number'
+          ? model.stats.totalRoutings
+          : this.routingCounts.reduce((a, b) => a + b, 0);
+      // Files saved before probSums existed start a fresh probability average.
+      const probSums = model.stats.probSums;
+      const hasProbSums =
+        Array.isArray(probSums) && probSums.length === NUM_EXPERTS &&
+        typeof model.stats.probSamples === 'number';
+      this.probSums = hasProbSums ? new Float64Array(probSums) : new Float64Array(NUM_EXPERTS);
+      this.probSamples = hasProbSums ? (model.stats.probSamples as number) : 0;
 
       return true;
     } catch (err) {
@@ -693,6 +774,9 @@ export class MoERouter {
           updateCount: this.updateCount,
           routingCounts: Array.from(this.routingCounts),
           avgReward: this.avgReward,
+          totalRoutings: this.totalRoutings,
+          probSums: Array.from(this.probSums),
+          probSamples: this.probSamples,
         },
         metadata: {
           savedAt: new Date().toISOString(),
@@ -749,10 +833,12 @@ export class MoERouter {
   private computeLoadBalanceLoss(): number {
     if (this.totalRoutings === 0) return 0;
 
+    if (this.probSamples === 0) return 0;
+
     let loss = 0;
     for (let i = 0; i < NUM_EXPERTS; i++) {
       const fraction = this.routingCounts[i] / this.totalRoutings;
-      const avgProb = this.probs[i]; // Current routing prob
+      const avgProb = this.probSums[i] / this.probSamples;
       loss += fraction * avgProb;
     }
 

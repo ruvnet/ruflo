@@ -11,8 +11,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node "$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs" pre-bash",
-            "timeout": 5000
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs\" pre-bash",
+            "timeout": 5000,
+            "onFailure": "block"
           }
         ]
       }
@@ -23,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node "$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs" post-edit",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs\" post-edit",
             "timeout": 10000
           }
         ]
@@ -34,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node "$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs" route",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs\" route",
             "timeout": 10000
           }
         ]
@@ -46,13 +47,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node "$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs" session-restore",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs\" session-restore",
             "timeout": 15000,
             "continueOnError": true
           },
           {
             "type": "command",
-            "command": "node "$CLAUDE_PROJECT_DIR/.claude/helpers/auto-memory-hook.mjs" import",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/auto-memory-hook.mjs\" import",
             "timeout": 8000,
             "continueOnError": true
           }
@@ -64,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node "$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs" session-end",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs\" session-end",
             "timeout": 10000,
             "continueOnError": true
           }
@@ -76,7 +77,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node "$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs" status",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs\" status",
             "timeout": 3000,
             "continueOnError": true
           }
@@ -88,7 +89,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node "$CLAUDE_PROJECT_DIR/.claude/helpers/auto-memory-hook.mjs" sync",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/auto-memory-hook.mjs\" sync",
             "timeout": 10000,
             "continueOnError": true
           }
@@ -98,7 +99,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "node "$CLAUDE_PROJECT_DIR/.claude/helpers/statusline.cjs"",
+    "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/statusline.cjs\"",
     "refreshMs": 5000,
     "enabled": true
   },

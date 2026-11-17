@@ -1,8 +1,9 @@
 ---
 name: harness-security-bench
-description: Run `@metaharness/darwin security bench` (upstream "Darwin Shield" / ADR-155) — evolves a champion security-detection harness against a 10-vuln / 9-decoy corpus and grades it on TPR/FPR/patch-pass/repro/unsafe vs four baselines (B0 static, B1 LLM-single-pass, B2 fixed-agent, B3 Darwin-champion). Closest reference implementation for ruflo's own ADR-155 nightly self-learning security harness (PR #2417). Degrades gracefully when @metaharness/darwin is absent.
+description: "Run `@metaharness/darwin security bench` (Darwin Shield): evolve a security-detection harness on a 10-vuln/9-decoy corpus and grade TPR/FPR/patch/repro against four baselines. Use when benchmarking security-harness detection. Degrades gracefully without darwin."
 argument-hint: "[--population 2] [--cycles 1] [--seed N] [--alert-on-fail]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 Surfaces the upstream `metaharness-darwin security bench` command. **This is
@@ -29,7 +30,9 @@ ground-truth set. Running this nightly gives us:
 
 Implementation: [`scripts/security-bench.mjs`](../../scripts/security-bench.mjs).
 
-1. Shell to `npx -y @metaharness/darwin@~0.8.0 metaharness-darwin security bench --population N --cycles N [--seed S]`.
+1. Run `metaharness-darwin security bench --population N --cycles N [--seed S]` from the
+   installed `@metaharness/darwin` (pin in `_darwin.mjs`; one-time cache install only if
+   no installed copy qualifies — never npx).
 2. Default timeout = `3s × 19 evaluations × population × cycles + 30s overhead`.
    At default `--population 2 --cycles 1` ≈ 144s; at `--population 4 --cycles 3` ≈ 12 min.
 3. Parse the markdown report — overall PASS/FAIL plus per-gate

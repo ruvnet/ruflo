@@ -465,6 +465,115 @@ describe('ControllerRegistry', () => {
     });
   });
 
+  // ----- External controller registration (set) -----
+  //
+  // Dream Cycle 2026-10-28: `memory-bridge.ts`'s post-init wiring
+  // constructs several AgentDB-bundled controllers itself (mutationGuard,
+  // attestationLog, semanticRouter, skills, reasoningBank, learningSystem,
+  // gnnService, rvfOptimizer, guardedVectorBackend) and has always gated
+  // registration on `typeof reg.set === 'function'`, falling back to an
+  // unread `reg._controllers` property otherwise. `ControllerRegistry` had
+  // no public `set()` until this fix, so every one of those activations
+  // silently wrote to the dead fallback — `get('mutationGuard')` and
+  // `get('attestationLog')` always returned null, permanently disabling
+  // write-mutation validation (fail-open) and audit logging (silent no-op).
+  describe('external controller registration (set)', () => {
+    it('makes an externally-constructed instance immediately visible via get()/isEnabled()', async () => {
+      await registry.initialize({ backend: mockBackend });
+
+      const fakeGuard = { validate: () => ({ allowed: true }) };
+      expect(registry.get('mutationGuard')).toBeNull();
+      expect(registry.isEnabled('mutationGuard')).toBe(false);
+
+      registry.set('mutationGuard', fakeGuard);
+
+      expect(registry.get('mutationGuard')).toBe(fakeGuard);
+      expect(registry.isEnabled('mutationGuard')).toBe(true);
+    });
+
+    it('reproduces the exact memory-bridge.ts activation pattern end-to-end', async () => {
+      // Mirrors memory-bridge.ts's real activation guard verbatim:
+      //   if (typeof reg.set === 'function') reg.set(name, inst);
+      //   else reg._controllers = { ...(reg._controllers || {}), [name]: inst };
+      await registry.initialize({ backend: mockBackend });
+
+      const reg = registry as unknown as Record<string, unknown>;
+      const fakeAttestation = { record: vi.fn() };
+
+      if (typeof reg.set === 'function') {
+        (reg.set as (n: ControllerName, i: unknown) => void)('attestationLog', fakeAttestation);
+      } else {
+        (reg as any)._controllers = { ...((reg as any)._controllers || {}), attestationLog: fakeAttestation };
+      }
+
+      // Before the fix this fell through to the dead `_controllers` branch
+      // and get() stayed null forever — the exact production symptom.
+      expect(registry.get('attestationLog')).toBe(fakeAttestation);
+    });
+
+    it('lists an externally-set controller via listControllers() and getActiveCount()', async () => {
+      await registry.initialize({ backend: mockBackend });
+      expect(registry.isEnabled('guardedVectorBackend')).toBe(false);
+      const activeBefore = registry.getActiveCount();
+
+      registry.set('guardedVectorBackend', { lookup: () => [] });
+
+      expect(registry.getActiveCount()).toBe(activeBefore + 1);
+      const entry = registry.listControllers().find((c) => c.name === 'guardedVectorBackend');
+      expect(entry).toBeDefined();
+      expect(entry?.enabled).toBe(true);
+    });
+
+    it('shuts down an externally-set controller cleanly on registry.shutdown()', async () => {
+      await registry.initialize({ backend: mockBackend });
+      const destroy = vi.fn();
+      registry.set('mutationGuard', { destroy });
+
+      await registry.shutdown();
+
+      expect(destroy).toHaveBeenCalledOnce();
+      expect(registry.getActiveCount()).toBe(0);
+    });
+
+    it('overwrites a prior entry cleanly on re-registration (non-discriminating control)', async () => {
+      await registry.initialize({ backend: mockBackend });
+      const first = { id: 'first' };
+      const second = { id: 'second' };
+
+      registry.set('semanticRouter', first);
+      registry.set('semanticRouter', second);
+
+      expect(registry.get('semanticRouter')).toBe(second);
+    });
+
+    // Adversarial-critique follow-up (same Dream Cycle session): set() must
+    // not orphan a resource-holding prior instance the way #2432 originally
+    // fixed for initController()'s own replacement path. The new instance
+    // must still be visible via get() synchronously, with the old one's
+    // close() dispatched in the background.
+    it('closes a replaced instance\'s resources without delaying visibility of the new one (#2432 class)', async () => {
+      await registry.initialize({ backend: mockBackend });
+      let closeResolve!: () => void;
+      const closed = new Promise<void>((resolve) => { closeResolve = resolve; });
+      const oldInstance = { close: vi.fn(() => closed) };
+      const newInstance = { id: 'new' };
+
+      registry.set('semanticRouter', oldInstance);
+      registry.set('semanticRouter', newInstance);
+
+      // New instance is visible immediately, even though oldInstance.close()
+      // is still an unresolved promise in the background.
+      expect(registry.get('semanticRouter')).toBe(newInstance);
+      expect(oldInstance.close).toHaveBeenCalledOnce();
+
+      closeResolve();
+      await closed;
+      // Replacing again after close resolves must not have reverted or
+      // dropped the second registration.
+      expect(registry.get('semanticRouter')).toBe(newInstance);
+    });
+  });
+
   // ----- Health Check -----
 
   describe('health check', () => {
@@ -848,5 +957,134 @@ describe('HybridBackend proxy methods', () => {
     expect(result).toEqual([]);
 
     await backend.shutdown();
+  });
+});
+
+// ===== #3327 Finding A — ReasoningBank embedder contract =====
+//
+// agentdb's ReasoningBank calls `embedder.embedPassage()` on store and
+// `embedder.embedQuery()` on search. For months the registry handed it an
+// object exposing only {embed, embedBatch, initialize}, so BOTH paths threw
+// `TypeError: ... is not a function`. The bridge's catch swallowed the throw
+// and reported an ordinary fallback, so `agentdb_controllers` showed
+// `reasoningBank: enabled=true` while every read and write silently routed to
+// substring matching.
+//
+// Second, independent defect: the no-generator branch returned ZERO vectors,
+// so even with the method names shimmed every pattern embeds identically and
+// ranks on noise.
+
+describe('#3327 — embedder handed to agentdb controllers satisfies the asymmetric contract', () => {
+  // NOTE: the constructor takes no arguments — `config` is assigned by
+  // initialize(). Set it directly so these stay pure unit tests that do not
+  // need AgentDB, a database file, or a downloaded embedding model.
+  const makeRegistry = (config: Partial<RuntimeConfig> = {}) => {
+    const reg = new ControllerRegistry() as any;
+    reg.config = { dimension: 384, ...config } as RuntimeConfig;
+    return reg;
+  };
+
+  it('exposes embedQuery/embedPassage on the user-generator branch', async () => {
+    const reg = makeRegistry({ embeddingGenerator: async () => new Float32Array(384).fill(0.5) });
+    const svc = reg.createEmbeddingService();
+
+    for (const fn of ['embed', 'embedQuery', 'embedPassage', 'embedBatch']) {
+      expect(typeof svc[fn], `${fn} must exist — ReasoningBank calls it`).toBe('function');
+    }
+    // The aliases must return the generator's real vector, not a placeholder.
+    const q = await svc.embedQuery('hello');
+    expect(Array.from(q).some((x) => x !== 0)).toBe(true);
+  });
+
+  it('exposes embedQuery/embedPassage on the fallback stub branch too', () => {
+    const svc = makeRegistry().createEmbeddingService();
+    for (const fn of ['embed', 'embedQuery', 'embedPassage', 'embedBatch']) {
+      expect(typeof svc[fn], `${fn} missing => ReasoningBank throws at call time`).toBe('function');
+    }
+  });
+
+  it('marks the zero-vector stub so callers can refuse to rank on noise', async () => {
+    const svc = makeRegistry().createEmbeddingService();
+    expect(svc.isStubEmbedder).toBe(true);
+    const v = await svc.embedQuery('anything');
+    expect(Array.from(v).every((x) => x === 0)).toBe(true);
+  });
+
+  it('a real embeddingGenerator is NOT flagged as a stub', () => {
+    const reg = makeRegistry({ embeddingGenerator: async () => new Float32Array(384).fill(0.1) });
+    expect(reg.createEmbeddingService().isStubEmbedder).toBeUndefined();
+  });
+
+  it("prefers AgentDB's own embedder over the local service for reasoningBank", async () => {
+    const reg = makeRegistry();
+    const realEmbedder = {
+      embed: async () => new Float32Array(384).fill(0.25),
+      embedQuery: async () => new Float32Array(384).fill(0.25),
+      embedPassage: async () => new Float32Array(384).fill(0.25),
+    };
+    let handed: any = null;
+    reg.agentdb = { database: {}, embedder: realEmbedder };
+
+    // Stand in for agentdb's ReasoningBank so the assertion is about WHICH
+    // embedder the registry passes, not about agentdb being installed.
+    vi.doMock('agentdb', () => ({
+      ReasoningBank: class {
+        constructor(_db: unknown, embedder: unknown) { handed = embedder; }
+      },
+    }));
+
+    const inst = await reg.createController('reasoningBank').catch(() => null);
+    if (inst === null && handed === null) return; // agentdb not resolvable here — skip
+
+    expect(handed, 'registry must hand ReasoningBank a usable embedder').toBeTruthy();
+    expect(handed.isStubEmbedder, 'must NOT be the zero-vector stub').toBeUndefined();
+    expect(typeof handed.embedPassage).toBe('function');
+    expect(typeof handed.embedQuery).toBe('function');
+  });
+});
+
+describe('#3327 — adaptEmbedderForAgentdb covers the degraded-embedder path', () => {
+  const reg = () => new ControllerRegistry() as any;
+
+  it("aliases embed onto embedQuery/embedPassage for agentdb's mock embedder", async () => {
+    // When Transformers.js cannot load (offline, or a failed `sharp` optional
+    // install) agentdb substitutes a mock embedder exposing only `embed`.
+    // Passing that through untouched reintroduces the original crash — this
+    // case is why `?? createEmbeddingService()` alone was not sufficient.
+    const mock = { embed: async (t: string) => new Float32Array(384).fill(t.length || 1) };
+    const out = reg().adaptEmbedderForAgentdb(mock);
+
+    expect(typeof out.embedQuery).toBe('function');
+    expect(typeof out.embedPassage).toBe('function');
+    expect(typeof out.embedBatch).toBe('function');
+    expect(Array.from(await out.embedPassage('abc'))[0]).toBe(3);
+    expect(Array.from(await out.embedQuery('abcd'))[0]).toBe(4);
+  });
+
+  it('passes a already-complete embedder through untouched', () => {
+    const real = {
+      embed: async () => new Float32Array(1),
+      embedQuery: async () => new Float32Array(1),
+      embedPassage: async () => new Float32Array(1),
+    };
+    expect(reg().adaptEmbedderForAgentdb(real)).toBe(real);
+  });
+
+  it('returns null when there is nothing usable to adapt', () => {
+    const r = reg();
+    expect(r.adaptEmbedderForAgentdb(null)).toBeNull();
+    expect(r.adaptEmbedderForAgentdb(undefined)).toBeNull();
+    expect(r.adaptEmbedderForAgentdb({})).toBeNull();
+    expect(r.adaptEmbedderForAgentdb({ embed: 'not-a-function' })).toBeNull();
+  });
+
+  it('preserves a native embedBatch rather than serialising one call at a time', async () => {
+    let usedNative = false;
+    const withBatch = {
+      embed: async () => new Float32Array(1),
+      embedBatch: async (ts: string[]) => { usedNative = true; return ts.map(() => new Float32Array(1)); },
+    };
+    await reg().adaptEmbedderForAgentdb(withBatch).embedBatch(['a', 'b']);
+    expect(usedNative).toBe(true);
   });
 });

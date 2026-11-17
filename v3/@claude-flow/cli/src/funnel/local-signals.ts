@@ -9,7 +9,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 
 export interface SecurityStatus {
   status: 'CLEAN' | 'ISSUES' | 'PENDING';
@@ -42,7 +42,8 @@ export function getSecurityStatus(cwd: string = process.cwd()): SecurityStatus {
       scan.summary?.total ?? scan.totalFindings ?? scan.findings?.length ?? 0;
     const findings = Math.max(0, Number.isFinite(rawFindings) ? rawFindings : 0);
     return {
-      status: findings > 0 ? 'ISSUES' : 'CLEAN',
+      // #4124: a scan whose dependency phase could not run is not a clean scan.
+      status: findings > 0 ? 'ISSUES' : scan.incomplete === true ? 'PENDING' : 'CLEAN',
       findings,
       scannedAt: typeof scan.timestamp === 'string' ? scan.timestamp : undefined,
       cvesFixed: 0,
@@ -82,7 +83,12 @@ export function getSwarmStatus(): SwarmStatus {
 /** Count of uncommitted-changed files (git status --short line count). */
 export function getGitUncommittedCount(): number | undefined {
   try {
-    const out = execSync('git status --porcelain 2>/dev/null', { encoding: 'utf-8', timeout: 3000 });
+    // #4770: no shell, so this also works on Windows.
+    const out = execFileSync('git', ['status', '--porcelain'], {
+      encoding: 'utf-8',
+      timeout: 3000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
     const lines = out.split('\n').filter((l) => l.trim().length > 0);
     return lines.length;
   } catch {

@@ -69,6 +69,7 @@ export {
 } from './domain/services/discovery-service.js';
 export {
   HandshakeService,
+  HANDSHAKE_SIGNATURE_CONTEXT,
   type HandshakeChallenge,
   type HandshakeChallengeResponse,
   type HandshakeResult,
@@ -149,6 +150,13 @@ export {
   type ToAgentCardOptions,
   type AgentCardValidation,
 } from './a2a/agent-card.js';
+export {
+  projectPlannerSafeAgentCard,
+  type PlannerCapabilityDefinition,
+  type PlannerDescriptorPolicy,
+  type PlannerSafeAgentDescriptor,
+  type PlannerDescriptorProjection,
+} from './a2a/planner-descriptor.js';
 export {
   startAgentCardServer,
   isLoopbackHost,

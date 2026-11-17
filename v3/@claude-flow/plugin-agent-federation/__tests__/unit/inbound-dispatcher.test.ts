@@ -153,7 +153,7 @@ describe('dispatchInbound — happy path', () => {
         signatureVersion: 'jcs-v1',
       },
     });
-    await dispatchInbound('a', jcs('task-assignment'), deps);
+    await dispatchInbound('a', jcs('task-assignment'), { ...deps, authorizationMode: 'legacy' });
     await dispatchInbound('a', jcs('memory-query'), deps);
     await dispatchInbound('a', jcs('context-share'), deps);
     expect(events.map((e) => e.event)).toEqual([
@@ -402,11 +402,38 @@ describe('dispatchInbound — inbound authorization', () => {
     expect(events).toEqual([]);
   });
 
-  it('observe evaluates and reports denial without blocking', async () => {
+  it.each(['legacy', 'observe'] as const)('%s still refuses a denied task-assignment, agent-spawn or memory-query', async (mode) => {
+    for (const type of ['task-assignment', 'agent-spawn', 'memory-query', 'trust-change', 'claim-event']) {
+      const peer = mkPeer('alpha');
+      const { deps, events } = withVerifier([peer], () => true);
+      const result = await dispatchInbound('a', jcsMessage(type), {
+        ...deps,
+        authorizationMode: mode,
+        authorizeInbound: () => ({ allowed: false, reason: 'untrusted peer' }),
+      });
+      expect(result, type).toEqual({ accepted: false, reason: 'AUTHORIZATION_DENIED' });
+      expect(events, type).toHaveLength(0);
+    }
+  });
+
+  it('legacy and observe refuse a consequential message when the evaluator throws', async () => {
+    for (const mode of ['legacy', 'observe'] as const) {
+      const { deps, events } = withVerifier([mkPeer('alpha')], () => true);
+      const result = await dispatchInbound('a', jcsMessage('agent-spawn'), {
+        ...deps,
+        authorizationMode: mode,
+        authorizeInbound: () => { throw new Error('boom'); },
+      });
+      expect(result).toEqual({ accepted: false, reason: 'AUTHORIZATION_ERROR' });
+      expect(events).toHaveLength(0);
+    }
+  });
+
+  it('observe evaluates and reports denial without blocking a low-risk message', async () => {
     const peer = mkPeer('alpha');
     const { deps, events } = withVerifier([peer], () => true);
     const authorizeInbound = vi.fn(() => ({ allowed: false, reason: 'would deny' }));
-    const result = await dispatchInbound('a', jcsMessage(), {
+    const result = await dispatchInbound('a', jcsMessage('status-broadcast'), {
       ...deps,
       authorizationMode: 'observe',
       authorizeInbound,
@@ -593,7 +620,10 @@ describe('canonicalizeEnvelopeForVerify', () => {
       JCS_SIGNATURE_PROTOCOL,
       selectEnvelopeSignatureVersion,
     } = await import('../../src/application/inbound-dispatcher.js');
-    expect(DEFAULT_ENVELOPE_SIGNATURE_MODE).toBe('prefer-jcs');
+    expect(DEFAULT_ENVELOPE_SIGNATURE_MODE).toBe('require-jcs');
+    expect(() => selectEnvelopeSignatureVersion(DEFAULT_ENVELOPE_SIGNATURE_MODE, [], 'heartbeat')).toThrow(
+      'PEER_SIGNATURE_PROTOCOL_UNSUPPORTED',
+    );
     expect(selectEnvelopeSignatureVersion('legacy', [JCS_SIGNATURE_PROTOCOL])).toBe('legacy-v1');
     expect(selectEnvelopeSignatureVersion('prefer-jcs', [])).toBe('legacy-v1');
     expect(selectEnvelopeSignatureVersion('prefer-jcs', [JCS_SIGNATURE_PROTOCOL])).toBe('jcs-v1');
@@ -656,6 +686,36 @@ describe('canonicalizeEnvelopeForVerify', () => {
     expect(result).toEqual({ accepted: false, reason: 'INVALID_SIGNATURE' });
     expect(events).toEqual([]);
   });
+
+  it.each(['heartbeat', 'status-broadcast'])(
+    'refuses legacy-v1 %s by default and accepts it with prefer-jcs opt-in',
+    async (type) => {
+      const { DEFAULT_ENVELOPE_SIGNATURE_MODE, acceptedSignatureVersionsFor } = await import(
+        '../../src/application/inbound-dispatcher.js'
+      );
+      const peer = mkPeer('alpha');
+      const message: AgentMessage = {
+        ...baseMsg('alpha', type),
+        metadata: { sourceNodeId: 'alpha', signature: 'valid' },
+      };
+
+      const byDefault = withVerifier([peer], () => true);
+      const refused = await dispatchInbound('a', message, {
+        ...byDefault.deps,
+        acceptedSignatureVersions: acceptedSignatureVersionsFor(DEFAULT_ENVELOPE_SIGNATURE_MODE),
+      });
+      expect(refused).toEqual({ accepted: false, reason: 'INVALID_PAYLOAD' });
+      expect(byDefault.events).toEqual([]);
+
+      const optedIn = withVerifier([peer], () => true);
+      const accepted = await dispatchInbound('a', message, {
+        ...optedIn.deps,
+        acceptedSignatureVersions: acceptedSignatureVersionsFor('prefer-jcs'),
+      });
+      expect(accepted.accepted).toBe(true);
+      expect(optedIn.events).toHaveLength(1);
+    },
+  );
 
   it('can disable legacy verification after enforcement migration', async () => {
     const peer = mkPeer('alpha');

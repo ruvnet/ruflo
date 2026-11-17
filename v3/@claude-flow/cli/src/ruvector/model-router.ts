@@ -219,6 +219,12 @@ export interface ModelRouterConfig {
   priorDecay: number;
 }
 
+/** Request-local preferences; omitted or false keeps the existing scoring. */
+export interface ModelRoutingPreferences {
+  preferCost?: boolean;
+  preferSpeed?: boolean;
+}
+
 /**
  * Routing decision result
  */
@@ -512,6 +518,23 @@ function envMaxUncertainty(): number | undefined {
   return n;
 }
 
+// Dream Cycle 2026-09-17 — env override for priorDecay, mirroring
+// envMaxUncertainty() above. The discounted-Thompson-sampling primitive
+// (see priorDecay's doc comment) was built, tested, and benchmarked in
+// #3049 but shipped with no way to actually turn it on — DEFAULT_CONFIG
+// hardcoded 1 (disabled) with no env/config knob, unlike every sibling
+// tunable in this file. Parsed once at module load; invalid/out-of-range
+// values fall through to the constructor's own priorDecay<=0||>1 guard,
+// which already normalizes to 1 (disabled) — so an unset or malformed env
+// var is fully backward compatible with existing deployments.
+function envPriorDecay(): number | undefined {
+  const raw = process.env.CLAUDE_FLOW_PRIOR_DECAY;
+  if (!raw) return undefined;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0 || n > 1) return undefined;
+  return n;
+}
+
 const DEFAULT_CONFIG: ModelRouterConfig = {
   confidenceThreshold: 0.85,
   maxUncertainty: envMaxUncertainty() ?? 0.15,
@@ -521,7 +544,7 @@ const DEFAULT_CONFIG: ModelRouterConfig = {
   autoSaveInterval: 1, // Save after every decision for CLI persistence
   enableCostOptimization: true,
   preferSpeed: true,
-  priorDecay: 1,
+  priorDecay: envPriorDecay() ?? 1,
 };
 
 // Beta shape parameters must stay well clear of 0 for sampleGamma/sampleBeta
@@ -599,7 +622,7 @@ export class ModelRouter {
    * 'bandit-fallback'` (neural was enabled but declined) or
    * `'heuristic'` (neural was disabled).
    */
-  async route(task: string, embedding?: number[]): Promise<ModelRoutingResult> {
+  async route(task: string, embedding?: number[], preferences: ModelRoutingPreferences = {}): Promise<ModelRoutingResult> {
     const startTime = performance.now();
 
     // Analyze task complexity
@@ -677,7 +700,7 @@ export class ModelRouter {
       }
     }
 
-    const scores = this.computeModelScores(complexity);
+    const scores = this.computeModelScores(complexity, preferences);
     const adjustedScores = this.applyCircuitBreaker(scores);
 
     // A/B mode: compute the pure-bandit pick alongside the hybrid pick so
@@ -951,18 +974,27 @@ export class ModelRouter {
   /**
    * Compute scores for each model
    */
-  private computeModelScores(complexity: ComplexityAnalysis): Record<ClaudeModel, number> {
+  private computeModelScores(complexity: ComplexityAnalysis, preferences: ModelRoutingPreferences): Record<ClaudeModel, number> {
     const { score } = complexity;
 
     // Base scoring: inverse relationship with complexity
     // Low complexity → haiku scores high
     // High complexity → opus scores high
-    return {
+    const scores: Record<ClaudeModel, number> = {
       haiku: Math.max(0, 1 - score * 2), // Drops off quickly as complexity rises
       sonnet: 1 - Math.abs(score - 0.5) * 2, // Peaks at medium complexity
       opus: Math.min(1, score * 1.5), // Rises with complexity
       inherit: 0.1, // Low baseline unless explicitly needed
     };
+    for (const model of ['haiku', 'sonnet', 'opus'] as const) {
+      const capabilities = MODEL_CAPABILITIES[model];
+      // Preferences must not boost a tier beyond its task capability.
+      // Circuit-breaker penalties and uncertainty escalation still apply.
+      if (score > capabilities.maxComplexity) continue;
+      if (preferences.preferCost) scores[model] *= 2 - capabilities.costMultiplier;
+      if (preferences.preferSpeed) scores[model] *= capabilities.speedMultiplier;
+    }
+    return scores;
   }
 
   /**

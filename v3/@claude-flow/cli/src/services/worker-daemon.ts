@@ -11,10 +11,12 @@
  * - testgaps: Test coverage analysis (20 min interval)
  */
 
+import { ConfigFileManager } from './config-file-manager.js';
 import { EventEmitter } from 'events';
-import { existsSync, mkdirSync, writeFileSync, readFileSync, appendFileSync, unlinkSync, renameSync } from 'fs';
-import { cpus } from 'os';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, appendFileSync, unlinkSync, renameSync, statSync } from 'fs';
+import { cpus, homedir } from 'os';
 import { join } from 'path';
+import { createRequire } from 'node:module';
 import { writeFileAtomic } from '../fs-secure.js';
 import {
   HeadlessWorkerExecutor,
@@ -29,11 +31,23 @@ import {
 // service itself is owned/frozen elsewhere (memory-distillation.ts) — it is
 // incremental (rowid cursor), non-destructive, transactional, and
 // quick_check-gated, so it's safe to call unconditionally on every tick.
-import { runDistillation, defaultMemoryDbPath, type DistillReport } from './memory-distillation.js';
-import { backupMemoryDb } from './memory-backup.js';
+import {
+  runDistillationForStores,
+  projectMemoryDbPaths,
+  type DistillReport,
+  type StoreDistillResult,
+} from './memory-distillation.js';
+import { backupProjectMemoryDbs } from './memory-backup.js';
+import { dispatchQueueDir } from './dispatch-queue.js';
 import { resolveGitWorkspaceIdentity, type GitWorkspaceIdentity } from './git-workspace-identity.js';
 import { getWorkspaceLeaseRegistry } from './workspace-lease.js';
 import { getRepoSupervisorRegistry, type SupervisorRecord } from './repo-supervisor.js';
+
+// Daemon config is read synchronously from the constructor. In an ESM build,
+// bare `require` is undefined, so use a module-relative require for YAML.
+const requireYaml = createRequire(import.meta.url);
+const DAEMON_LOG_MAX_BYTES = 5 * 1024 * 1024;
+const DAEMON_LOG_BACKUPS = 3;
 
 // Worker types matching hooks-tools.ts
 export type WorkerType =
@@ -128,6 +142,12 @@ export interface DaemonConfig {
   // .claude-flow/config.json, or RUFLO_DAEMON_AI_WORKERS=1.
   aiWorkersEnabled: boolean;
   workers: WorkerConfig[];
+  // #3547 (#1968 follow-up): explicit `daemon start --workers <list>`
+  // selection. When set, only these worker types are enabled — applied
+  // after daemon-state.json restore (initializeWorkerStates) so a stale
+  // saved state can never re-enable a worker the operator just deselected.
+  // Undefined means "no explicit selection": DEFAULT_WORKERS/state decide.
+  enabledWorkers?: string[];
 }
 
 // Worker configuration with staggered offsets to prevent overlap
@@ -147,6 +167,15 @@ const DEFAULT_WORKERS: WorkerConfigInternal[] = [
   { type: 'predict', intervalMs: 10 * 60 * 1000, offsetMs: 0, priority: 'low', description: 'Predictive preloading', enabled: false },
   { type: 'document', intervalMs: 60 * 60 * 1000, offsetMs: 0, priority: 'low', description: 'Auto-documentation', enabled: false },
 ];
+
+/** Parse only worker types the daemon can actually schedule. */
+export function parseEnabledWorkers(value: string): WorkerType[] {
+  const names = value.split(',');
+  if (!names.length || names.some(name => !DEFAULT_WORKERS.some(worker => worker.type === name))) {
+    throw new Error(`--workers must be a comma-separated list of: ${DEFAULT_WORKERS.map(worker => worker.type).join(',')}`);
+  }
+  return [...new Set(names)] as WorkerType[];
+}
 
 // Worker timeout — must exceed the longest per-worker headless timeout (15 min for audit/refactor).
 // Previously 5 min, which caused orphan processes when daemon timeout fired before executor timeout (#1117).
@@ -174,6 +203,10 @@ const CONSOLIDATE_DEDUP_DISTANCE = 0.2;
 // `--no-distill` flag on `daemon start` (see commands/daemon.ts), which sets
 // this env var on the forked/foreground daemon process.
 const NO_DISTILL_ENV = 'RUFLO_DAEMON_NO_DISTILL';
+
+// Opt-out for recording each finished worker job as a learning trajectory
+// (see WorkerDaemon.recordWorkerTrajectory).
+const NO_LEARN_ENV = 'RUFLO_DAEMON_NO_LEARN';
 
 // #2356 — Self-terminating lifecycle defaults. A background daemon with no
 // upper bound on its lifetime runs until the box reboots; in the field this
@@ -205,6 +238,19 @@ function readEnvSecsAsMs(name: string, defaultMs: number): number {
 /**
  * Worker Daemon - Manages background workers with Node.js
  */
+/** `daemon.aiWorkers.enabled` from the USER-level config only (never the project's). */
+function readUserAiWorkersOptIn(): boolean | undefined {
+  try {
+    const raw = JSON.parse(readFileSync(join(homedir(), '.claude-flow', 'config.json'), 'utf-8'));
+    const nested = raw?.daemon?.aiWorkers?.enabled;
+    const dotted = raw?.['daemon.aiWorkers.enabled'];
+    const v = nested ?? dotted;
+    return typeof v === 'boolean' ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export class WorkerDaemon extends EventEmitter {
   private config: DaemonConfig;
   private workers: Map<WorkerType, WorkerState> = new Map();
@@ -230,6 +276,7 @@ export class WorkerDaemon extends EventEmitter {
   // path, `ruflo daemon trigger -w <worker>` runs before headlessAvailable
   // is set and falls through to the local stub in ~2ms.
   private headlessInitPromise: Promise<void> = Promise.resolve();
+  private processingDispatchQueue = false;
 
   // Preserve the original constructor config so we can detect explicit overrides
   // during state restoration (R1: constructor config takes priority over stale state)
@@ -243,6 +290,9 @@ export class WorkerDaemon extends EventEmitter {
   // originalConfig — so a config.json override kept losing to whatever
   // .claude-flow/daemon-state.json had persisted from a previous run.
   private fileConfigResourceThresholds?: { maxCpuLoad?: number; minFreeMemoryPercent?: number };
+
+  // #4462 — the same record for maxConcurrent / workerTimeoutMs.
+  private fileConfigScalars?: { maxConcurrent?: number; workerTimeoutMs?: number };
 
   // #2661 root-fix — resolved once (git identity doesn't change at runtime)
   // and reused for lease heartbeats + supervisor election, both gated on
@@ -265,6 +315,7 @@ export class WorkerDaemon extends EventEmitter {
       maxCpuLoad: fileConfig.maxCpuLoad,
       minFreeMemoryPercent: fileConfig.minFreeMemoryPercent,
     };
+    this.fileConfigScalars = { maxConcurrent: fileConfig.maxConcurrent, workerTimeoutMs: fileConfig.workerTimeoutMs };
 
     // CPU-proportional smart default instead of hardcoded 2.0
     const cpuCount = WorkerDaemon.getEffectiveCpuCount();
@@ -308,10 +359,17 @@ export class WorkerDaemon extends EventEmitter {
       // #2661 — AI workers are opt-in: flag > config.json > env > OFF.
       // Deliberately NOT restored from daemon-state.json (initializeWorkerStates
       // whitelist) so a stale state file can never resurrect consent.
+      // SECURITY: the project's own config file is repo content and may come
+      // from a clone, so it can never switch AI workers on. Only the flag, the
+      // env var, or the user-level ~/.claude-flow/config.json can.
+      // A project file may still say `false` (it can only make this safer).
       aiWorkersEnabled: config?.aiWorkersEnabled
-        ?? fileConfig.aiWorkersEnabled
-        ?? (process.env.RUFLO_DAEMON_AI_WORKERS === '1'),
-      workers: config?.workers ?? DEFAULT_WORKERS,
+        ?? (fileConfig.aiWorkersEnabled === false ? false : undefined)
+        ?? (process.env.RUFLO_DAEMON_AI_WORKERS === '1' ? true : undefined)
+        ?? readUserAiWorkersOptIn()
+        ?? false,
+      workers: (config?.workers ?? DEFAULT_WORKERS).map(worker => ({ ...worker })),
+      enabledWorkers: config?.enabledWorkers,
     };
 
     // #2935 — deferred from readDaemonConfigFromFile(): this.config (and
@@ -363,7 +421,7 @@ export class WorkerDaemon extends EventEmitter {
     if (!this.config.aiWorkersEnabled) {
       this.log(
         'info',
-        'AI workers disabled (default) - all workers run local-only. Enable with `daemon start --headless`, daemon.aiWorkers.enabled=true, or RUFLO_DAEMON_AI_WORKERS=1 (#2661)'
+        'AI workers disabled (default) - all workers run local-only. Enable with `daemon start --headless`, daemon.aiWorkers.enabled=true in ~/.claude-flow/config.json (a project config cannot enable it), or RUFLO_DAEMON_AI_WORKERS=1 (#2661)'
       );
       return;
     }
@@ -473,8 +531,8 @@ export class WorkerDaemon extends EventEmitter {
   }
 
   /**
-   * Read daemon-specific config from .claude-flow/config.{json,yaml,yml}.
-   * Supports dot-notation keys like 'daemon.resourceThresholds.maxCpuLoad'.
+   * Read daemon-specific config from CLI JSON paths or .claude-flow/config.{yaml,yml}.
+   * Supports dotted and nested keys like 'daemon.resourceThresholds.maxCpuLoad'.
    * #1844: prefer JSON when both exist (existing behavior) but fall back
    * to YAML so operators using the v3 canonical YAML format aren't silently
    * ignored. The chosen path (or a parse warning) is returned rather than
@@ -497,7 +555,8 @@ export class WorkerDaemon extends EventEmitter {
     configSourcePath?: string;
     yamlParseWarning?: string;
   } {
-    const jsonPath = join(claudeFlowDir, 'config.json');
+    // Share the CLI's JSON search order, including root and explicit config files.
+    const jsonPath = new ConfigFileManager().findConfig(join(claudeFlowDir, '..'));
     const yamlPath = join(claudeFlowDir, 'config.yaml');
     const ymlPath = join(claudeFlowDir, 'config.yml');
 
@@ -505,7 +564,7 @@ export class WorkerDaemon extends EventEmitter {
     let raw: Record<string, any> | undefined;
     let chosenPath: string | undefined;
 
-    if (existsSync(jsonPath)) {
+    if (jsonPath) {
       try {
         raw = JSON.parse(readFileSync(jsonPath, 'utf-8'));
         chosenPath = jsonPath;
@@ -517,8 +576,7 @@ export class WorkerDaemon extends EventEmitter {
       try {
         // Lazy-load yaml so the daemon doesn't hard-require it; if the
         // dep isn't installed, fall back to the previous warn-only path.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const yamlMod = require('yaml') as { parse(s: string): unknown };
+        const yamlMod = requireYaml('yaml') as { parse(s: string): unknown };
         const parsed = yamlMod.parse(readFileSync(yPath, 'utf-8'));
         if (parsed && typeof parsed === 'object') {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -537,21 +595,36 @@ export class WorkerDaemon extends EventEmitter {
     }
 
     try {
-      // Support both flat keys at root and nested under scopes.project
-      const cfg = raw?.scopes?.project ?? raw;
-      const rawCpuLoad = cfg['daemon.resourceThresholds.maxCpuLoad'] ?? raw['daemon.resourceThresholds.maxCpuLoad'];
-      const rawMinMem = cfg['daemon.resourceThresholds.minFreeMemoryPercent'] ?? raw['daemon.resourceThresholds.minFreeMemoryPercent'];
-      const rawMaxConcurrent = cfg['daemon.maxConcurrent'] ?? raw['daemon.maxConcurrent'];
-      const rawTimeout = cfg['daemon.workerTimeoutMs'] ?? raw['daemon.workerTimeoutMs'];
+      // The CLI writes nested objects; legacy files use dotted keys. Each
+      // key resolves independently through scopes.project -> values -> root
+      // — `values` is the envelope config_set writes for its default scope
+      // (#3192 — without this, config_set daemon.idleSecs 0 has no effect
+      // on the running daemon even though it succeeds and updates
+      // config.json) — rather than picking one whole object as "cfg", since
+      // a config.json can legitimately have some keys written under
+      // scopes.project (project-scoped config_set calls) and others under
+      // values (default-scope config_set calls) at the same time. Scoped
+      // values retain precedence, including explicit false and zero.
+      const read = (obj: Record<string, any> | undefined, key: string): unknown => {
+        if (!obj) return undefined;
+        return obj[key] ?? key.split('.').reduce((value, part) =>
+          value && typeof value === 'object' && Object.hasOwn(value, part) ? value[part] : undefined, obj as any);
+      };
+      const get = (key: string) => read(raw?.scopes?.project, key) ?? read(raw?.values, key) ?? read(raw, key);
+      const rawAutoStart = get('daemon.autoStart');
+      const rawCpuLoad = get('daemon.resourceThresholds.maxCpuLoad');
+      const rawMinMem = get('daemon.resourceThresholds.minFreeMemoryPercent');
+      const rawMaxConcurrent = get('daemon.maxConcurrent');
+      const rawTimeout = get('daemon.workerTimeoutMs');
       // #2356 — lifecycle limits are configured in SECONDS in config.json
       // (`daemon.ttlSecs` / `daemon.idleSecs`) for parity with the CLI flag
       // and env var; stored internally as ms. An explicit 0 disables.
-      const rawTtl = cfg['daemon.ttlSecs'] ?? raw['daemon.ttlSecs'];
-      const rawIdle = cfg['daemon.idleSecs'] ?? raw['daemon.idleSecs'];
+      const rawTtl = get('daemon.ttlSecs');
+      const rawIdle = get('daemon.idleSecs');
       // #2661 — explicit opt-in for scheduled AI workers.
-      const rawAiEnabled = cfg['daemon.aiWorkers.enabled'] ?? raw['daemon.aiWorkers.enabled'];
+      const rawAiEnabled = get('daemon.aiWorkers.enabled');
       return {
-        autoStart: typeof raw['daemon.autoStart'] === 'boolean' ? raw['daemon.autoStart'] : undefined,
+        autoStart: typeof rawAutoStart === 'boolean' ? rawAutoStart : undefined,
         maxConcurrent: (typeof rawMaxConcurrent === 'number' && rawMaxConcurrent > 0) ? rawMaxConcurrent : undefined,
         workerTimeoutMs: (typeof rawTimeout === 'number' && rawTimeout > 0) ? rawTimeout : undefined,
         maxCpuLoad: (typeof rawCpuLoad === 'number' && rawCpuLoad > 0 && rawCpuLoad < 1000) ? rawCpuLoad : undefined,
@@ -812,10 +885,16 @@ export class WorkerDaemon extends EventEmitter {
             this.config.resourceThresholds.minFreeMemoryPercent = rt.minFreeMemoryPercent;
           }
         }
-        if (typeof saved.config?.maxConcurrent === 'number' && saved.config.maxConcurrent > 0) {
+        // #4462 — same rule for the two scalar fields: constructor arg or
+        // config.json beats saved state, which only fills in what neither set.
+        const maxConcurrentExplicit = this.originalConfig?.maxConcurrent !== undefined
+          || this.fileConfigScalars?.maxConcurrent !== undefined;
+        const workerTimeoutExplicit = this.originalConfig?.workerTimeoutMs !== undefined
+          || this.fileConfigScalars?.workerTimeoutMs !== undefined;
+        if (!maxConcurrentExplicit && typeof saved.config?.maxConcurrent === 'number' && saved.config.maxConcurrent > 0) {
           this.config.maxConcurrent = saved.config.maxConcurrent;
         }
-        if (typeof saved.config?.workerTimeoutMs === 'number' && saved.config.workerTimeoutMs > 0) {
+        if (!workerTimeoutExplicit && typeof saved.config?.workerTimeoutMs === 'number' && saved.config.workerTimeoutMs > 0) {
           this.config.workerTimeoutMs = saved.config.workerTimeoutMs;
         }
 
@@ -839,6 +918,18 @@ export class WorkerDaemon extends EventEmitter {
         }
       } catch {
         // Ignore parse errors, start fresh
+      }
+    }
+
+    // #3547 (#1968 follow-up): an explicit `--workers` selection wins over
+    // both DEFAULT_WORKERS and whatever daemon-state.json just restored
+    // above — otherwise `daemon start --workers map,audit` always ran the
+    // full default set (or a stale saved selection) because nothing ever
+    // applied the requested list to `enabled`.
+    if (this.config.enabledWorkers) {
+      const selected = new Set(this.config.enabledWorkers);
+      for (const workerConfig of this.config.workers) {
+        workerConfig.enabled = selected.has(workerConfig.type);
       }
     }
 
@@ -985,14 +1076,30 @@ export class WorkerDaemon extends EventEmitter {
 
   /**
    * #1845: ingest queue entries written by mcp__hooks_worker-dispatch.
-   * Each entry is a JSON file at `.claude-flow/daemon-queue/<id>.json`
+   * Each entry is a JSON file `<id>.json` in dispatchQueueDir(projectRoot)
    * with `{ workerId, trigger, context, enqueuedAt }`. We move processed
-   * files to `.claude-flow/daemon-queue/.processed/` so the daemon never
-   * re-runs the same dispatch and operators can inspect history.
+   * files to its `.processed/` so the daemon never re-runs the same
+   * dispatch and operators can inspect history.
    */
   private async processDispatchQueue(): Promise<void> {
     if (!this.running) return;
-    const queueDir = join(this.projectRoot, '.claude-flow', 'daemon-queue');
+    // One pass at a time: an entry moves to .processed/ only after its worker
+    // finishes, so an overlapping poll would run it again.
+    if (this.processingDispatchQueue) return;
+    this.processingDispatchQueue = true;
+    try {
+      await this.drainDispatchQueue();
+    } finally {
+      this.processingDispatchQueue = false;
+    }
+  }
+
+  private async drainDispatchQueue(): Promise<void> {
+    // In the user's state dir, not `.claude-flow/daemon-queue` under the
+    // project: a cloned repository could ship entries there, and in a single
+    // clone this daemon is the repository supervisor, so the gate alone does
+    // not stop them.
+    const queueDir = dispatchQueueDir(this.projectRoot);
     if (!existsSync(queueDir)) return;
 
     let entries: string[];
@@ -1011,6 +1118,8 @@ export class WorkerDaemon extends EventEmitter {
     }
 
     for (const entry of entries) {
+      // stop() cancels running workers; do not start the next entry after it.
+      if (!this.running) break;
       const src = join(queueDir, entry);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let payload: any;
@@ -1023,13 +1132,20 @@ export class WorkerDaemon extends EventEmitter {
       }
       const trigger = payload?.trigger as WorkerType | undefined;
       const workerId = payload?.workerId as string | undefined;
-      if (!trigger || !this.config.workers.some((w) => w.type === trigger)) {
+      const workerConfig = trigger ? this.config.workers.find((w) => w.type === trigger) : undefined;
+      if (!trigger || !workerConfig) {
         try { fs.renameSync(src, join(processedDir, `unknown-${entry}`)); } catch { /* ok */ }
+        continue;
+      }
+      if (!workerConfig.enabled) {
+        // A queue entry may not run a worker the user has switched off.
+        this.log('warn', `Skipped queued ${trigger}: worker is disabled`);
+        try { fs.renameSync(src, join(processedDir, `disabled-${entry}`)); } catch { /* ok */ }
         continue;
       }
       try {
         this.log('info', `Dequeued ${trigger}${workerId ? ` (id=${workerId})` : ''} from MCP dispatch queue`);
-        await this.triggerWorker(trigger);
+        await this.triggerWorker(trigger, { manualTrigger: false });
       } catch (err) {
         this.log('warn', `Queued worker ${trigger} failed: ${(err as Error).message}`);
       } finally {
@@ -1162,7 +1278,9 @@ export class WorkerDaemon extends EventEmitter {
       return `max age ${Math.round(ttlMs / 1000)}s reached`;
     }
     if (idleMs > 0) {
-      const lastActivity = this.lastWorkerActivityMs() ?? startedMs;
+      // Worker timestamps survive restarts; they cannot make this process
+      // idle before it has been alive for a full idle window (#3194).
+      const lastActivity = Math.max(this.lastWorkerActivityMs() ?? startedMs, startedMs);
       if (now - lastActivity >= idleMs) {
         return `idle for ${Math.round(idleMs / 1000)}s (no worker activity)`;
       }
@@ -1265,6 +1383,15 @@ export class WorkerDaemon extends EventEmitter {
     const internalConfig = workerConfig as WorkerConfigInternal;
     const staggerOffset = internalConfig.offsetMs || 0;
 
+    // #4410: only one timer may own a worker type. A redundant enable used to
+    // schedule a second timeout while this.timers kept only the newer handle,
+    // so the original leaked and could fire again after stop().
+    const previousTimer = this.timers.get(workerConfig.type);
+    if (previousTimer) {
+      clearTimeout(previousTimer);
+      this.timers.delete(workerConfig.type);
+    }
+
     // Calculate initial delay with stagger offset
     let initialDelay = staggerOffset;
     if (state.lastRun) {
@@ -1280,8 +1407,9 @@ export class WorkerDaemon extends EventEmitter {
       // Use concurrency-controlled execution (P0 fix)
       await this.executeWorkerWithConcurrencyControl(workerConfig);
 
-      // Reschedule
-      if (this.running) {
+      // Reschedule only while the daemon is running and this worker is still
+      // enabled. Disabling during an in-flight run must not resurrect it.
+      if (this.running && workerConfig.enabled) {
         const timer = setTimeout(runAndReschedule, workerConfig.intervalMs);
         this.timers.set(workerConfig.type, timer);
         state.nextRun = new Date(Date.now() + workerConfig.intervalMs);
@@ -1370,6 +1498,7 @@ export class WorkerDaemon extends EventEmitter {
       this.emit('worker:complete', result);
       this.log('info', `Worker ${workerConfig.type} completed in ${durationMs}ms`);
       this.saveState();
+      await this.recordWorkerTrajectory(result);
 
       return result;
     } catch (error) {
@@ -1392,12 +1521,47 @@ export class WorkerDaemon extends EventEmitter {
       this.emit('worker:error', result);
       this.log('error', `Worker ${workerConfig.type} failed: ${result.error}`);
       this.saveState();
+      await this.recordWorkerTrajectory(result);
 
       return result;
     } finally {
       // Remove from running set and process queue
       this.runningWorkers.delete(workerConfig.type);
       this.processPendingWorkers();
+    }
+  }
+
+  /**
+   * Feed a finished worker job into the self-learning pipeline as a one-step
+   * trajectory (SONA + ReasoningBank + @ruvector/ruvllm forwarding, persisted
+   * to `.claude-flow/neural/stats.json`). Before this, the daemon could run
+   * hundreds of jobs at "100% success" while `trajectoriesRecorded` stayed 0:
+   * no daemon code path ever called the intelligence module.
+   *
+   * Best-effort and bounded: never throws, never changes the WorkerResult.
+   * Opt-out: RUFLO_DAEMON_NO_LEARN=1.
+   */
+  private async recordWorkerTrajectory(result: WorkerResult): Promise<void> {
+    if (process.env[NO_LEARN_ENV] === '1') return;
+    try {
+      const intel = await import('../memory/intelligence.js');
+      await intel.recordTrajectory(
+        [{
+          type: 'result',
+          // A worker error is free text (it can quote command output): keep only its first line, cut, so it cannot fill the learning store.
+          content: `daemon worker ${result.type} ${result.success ? 'succeeded' : `failed: ${String(result.error ?? 'unknown error').split('\n')[0].slice(0, 200)}`}`,
+          metadata: {
+            source: 'worker-daemon',
+            worker: result.type,
+            success: result.success,
+            durationMs: result.durationMs,
+          },
+          timestamp: Date.now(),
+        }],
+        result.success ? 'success' : 'failure',
+      );
+    } catch (error) {
+      this.log('warn', `Worker ${result.type}: trajectory recording skipped: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -1610,7 +1774,7 @@ export class WorkerDaemon extends EventEmitter {
       rawOutputLength: typeof result.output === 'string' ? result.output.length : 0,
     };
 
-    writeFileSync(metricsFile, JSON.stringify(persisted, null, 2));
+    writeFileAtomic(metricsFile, Buffer.from(JSON.stringify(persisted, null, 2)));
   }
 
   // Worker implementations
@@ -1636,7 +1800,7 @@ export class WorkerDaemon extends EventEmitter {
       scannedAt: Date.now(),
     };
 
-    writeFileSync(metricsFile, JSON.stringify(map, null, 2));
+    writeFileAtomic(metricsFile, Buffer.from(JSON.stringify(map, null, 2)));
     return map;
   }
 
@@ -1655,17 +1819,24 @@ export class WorkerDaemon extends EventEmitter {
     const audit = {
       timestamp: new Date().toISOString(),
       mode: 'local',
+      // This fallback performs file-presence checks only. It must not report
+      // a clean secret scan or a low risk level it did not actually establish:
+      // the worker runs by default at critical priority, so a fabricated
+      // noHardcodedSecrets/riskLevel pair is a believable false negative.
+      scanned: false,
       checks: {
         envFilesProtected: !existsSync(join(this.projectRoot, '.env.local')),
         gitIgnoreExists: existsSync(join(this.projectRoot, '.gitignore')),
-        noHardcodedSecrets: true, // Would need actual scanning
+        noHardcodedSecrets: null,
       },
-      riskLevel: 'low',
-      recommendations: [],
-      note: 'Install Claude Code CLI for AI-powered security analysis',
+      riskLevel: 'unknown',
+      recommendations: [
+        'No secret scan or code analysis was performed by the local fallback; install Claude Code CLI for AI-powered security analysis.',
+      ],
+      note: 'Local fallback checks file presence only; it does not scan source contents.',
     };
 
-    writeFileSync(auditFile, JSON.stringify(audit, null, 2));
+    writeFileAtomic(auditFile, Buffer.from(JSON.stringify(audit, null, 2)));
     return audit;
   }
 
@@ -1693,7 +1864,7 @@ export class WorkerDaemon extends EventEmitter {
       note: 'Install Claude Code CLI for AI-powered optimization suggestions',
     };
 
-    writeFileSync(optimizeFile, JSON.stringify(perf, null, 2));
+    writeFileAtomic(optimizeFile, Buffer.from(JSON.stringify(perf, null, 2)));
     return perf;
   }
 
@@ -1738,18 +1909,20 @@ export class WorkerDaemon extends EventEmitter {
         memoryCleaned: 0,
         duplicatesRemoved: 0,
       };
-      writeFileSync(consolidateFile, JSON.stringify(disabledResult, null, 2));
+      writeFileAtomic(consolidateFile, Buffer.from(JSON.stringify(disabledResult, null, 2)));
       return disabledResult;
     }
 
     let report: DistillReport;
+    let stores: StoreDistillResult[] = [];
     try {
-      report = await runDistillation({
-        dbPath: defaultMemoryDbPath(this.projectRoot),
+      const outcome = await runDistillationForStores(projectMemoryDbPaths(this.projectRoot), {
         maxEntries: CONSOLIDATE_MAX_ENTRIES_PER_TICK,
         batchSize: CONSOLIDATE_BATCH_SIZE,
         dedupDistance: CONSOLIDATE_DEDUP_DISTANCE,
       });
+      report = outcome.report;
+      stores = outcome.stores;
     } catch (error) {
       // Defensive only — runDistillation() is internally try/catch'd and
       // should never reach here. A worker must never crash the daemon.
@@ -1763,10 +1936,15 @@ export class WorkerDaemon extends EventEmitter {
         memoryCleaned: 0,
         duplicatesRemoved: 0,
       };
-      writeFileSync(consolidateFile, JSON.stringify(errorResult, null, 2));
+      writeFileAtomic(consolidateFile, Buffer.from(JSON.stringify(errorResult, null, 2)));
       return errorResult;
     }
 
+    for (const store of stores) {
+      if (store.report.skipped) {
+        this.log('info', `Consolidate worker: ${store.dbPath} skipped (${store.report.skipped})`);
+      }
+    }
     if (report.corrupt) {
       this.log('warn', `Consolidate worker: memory DB reports corruption — ${report.skipped ?? 'skipped'}`);
     } else if (report.skipped) {
@@ -1796,15 +1974,21 @@ export class WorkerDaemon extends EventEmitter {
       dryRun: report.dryRun,
       corrupt: report.corrupt ?? false,
       skipped: report.skipped,
+      stores: stores.map(({ dbPath, report: part }) => ({
+        dbPath,
+        processed: part.processed,
+        patterns: part.patterns,
+        skipped: part.skipped,
+      })),
     };
 
-    writeFileSync(consolidateFile, JSON.stringify(result, null, 2));
+    writeFileAtomic(consolidateFile, Buffer.from(JSON.stringify(result, null, 2)));
     return result;
   }
 
   /**
-   * Nightly memory-DB backup worker (24h interval). Takes a WAL-safe, consistent
-   * snapshot of .swarm/memory.db with rotation (keep last N). Never throws — a
+   * Nightly memory-DB backup worker (24h interval). Takes WAL-safe, consistent
+   * snapshots of the active CLI and AgentDB stores with rotation (keep last N). Never throws — a
    * worker must not crash the daemon; a skip/error is written to the metrics
    * file. Opt-out by omitting `backup` from `-w`; offsite GCS is opt-in via
    * RUFLO_BACKUP_GCS (a gs:// prefix), retention via RUFLO_BACKUP_KEEP.
@@ -1817,19 +2001,23 @@ export class WorkerDaemon extends EventEmitter {
     let result: Record<string, unknown>;
     try {
       const keepEnv = Number(process.env.RUFLO_BACKUP_KEEP);
-      const r = await backupMemoryDb({
-        dbPath: defaultMemoryDbPath(this.projectRoot),
+      const r = await backupProjectMemoryDbs(this.projectRoot, {
         keep: Number.isFinite(keepEnv) && keepEnv > 0 ? keepEnv : 7,
         gcs: process.env.RUFLO_BACKUP_GCS || undefined,
       });
       result = {
         timestamp: new Date().toISOString(),
         backedUp: r.backedUp,
+        backups: r.backups,
         path: r.path,
         sizeBytes: r.sizeBytes ?? 0,
         rotatedAway: r.rotatedAway?.length ?? 0,
         gcsUri: r.gcsUri,
         skipped: r.skipped,
+        // Which method actually completed (per-store detail is in `backups`);
+        // migration tooling should require 'native-online-backup', not a
+        // blanket `backedUp: true` — see #4287.
+        method: r.method,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -1837,7 +2025,7 @@ export class WorkerDaemon extends EventEmitter {
       result = { timestamp: new Date().toISOString(), backedUp: false, error: message };
     }
 
-    writeFileSync(backupFile, JSON.stringify(result, null, 2));
+    writeFileAtomic(backupFile, Buffer.from(JSON.stringify(result, null, 2)));
     return result;
   }
 
@@ -1875,7 +2063,7 @@ export class WorkerDaemon extends EventEmitter {
       result = { timestamp: new Date().toISOString(), ran: false, error: message };
     }
 
-    writeFileSync(harnessFile, JSON.stringify(result, null, 2));
+    writeFileAtomic(harnessFile, Buffer.from(JSON.stringify(result, null, 2)));
     return result;
   }
 
@@ -1900,7 +2088,7 @@ export class WorkerDaemon extends EventEmitter {
       note: 'Install Claude Code CLI for AI-powered test gap analysis',
     };
 
-    writeFileSync(testGapsFile, JSON.stringify(result, null, 2));
+    writeFileAtomic(testGapsFile, Buffer.from(JSON.stringify(result, null, 2)));
     return result;
   }
 
@@ -1990,7 +2178,7 @@ export class WorkerDaemon extends EventEmitter {
       },
     };
 
-    writeFileSync(benchmarkFile, JSON.stringify(result, null, 2));
+    writeFileAtomic(benchmarkFile, Buffer.from(JSON.stringify(result, null, 2)));
     return result;
   }
 
@@ -2009,7 +2197,7 @@ export class WorkerDaemon extends EventEmitter {
   /**
    * Manually trigger a worker
    */
-  async triggerWorker(type: WorkerType): Promise<WorkerResult> {
+  async triggerWorker(type: WorkerType, opts: { manualTrigger?: boolean } = {}): Promise<WorkerResult> {
     const workerConfig = this.config.workers.find(w => w.type === type);
     if (!workerConfig) {
       throw new Error(`Unknown worker type: ${type}`);
@@ -2024,7 +2212,9 @@ export class WorkerDaemon extends EventEmitter {
     // #2661 root-fix — an explicit manual trigger bypasses the repository-
     // supervisor gate (still budget/dedup-gated) — see runWorkerLogic()'s
     // doc comment.
-    return this.executeWorker(workerConfig, { manualTrigger: true });
+    // Only an operator's own `daemon trigger` is manual. A file in daemon-queue/ can come from a
+    // cloned repo, so queue runs pass `manualTrigger: false` and stay behind the supervisor gate.
+    return this.executeWorker(workerConfig, { manualTrigger: opts.manualTrigger ?? true });
   }
 
   /**
@@ -2036,13 +2226,18 @@ export class WorkerDaemon extends EventEmitter {
       workerConfig.enabled = enabled;
 
       if (enabled && this.running) {
-        this.scheduleWorker(workerConfig);
+        // A live timer or an in-flight run will schedule the next iteration
+        // itself; scheduling here would create a second chain (#4410).
+        if (!this.timers.has(type) && !this.runningWorkers.has(type)) {
+          this.scheduleWorker(workerConfig);
+        }
       } else if (!enabled) {
         const timer = this.timers.get(type);
         if (timer) {
           clearTimeout(timer);
           this.timers.delete(type);
         }
+        this.pendingWorkers = this.pendingWorkers.filter(workerType => workerType !== type);
       }
 
       this.saveState();
@@ -2097,6 +2292,20 @@ export class WorkerDaemon extends EventEmitter {
     // Also write to log file
     try {
       const logFile = join(this.config.logDir, 'daemon.log');
+      // Keep three generations. Rotate before the next complete record
+      // crosses 5 MiB; a single oversized record is preserved intact.
+      if (existsSync(logFile)) {
+        const size = statSync(logFile).size;
+        if (size > 0 && size + Buffer.byteLength(logMessage + '\n') > DAEMON_LOG_MAX_BYTES) {
+          const oldest = `${logFile}.${DAEMON_LOG_BACKUPS}`;
+          if (existsSync(oldest)) unlinkSync(oldest);
+          for (let generation = DAEMON_LOG_BACKUPS - 1; generation >= 1; generation--) {
+            const previous = `${logFile}.${generation}`;
+            if (existsSync(previous)) renameSync(previous, `${logFile}.${generation + 1}`);
+          }
+          renameSync(logFile, `${logFile}.1`);
+        }
+      }
       appendFileSync(logFile, logMessage + '\n');
     } catch {
       // Ignore log write errors

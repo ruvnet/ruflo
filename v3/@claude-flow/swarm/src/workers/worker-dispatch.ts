@@ -94,6 +94,14 @@ export interface WorkerResult {
   artifacts?: WorkerArtifact[];
   metrics?: WorkerMetrics;
   summary?: string;
+  /**
+   * True when this result did not come from real analysis and is only a
+   * deterministic placeholder. Direct consumers (including the published
+   * `@claude-flow/swarm` package) must not present synthetic data as findings.
+   */
+  synthetic?: boolean;
+  /** Human-readable reason the result is synthetic, when `synthetic` is true. */
+  syntheticReason?: string;
 }
 
 /**
@@ -136,6 +144,15 @@ export interface DispatchOptions {
   context?: Record<string, unknown>;
   callback?: (worker: WorkerInstance) => void;
 }
+
+/**
+ * Every trigger executor below returns a deterministic placeholder. Until a
+ * real executor is wired, results must say so: consumers of the published
+ * package can otherwise mistake invented counts and recommendations for real
+ * analysis (#4410 automation scan).
+ */
+const SYNTHETIC_WORKER_REASON =
+  'No live worker executor is wired; this is a deterministic placeholder and the work phases are simulated.';
 
 // =============================================================================
 // Trigger Detection Patterns
@@ -483,11 +500,17 @@ export class WorkerDispatchService extends EventEmitter {
 
     if (worker.status === 'running') {
       worker.status = 'cancelled';
+      worker.phase = 'cancelled';
       worker.completedAt = new Date();
-      this.running.delete(workerId);
+      // Keep the id in `running` until its executor actually settles: the
+      // placeholder executors cannot be aborted mid-flight, so releasing the
+      // concurrency slot here would let another worker start while this one is
+      // still doing work. The finally block in executeWorker() releases it.
       this.emit('worker:cancelled', { workerId });
     } else if (worker.status === 'pending') {
       worker.status = 'cancelled';
+      worker.phase = 'cancelled';
+      worker.completedAt = new Date();
       this.queue = this.queue.filter(q => q.id !== workerId);
       this.emit('worker:cancelled', { workerId });
     }
@@ -538,11 +561,19 @@ export class WorkerDispatchService extends EventEmitter {
 
     if (workers.length === 0) return '';
 
+    const hasSynthetic = workers.some(w => w.result?.synthetic);
+    const heading = hasSynthetic
+      ? '### Background Analysis Results (synthetic placeholders, not real analysis)'
+      : '### Background Analysis Results';
+
     const summaries = workers
-      .map(w => `[${w.trigger}] ${w.result?.summary || 'Completed'}`)
+      .map(w => {
+        const provenance = w.result?.synthetic ? ' (synthetic, not real analysis)' : '';
+        return `[${w.trigger}]${provenance} ${w.result?.summary || 'Completed'}`;
+      })
       .join('\n');
 
-    return `\n### Background Analysis Results\n${summaries}\n`;
+    return `\n${heading}\n${summaries}\n`;
   }
 
   // ===========================================================================
@@ -583,6 +614,14 @@ export class WorkerDispatchService extends EventEmitter {
       // Execute based on trigger type
       const result = await this.executeWorkerByTrigger(worker);
 
+      // cancel() may have marked this worker while its executor was in
+      // flight. Never overwrite that terminal state with 'completed' or emit a
+      // second terminal event for a worker the caller already cancelled.
+      if (this.isCancelled(worker)) {
+        worker.phase = 'cancelled';
+        return;
+      }
+
       worker.status = 'completed';
       worker.completedAt = new Date();
       worker.result = result;
@@ -595,6 +634,11 @@ export class WorkerDispatchService extends EventEmitter {
         duration: worker.completedAt.getTime() - worker.startedAt.getTime(),
       });
     } catch (error) {
+      if (this.isCancelled(worker)) {
+        worker.phase = 'cancelled';
+        return;
+      }
+
       worker.status = 'failed';
       worker.completedAt = new Date();
       worker.error = error as Error;
@@ -626,7 +670,12 @@ export class WorkerDispatchService extends EventEmitter {
       testgaps: () => this.executeTestgaps(worker),
     };
 
-    return executors[worker.trigger]();
+    const result = await executors[worker.trigger]();
+    return {
+      ...result,
+      synthetic: true,
+      syntheticReason: SYNTHETIC_WORKER_REASON,
+    };
   }
 
   // ===========================================================================
@@ -1024,6 +1073,14 @@ export class WorkerDispatchService extends EventEmitter {
     return `worker_${trigger}_${++this.idCounter}_${Date.now().toString(36)}`;
   }
 
+  /**
+   * Read cancellation through a helper so TypeScript does not narrow the
+   * status to 'running' across the executor await; cancel() can mutate it.
+   */
+  private isCancelled(worker: WorkerInstance): boolean {
+    return worker.status === 'cancelled';
+  }
+
   private getPriorityValue(priority: 'low' | 'normal' | 'high' | 'critical'): number {
     const priorities = { low: 1, normal: 2, high: 3, critical: 4 };
     return priorities[priority];
@@ -1040,12 +1097,12 @@ export class WorkerDispatchService extends EventEmitter {
   }
 
   /**
-   * Process work phase with minimal overhead
-   * Actual task work is performed via worker callbacks and hooks
-   * @param ms - Target processing time (capped for performance)
+   * Simulated work phase for placeholder workers.
+   * No real task work is performed here; the delay is capped for tests.
+   * @param ms - Requested simulated duration
    */
   private async processWorkPhase(ms: number): Promise<void> {
-    // Minimal processing overhead - actual work done via callbacks
+    // Simulated only: actual work would require a real worker executor.
     await new Promise(resolve => setTimeout(resolve, Math.min(ms, 10)));
   }
 }

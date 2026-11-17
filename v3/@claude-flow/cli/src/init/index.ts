@@ -55,9 +55,20 @@ export {
 export {
   generateClaudeMd,
   generateMinimalClaudeMd,
+  generateDualClaudeMd,
   CLAUDE_MD_TEMPLATES,
 } from './claudemd-generator.js';
+
+// #2638 dual-host instructions (AGENTS.md is the single source)
+export { finalizeDualInstructions, type DualFinalizeOutcome } from './dual-instructions.js';
+
+// #2640 init defers to installed ruflo plugins
+export { detectRufloPlugins, formatPluginDedupSummary, RUFLO_CORE_PLUGIN } from './plugin-dedup.js';
 
 // Main executor
 export { executeInit, executeUpgrade, executeUpgradeWithMissing, default } from './executor.js';
 export type { UpgradeResult } from './executor.js';
+
+// Grok Build host (ADR-402)
+export { executeGrokInit } from './grok-generator.js';
+export type { GrokInitOptions, GrokInitResult } from './grok-generator.js';

@@ -1,0 +1,31 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ruflo-ai-team
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: "20"
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 40
+      timeoutSeconds: 60
+      serviceAccountName: ruflo-ai-team@PROJECT_ID.iam.gserviceaccount.com
+      containers:
+        - image: REGION-docker.pkg.dev/PROJECT_ID/ruflo/ruflo-ai-team:0.4.0
+          ports: [{ containerPort: 8080 }]
+          resources:
+            limits: { cpu: "1", memory: 1Gi }
+          env:
+            - { name: RUFLO_AI_TEAM_PUBLIC_URL, value: "https://team.ruv.io" }
+            - { name: RUFLO_AI_TEAM_STORE, value: "firestore" }
+            - { name: RUFLO_AI_TEAM_OAUTH_ISSUER, value: "https://auth.cognitum.one" }
+            - { name: RUFLO_AI_TEAM_OAUTH_AUDIENCE, value: "https://team.ruv.io/mcp" }
+            # Semantic memory search. Without the key the service stays on the labelled
+            # lexical fallback. The key needs the embeddings:run scope and belongs to the service.
+            - name: RUFLO_AI_TEAM_EMBEDDINGS_KEY
+              valueFrom: { secretKeyRef: { name: ruflo-ai-team-embeddings-key, key: latest, optional: true } }
+            # Optional: RUFLO_AI_TEAM_ANON_RPM (default 600) caps unauthenticated requests per client per minute.
+            # Optional: ALLOWED_ORIGINS replaces the browser CORS allowlist
+            # (default: https://chatgpt.com,https://chat.openai.com,https://claude.ai).

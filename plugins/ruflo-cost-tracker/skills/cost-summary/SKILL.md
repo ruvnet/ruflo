@@ -3,6 +3,7 @@ name: cost-summary
 description: Single-shot programmatic dump of all cost data — total spend, per-tier, top session, budget status, federation aggregate. JSON or markdown.
 argument-hint: "[--format json|markdown]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 # Cost Summary

@@ -1,0 +1,33 @@
+{
+  "schema": "ruflo.managed-verifier-e2e/v1",
+  "assertions": 86,
+  "verifiedSubprocessReceipts": 18,
+  "cyclePhases": [
+    "admitted",
+    "recorded",
+    "recommended",
+    "evaluated"
+  ],
+  "replayedDuplicates": 18,
+  "deniedCycleWrites": 0,
+  "training": 6,
+  "pairedHoldout": 6,
+  "advisoryEligible": true,
+  "measuredBaselineP95Ms": 1249,
+  "measuredCandidateP95Ms": 267,
+  "defaultsChanged": false,
+  "costOrigin": "synthetic-fixture",
+  "limitations": "Real verifier subprocesses, signatures, file persistence, feedback cycle and heldout gates; synthetic workload and cost fixture only. No live provider quality, billing savings, universal safety or native vector backend is claimed.",
+  "sourceHashes": {
+    "v3/@claude-flow/cli/src/services/managed-learning.ts": "beb451f5b58d2afb39749e2730c811c6b3b7dc04aa3e636201eb307834abfcae",
+    "v3/@claude-flow/cli/src/services/managed-learning-loop.ts": "0802c5b54cba703187a47bede6db51db24d16dff964677713f9c20a0e0eea501",
+    "v3/@claude-flow/cli/src/services/managed-memory-client.ts": "7a47f099f128eedd4b9a55bf18462eae0a6756c2ee5267732dddea73e2d4fa7e",
+    "v3/@claude-flow/cli/src/services/managed-learning-store.ts": "53ec943484530e9c8c44ead4f8b7f8088b54548d9f262ef4fa041413b8d860a6",
+    "v3/@claude-flow/cli/src/services/managed-workflows.ts": "513ecb0b0d6fcb7d1504c3c81e78356372066564986234aa18bc157e102e5959",
+    "v3/@claude-flow/cli/src/services/managed-run-collector.ts": "9ea9862916b43766f93cb4886999457858364101cc36abbfdbecab24badc1257",
+    "v3/@claude-flow/cli/src/services/managed-run-store.ts": "e75c5f25d9f0537a9560d8f120fe7915aea287d3f01bf2b430a4394608504c02",
+    "v3/@claude-flow/cli/src/services/managed-memory-worker.ts": "542c929ec1482562964169d3ae083612e1f52fbd4685834c246c07870748d54c",
+    "scripts/managed-outcome-verifier.mts": "a49cdc043cbbd9733875d07c00200ec24dfc2352258ce6b6310d5581f0382a10",
+    "scripts/e2e-managed-loop.mts": "6a500b113df5cf4b36f1f0d7f1689a5716e6fdd84b5cb790ff388e43cba4082f"
+  }
+}

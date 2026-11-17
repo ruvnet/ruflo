@@ -5,6 +5,7 @@
  */
 
 import { type MCPTool, getProjectCwd } from './types.js';
+import { nullPrototypeRecords } from './record-store.js';
 import { existsSync } from 'node:fs';
 import {
   mkdirRestricted,
@@ -14,6 +15,7 @@ import {
 import { validateEnv, validateIdentifier, validatePath, validateText } from './validate-input.js';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -58,12 +60,16 @@ function loadTerminalStore(): TerminalStore {
       // ADR-096 Phase 3: readFileMaybeEncrypted handles both legacy
       // plaintext stores and post-migration encrypted ones via the RFE1
       // magic-byte sniff.
-      return JSON.parse(readFileMaybeEncrypted(path, 'utf-8'));
+      const parsed = JSON.parse(readFileMaybeEncrypted(path, 'utf-8'));
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        parsed.sessions = nullPrototypeRecords(parsed.sessions);
+        return parsed;
+      }
     }
   } catch {
     // Return empty store
   }
-  return { sessions: {}, version: '3.0.0' };
+  return { sessions: nullPrototypeRecords<TerminalStore['sessions']>(undefined), version: '3.0.0' };
 }
 
 function saveTerminalStore(store: TerminalStore): void {
@@ -110,7 +116,7 @@ export const terminalTools: MCPTool[] = [
       if (!vEnv.valid) return { success: false, error: vEnv.error };
 
       const store = loadTerminalStore();
-      const id = `term-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const id = `term-${Date.now()}-${randomBytes(4).toString('hex')}`;
 
       const session: TerminalSession = {
         id,
@@ -163,12 +169,28 @@ export const terminalTools: MCPTool[] = [
       const sessionId = input.sessionId as string;
       const command = input.command as string;
 
+      // An explicit sessionId must name a stored session; only fall back to
+      // (or create) the default session when no sessionId was given.
+      if (sessionId && !store.sessions[sessionId]) {
+        return { success: false, error: 'Session not found' };
+      }
+
       // Find or create default session
       let session = sessionId ? store.sessions[sessionId] : Object.values(store.sessions).find(s => s.status === 'active');
 
+      // #4730: terminal_close only flips status to "closed". Executing anyway
+      // ran the command and then wrote status back to "active", so a closed
+      // session kept accepting commands. Reject anything that is not active
+      // before the process is spawned and before that status write. When no
+      // sessionId was given, the lookup above already selected an active
+      // session (or we create one below).
+      if (session && session.status !== 'active') {
+        return { success: false, error: `Session is not active (${session.status})` };
+      }
+
       if (!session) {
         // Create default session
-        const id = `term-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const id = `term-${Date.now()}-${randomBytes(4).toString('hex')}`;
         session = {
           id,
           name: 'Default Terminal',
@@ -188,6 +210,17 @@ export const terminalTools: MCPTool[] = [
       let output: string;
       let exitCode: number;
 
+      // dream-cycle 2026-09-21 (post-review): session.env was validated once
+      // at terminal_create time and trusted forever after via the on-disk
+      // store — a session persisted before a denylist update (or a store.json
+      // edited/restored out of band) could carry an env that the *current*
+      // validateEnv() would reject, silently bypassing the denylist for every
+      // execute on that pre-existing session. Re-validate at execution time
+      // too; drop (not fail the whole call) on now-invalid env so a stale
+      // session degrades to a clean environment rather than blocking.
+      const vSessionEnv = validateEnv(session.env, 'session.env');
+      const effectiveEnv = vSessionEnv.valid ? vSessionEnv.sanitized : {};
+
       try {
         output = execSync(command, {
           cwd,
@@ -195,7 +228,7 @@ export const terminalTools: MCPTool[] = [
           timeout,
           maxBuffer: 5 * 1024 * 1024,
           stdio: ['pipe', 'pipe', 'pipe'],
-          env: { ...process.env, ...session.env },
+          env: { ...process.env, ...effectiveEnv },
         });
         exitCode = 0;
       } catch (err: any) {
@@ -340,11 +373,11 @@ export const terminalTools: MCPTool[] = [
       // Return combined history from all sessions
       const allHistory = Object.values(store.sessions)
         .flatMap(s => s.history.map(h => ({ ...h, sessionId: s.id })))
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        .slice(offset, offset + limit);
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       return {
-        history: allHistory,
+        history: allHistory.slice(offset, offset + limit),
+        // Every stored entry, like the single-session branch, not just this page.
         total: allHistory.length,
       };
     },

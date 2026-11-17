@@ -148,6 +148,20 @@ describe('TokenGenerator', () => {
       expect(Math.abs(code.expiresAt.getTime() - expectedExpiration)).toBeLessThan(100);
     });
 
+    it('should draw every digit uniformly', () => {
+      const counts = new Array(10).fill(0);
+      for (let i = 0; i < 20000; i++) {
+        for (const d of generator.generateVerificationCode(10).code) counts[Number(d)]++;
+      }
+      // 200,000 digits: 20,000 expected per digit (sd ~134). byte % 10 put 0-5
+      // at ~20,312 and 6-9 at ~19,531, a group gap of ~780; an unbiased draw
+      // keeps the gap within 400 at about 4.6 standard deviations.
+      const low = counts.slice(0, 6).reduce((a, b) => a + b, 0) / 6;
+      const high = counts.slice(6).reduce((a, b) => a + b, 0) / 4;
+      expect(Math.abs(low - high)).toBeLessThan(400);
+      for (const c of counts) expect(c).toBeGreaterThan(19000);
+    });
+
     it('should track attempts', () => {
       const code = generator.generateVerificationCode(6, 10, 3);
 
@@ -306,14 +320,12 @@ describe('TokenGenerator', () => {
       expect(generator.compare('short', 'longer-token')).toBe(false);
     });
 
-    it('should use timing-safe comparison', () => {
-      // This test verifies the comparison takes consistent time
-      // regardless of where the mismatch occurs
-      const token = generator.generate();
-      const mismatchEarly = 'X' + token.slice(1);
-      const mismatchLate = token.slice(0, -1) + 'X';
+    it.each(['X' + 'a'.repeat(41) + 'X', 'Y' + 'a'.repeat(41) + 'Y'])(
+      'should reject early and late byte mismatches for %s', (token) => {
+      const mismatchEarly = (token[0] === 'X' ? 'Y' : 'X') + token.slice(1);
+      const mismatchLate = token.slice(0, -1) + (token.at(-1) === 'X' ? 'Y' : 'X');
 
-      // Both comparisons should work (timing consistency is internal)
+      // Change a byte even when the original already begins or ends with X.
       expect(generator.compare(token, mismatchEarly)).toBe(false);
       expect(generator.compare(token, mismatchLate)).toBe(false);
     });

@@ -8,12 +8,16 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { managedAgentTools } from '../src/mcp-tools/managed-agent-tools.js';
 
 const TOOL_NAMES = [
+  'managed_agent_capabilities',
+  'managed_agent_learning',
+  'managed_agent_control',
   'managed_agent_create',
   'managed_agent_prompt',
   'managed_agent_status',
   'managed_agent_events',
   'managed_agent_list',
   'managed_agent_terminate',
+  'managed_agent_interrupt',
 ] as const;
 
 const tool = (name: string) => {
@@ -37,7 +41,7 @@ describe('ADR-115 — managed_agent_* MCP tools', () => {
     if (prevClaude === undefined) delete process.env.CLAUDE_API_KEY; else process.env.CLAUDE_API_KEY = prevClaude;
   });
 
-  it('registers exactly the six managed_agent_* tools', () => {
+  it('registers exactly the ten managed_agent_* tools', () => {
     const names = managedAgentTools.map(t => t.name).sort();
     expect(names).toEqual([...TOOL_NAMES].sort());
   });
@@ -58,7 +62,7 @@ describe('ADR-115 — managed_agent_* MCP tools', () => {
     expect(new Set(descs).size).toBe(descs.length);
   });
 
-  for (const name of TOOL_NAMES) {
+  for (const name of TOOL_NAMES.filter(name => name !== 'managed_agent_capabilities' && name !== 'managed_agent_learning')) {
     it(`${name} degrades gracefully with no API key (no throw, structured error, no network)`, async () => {
       // minimal valid-ish input per tool's required fields
       const input: Record<string, unknown> =

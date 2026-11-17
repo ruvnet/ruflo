@@ -142,10 +142,11 @@ export class MCPServer extends EventEmitter implements IMCPServer {
       taskTimeout: 300000,
     });
     this.transportManager = createTransportManager(logger);
+    const sessionRateLimit = this.config.sessionRateLimit;
     this.rateLimiter = createRateLimiter(logger, {
-      requestsPerSecond: 100,
-      burstSize: 200,
-      perSessionLimit: 50,
+      requestsPerSecond: sessionRateLimit?.requestsPerSecond ?? 100,
+      burstSize: sessionRateLimit?.burstSize ?? 200,
+      perSessionLimit: sessionRateLimit?.perSessionLimit ?? 50,
     });
     this.samplingManager = createSamplingManager(logger);
 
@@ -227,8 +228,11 @@ export class MCPServer extends EventEmitter implements IMCPServer {
         corsEnabled: this.config.corsEnabled,
         corsOrigins: this.config.corsOrigins,
         auth: this.config.auth,
+        allowUnauthenticated: this.config.allowUnauthenticated,
+        allowedOrigins: this.config.corsOrigins,
         maxRequestSize: String(this.config.maxRequestSize),
         requestTimeout: this.config.requestTimeout,
+        rateLimit: this.config.rateLimit,
       } as any));
 
       for (const transport of transports) {
@@ -511,6 +515,11 @@ export class MCPServer extends EventEmitter implements IMCPServer {
       );
     }
 
+    // #4674: the server answers every client through one currentSession, so a
+    // session it has superseded is never addressed again; it only holds a slot
+    // until expiry. Short-lived clients exhausted maxSessions that way. Retire
+    // the least recently active superseded session instead of refusing.
+    this.sessionManager.reserveCapacity(this.currentSession?.id);
     const session = this.sessionManager.createSession(this.config.transport);
     this.sessionManager.initializeSession(session.id, params);
     this.currentSession = session;
@@ -1041,6 +1050,7 @@ export class MCPServer extends EventEmitter implements IMCPServer {
       return this.currentSession;
     }
 
+    this.sessionManager.reserveCapacity();
     const session = this.sessionManager.createSession(this.config.transport);
     this.currentSession = session;
     return session;

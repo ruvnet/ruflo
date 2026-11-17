@@ -59,6 +59,9 @@ export class RaftConsensus extends EventEmitter {
 
   constructor(nodeId: string, config: RaftConfig = {}) {
     super();
+    // awaitConsensus() adds one 'consensus.achieved' listener per in-flight
+    // proposal; uncap so concurrent proposals don't trip MaxListenersExceededWarning.
+    this.setMaxListeners(0);
     this.config = {
       threshold: config.threshold ?? SWARM_CONSTANTS.DEFAULT_CONSENSUS_THRESHOLD,
       timeoutMs: config.timeoutMs ?? SWARM_CONSTANTS.DEFAULT_CONSENSUS_TIMEOUT_MS,
@@ -176,7 +179,10 @@ export class RaftConsensus extends EventEmitter {
     this.peers.delete(peerId);
   }
 
-  async propose(value: unknown): Promise<ConsensusProposal> {
+  async propose(
+    value: unknown,
+    weights?: Map<string, number>
+  ): Promise<ConsensusProposal> {
     if (this.node.state !== 'leader') {
       throw new Error('Only leader can propose values');
     }
@@ -192,6 +198,7 @@ export class RaftConsensus extends EventEmitter {
       timestamp: new Date(),
       votes: new Map(),
       status: 'pending',
+      weights,
     };
 
     // Add to local log
@@ -238,27 +245,33 @@ export class RaftConsensus extends EventEmitter {
   async awaitConsensus(proposalId: string): Promise<ConsensusResult> {
     const startTime = Date.now();
 
-    return new Promise((resolve, reject) => {
-      const checkInterval = setInterval(() => {
-        const proposal = this.proposals.get(proposalId);
-        if (!proposal) {
-          clearInterval(checkInterval);
-          reject(new Error(`Proposal ${proposalId} not found`));
-          return;
-        }
+    const proposal = this.proposals.get(proposalId);
+    if (!proposal) {
+      throw new Error(`Proposal ${proposalId} not found`);
+    }
 
-        if (proposal.status !== 'pending') {
-          clearInterval(checkInterval);
-          resolve(this.createResult(proposal, Date.now() - startTime));
-          return;
-        }
+    if (proposal.status !== 'pending') {
+      return this.createResult(proposal, Date.now() - startTime);
+    }
 
-        if (Date.now() - startTime > (this.config.timeoutMs ?? 30000)) {
-          clearInterval(checkInterval);
-          proposal.status = 'expired';
-          resolve(this.createResult(proposal, Date.now() - startTime));
-        }
-      }, 10);
+    // Resolve from the 'consensus.achieved' event checkConsensus() already emits
+    // on every accept/reject transition, instead of polling this.proposals on a
+    // setInterval (see sibling fixes: UnifiedSwarmCoordinator#3378, MessageBus#3563).
+    return new Promise(resolve => {
+      const onAchieved = (event: { proposalId: string }): void => {
+        if (event.proposalId !== proposalId) return;
+        clearTimeout(timer);
+        this.off('consensus.achieved', onAchieved);
+        resolve(this.createResult(this.proposals.get(proposalId) ?? proposal, Date.now() - startTime));
+      };
+
+      const timer = setTimeout(() => {
+        this.off('consensus.achieved', onAchieved);
+        proposal.status = 'expired';
+        resolve(this.createResult(proposal, Date.now() - startTime));
+      }, this.config.timeoutMs ?? 30000);
+
+      this.on('consensus.achieved', onAchieved);
     });
   }
 
@@ -356,15 +369,34 @@ export class RaftConsensus extends EventEmitter {
       }
     }
 
-    // Legacy in-process path — mutates the local fake peer state.
+    // Legacy in-process path — mutates the local fake peer state. Applies the
+    // same §5.2/§5.4 receiver rules as the transport path above and
+    // handleInboundRaftMessage()'s request-vote branch: adopt a higher term
+    // (resetting votedFor per §5.1), then grant only if not already voted
+    // this term for someone else AND the candidate's log is at least as
+    // up-to-date as the peer's. A bare term comparison with no vote-once or
+    // log check (the prior behavior) lets a stale-log candidate win votes
+    // from a peer that already voted, or whose log is ahead, once enough
+    // failed elections have bumped currentTerm — a real Leader Completeness
+    // safety violation, not just a test-mode shortcut (#4902-class finding).
     const peer = this.peers.get(peerId);
     if (!peer) return false;
     if (this.node.currentTerm > peer.currentTerm) {
-      peer.votedFor = this.node.id;
+      peer.votedFor = undefined;
       peer.currentTerm = this.node.currentTerm;
-      return true;
     }
-    return false;
+    const termOk = this.node.currentTerm >= peer.currentTerm;
+    const notVotedOrSame = peer.votedFor === undefined || peer.votedFor === this.node.id;
+    const peerLast = peer.log[peer.log.length - 1];
+    const peerLastIndex = peerLast ? peerLast.index : 0;
+    const peerLastTerm = peerLast ? peerLast.term : 0;
+    const my = this.lastLogInfo();
+    const logOk = my.term > peerLastTerm || (my.term === peerLastTerm && my.index >= peerLastIndex);
+    const granted = termOk && notVotedOrSame && logOk;
+    if (granted) {
+      peer.votedFor = this.node.id;
+    }
+    return granted;
   }
 
   private becomeLeader(): void {
@@ -444,6 +476,17 @@ export class RaftConsensus extends EventEmitter {
     }
   }
 
+  // Dream Cycle 2026-08-24 (swarm): per-voter weight for weighted consensus.
+  // Clamped to [0,1] — a vote can never count for *more* than one unweighted
+  // vote, so the raft safety margin (quorum computed from totalVoters) can
+  // only get harder to satisfy under weighting, never easier/bypassable via
+  // an oversized weight. Missing weights/voter defaults to 1 (flat vote),
+  // reproducing today's behavior exactly when no weights map is supplied.
+  private voteWeight(proposal: ConsensusProposal, voterId: string): number {
+    const w = proposal.weights?.get(voterId) ?? 1;
+    return Math.max(0, Math.min(1, w));
+  }
+
   private async checkConsensus(proposalId: string): Promise<void> {
     const proposal = this.proposals.get(proposalId);
     if (!proposal || proposal.status !== 'pending') {
@@ -451,18 +494,27 @@ export class RaftConsensus extends EventEmitter {
     }
 
     const totalVoters = this.peers.size + 1;
-    const votesReceived = proposal.votes.size;
-    const approvingVotes = Array.from(proposal.votes.values()).filter(
-      v => v.approve
-    ).length;
+    const castVotes = Array.from(proposal.votes.values());
+    const approvingWeight = castVotes
+      .filter(v => v.approve)
+      .reduce((sum, v) => sum + this.voteWeight(proposal, v.voterId), 0);
+    const totalCastWeight = castVotes.reduce(
+      (sum, v) => sum + this.voteWeight(proposal, v.voterId),
+      0
+    );
 
+    // #4458: quorum is never below a strict majority of approvals. The old
+    // floor(n * 0.66) gave 1 for n = 2 and n = 3, so the leader's own
+    // self-vote accepted a proposal even after a peer explicitly rejected it.
+    // A configured threshold can still make quorum stricter, never looser.
     const threshold = this.config.threshold ?? 0.66;
-    const quorum = Math.floor(totalVoters * threshold);
+    const strictMajority = Math.floor(totalVoters / 2) + 1;
+    const quorum = Math.max(strictMajority, Math.floor(totalVoters * threshold));
 
-    if (approvingVotes >= quorum) {
+    if (approvingWeight >= quorum) {
       proposal.status = 'accepted';
       this.emit('consensus.achieved', { proposalId, approved: true });
-    } else if (votesReceived - approvingVotes > totalVoters - quorum) {
+    } else if (totalCastWeight - approvingWeight > totalVoters - quorum) {
       proposal.status = 'rejected';
       this.emit('consensus.achieved', { proposalId, approved: false });
     }
@@ -470,16 +522,19 @@ export class RaftConsensus extends EventEmitter {
 
   private createResult(proposal: ConsensusProposal, durationMs: number): ConsensusResult {
     const totalVoters = this.peers.size + 1;
-    const approvingVotes = Array.from(proposal.votes.values()).filter(
-      v => v.approve
-    ).length;
+    const castVotes = Array.from(proposal.votes.values());
+    const approvingWeight = castVotes
+      .filter(v => v.approve)
+      .reduce((sum, v) => sum + this.voteWeight(proposal, v.voterId), 0);
+    const totalCastWeight = castVotes.reduce(
+      (sum, v) => sum + this.voteWeight(proposal, v.voterId),
+      0
+    );
 
     return {
       proposalId: proposal.id,
       approved: proposal.status === 'accepted',
-      approvalRate: proposal.votes.size > 0
-        ? approvingVotes / proposal.votes.size
-        : 0,
+      approvalRate: totalCastWeight > 0 ? approvingWeight / totalCastWeight : 0,
       participationRate: proposal.votes.size / totalVoters,
       finalValue: proposal.value,
       rounds: 1,

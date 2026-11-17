@@ -176,6 +176,8 @@ describe('AgentFederationPlugin', () => {
     });
 
     it('trusts JCS only from a verified peer manifest, never endpoint self-negotiation', async () => {
+      const trustedPeerKeys: Record<string, string> = {};
+      (context as any).config.trustedPeerKeys = trustedPeerKeys;
       await plugin.initialize(context as any);
       const registered = (name: string) =>
         context.services.register.mock.calls.find(([serviceName]) => serviceName === name)?.[1] as any;
@@ -240,6 +242,12 @@ describe('AgentFederationPlugin', () => {
           timestamp: new Date().toISOString(),
         });
         const signedPeerManifest = peerDiscovery.getLocalManifest();
+
+        // A self-signed manifest earns nothing until the operator pins the peer's key.
+        const unpinned = await coordinator.joinPeer(signedPeerManifest.endpoint, signedPeerManifest);
+        expect(unpinned.trustLevel).toBe(TrustLevel.UNTRUSTED);
+        await coordinator.leavePeer(unpinned.remoteNodeId);
+        trustedPeerKeys[signedPeerManifest.nodeId] = signedPeerManifest.publicKey;
 
         const verified = await coordinator.joinPeer(
           signedPeerManifest.endpoint,

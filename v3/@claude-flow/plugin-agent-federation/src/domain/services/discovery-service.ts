@@ -29,6 +29,12 @@ export interface FederationManifest {
 export interface DiscoveryServiceDeps {
   signManifest: (manifest: Omit<FederationManifest, 'signature'>) => Promise<string>;
   verifyManifest: (manifest: FederationManifest) => Promise<boolean>;
+  /**
+   * The Ed25519 key the operator pinned for a node id (hex). A manifest is signed with the key
+   * it carries, so on its own it only proves the sender holds that key; it earns VERIFIED trust
+   * only when the carried key is the pinned one.
+   */
+  pinnedKeyFor?: (nodeId: string) => string | undefined;
   onPeerDiscovered?: (node: FederationNode) => void;
 }
 
@@ -101,6 +107,11 @@ export class DiscoveryService {
     return discovered;
   }
 
+  /** Whether the manifest carries the key the operator pinned for its node id. */
+  isPinned(manifest: Pick<FederationManifest, 'nodeId' | 'publicKey'>): boolean {
+    return this.deps.pinnedKeyFor?.(manifest.nodeId)?.toLowerCase() === manifest.publicKey.toLowerCase();
+  }
+
   async addStaticPeer(endpoint: string, manifest?: FederationManifest): Promise<FederationNode> {
     if (manifest) {
       if (manifest.endpoint !== endpoint) {
@@ -110,7 +121,12 @@ export class DiscoveryService {
       if (!valid) {
         throw new Error(`Invalid manifest signature for endpoint: ${endpoint}`);
       }
+      const pinned = this.deps.pinnedKeyFor?.(manifest.nodeId);
+      if (pinned !== undefined && pinned.toLowerCase() !== manifest.publicKey.toLowerCase()) {
+        throw new Error(`Manifest key for ${manifest.nodeId} does not match the pinned key`);
+      }
     }
+    const pinnedManifest = manifest !== undefined && this.isPinned(manifest);
 
     const nodeId = manifest?.nodeId ?? `static-${this.hashEndpoint(endpoint)}`;
     const existing = this.knownPeers.get(nodeId);
@@ -129,7 +145,8 @@ export class DiscoveryService {
         supportedProtocols: ['websocket', 'http'],
         complianceModes: [],
       },
-      trustLevel: manifest ? TrustLevel.VERIFIED : TrustLevel.UNTRUSTED,
+      // A self-signed manifest is not an identity: only a pinned key makes a peer VERIFIED.
+      trustLevel: pinnedManifest ? TrustLevel.VERIFIED : TrustLevel.UNTRUSTED,
       metadata: {
         discoveryMechanism: 'static' as DiscoveryMechanism,
         version: manifest?.version,

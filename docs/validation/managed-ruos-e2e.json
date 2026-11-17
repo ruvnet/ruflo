@@ -1,0 +1,107 @@
+{
+  "sourceBase": "8e08b5fbe48b9c7a55e4224cd1f5c15bf9095554",
+  "consolePureSpecs": { "passed": 3516, "skipped": 35, "filesPassed": 236, "filesSkipped": 5, "durationSeconds": 214.74, "maxWorkers": 1, "exitCode": 0 },
+  "learningStoreSha256": "34b4d08ae338edf40711ebc0a2fbc560aff8234c6edb5a43650a6be87865d9e3",
+  "node": "20.20.2",
+  "memory": "3.0.9",
+  "sqlite": "12.11.1",
+  "write": {
+    "mode": "write",
+    "syntheticFixtures": true,
+    "modelCalls": 0,
+    "defaultsChanged": false,
+    "verifiedRows": 3,
+    "indexed": [
+      {
+        "indexed": true,
+        "durable": true,
+        "namespace": "managed-workflow-evidence",
+        "id": "10654aef6e93d97a2d250ec7052326a6e8230fce42ad806cdaf8ff0229b43982",
+        "hasEmbedding": true,
+        "advisory": true
+      },
+      {
+        "indexed": true,
+        "durable": true,
+        "namespace": "managed-workflow-evidence",
+        "id": "1f6a6b39cabd277d258b4c3504a13900ed5c6d30510a68ac964f1d6681de4fd7",
+        "hasEmbedding": true,
+        "advisory": true
+      },
+      {
+        "indexed": true,
+        "durable": true,
+        "namespace": "managed-workflow-evidence",
+        "id": "1923ca387495897e3632d36f17a7405d038a487a62e8d52d23f0d1060d414afd",
+        "hasEmbedding": true,
+        "advisory": true
+      }
+    ],
+    "advisoryStrategy": "fixture",
+    "passed": true
+  },
+  "restartRecall": {
+    "mode": "recall",
+    "syntheticFixtures": true,
+    "modelCalls": 0,
+    "defaultsChanged": false,
+    "verifiedRows": 3,
+    "recalled": 3,
+    "backend": "ruflo-memory",
+    "similarityIsVerification": false,
+    "advisoryStrategy": "fixture",
+    "passed": true
+  },
+  "terminalChecks": {
+    "managedRun": true,
+    "providerUnverified": true,
+    "workersUnverified": true,
+    "acceptanceUnverified": true,
+    "budget": true
+  },
+  "liveClaude": {
+    "passed": false,
+    "error": "OAuth session expired and could not be refreshed",
+    "toolCalls": 0,
+    "reportedCostUsd": 0
+  },
+  "authenticatedConsoleRetry": {
+    "loginVerified": true,
+    "modelTurnSucceeded": true,
+    "pluginListed": true,
+    "pluginVersion": "0.49.0",
+    "hostVersion": "2.1.283",
+    "consoleToolsAvailable": false,
+    "consoleToolCalls": 0,
+    "reportedCostUsd": 0.0183653,
+    "driverExitCode": 1,
+    "passed": false
+  },
+  "compatibleHostVerification": {
+    "hostVersion": "2.1.287",
+    "installedConsoleVersion": "0.48.0",
+    "candidateConsoleVersion": "0.49.0",
+    "modVersion": "0.7.0",
+    "swarmVersion": "0.3.7",
+    "installedPluginsEnabled": true,
+    "stableDriverExitCode": 0,
+    "candidateDriverExitCode": 0,
+    "candidateToolCalls": 2,
+    "candidateReportedCostUsd": 0.0389625,
+    "interactivePaneVisuallyConfirmed": true,
+    "syntheticManagedSnapshot": true,
+    "managedProviderCalls": 0,
+    "checks": {
+      "managedRun": true,
+      "providerUnverified": true,
+      "workersUnverified": true,
+      "acceptanceUnverified": true,
+      "budget": true
+    },
+    "passed": true
+  },
+  "directProvider": {
+    "tested": false,
+    "reason": "No API key delivered to executor"
+  }
+}

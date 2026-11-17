@@ -8,6 +8,11 @@
 import { readFileSync, existsSync } from 'node:fs';
 import type { MCPTool, MCPToolResult } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { resolveAgentBrowserLaunch, resolveNpxLaunch } from '../runtime/browser-command.js';
+import { commandArgvError, launchArgsError } from './browser-argv.js';
+import { containedWritePath } from './path-containment.js';
+
+const SCREENSHOT_EXTENSIONS = ['.png', '.jpg', '.jpeg'] as const;
 
 // Session registry for multi-session support
 const browserSessions = new Map<string, {
@@ -16,6 +21,34 @@ const browserSessions = new Map<string, {
   lastActivity: string;
 }>();
 
+/** Preserve agent-browser's JSON error on non-zero exit without echoing other process output. */
+function browserCommandFailure(error: unknown, missingExecutable?: string): MCPToolResult {
+  const err = error as NodeJS.ErrnoException & { stdout?: string | Buffer; status?: number };
+  const stdout = typeof err?.stdout === 'string'
+    ? err.stdout
+    : Buffer.isBuffer(err?.stdout) ? err.stdout.toString('utf8') : '';
+  let reason: string | undefined;
+  if (stdout.trim()) {
+    try {
+      const parsed: unknown = JSON.parse(stdout);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const failure = parsed as { success?: unknown; error?: unknown };
+        if (failure.success === false && typeof failure.error === 'string' && failure.error.trim()) {
+          reason = failure.error.slice(0, 2000);
+        }
+      }
+    } catch { /* non-JSON stdout is not an error message */ }
+  }
+  reason ??= err?.code === 'ENOENT' && missingExecutable
+    ? missingExecutable
+    : err?.code === 'ETIMEDOUT'
+      ? 'agent-browser command timed out'
+      : typeof err?.status === 'number'
+        ? `agent-browser exited with status ${err.status} without a JSON error`
+        : `agent-browser failed${err?.code ? ` (${err.code})` : ''} without a JSON error`;
+  return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: reason }) }], isError: true };
+}
+
 /**
  * Execute agent-browser CLI command.
  * Tries global agent-browser first, falls back to npx if ENOENT.
@@ -23,58 +56,48 @@ const browserSessions = new Map<string, {
  * Exported so browser-intent-tools.ts (ADR-175 `browser_act`) can reuse the same
  * exec + fallback + session-plumbing instead of duplicating it.
  */
-export async function execBrowserCommand(args: string[], session = 'default'): Promise<MCPToolResult> {
+export async function execBrowserCommand(
+  args: string[],
+  session = 'default',
+  launchArgs: readonly string[] = [],
+): Promise<MCPToolResult> {
+  const argvError = commandArgvError(args) ?? launchArgsError(launchArgs);
+  if (argvError) return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: argvError }) }], isError: true };
   const { execFileSync } = await import('child_process');
   const fullArgs = ['--session', session, '--json', ...args];
+  if (launchArgs.length > 0) fullArgs.push('--args', launchArgs.join(','));
 
-  let result: string;
-  try {
-    result = execFileSync('agent-browser', fullArgs, {
-      encoding: 'utf-8',
-      timeout: 30000,
-    });
-  } catch (error) {
-    const err = error as NodeJS.ErrnoException;
-    if (err.code === 'ENOENT') {
-      try {
-        // #2770: On Windows, `npx` ships as `npx.cmd`; execFileSync cannot spawn
-        // a .cmd file without going through cmd.exe. Enable shell on win32 so
-        // cmd.exe resolves the .cmd extension. POSIX keeps shell:false.
-        // NOTE: shell:true joins args by spaces and passes to cmd.exe — the args
-        // here are hard-coded flags + a package name, so no injection risk. If
-        // user-controlled args are ever added, escape them before spawn.
-        result = execFileSync('npx', ['--yes', 'agent-browser', ...fullArgs], {
-          encoding: 'utf-8',
-          timeout: 60000,
-          shell: process.platform === 'win32',
-          windowsHide: true,
-        });
-      } catch (npxError) {
-        const npxErr = npxError as NodeJS.ErrnoException;
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: npxErr.code === 'ENOENT'
-                ? 'Neither agent-browser nor npx found. Install with: npm i -g agent-browser'
-                : npxErr instanceof Error ? npxErr.message : String(npxError),
-            }),
-          }],
-          isError: true,
-        };
-      }
-    } else {
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            success: false,
-            error: err instanceof Error ? err.message : String(error),
-          }),
-        }],
-        isError: true,
-      };
+  // ADR-401: fullArgs carries tool-supplied text (fill values, eval scripts,
+  // selectors), so no spawn here may use a shell. On Windows the npm shims are
+  // resolved to the process behind them instead of enabling `shell: true`,
+  // which would hand that text to cmd.exe. Never add a `shell` option below.
+  const missing = 'Neither agent-browser nor npx found. Install with: npm i -g agent-browser';
+  let result: string | undefined;
+
+  const global = resolveAgentBrowserLaunch();
+  if (global) {
+    try {
+      result = execFileSync(global.command, [...global.argsPrefix, ...fullArgs], {
+        encoding: 'utf-8',
+        timeout: 30000,
+        windowsHide: true,
+      });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return browserCommandFailure(error);
+    }
+  }
+
+  if (result === undefined) {
+    const npx = resolveNpxLaunch();
+    if (!npx) return browserCommandFailure(Object.assign(new Error('npx not resolvable'), { code: 'ENOENT' }), missing);
+    try {
+      result = execFileSync(npx.command, [...npx.argsPrefix, '--yes', 'agent-browser', ...fullArgs], {
+        encoding: 'utf-8',
+        timeout: 60000,
+        windowsHide: true,
+      });
+    } catch (npxError) {
+      return browserCommandFailure(npxError, missing);
     }
   }
 
@@ -144,7 +167,7 @@ export const browserTools: MCPTool[] = [
         args: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Additional Chrome launch args (e.g., ["--no-sandbox", "--disable-dev-shm-usage"])',
+          description: 'Additional Chrome launch switches. Only these are accepted: --no-sandbox, --disable-setuid-sandbox, --disable-gpu, --disable-dev-shm-usage, --disable-extensions, --mute-audio, --hide-scrollbars, --incognito',
         },
       },
       required: ['url'],
@@ -158,13 +181,14 @@ export const browserTools: MCPTool[] = [
         session?: string;
         waitUntil?: string;
       };
-      const launchArgs = (input.args as string[] | undefined) || [];
+      const vArgs = launchArgsError(input.args);
+      if (vArgs) return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: vArgs }) }], isError: true };
+      const launchArgs = [...((input.args as string[] | undefined) || [])];
       if (needsNoSandbox() && !launchArgs.includes('--no-sandbox')) {
         launchArgs.push('--no-sandbox');
       }
       const args = ['open', url];
       if (waitUntil) args.push('--wait-until', waitUntil);
-      if (launchArgs.length > 0) args.push('--args', launchArgs.join(','));
 
       // Create session if new
       const sessionId = session || 'default';
@@ -176,7 +200,7 @@ export const browserTools: MCPTool[] = [
         });
       }
 
-      return execBrowserCommand(args, sessionId);
+      return execBrowserCommand(args, sessionId, launchArgs);
     },
   },
   {
@@ -304,7 +328,16 @@ export const browserTools: MCPTool[] = [
         fullPage?: boolean;
       };
       const args = ['screenshot'];
-      if (path) args.push(path);
+      if (path) {
+        // The browser writes the image wherever it is told and replaces what
+        // is there, so a caller-named path must stay inside the project.
+        const target = containedWritePath(path, SCREENSHOT_EXTENSIONS);
+        if (!target) {
+          const error = `path must be a new or regular file inside the project ending in ${SCREENSHOT_EXTENSIONS.join(', ')}`;
+          return { content: [{ type: 'text', text: JSON.stringify({ success: false, error }) }], isError: true };
+        }
+        args.push(target);
+      }
       if (fullPage) args.push('--full');
       return execBrowserCommand(args, session);
     },

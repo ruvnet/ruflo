@@ -1,3 +1,4 @@
+import { feedbackPatternsSchema, validateFeedbackPatterns } from '../memory/feedback-patterns.js';
 /**
  * Hooks MCP Tools
  * Provides intelligent hooks functionality via MCP protocol
@@ -5,15 +6,34 @@
 
 import { mkdirSync, writeFileSync, existsSync, readFileSync, statSync, unlinkSync, readdirSync, rmSync } from 'fs';
 import * as nodeFs from 'fs';
-import { dirname, join, resolve } from 'path';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'path';
 import { type MCPTool, getProjectCwd } from './types.js';
+import { dispatchQueueDir } from '../services/dispatch-queue.js';
 import { validateIdentifier, validateText, validatePath } from './validate-input.js';
+import { realpathNearest, isInsideRealRoot } from './realpath-containment.js';
+import { commandRecordingDisabled, redactCommandForStorage } from '../services/command-recording.js';
 import { checkCommandLoop, recordCommandOutcome } from './tool-loop-guardrail.js';
 import {
   buildLearnedRoutingPatterns,
   type LearnedRoutingOutcome,
   type LearnedRoutingPattern,
 } from '../services/learned-routing.js';
+import { applyTypesafeRouting, getTypesafeRouter } from '../ruvector/typesafe-router.js';
+import {
+  DEFAULT_ROUTER_EMBEDDER,
+  embedForRouter,
+  resolveRouterEmbedder,
+  routerEmbedderModel,
+  type RouterEmbedderKind,
+} from '../ruvector/router-embedder.js';
+import {
+  ABSTAIN_LABEL,
+  centroidRouterEnabled,
+  classify,
+  loadCentroidArtifact,
+  resolveMargin,
+  type CentroidDecision,
+} from '../ruvector/centroid-router.js';
 
 // Real vector search functions - lazy loaded to avoid circular imports
 let searchEntriesFn: ((options: {
@@ -68,6 +88,7 @@ let storeEntryFn: ((options: {
   generateEmbeddingFlag?: boolean;
   tags?: string[];
   ttl?: number;
+  upsert?: boolean;
 }) => Promise<{
   success: boolean;
   id: string;
@@ -138,54 +159,18 @@ async function getMoERouter() {
 // Tries native VectorDb first (16k+ routes/s HNSW), falls back to pure JS (47k routes/s cosine)
 let semanticRouter: import('../ruvector/semantic-router.js').SemanticRouter | null = null;
 let nativeVectorDb: unknown = null;
-let semanticRouterInitialized = false;
 let routerBackend: 'native' | 'pure-js' | 'none' = 'none';
 
 // Pre-computed embeddings for common task patterns (cached)
 const TASK_PATTERN_EMBEDDINGS: Map<string, Float32Array> = new Map();
 
-function generateSimpleEmbedding(text: string, dimension: number = 384): Float32Array {
-  // Simple deterministic embedding based on character codes
-  // This is for routing purposes where we need consistent, fast embeddings
-  const embedding = new Float32Array(dimension);
-  const normalized = text.toLowerCase().replace(/[^a-z0-9\s]/g, '');
-  const words = normalized.split(/\s+/).filter(w => w.length > 0);
-
-  // Combine word-level and character-level features
-  for (let i = 0; i < dimension; i++) {
-    let value = 0;
-
-    // Word-level features
-    for (let w = 0; w < words.length; w++) {
-      const word = words[w];
-      for (let c = 0; c < word.length; c++) {
-        const charCode = word.charCodeAt(c);
-        value += Math.sin((charCode * (i + 1) + w * 17 + c * 23) * 0.0137);
-      }
-    }
-
-    // Character-level features
-    for (let c = 0; c < text.length; c++) {
-      value += Math.cos((text.charCodeAt(c) * (i + 1) + c * 7) * 0.0073);
-    }
-
-    embedding[i] = value / Math.max(1, text.length);
-  }
-
-  // Normalize
-  let norm = 0;
-  for (let i = 0; i < dimension; i++) {
-    norm += embedding[i] * embedding[i];
-  }
-  norm = Math.sqrt(norm);
-  if (norm > 0) {
-    for (let i = 0; i < dimension; i++) {
-      embedding[i] /= norm;
-    }
-  }
-
-  return embedding;
-}
+// ADR-390: the router's embedder (MiniLM or the historical hash). Pattern and
+// query vectors always come from the SAME embedder; `routerEmbedder` records the
+// one that actually built the current index (after any degradation to hash).
+let routerEmbedder: RouterEmbedderKind = DEFAULT_ROUTER_EMBEDDER;
+let routerEmbedderReason: string | undefined;
+let routerRequestedEmbedder: RouterEmbedderKind | null = null;
+let routerInitPromise: Promise<SemanticRouterHandle> | null = null;
 
 // ── Runtime routing outcome persistence ──────────────────────────────
 // Closes the learning loop: post-task records outcomes → route loads them.
@@ -242,7 +227,8 @@ function saveRoutingOutcomes(outcomes: RoutingOutcome[]): void {
     // The prior singleton cache made the learned store inert until restart.
     semanticRouter = null;
     nativeVectorDb = null;
-    semanticRouterInitialized = false;
+    routerInitPromise = null;
+    routerRequestedEmbedder = null;
     routerBackend = 'none';
     TASK_PATTERN_EMBEDDINGS.clear();
   } catch { /* non-critical */ }
@@ -325,15 +311,82 @@ const TASK_PATTERNS: Record<string, RoutingPattern> = {
   },
 };
 
+/** Wrap hooks_route so the opt-in typesafe router (src/ruvector/typesafe-router.ts) can override the legacy pick. */
+function withTypesafeRouting(legacy: (params: Record<string, unknown>) => Promise<object>) {
+  return async (params: Record<string, unknown>) =>
+    applyTypesafeRouting(params, (await legacy(params)) as Record<string, unknown>, TASK_PATTERNS, getTypesafeRouter());
+}
+
+interface SemanticRouterHandle {
+  router: import('../ruvector/semantic-router.js').SemanticRouter | null;
+  backend: 'native' | 'pure-js' | 'none';
+  native: unknown;
+  /** Embedder that built this index (ADR-390); the query MUST use the same one. */
+  embedder: RouterEmbedderKind;
+  embedderReason?: string;
+}
+
 /**
  * Get the semantic router with environment detection.
  * Tries native VectorDb first (HNSW, 16k routes/s), falls back to pure JS (47k routes/s cosine).
+ *
+ * ADR-390: `requested` (else CLAUDE_FLOW_ROUTER_EMBEDDER, else the default)
+ * picks the embedder. The index is rebuilt when the requested embedder changes.
+ * Concurrent callers share one in-flight build.
  */
-async function getSemanticRouter() {
-  if (semanticRouterInitialized) {
-    return { router: semanticRouter, backend: routerBackend, native: nativeVectorDb };
+async function getSemanticRouter(requested?: RouterEmbedderKind): Promise<SemanticRouterHandle> {
+  const selection = resolveRouterEmbedder(requested);
+  if (routerInitPromise && routerRequestedEmbedder === selection.kind) {
+    return routerInitPromise;
   }
-  semanticRouterInitialized = true;
+  semanticRouter = null;
+  nativeVectorDb = null;
+  routerBackend = 'none';
+  TASK_PATTERN_EMBEDDINGS.clear();
+  routerRequestedEmbedder = selection.kind;
+  routerInitPromise = buildSemanticRouter(selection.kind, selection.reason);
+  return routerInitPromise;
+}
+
+/** Test hook: drop the cached semantic index so the next route rebuilds it. */
+export function resetSemanticRouterForTests(): void {
+  semanticRouter = null;
+  nativeVectorDb = null;
+  routerBackend = 'none';
+  routerInitPromise = null;
+  routerRequestedEmbedder = null;
+  TASK_PATTERN_EMBEDDINGS.clear();
+}
+
+/** Embed every pattern keyword with ONE embedder (ADR-390: never mix spaces). */
+async function embedPatternKeywords(
+  patterns: Record<string, RoutingPattern>,
+  kind: RouterEmbedderKind,
+): Promise<{ vectors: Map<string, Float32Array[]>; embedder: RouterEmbedderKind; reason?: string }> {
+  const entries = Object.entries(patterns);
+  const flat = entries.flatMap(([, p]) => p.keywords);
+  const res = await embedForRouter(flat, kind);
+  const vectors = new Map<string, Float32Array[]>();
+  let i = 0;
+  for (const [name, p] of entries) {
+    vectors.set(name, res.vectors.slice(i, i + p.keywords.length));
+    i += p.keywords.length;
+  }
+  return { vectors, embedder: res.embedder, reason: res.reason };
+}
+
+async function buildSemanticRouter(kind: RouterEmbedderKind, selectionReason?: string): Promise<SemanticRouterHandle> {
+  const patterns = getMergedTaskPatterns();
+  const embedded = await embedPatternKeywords(patterns, kind);
+  routerEmbedder = embedded.embedder;
+  routerEmbedderReason = embedded.reason ?? selectionReason;
+  const handle = (): SemanticRouterHandle => ({
+    router: semanticRouter,
+    backend: routerBackend,
+    native: nativeVectorDb,
+    embedder: routerEmbedder,
+    ...(routerEmbedderReason ? { embedderReason: routerEmbedderReason } : {}),
+  });
 
   // STEP 1: Try native VectorDb from @ruvector/router (HNSW-backed)
   // Note: Native VectorDb uses a persistent database file which can have lock issues
@@ -357,18 +410,18 @@ async function getSemanticRouter() {
       });
 
       // Initialize with static + runtime-learned task patterns
-      for (const [patternName, { keywords }] of Object.entries(getMergedTaskPatterns())) {
-        for (const keyword of keywords) {
-          const embedding = generateSimpleEmbedding(keyword);
-          db.insert(`${patternName}:${keyword}`, embedding);
-          TASK_PATTERN_EMBEDDINGS.set(`${patternName}:${keyword}`, embedding);
-        }
+      for (const [patternName, { keywords }] of Object.entries(patterns)) {
+        const embeddings = embedded.vectors.get(patternName) ?? [];
+        keywords.forEach((keyword, i) => {
+          db.insert(`${patternName}:${keyword}`, embeddings[i]);
+          TASK_PATTERN_EMBEDDINGS.set(`${patternName}:${keyword}`, embeddings[i]);
+        });
       }
 
       nativeVectorDb = db;
       routerBackend = 'native';
-      console.log('[hooks] Semantic router initialized: native VectorDb (HNSW, 16k+ routes/s)');
-      return { router: null, backend: routerBackend, native: nativeVectorDb };
+      console.log(`[hooks] Semantic router initialized: native VectorDb (HNSW, 16k+ routes/s), embedder=${routerEmbedder}`);
+      return handle();
     }
   } catch (err) {
     // Native not available or database locked - fall back to pure JS
@@ -381,8 +434,8 @@ async function getSemanticRouter() {
     const { SemanticRouter } = await import('../ruvector/semantic-router.js');
     semanticRouter = new SemanticRouter({ dimension: 384 });
 
-    for (const [patternName, { keywords, agents, source, support, reliability }] of Object.entries(getMergedTaskPatterns())) {
-      const embeddings = keywords.map(kw => generateSimpleEmbedding(kw));
+    for (const [patternName, { keywords, agents, source, support, reliability }] of Object.entries(patterns)) {
+      const embeddings = embedded.vectors.get(patternName) ?? [];
       semanticRouter.addIntentWithEmbeddings(patternName, embeddings, {
         agents,
         keywords,
@@ -398,14 +451,14 @@ async function getSemanticRouter() {
     }
 
     routerBackend = 'pure-js';
-    console.log('[hooks] Semantic router initialized: pure JS (cosine, 47k routes/s)');
+    console.log(`[hooks] Semantic router initialized: pure JS (cosine, 47k routes/s), embedder=${routerEmbedder}`);
   } catch {
     semanticRouter = null;
     routerBackend = 'none';
     console.log('[hooks] Semantic router initialized: none (no backend available)');
   }
 
-  return { router: semanticRouter, backend: routerBackend, native: nativeVectorDb };
+  return handle();
 }
 
 /**
@@ -469,8 +522,69 @@ interface TrajectoryData {
   endedAt?: string;
 }
 
-// In-memory trajectory tracking (persisted on end)
+// Cache pending trajectories; the existing memory store also persists checkpoints.
 const activeTrajectories = new Map<string, TrajectoryData>();
+const dirtyTrajectories = new Set<string>();
+const trajectoryOperations = new Map<string, Promise<void>>();
+
+/** Serialize read/modify/checkpoint operations for a trajectory in this process. */
+async function withTrajectoryOperation<T>(id: string, operation: () => Promise<T>): Promise<T> {
+  const previous = trajectoryOperations.get(id) ?? Promise.resolve();
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const current = previous.then(() => gate);
+  trajectoryOperations.set(id, current);
+  await previous;
+  try { return await operation(); }
+  finally {
+    release();
+    if (trajectoryOperations.get(id) === current) trajectoryOperations.delete(id);
+  }
+}
+
+
+async function persistPendingTrajectory(trajectory: TrajectoryData): Promise<boolean> {
+  dirtyTrajectories.add(trajectory.id);
+  try {
+    const store = await getRealStoreFunction();
+    const result = await store?.({
+      key: `trajectory-pending-${trajectory.id}`, value: JSON.stringify(trajectory),
+      namespace: 'trajectories', tags: [trajectory.agent, 'pending', 'sona-trajectory'], upsert: true,
+    });
+    if (result?.success === true) dirtyTrajectories.delete(trajectory.id);
+    return result?.success === true;
+  } catch { return false; }
+}
+
+async function loadPendingTrajectory(id: string): Promise<TrajectoryData | undefined> {
+  try {
+    const { getEntry } = await import('../memory/memory-initializer.js');
+    // A completed record is authoritative even if pending-record cleanup failed
+    // or another process still has an old cache entry.
+    const completed = await getEntry({ key: `trajectory-${id}`, namespace: 'trajectories' });
+    if (completed.success && completed.found) {
+      activeTrajectories.delete(id);
+      dirtyTrajectories.delete(id);
+      return undefined;
+    }
+    // Failed checkpoints must not erase already-acknowledged live steps.
+    // Clean caches still reload so another process's later checkpoint is seen.
+    if (dirtyTrajectories.has(id) && activeTrajectories.has(id)) return activeTrajectories.get(id);
+    const pending = await getEntry({ key: `trajectory-pending-${id}`, namespace: 'trajectories' });
+    if (pending.success && pending.found) {
+      const value = JSON.parse(pending.entry?.content ?? 'null');
+      if (!value || value.id !== id || typeof value.task !== 'string' || typeof value.agent !== 'string'
+        || typeof value.startedAt !== 'string' || !Number.isFinite(Date.parse(value.startedAt))
+        || !Array.isArray(value.steps) || !value.steps.every((step: any) => step
+          && typeof step.action === 'string' && typeof step.result === 'string'
+          && typeof step.quality === 'number' && Number.isFinite(step.quality)
+          && typeof step.timestamp === 'string')) return undefined;
+      activeTrajectories.set(id, value);
+      return value;
+    }
+  } catch { /* store unavailable: retain same-process best-effort tracking */ }
+  return activeTrajectories.get(id);
+}
 
 // Memory store types and helpers
 interface MemoryEntry {
@@ -483,6 +597,7 @@ interface MemoryEntry {
   storedAt: string;
   accessCount: number;
   lastAccessed: string;
+  expiresAt?: string;
 }
 
 interface MemoryStore {
@@ -779,13 +894,64 @@ function suggestAgentsForFile(filePath: string): string[] {
   return AGENT_PATTERNS[ext] || ['coder', 'architect'];
 }
 
-function suggestAgentsForTask(task: string): { agents: string[]; confidence: number } {
-  const taskLower = task.toLowerCase();
+// Whole-word matchers for KEYWORD_PATTERNS. A bare `includes()` matched
+// substrings: 'test' hit "latest" (tester @ 0.95), 'auth' hit "author",
+// 'fix' hit "prefix", 'api' hit "capitalize". Single words get \b anchors plus
+// simple inflections (tests, testing, fixes, deployed); phrases containing
+// whitespace or '/' (e.g. 'ci/cd') match literally between word boundaries.
+const KEYWORD_MATCHERS = Object.entries(KEYWORD_PATTERNS).map(([keyword, result]) => {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const body = /[\s/]/.test(keyword) ? escaped : `${escaped}(?:s|es|ing|ed)?`;
+  return { regex: new RegExp(`\\b${body}\\b`, 'i'), result };
+});
+
+/**
+ * Confidence for a task nothing matched (#3567). It must rank below every real
+ * signal: keyword hits are >= 0.8, learned outcomes >= 0.7, and a semantic
+ * match is only eligible above 0.4. Matches the helper router's 0.3 fall-through.
+ */
+export const NO_MATCH_CONFIDENCE = 0.3;
+
+export interface TaskAgentSuggestion {
+  agents: string[];
+  confidence: number;
+  /** false when no keyword or learned pattern matched; the agents are a default, not a decision. */
+  matched: boolean;
+  reason?: 'no-match-default';
+  note?: string;
+}
+
+/** True when the task has at least one letter or digit in any script. */
+export function hasRoutableText(task: string): boolean {
+  return /[\p{L}\p{N}]/u.test(task);
+}
+
+// Keyword matchers are English regexes; letters outside Latin script can never hit them.
+const NON_LATIN_LETTER = /(?![A-Za-zÀ-ɏ])\p{L}/u;
+
+function noMatchNote(task: string): string {
+  if (!hasRoutableText(task)) return 'Task has no words to match.';
+  if (NON_LATIN_LETTER.test(task)) {
+    return 'Keyword matchers are English-only, so non-English text cannot match them.';
+  }
+  return 'No keyword or learned pattern matched.';
+}
+
+/** Exported for tests. */
+export function suggestAgentsForTask(task: string): TaskAgentSuggestion {
+  const noMatch = (): TaskAgentSuggestion => ({
+    agents: ['coder', 'researcher', 'tester'],
+    confidence: NO_MATCH_CONFIDENCE,
+    matched: false,
+    reason: 'no-match-default',
+    note: noMatchNote(task),
+  });
+  if (!hasRoutableText(task)) return noMatch();
 
   // Check static keyword patterns first
-  for (const [pattern, result] of Object.entries(KEYWORD_PATTERNS)) {
-    if (taskLower.includes(pattern)) {
-      return result;
+  for (const { regex, result } of KEYWORD_MATCHERS) {
+    if (regex.test(task)) {
+      return { ...result, matched: true };
     }
   }
 
@@ -807,12 +973,11 @@ function suggestAgentsForTask(task: string): { agents: string[]; confidence: num
 
     // Require at least 2 keyword overlap to prevent false positives
     if (bestAgent && bestOverlap >= 2) {
-      return { agents: [bestAgent], confidence: Math.min(0.6 + bestOverlap * 0.05, 0.85) };
+      return { agents: [bestAgent], confidence: Math.min(0.6 + bestOverlap * 0.05, 0.85), matched: true };
     }
   }
 
-  // Default fallback
-  return { agents: ['coder', 'researcher', 'tester'], confidence: 0.7 };
+  return noMatch();
 }
 
 function assessCommandRisk(command: string): { risk: string; level: number; warnings: string[] } {
@@ -1030,13 +1195,19 @@ export const hooksPostCommand: MCPTool = {
     properties: {
       command: { type: 'string', description: 'Executed command' },
       exitCode: { type: 'number', description: 'Command exit code' },
+      success: { type: 'boolean', description: 'Explicit execution outcome; false records a failure even without a nonzero exit code' },
+      ttl: { type: 'integer', minimum: 1, maximum: 2147483647, description: 'Command history lifetime in seconds (default: 30 days)' },
     },
     required: ['command'],
   },
   handler: async (params: Record<string, unknown>) => {
     const command = params.command as string;
     const exitCode = (params.exitCode as number) || 0;
-    const success = exitCode === 0;
+    const success = exitCode === 0 && params.success !== false;
+    const ttl = params.ttl ?? 30 * 24 * 60 * 60;
+    if (typeof ttl !== 'number' || !Number.isSafeInteger(ttl) || ttl < 1 || ttl > 2147483647) {
+      return { success: false, recorded: false, error: 'ttl must be a positive integer number of seconds (at most 2147483647)' };
+    }
 
     { const v = validateText(command, 'command'); if (!v.valid) return { success: false, error: v.error }; }
 
@@ -1044,24 +1215,60 @@ export const hooksPostCommand: MCPTool = {
     // repeated consecutive failures of the same command.
     recordCommandOutcome(command, success);
 
+    // #4056: command history is opt-out (CLAUDE_FLOW_HOOKS_RECORD_COMMANDS=0,
+    // CLAUDE_FLOW_HOOKS_ENABLED=false, or hooks.recordCommands=false in the
+    // config). The circuit breaker above is in-memory only; nothing below
+    // runs when recording is off, so no command text reaches the store or
+    // the trajectory pipeline.
+    if (commandRecordingDisabled(process.env, getProjectCwd())) {
+      return {
+        recorded: false,
+        disabled: true,
+        command: undefined,
+        exitCode,
+        success,
+        timestamp: new Date().toISOString(),
+        _storedIn: 'none' as const,
+        learningPath: 'recorded-only' as const,
+        trajectoriesDelta: 0,
+        note: 'Command recording is switched off (CLAUDE_FLOW_HOOKS_RECORD_COMMANDS / CLAUDE_FLOW_HOOKS_ENABLED / hooks.recordCommands); nothing was stored.',
+      };
+    }
+
+    // What is stored is the redacted, length-capped form, never the raw text.
+    const storedCommand = redactCommandForStorage(command);
+
     // Persist command outcome via AgentDB
     let _storedIn: 'agentdb' | 'json-store' | 'none' = 'none';
     try {
       const bridge = await import('../memory/memory-bridge.js');
-      await bridge.bridgeStoreEntry({
+      const stored = await bridge.bridgeStoreEntry({
         key: `cmd-${Date.now()}`,
-        value: JSON.stringify({ command, exitCode, success }),
+        value: JSON.stringify({ command: storedCommand, exitCode, success }),
         namespace: 'commands',
         tags: [success ? 'success' : 'error'],
+        ttl,
+        generateEmbeddingFlag: false,
       });
+      if (!stored?.success) throw new Error(stored?.error || 'Native bridge did not store the command');
       _storedIn = 'agentdb';
     } catch {
       // AgentDB not available — store in JSON
       try {
         const store = loadMemoryStore();
-        const key = `cmd-${Date.now()}`;
-        store.entries[key] = { key, value: JSON.stringify({ command, exitCode, success }), namespace: 'commands', createdAt: new Date().toISOString() } as any;
-        const memDir = resolve(MEMORY_DIR);
+        const now = Date.now();
+        for (const [entryKey, entry] of Object.entries(store.entries)) {
+          if (entry.namespace === 'commands' && entry.expiresAt && Date.parse(entry.expiresAt) <= now) {
+            delete store.entries[entryKey];
+          }
+        }
+        const key = `cmd-${now}`;
+        store.entries[key] = {
+          key, value: JSON.stringify({ command: storedCommand, exitCode, success }), namespace: 'commands',
+          storedAt: new Date(now).toISOString(), lastAccessed: new Date(now).toISOString(), accessCount: 0,
+          expiresAt: new Date(now + ttl * 1000).toISOString(),
+        };
+        const memDir = dirname(getMemoryPath());
         if (!existsSync(memDir)) mkdirSync(memDir, { recursive: true });
         writeFileSync(getMemoryPath(), JSON.stringify(store, null, 2), 'utf-8');
         _storedIn = 'json-store';
@@ -1078,8 +1285,8 @@ export const hooksPostCommand: MCPTool = {
       await intel.recordTrajectory(
         [{
           type: 'action',
-          content: `Command \`${command.slice(0, 200)}\` exited ${exitCode} (${success ? 'success' : 'failure'})`,
-          metadata: { hook: 'post-command', command: command.slice(0, 500), exitCode, success },
+          content: `Command \`${storedCommand.slice(0, 200)}\` exited ${exitCode} (${success ? 'success' : 'failure'})`,
+          metadata: { hook: 'post-command', command: storedCommand.slice(0, 500), exitCode, success },
           timestamp: Date.now(),
         }],
         success ? 'success' : 'failure',
@@ -1116,7 +1323,8 @@ export const hooksRoute: MCPTool = {
     },
     required: ['task'],
   },
-  handler: async (params: Record<string, unknown>) => {
+  // Opt-in @ruvector/typesafe augmentation (CLAUDE_FLOW_ROUTER_TYPESAFE=1); returns the legacy result unchanged when unset.
+  handler: withTypesafeRouting(async (params: Record<string, unknown>) => {
     const task = params.task as string;
     const context = params.context as string | undefined;
     const useSemanticRouter = params.useSemanticRouter !== false;
@@ -1158,17 +1366,121 @@ export const hooksRoute: MCPTool = {
               complexity,
             },
             swarmRecommendation: agents.length > 2 ? { topology: 'hierarchical', agents, coordination: 'queen-led' } : null,
+            ...centroidBypassed(`AgentDB ${agentdbRoute.controller}`, agents[0]),
           };
         }
       } catch {
         // AgentDB router not available — fall through to local routing
       }
+
+      // Trajectory learning persists SONA outcomes separately from the local
+      // semantic index. Only consume an eligible learned pattern here; native,
+      // Q-learning and keyword suggestions retain their existing routing paths.
+      try {
+        const sonaStart = performance.now();
+        // #4581: fold in any verified outcomes the ruflo-mods learning loop
+        // recorded since the last call (one stat when nothing changed).
+        await ingestVerifiedQuietly();
+        const sona = await getSONAOptimizer();
+        const suggestion = await sona?.getRoutingSuggestion(task);
+        const { isSupportedSonaAgent } = await import('../memory/sona-optimizer.js');
+        if (suggestion?.source === 'sona-pattern'
+          && Number.isFinite(suggestion.confidence)
+          && suggestion.confidence >= 0.6 && suggestion.confidence <= 1
+          && isSupportedSonaAgent(suggestion.agent)) {
+          const confidence = Math.round(suggestion.confidence * 100) / 100;
+          const complexity = task.length > 200 ? 'high' : task.length < 50 ? 'low' : 'medium';
+          return {
+            task,
+            routing: { method: 'sona-pattern', backend: 'SONA persisted keyword patterns', latencyMs: performance.now() - sonaStart, throughput: 'N/A' },
+            matched: true,
+            matchedPattern: 'sona-pattern',
+            semanticMatches: [],
+            primaryAgent: {
+              type: suggestion.agent,
+              confidence,
+              reason: `Persisted SONA outcome pattern (${Math.round(suggestion.confidence * 100)}% confidence)`,
+            },
+            alternativeAgents: suggestion.alternatives
+              .filter(alternative => isSupportedSonaAgent(alternative.agent) && Number.isFinite(alternative.score))
+              .map(alternative => ({
+                type: alternative.agent,
+                confidence: Math.round(alternative.score * 100) / 100,
+                reason: 'Alternative from persisted SONA patterns',
+              })),
+            estimatedMetrics: {
+              successProbability: confidence,
+              estimatedDuration: complexity === 'high' ? '2-4 hours' : complexity === 'medium' ? '30-60 min' : '10-30 min',
+              complexity,
+            },
+            swarmRecommendation: null,
+            learning: { source: suggestion.source, matchedKeywords: suggestion.matchedKeywords },
+            ...centroidBypassed('a persisted SONA pattern', suggestion.agent),
+          };
+        }
+      } catch {
+        // Optional SONA state unavailable — preserve the existing local route.
+      }
     }
 
+    return routeTaskLocal(task, context, useSemanticRouter);
+  }),
+};
+
+/**
+ * hooks_route's local routing (semantic index + keyword fallback), run after the
+ * AgentDB and eligible SONA pre-routes. Shared with {@link routeTaskForBench}
+ * so the benchmark measures this local path. (Body kept at its original
+ * indentation to keep this refactor's diff small.)
+ */
+/**
+ * ADR-527 centroid routing for one query. Returns null when the flag is off.
+ * Never throws: an unusable artifact or embedder comes back as `unavailable`.
+ */
+/**
+ * ADR-527: learned routes (AgentDB, persisted SONA patterns) answer before the
+ * centroid router. Say so under the flag, so a pilot's fallback rate counts them.
+ */
+function centroidBypassed(by: string, agent: string): { centroid?: CentroidDecision & { baselineAgent: string } } {
+  return centroidRouterEnabled()
+    ? { centroid: { status: 'bypassed', reason: `${by} answered before the centroid router`, baselineAgent: agent } }
+    : {};
+}
+
+async function centroidRoute(
+  queryText: string,
+  task: string,
+  baselineAgent: string,
+): Promise<(CentroidDecision & { baselineAgent: string }) | null> {
+  if (!centroidRouterEnabled()) return null;
+  try {
+    if (!hasRoutableText(task)) {
+      return { status: 'unavailable', reason: 'task has no letters or digits', baselineAgent };
+    }
+    const { artifact, error } = loadCentroidArtifact();
+    if (!artifact) return { status: 'unavailable', reason: error ?? 'centroid artifact unavailable', baselineAgent };
+    const q = await embedForRouter([queryText], 'minilm');
+    const d = classify(artifact, q.vectors[0], q.embedder, routerEmbedderModel(), resolveMargin(artifact));
+    return { ...d, ...(d.status === 'unavailable' && q.reason ? { reason: `${d.reason}; ${q.reason}` } : {}), baselineAgent };
+  } catch (err) {
+    return { status: 'unavailable', reason: `centroid router failed: ${err instanceof Error ? err.message : String(err)}`, baselineAgent };
+  }
+}
+
+async function routeTaskLocal(
+  task: string,
+  context: string | undefined,
+  useSemanticRouter: boolean,
+  embedderOverride?: RouterEmbedderKind,
+): Promise<LocalRouteResult> {
     // Get router (tries native VectorDb first, falls back to pure JS)
-    const { router, backend, native } = useSemanticRouter
-      ? await getSemanticRouter()
-      : { router: null, backend: 'none' as const, native: null };
+    let handle: SemanticRouterHandle = useSemanticRouter
+      ? await getSemanticRouter(embedderOverride)
+      : {
+        router: null, backend: 'none', native: null,
+        embedder: resolveRouterEmbedder(embedderOverride).kind,
+        embedderReason: 'semantic router disabled (useSemanticRouter=false)',
+      };
 
     let semanticResult: { intent: string; score: number; metadata: Record<string, unknown> }[] = [];
     let routingMethod = 'keyword';
@@ -1176,10 +1488,22 @@ export const hooksRoute: MCPTool = {
     let backendInfo = '';
 
     const queryText = context ? `${task} ${context}` : task;
-    const queryEmbedding = generateSimpleEmbedding(queryText);
+    // ADR-390: the query is embedded with the embedder that built the index.
+    let queryEmbedding: Float32Array | null = null;
+    if (handle.router || handle.native) {
+      const q = await embedForRouter([queryText], handle.embedder);
+      if (q.embedder !== handle.embedder) {
+        // MiniLM failed on the query after building a MiniLM index: rebuild the
+        // index with the hash so patterns and query share one space again.
+        routerInitPromise = buildSemanticRouter('hash', q.reason);
+        handle = await routerInitPromise;
+      }
+      queryEmbedding = q.vectors[0];
+    }
+    const { router, backend, native } = handle;
 
     // Try native VectorDb (HNSW-backed)
-    if (native && backend === 'native') {
+    if (native && backend === 'native' && queryEmbedding) {
       const routeStart = performance.now();
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1210,7 +1534,7 @@ export const hooksRoute: MCPTool = {
     }
 
     // Try pure JS SemanticRouter fallback
-    if (router && backend === 'pure-js' && semanticResult.length === 0) {
+    if (router && backend === 'pure-js' && queryEmbedding && semanticResult.length === 0) {
       const routeStart = performance.now();
       semanticResult = router.routeWithEmbedding(queryEmbedding, 3);
       routingLatencyMs = performance.now() - routeStart;
@@ -1222,6 +1546,7 @@ export const hooksRoute: MCPTool = {
     let agents: string[];
     let confidence: number;
     let matchedPattern = '';
+    let noMatchDetail: string | null = null;
 
     // Both static and learned patterns are gated on the same similarity
     // score. Learned patterns additionally require support/reliability as a
@@ -1230,7 +1555,9 @@ export const hooksRoute: MCPTool = {
     // (#2864: a 25pp higher threshold made a top-scoring learned-researcher
     // match at 0.57 lose to a static match at 0.52, discarding the learned
     // store's output on the majority of routes).
-    const eligibleSemantic = semanticResult.find((match) => {
+    // A task with no letters or digits has nothing for the embedder to mean;
+    // any similarity it scores is noise, so it never becomes a semantic match.
+    const eligibleSemantic = !hasRoutableText(task) ? undefined : semanticResult.find((match) => {
       if (match.score <= 0.4) return false;
       const learned = match.intent.startsWith('learned-') || match.metadata.source === 'learned';
       if (!learned) return true;
@@ -1247,9 +1574,36 @@ export const hooksRoute: MCPTool = {
       const suggestion = suggestAgentsForTask(task);
       agents = suggestion.agents;
       confidence = suggestion.confidence;
-      matchedPattern = 'keyword-fallback';
       routingMethod = 'keyword';
-      backendInfo = 'keyword matching';
+      if (suggestion.matched) {
+        matchedPattern = 'keyword-fallback';
+        backendInfo = 'keyword matching';
+      } else {
+        matchedPattern = 'no-match-default';
+        backendInfo = 'keyword matching (no match)';
+        noMatchDetail = suggestion.note ?? 'No pattern matched.';
+      }
+    }
+
+    // ADR-527: opt-in nearest-centroid router. The current router's pick is
+    // kept as `baselineAgent` so a pilot can compare the two on outcomes.
+    const centroid = await centroidRoute(queryText, task, agents[0]);
+    if (centroid?.status === 'decided') {
+      if (centroid.label === ABSTAIN_LABEL) {
+        noMatchDetail = `Centroid router: no agent fits (closest is "none", score ${centroid.score}).`;
+        matchedPattern = 'centroid-abstain';
+        confidence = NO_MATCH_CONFIDENCE; // #3567: a no-match ranks below every real match
+      } else {
+        agents = [centroid.label, ...agents.filter(a => a !== centroid.label)];
+        // Cosine runs about 0.2-0.6 here, so a raw score could rank a real match
+        // below a no-match (#3567). Rescale monotonically into (NO_MATCH, 1];
+        // the raw cosine stays in `centroid.score`. Not a probability.
+        confidence = Math.round((NO_MATCH_CONFIDENCE + 0.01 + (0.99 - NO_MATCH_CONFIDENCE) * Math.max(0, Math.min(1, centroid.score))) * 100) / 100;
+        matchedPattern = `centroid:${centroid.label}`;
+        noMatchDetail = null;
+      }
+      routingMethod = 'centroid';
+      backendInfo = 'nearest centroid (MiniLM)';
     }
 
     // Determine complexity
@@ -1269,6 +1623,9 @@ export const hooksRoute: MCPTool = {
         throughput: routingLatencyMs > 0 ? `${Math.round(1000 / routingLatencyMs)} routes/s` : 'N/A',
       },
       matchedPattern,
+      // #3567: callers branch on `matched`; a no-match result is a default, not a decision.
+      matched: noMatchDetail === null,
+      ...(noMatchDetail !== null ? { reason: 'no-match-default', note: noMatchDetail } : {}),
       semanticMatches: semanticResult.slice(0, 3).map(r => ({
         pattern: r.intent,
         score: Math.round(r.score * 100) / 100,
@@ -1276,17 +1633,22 @@ export const hooksRoute: MCPTool = {
       primaryAgent: {
         type: agents[0],
         confidence: Math.round(confidence * 100) / 100,
-        reason: routingMethod.startsWith('semantic')
+        reason: routingMethod === 'centroid' && noMatchDetail === null
+          ? `Nearest agent centroid (${Math.round(confidence * 100)}% cosine)`
+          : routingMethod.startsWith('semantic')
           ? `Semantic similarity to "${matchedPattern}" pattern (${Math.round(confidence * 100)}%)`
-          : `Task contains keywords matching ${agents[0]} specialization`,
+          : noMatchDetail !== null
+            ? `Nothing matched; default suggestion only. ${noMatchDetail}`
+            : `Task contains keywords matching ${agents[0]} specialization`,
       },
       alternativeAgents: agents.slice(1).map((agent, i) => ({
         type: agent,
-        confidence: Math.round((confidence - (0.1 * (i + 1))) * 100) / 100,
-        reason: `Alternative agent for ${agent} capabilities`,
+        confidence: Math.max(0, Math.round((confidence - (0.1 * (i + 1))) * 100) / 100),
+        reason: noMatchDetail !== null ? 'Default suggestion (nothing matched)' : `Alternative agent for ${agent} capabilities`,
       })),
       estimatedMetrics: {
-        successProbability: Math.round(confidence * 100) / 100,
+        // No pattern means no basis for a success estimate.
+        successProbability: noMatchDetail !== null ? null : Math.round(confidence * 100) / 100,
         estimatedDuration: complexity === 'high' ? '2-4 hours' : complexity === 'medium' ? '30-60 min' : '10-30 min',
         complexity,
       },
@@ -1295,9 +1657,59 @@ export const hooksRoute: MCPTool = {
         agents,
         coordination: 'queen-led',
       } : null,
+      // ADR-390: which embedder the semantic index + query used ('hash' when degraded).
+      embedder: handle.embedder,
+      ...(centroid ? { centroid } : {}),
+      ...(handle.embedderReason ? { embedderReason: handle.embedderReason } : {}),
     };
-  },
+}
+
+type LocalRouteResult = Record<string, unknown> & {
+  primaryAgent: { type: string; confidence: number; reason: string };
+  matchedPattern: string;
+  embedder: RouterEmbedderKind;
+  embedderReason?: string;
 };
+
+/** Result of {@link routeTaskForBench}. */
+export interface BenchRouteResult {
+  primaryAgent: string;
+  confidence: number;
+  /** Matched pattern name, or 'keyword-fallback'. */
+  pattern: string;
+  /** Embedder actually used ('hash' if MiniLM was requested but unavailable). */
+  embedder: RouterEmbedderKind;
+  embedderReason?: string;
+  /** routing.method of the underlying route ('semantic-native' | 'semantic-pure-js' | 'keyword'). */
+  method: string;
+}
+
+/**
+ * INTERNAL / BENCH-ONLY (ADR-391). Not a public API; may change without notice.
+ *
+ * Routes `task` through the same local path `hooks_route` uses (semantic index +
+ * keyword fallback) with an explicit embedder, without the MCP layer. It skips
+ * the two steps that are neither ADR-391 candidate A nor B: the AgentDB
+ * pre-route (`bridgeRouteTask`, which answers first when its confidence > 0.5)
+ * and the opt-in typesafe wrapper (CLAUDE_FLOW_ROUTER_TYPESAFE). With those
+ * inactive, `primaryAgent` equals `hooks_route`'s `primaryAgent.type`.
+ *
+ * Switching `embedder` between calls rebuilds the index; benchmark in blocks.
+ */
+export async function routeTaskForBench(
+  task: string,
+  opts: { embedder: RouterEmbedderKind; context?: string },
+): Promise<BenchRouteResult> {
+  const r = await routeTaskLocal(task, opts.context, true, opts.embedder);
+  return {
+    primaryAgent: r.primaryAgent.type,
+    confidence: r.primaryAgent.confidence,
+    pattern: r.matchedPattern,
+    embedder: r.embedder,
+    ...(r.embedderReason ? { embedderReason: r.embedderReason } : {}),
+    method: String((r.routing as { method?: unknown } | undefined)?.method ?? ''),
+  };
+}
 
 export const hooksMetrics: MCPTool = {
   name: 'hooks_metrics',
@@ -1496,12 +1908,15 @@ export const hooksPreTask: MCPTool = {
     return {
       taskId,
       description,
+      agentsMatched: suggestion.matched,
       suggestedAgents: suggestion.agents.map((agent, i) => ({
         type: agent,
         confidence: suggestion.confidence - (0.05 * i),
-        reason: i === 0
-          ? `Primary agent for ${agent} tasks based on learned patterns`
-          : `Alternative agent with ${agent} capabilities`,
+        reason: !suggestion.matched
+          ? 'Default suggestion (nothing matched)'
+          : i === 0
+            ? `Primary agent for ${agent} tasks based on learned patterns`
+            : `Alternative agent with ${agent} capabilities`,
       })),
       complexity,
       estimatedDuration: complexity === 'high' ? '2-4 hours' : complexity === 'medium' ? '30-60 min' : '10-30 min',
@@ -1516,16 +1931,36 @@ export const hooksPreTask: MCPTool = {
   },
 };
 
+// #4887 — advertise the grammar validateIdentifier() (cli-core) plus the CLI
+// reserved-name wrapper enforce, so callers learn it from the schema instead of
+// from a refusal. NATIVE_ID_PATTERN is IDENTIFIER_RE (with '-' moved last so no
+// escape is needed); the shell-meta and path-traversal checks can never fire on a
+// string it accepts. ASCII-only, so maxLength (code points) and the 128 .length
+// cap agree. The HTTP transport enforces pattern/minLength at runtime, so a
+// field the handler treats as omitted when empty (agent) must accept ''.
+const NATIVE_ID_BODY = '[a-zA-Z0-9_][a-zA-Z0-9_.:-]{0,127}';
+const NATIVE_ID_RESERVED = ['__proto__', 'constructor', 'prototype'];
+const NATIVE_ID_RULES = '1-128 chars of A-Z a-z 0-9 _ - . : (first char alphanumeric or _); not __proto__, constructor or prototype. Must be a registered native ID, not a host path such as /root/x.';
+const nativeIdSchema = (description: string, opts: { emptyMeansOmitted?: boolean } = {}) => ({
+  type: 'string',
+  ...(opts.emptyMeansOmitted ? {} : { minLength: 1 }),
+  maxLength: 128,
+  pattern: opts.emptyMeansOmitted ? `^(?:${NATIVE_ID_BODY})?$` : `^${NATIVE_ID_BODY}$`,
+  not: { enum: NATIVE_ID_RESERVED },
+  description: `${description} ${NATIVE_ID_RULES}`,
+});
+
 export const hooksPostTask: MCPTool = {
   name: 'hooks_post-task',
   description: 'Record task completion for learning Use when native Bash hooks (via Claude Code\'s settings.json) are wrong because you need Ruflo-side state — pattern persistence, neural training signals, model-routing learning, cost tracking, audit chain. For one-off shell commands, plain Bash hooks are fine.',
   inputSchema: {
     type: 'object',
     properties: {
-      taskId: { type: 'string', description: 'Task identifier' },
+      taskId: nativeIdSchema('Task identifier.'),
+      patterns: feedbackPatternsSchema,
       success: { type: 'boolean', description: 'Whether task was successful' },
-      agent: { type: 'string', description: 'Agent that completed the task' },
-      quality: { type: 'number', description: 'Quality score (0-1)' },
+      agent: nativeIdSchema('Agent that completed the task. An empty string is treated as omitted.', { emptyMeansOmitted: true }),
+      quality: { type: 'number', minimum: 0, maximum: 1, description: 'Quality score (0-1)' },
       task: { type: 'string', description: 'Task description text (used for learning keyword extraction)' },
       duration: { type: 'number', description: 'Observed task duration in milliseconds (used by pheromone-adaptive topology)' },
       latencyBudgetMs: { type: 'number', description: 'Latency budget used to normalize duration (default 60000ms)' },
@@ -1533,7 +1968,7 @@ export const hooksPostTask: MCPTool = {
       agentRole: { type: 'string', description: 'Role for role-local pheromone normalization (default agent)' },
       storeDecisions: { type: 'boolean', description: 'Also store routing decision in memory DB' },
       // ADR-147 P2: nested-subagent spawn-tree capture
-      parentAgentId: { type: 'string', description: 'ID of the parent agent (from Claude Code\'s parent_agent_id OTel span tag / x-claude-code-parent-agent-id header). Omit for top-level work.' },
+      parentAgentId: nativeIdSchema('ID of the parent agent (from Claude Code\'s parent_agent_id OTel span tag / x-claude-code-parent-agent-id header). Omit for top-level work.'),
       depth: { type: 'number', description: 'Chain depth from root lead session (0 = lead, 1+ = subagent). Used by ADR-147 P3 depth-aware guardrail.' },
     },
     required: ['taskId'],
@@ -1542,8 +1977,15 @@ export const hooksPostTask: MCPTool = {
     const taskId = params.taskId as string;
     const success = params.success !== false;
     const agent = params.agent as string | undefined;
-    const quality = (params.quality as number) || (success ? 0.85 : 0.3);
+    if (params.quality !== undefined && (typeof params.quality !== 'number'
+      || !Number.isFinite(params.quality) || params.quality < 0 || params.quality > 1)) {
+      return { success: false, error: 'quality must be a finite number between 0 and 1' };
+    }
+    const quality = params.quality === undefined ? (success ? 0.85 : 0.3) : params.quality as number;
     const startTime = Date.now();
+    let patterns: string[] | undefined;
+    try { patterns = validateFeedbackPatterns(params.patterns); }
+    catch (error) { return { success: false, error: (error as Error).message }; }
 
     { const v = validateIdentifier(taskId, 'taskId'); if (!v.valid) return { success: false, error: v.error }; }
     if (agent) { const v = validateIdentifier(agent, 'agent'); if (!v.valid) return { success: false, error: v.error }; }
@@ -1575,7 +2017,7 @@ export const hooksPostTask: MCPTool = {
         quality,
         agent,
         duration: (params.duration as number) || undefined,
-        patterns: (params.patterns as string[]) || undefined,
+        patterns,
         // ADR-147 P2: forward spawn-tree lineage so it lands in feedback + memory
         parentAgentId,
         depth,
@@ -1597,13 +2039,15 @@ export const hooksPostTask: MCPTool = {
       // Non-fatal
     }
 
-    // Record trajectory via intelligence module (SONA + ReasoningBank)
+    // Record trajectory via intelligence module (SONA + ReasoningBank).
+    // #3353: keep the observed result instead of discarding it.
+    let trajectoryRecorded = false;
     try {
       const intelligence = await import('../memory/intelligence.js');
-      await intelligence.recordTrajectory(
+      trajectoryRecorded = (await intelligence.recordTrajectory(
         [{ type: 'result' as const, content: (params.task as string) || taskId, metadata: { success, agent, quality }, timestamp: Date.now() }],
         success ? 'success' : 'failure'
-      );
+      )) === true;
     } catch {
       // Intelligence module not available — non-fatal
     }
@@ -1741,17 +2185,32 @@ export const hooksPostTask: MCPTool = {
       writeFileSync(storePath, JSON.stringify(store, null, 2), 'utf-8');
     } catch { /* non-critical */ }
 
+    // #3353: report only observed learning results. The previous
+    // `feedbackResult?.updated || (success ? 2 : 1)` / `newPatterns: success ? 1 : 0`
+    // invented counts whenever the feedback controller was unavailable (and the
+    // `||` turned an observed 0 into 2). No path reports pattern *creation*, so
+    // newPatterns is null (unknown) rather than a guess; the trajectory has no
+    // real id to surface, so trajectoryId is null.
+    const feedbackRecorded = feedbackResult?.success === true;
+    const learningAvailable = feedbackRecorded;
     return {
       taskId,
       success,
       duration,
       learningUpdates: {
-        patternsUpdated: feedbackResult?.updated || (success ? 2 : 1),
-        newPatterns: success ? 1 : 0,
-        trajectoryId: `traj-${Date.now()}`,
+        patternsUpdated: feedbackRecorded ? (feedbackResult?.updated ?? 0) : 0,
+        newPatterns: null as number | null,
+        trajectoryId: null as string | null,
         controller: feedbackResult?.controller || 'none',
         outcomePersisted,
+        available: learningAvailable,
+        ...(learningAvailable ? {} : {
+          reason: feedbackResult
+            ? `feedback controller '${feedbackResult.controller}' did not record the outcome`
+            : 'feedback controller unavailable',
+        }),
       },
+      trajectory: { recorded: trajectoryRecorded },
       quality,
       pheromone,
       feedback: feedbackResult ? {
@@ -1814,8 +2273,35 @@ export const hooksExplain: MCPTool = {
       // File unreadable; leave as null
     }
 
+    // #3567: when nothing matched, say so instead of explaining a match that did not happen.
+    if (!suggestion.matched) {
+      return {
+        task,
+        matched: false,
+        reason: 'no-match-default',
+        explanation: `No keyword or learned pattern matched this task. ${suggestion.note ?? ''} ` +
+          `"${suggestion.agents[0]}" is a default suggestion, not a routing decision.`.trim(),
+        factors: [
+          { factor: 'Keyword Match', weight: 0.4, value: null, impact: 'No keyword matched' },
+          { factor: 'Historical Success', weight: 0.3, value: historicalSuccess, impact: historicalNote },
+          { factor: 'Agent Availability', weight: 0.2, value: null, impact: 'Agent availability tracking not implemented' },
+          { factor: 'Task Complexity', weight: 0.1, value: task.length > 100 ? 0.8 : 0.3, impact: 'Complexity assessment' },
+        ],
+        patterns: matchedPatterns,
+        decision: {
+          agent: suggestion.agents[0],
+          confidence: suggestion.confidence,
+          reasoning: [
+            'No pattern matched; the agent is a default suggestion',
+            `Confidence ${(suggestion.confidence * 100).toFixed(0)}% is below every real match`,
+          ],
+        },
+      };
+    }
+
     return {
       task,
+      matched: true,
       explanation: `The routing decision was made based on keyword analysis of the task description. ` +
         `The task contains keywords that match the "${suggestion.agents[0]}" specialization with ${(suggestion.confidence * 100).toFixed(0)}% confidence.`,
       factors: [
@@ -2032,9 +2518,26 @@ export const hooksBuildAgents: MCPTool = {
     },
   },
   handler: async (params: Record<string, unknown>) => {
-    const outputDir = resolve((params.outputDir as string) || './agents');
+    // #4558: outputDir was never validated and resolved against the process
+    // cwd, so a default call from another directory overwrote files there.
+    if (params.outputDir !== undefined) {
+      const v = validatePath(params.outputDir, 'outputDir');
+      if (!v.valid) return { success: false, error: v.error };
+    }
+    const outputDir = resolve(getProjectCwd(), (params.outputDir as string) || './agents');
+    // validatePath allows absolute paths, so keep the real output dir inside
+    // the real project root (CWE-22/59): configs are only ever project files.
+    let realProjectRoot: string;
+    try { realProjectRoot = nodeFs.realpathSync(getProjectCwd()); } catch { realProjectRoot = getProjectCwd(); }
+    if (!isInsideRealRoot(realProjectRoot, outputDir)) {
+      return { success: false, error: 'outputDir must be inside the project directory' };
+    }
     const focus = (params.focus as string) || 'all';
-    const format = (params.format as string) || 'yaml';
+    // format is spliced into each file name; only the two supported formats.
+    const format = params.format === undefined ? 'yaml' : params.format;
+    if (format !== 'yaml' && format !== 'json') {
+      return { success: false, error: 'format must be "yaml" or "json"' };
+    }
     const persist = params.persist !== false; // Default to true
 
     const agents = [
@@ -2082,9 +2585,11 @@ export const hooksBuildAgents: MCPTool = {
       agents: filteredAgents,
       stats: {
         configsGenerated: filteredAgents.length,
-        patternsApplied: filteredAgents.length * 3,
+        // #4558: was agents * 3; no pretrain data is read, the configs are templates.
+        patternsApplied: 0,
         optimizationsIncluded: filteredAgents.reduce((acc, a) => acc + a.optimizations.length, 0),
       },
+      _note: 'Configs are built-in templates; pretrain data is not read.',
     };
   },
 };
@@ -2104,7 +2609,8 @@ export const hooksTransfer: MCPTool = {
   },
   handler: async (params: Record<string, unknown>) => {
     const sourcePath = params.sourcePath as string;
-    const minConfidence = (params.minConfidence as number) || 0.7;
+    // #4728: an explicit 0 must not fall through to 0.7 (`0 || 0.7` is 0.7).
+    const minConfidence = (params.minConfidence as number) ?? 0.7;
     const filter = params.filter as string;
 
     { const v = validatePath(sourcePath, 'sourcePath'); if (!v.valid) return { success: false, error: v.error }; }
@@ -2434,14 +2940,21 @@ export const hooksSessionEnd: MCPTool = {
       // after the command has completed all logical work (#2691).
       try {
         await bridge?.shutdownBridge();
-      } catch {
-        // Cleanup is best-effort and must not fail session-end.
+      } catch (err) {
+        // Cleanup is best-effort and must not fail session-end, but a failed
+        // AgentDB persist (lock/concurrent writer) is never silent.
+        if ((err as { code?: unknown } | null)?.code === 'AGENTDB_LOCK_UNRECOVERABLE') {
+          process.stderr.write(`[ruflo] warning: ${(err as Error).message}\n`);
+        }
       }
     }
+
+    const verifiedOutcomes = await ingestVerifiedQuietly();
 
     return {
       sessionId,
       duration,
+      verifiedOutcomes,
       statePath: saveState ? `.claude/sessions/${sessionId}.json` : undefined,
       daemon: { stopped: daemonStopped },
       sessionPersistence: sessionPersistence || { controller: 'none', persisted: false },
@@ -2801,9 +3314,8 @@ export const hooksIntelligenceReset: MCPTool = {
       }
     }
 
-    // Clear in-memory trajectories
-    cleared.trajectories = activeTrajectories.size;
-    activeTrajectories.clear();
+    // Reset learned state without abandoning tasks still recording outcomes.
+    cleared.trajectories = 0;
 
     return {
       reset: true,
@@ -2857,20 +3369,8 @@ export const hooksTrajectoryStart: MCPTool = {
       getTrajectoryTree().openTrajectory({ sessionId, trajectoryId, task, agent });
     } catch { /* prototype path — never blocks trajectory recording */ }
 
-    // Persist pending trajectory to disk so it survives MCP restarts
-    const storeFn = await getRealStoreFunction();
-    if (storeFn) {
-      try {
-        await storeFn({
-          key: `trajectory-pending-${trajectoryId}`,
-          value: JSON.stringify(trajectory),
-          namespace: 'trajectories',
-          tags: [agent, 'pending', 'sona-trajectory'],
-        });
-      } catch {
-        // Best-effort persistence — trajectory still lives in-memory
-      }
-    }
+    // Checkpoint before handing the id to another process.
+    const persisted = await persistPendingTrajectory(trajectory);
 
     return {
       trajectoryId,
@@ -2878,6 +3378,7 @@ export const hooksTrajectoryStart: MCPTool = {
       agent,
       started: startedAt,
       status: 'recording',
+      persisted,
       implementation: 'real-trajectory-tracking',
       activeCount: activeTrajectories.size,
     };
@@ -2893,17 +3394,21 @@ export const hooksTrajectoryStep: MCPTool = {
       trajectoryId: { type: 'string', description: 'Trajectory ID' },
       action: { type: 'string', description: 'Action taken' },
       result: { type: 'string', description: 'Action result' },
-      quality: { type: 'number', description: 'Quality score (0-1)' },
+      quality: { type: 'number', minimum: 0, maximum: 1, description: 'Quality score (0-1)' },
     },
     required: ['trajectoryId', 'action'],
   },
-  handler: async (params: Record<string, unknown>) => {
+  handler: async (params: Record<string, unknown>) => withTrajectoryOperation(params.trajectoryId as string, async () => {
     const trajectoryId = params.trajectoryId as string;
     // #14: scrub extended-thinking blocks so reasoning tokens don't contaminate
     // the learning signal (DISTILL embeds this text).
     const action = scrubReasoningBlocks(params.action as string);
     const result = scrubReasoningBlocks((params.result as string) || 'success');
-    const quality = (params.quality as number) || 0.85;
+    if (params.quality !== undefined && (typeof params.quality !== 'number'
+      || !Number.isFinite(params.quality) || params.quality < 0 || params.quality > 1)) {
+      return { success: false, error: 'quality must be a finite number between 0 and 1' };
+    }
+    const quality = params.quality === undefined ? 0.85 : params.quality as number;
     const timestamp = new Date().toISOString();
     const stepId = `step-${Date.now()}`;
 
@@ -2911,7 +3416,7 @@ export const hooksTrajectoryStep: MCPTool = {
     { const v = validateText(action, 'action'); if (!v.valid) return { success: false, error: v.error }; }
 
     // Add step to real trajectory if it exists
-    const trajectory = activeTrajectories.get(trajectoryId);
+    const trajectory = await loadPendingTrajectory(trajectoryId);
     if (trajectory) {
       trajectory.steps.push({
         action,
@@ -2920,6 +3425,8 @@ export const hooksTrajectoryStep: MCPTool = {
         timestamp,
       });
     }
+
+    const persisted = trajectory ? await persistPendingTrajectory(trajectory) : false;
 
     // MAGE-style execution-state-tree mirror (prototype, non-fatal)
     try {
@@ -2952,11 +3459,12 @@ export const hooksTrajectoryStep: MCPTool = {
       result,
       quality,
       recorded: !!trajectory,
+      persisted,
       timestamp,
       totalSteps: trajectory?.steps.length || 0,
       implementation: trajectory ? 'real-step-recording' : 'trajectory-not-found',
     };
-  },
+  }),
 };
 
 export const hooksTrajectoryEnd: MCPTool = {
@@ -2971,7 +3479,7 @@ export const hooksTrajectoryEnd: MCPTool = {
     },
     required: ['trajectoryId'],
   },
-  handler: async (params: Record<string, unknown>) => {
+  handler: async (params: Record<string, unknown>) => withTrajectoryOperation(params.trajectoryId as string, async () => {
     const trajectoryId = params.trajectoryId as string;
 
     { const v = validateIdentifier(trajectoryId, 'trajectoryId'); if (!v.valid) return { success: false, error: v.error }; }
@@ -2982,7 +3490,7 @@ export const hooksTrajectoryEnd: MCPTool = {
     const startTime = Date.now();
 
     // Get and finalize real trajectory
-    const trajectory = activeTrajectories.get(trajectoryId);
+    const trajectory = await loadPendingTrajectory(trajectoryId);
     let persistResult: { success: boolean; id?: string; error?: string } = { success: false };
 
     if (trajectory) {
@@ -3011,8 +3519,16 @@ export const hooksTrajectoryEnd: MCPTool = {
         }
       }
 
-      // Remove from active trajectories
-      activeTrajectories.delete(trajectoryId);
+      // Failed writes remain retryable. A completed row prevents stale pending
+      // data from being replayed even if cleanup itself fails.
+      if (persistResult.success) {
+        activeTrajectories.delete(trajectoryId);
+        dirtyTrajectories.delete(trajectoryId);
+        try {
+          const { deleteEntry } = await import('../memory/memory-initializer.js');
+          await deleteEntry({ key: `trajectory-pending-${trajectoryId}`, namespace: 'trajectories' });
+        } catch { /* completed record is the replay guard */ }
+      }
     }
 
     // MAGE-style execution-state-tree mirror (prototype, non-fatal)
@@ -3022,7 +3538,7 @@ export const hooksTrajectoryEnd: MCPTool = {
     } catch { /* prototype path — never blocks trajectory finalization */ }
 
     // SONA Learning - process trajectory outcome for routing optimization
-    let sonaResult: { learned: boolean; patternKey: string; confidence: number } = {
+    let sonaResult: { learned: boolean; patternKey: string; confidence: number; reinforcedNeighbour?: boolean; routingGate?: { threshold: number; confidence: number; reached: boolean; successesNeeded: number } } = {
       learned: false, patternKey: '', confidence: 0
     };
     let ewcResult: { consolidated: boolean; penalty: number } = {
@@ -3050,6 +3566,8 @@ export const hooksTrajectoryEnd: MCPTool = {
             learned: result.learned,
             patternKey: result.patternKey,
             confidence: result.confidence,
+            reinforcedNeighbour: result.reinforcedNeighbour,
+            routingGate: result.routingGate,
           };
         } catch {
           // SONA learning failed, continue without it
@@ -3127,19 +3645,23 @@ export const hooksTrajectoryEnd: MCPTool = {
       } catch { /* intelligence module not loadable — keep sona-only behaviour */ }
     }
 
-    // #2351: when an agent calls trajectory-end with no recorded steps but a
-    // non-empty `feedback` string, the feedback was previously dropped on the
-    // floor — `patternsExtracted` reported 0 and `pattern-search` never
-    // surfaced it. Step-less trajectories are the common case for LLM agents
-    // (nothing forces step logging mid-task), and feedback is often the most
-    // distilled lesson available. Route it through the same store + embed
-    // path that pattern-store uses so it becomes searchable. Best-effort:
-    // failures here must not turn the trajectory-end call itself into a
-    // failure — the trajectory record was already persisted above.
+    // #2351: when an agent calls trajectory-end with a non-empty `feedback`
+    // string, the feedback was previously dropped on the floor —
+    // `patternsExtracted` reported 0 and `pattern-search` never surfaced it.
+    // Route it through the same store + embed path that pattern-store uses
+    // so it becomes searchable. Best-effort: failures here must not turn the
+    // trajectory-end call itself into a failure — the trajectory record was
+    // already persisted above.
+    //
+    // #3662: #2351's original fix gated this on `!hasSteps` (step-less
+    // trajectories only). The common start -> step -> end path (the one real
+    // agents actually use) therefore recorded SONA state while leaving the
+    // feedback unindexed. Non-empty feedback is promoted regardless of
+    // whether steps were recorded — a trajectory's steps and its distilled
+    // feedback are not mutually exclusive evidence.
     let feedbackDistilled: { stored: boolean; patternId?: string; controller?: string } = { stored: false };
-    const hasSteps = !!trajectory && trajectory.steps.length > 0;
     const trimmedFeedback = typeof feedback === 'string' ? feedback.trim() : '';
-    if (trajectory && !hasSteps && trimmedFeedback.length > 0) {
+    if (trajectory && trimmedFeedback.length > 0) {
       const distilledPatternId = `pattern-feedback-${trajectoryId}-${Date.now()}`;
       const patternMetadata: Record<string, unknown> = {
         sourceTrajectoryId: trajectoryId,
@@ -3214,6 +3736,8 @@ export const hooksTrajectoryEnd: MCPTool = {
         sonaUpdate: sonaResult.learned,
         sonaPatternKey: sonaResult.patternKey || undefined,
         sonaConfidence: sonaResult.confidence || undefined,
+        sonaReinforcedNeighbour: sonaResult.reinforcedNeighbour || undefined,
+        sonaRoutingGate: sonaResult.routingGate,
         ewcConsolidation: ewcResult.consolidated,
         ewcPenalty: ewcResult.penalty || undefined,
         patternsExtracted,
@@ -3235,7 +3759,7 @@ export const hooksTrajectoryEnd: MCPTool = {
         ? `SONA learned pattern "${sonaResult.patternKey}" with ${(sonaResult.confidence * 100).toFixed(1)}% confidence`
         : (persistResult.success ? 'Trajectory persisted for future learning' : (persistResult.error || 'Trajectory not found')),
     };
-  },
+  }),
 };
 
 // Pattern store/search hooks - REAL implementation using storeEntry
@@ -3255,7 +3779,8 @@ export const hooksPatternStore: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const pattern = params.pattern as string;
     const type = (params.type as string) || 'general';
-    const confidence = (params.confidence as number) || 0.8;
+    // #4728: an explicit 0 must not fall through to 0.8 (`0 || 0.8` is 0.8).
+    const confidence = (params.confidence as number) ?? 0.8;
     const metadata = params.metadata as Record<string, unknown> | undefined;
     const timestamp = new Date().toISOString();
 
@@ -3274,7 +3799,7 @@ export const hooksPatternStore: MCPTool = {
 
     // Fallback: persist using memory-initializer store
     let storeResult: { success: boolean; id?: string; embedding?: { dimensions: number; model: string }; error?: string } = { success: false };
-    if (!reasoningResult) {
+    if (!reasoningResult?.success) {
       const storeFn = await getRealStoreFunction();
       if (storeFn) {
         try {
@@ -3336,7 +3861,8 @@ export const hooksPatternSearch: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const query = params.query as string;
     const topK = (params.topK as number) || 5;
-    const minConfidence = (params.minConfidence as number) || 0.3;
+    // #4728: an explicit 0 must not fall through to 0.3 (`0 || 0.3` is 0.3).
+    const minConfidence = (params.minConfidence as number) ?? 0.3;
     const namespace = (params.namespace as string) || 'pattern';
     const strategy = (params.strategy as string) || 'semantic';
 
@@ -3893,11 +4419,21 @@ export const hooksIntelligenceLearn: MCPTool = {
   inputSchema: {
     type: 'object',
     properties: {
-      trajectoryIds: { type: 'array', items: { type: 'string' }, description: 'Specific trajectories to learn from' },
+      trajectoryIds: { type: 'array', items: { type: 'string' }, description: 'Not supported: a learning cycle always covers every recorded trajectory. Supplying this returns an error and runs nothing, rather than learning from more than was asked (#4693).' },
       consolidate: { type: 'boolean', description: 'Run EWC++ consolidation' },
     },
   },
   handler: async (params: Record<string, unknown>) => {
+    // #4693: distillLearning() and the background pass have no way to select
+    // trajectories, so a request scoped to some must not trigger learning over all.
+    // Refuse it before anything is imported or mutated; omitting the field is unchanged.
+    if (params.trajectoryIds !== undefined) {
+      return {
+        success: false,
+        learned: false,
+        error: 'hooks_intelligence_learn: trajectoryIds is not supported; a learning cycle always covers every recorded trajectory. Omit trajectoryIds to run it.',
+      };
+    }
     const consolidate = params.consolidate !== false;
     const startTime = Date.now();
 
@@ -3989,12 +4525,12 @@ export const hooksIntelligenceLearn: MCPTool = {
 // Intelligence attention hook
 export const hooksIntelligenceAttention: MCPTool = {
   name: 'hooks_intelligence_attention',
-  description: 'Compute attention-weighted similarity using MoE/Flash/Hyperbolic Use when native Bash hooks (via Claude Code\'s settings.json) are wrong because you need Ruflo-side state — pattern persistence, neural training signals, model-routing learning, cost tracking, audit chain. For one-off shell commands, plain Bash hooks are fine.',
+  description: 'Compute attention-weighted similarity using MoE/Flash. Use when native Bash hooks (via Claude Code\'s settings.json) are wrong because you need Ruflo-side state — pattern persistence, neural training signals, model-routing learning, cost tracking, audit chain. For one-off shell commands, plain Bash hooks are fine.',
   inputSchema: {
     type: 'object',
     properties: {
       query: { type: 'string', description: 'Query for attention computation' },
-      mode: { type: 'string', description: 'Attention mode (flash, moe, hyperbolic)' },
+      mode: { type: 'string', description: 'Attention mode (flash, moe)' },
       topK: { type: 'number', description: 'Top-k results' },
     },
     required: ['query'],
@@ -4006,6 +4542,12 @@ export const hooksIntelligenceAttention: MCPTool = {
     const startTime = performance.now();
 
     { const v = validateText(query, 'query'); if (!v.valid) return { success: false, error: v.error }; }
+    // #3548: only flash and moe have an implementation. Any other mode
+    // (including the previously advertised 'hyperbolic') used to return an
+    // empty stub whose note blamed a missing package; say so instead.
+    if (mode !== 'flash' && mode !== 'moe') {
+      return { success: false, error: `Attention mode "${mode}" is not implemented; supported modes: flash, moe` };
+    }
 
     let implementation = 'placeholder';
     let embeddingSource: 'onnx' | 'hash-fallback' | 'none' = 'none';
@@ -4185,7 +4727,7 @@ export const hooksIntelligenceAttention: MCPTool = {
         implementation,
         _embeddingSource: embeddingSource,
         _stub: implementation === 'none',
-        _note: implementation === 'none' ? 'No attention backend available. Install @ruvector/attention for real computation.' : undefined,
+        _note: implementation === 'none' ? 'No attention backend available: flash/moe attention from @claude-flow/neural could not be loaded or failed.' : undefined,
         ...(embeddingSource === 'hash-fallback' && implementation !== 'none'
           ? { _embeddingNote: 'Query embeddings are hash-based (not semantic). Install @claude-flow/embeddings for real ONNX embeddings.' }
           : {}),
@@ -4407,6 +4949,10 @@ const activeWorkers: Map<string, {
   phase: string;
   startedAt: Date;
   completedAt?: Date;
+  /** True when this record was created by the in-process detect path, not a real executor. */
+  synthetic?: boolean;
+  /** Why the worker record is synthetic, propagated to worker-status/list. */
+  note?: string;
 }> = new Map();
 
 let workerIdCounter = 0;
@@ -4584,14 +5130,17 @@ export const hooksWorkerDispatch: MCPTool = {
       // 3.7.0-alpha.11 the dispatch only updated a process-local Map that
       // the daemon (separate process) could never see, so `queued` was a
       // lie. The queue file makes it real and inspectable on disk.
-      const queueDir = join(cwd, '.claude-flow', 'daemon-queue');
+      // User state dir, keyed by project: a repository must not be able to ship queue entries.
+      const queueDir = dispatchQueueDir(cwd);
       const queuePath = join(queueDir, `${workerId}.json`);
       let queueWritten = false;
       try {
-        if (!existsSync(queueDir)) mkdirSync(queueDir, { recursive: true });
+        // Private to the user, like the other state under ~/.claude-flow.
+        if (!existsSync(queueDir)) mkdirSync(queueDir, { recursive: true, mode: 0o700 });
         writeFileSync(
           queuePath,
           JSON.stringify({ workerId, trigger, context, priority, enqueuedAt: new Date().toISOString() }, null, 2),
+          { mode: 0o600 },
         );
         queueWritten = true;
       } catch (err) {
@@ -4601,7 +5150,7 @@ export const hooksWorkerDispatch: MCPTool = {
       }
       if (queueWritten) {
         reportedStatus = 'queued';
-        note = `Worker queued for daemon (pid ${daemonPid}) at ${queuePath}. Daemon polls every 5s; processed entries move to .claude-flow/daemon-queue/.processed/. Poll hooks_worker-status until status === "completed".`;
+        note = `Worker queued for daemon (pid ${daemonPid}) at ${queuePath}. Daemon polls every 5s; processed entries move to ${join(queueDir, '.processed')}. Poll hooks_worker-status until status === "completed".`;
       } else {
         reportedStatus = 'mcp-only';
       }
@@ -4686,6 +5235,7 @@ export const hooksWorkerStatus: MCPTool = {
       workers,
       summary: {
         total: workers.length,
+        pending: workers.filter(w => w.status === 'pending').length,
         running: workers.filter(w => w.status === 'running').length,
         completed: workers.filter(w => w.status === 'completed').length,
         failed: workers.filter(w => w.status === 'failed').length,
@@ -4710,7 +5260,8 @@ export const hooksWorkerDetect: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const prompt = params.prompt as string;
     const autoDispatch = params.autoDispatch as boolean;
-    const minConfidence = (params.minConfidence as number) || 0.5;
+    // #4728: an explicit 0 must not fall through to 0.5 (`0 || 0.5` is 0.5).
+    const minConfidence = (params.minConfidence as number) ?? 0.5;
 
     { const v = validateText(prompt, 'prompt'); if (!v.valid) return { success: false, error: v.error }; }
 
@@ -4740,6 +5291,12 @@ export const hooksWorkerDetect: MCPTool = {
             progress: 0,
             phase: 'initializing',
             startedAt: new Date(),
+            // hooks_worker-detect has no executor. Unlike its sibling
+            // hooks_worker-dispatch, it used to silently fabricate a
+            // completed worker after 1.5s. Mark the record and response so
+            // callers cannot treat it as real analysis (#4549 automation scan).
+            synthetic: true,
+            note: 'No executor ran: hooks_worker-detect only records a synthetic worker. Use hooks_worker-dispatch with the daemon for real work.',
           });
           dispatched.push(workerId);
 
@@ -4748,13 +5305,15 @@ export const hooksWorkerDetect: MCPTool = {
             const w = activeWorkers.get(workerId);
             if (w) {
               w.progress = 100;
-              w.phase = 'completed';
+              w.phase = 'synthetic-completed';
               w.status = 'completed';
               w.completedAt = new Date();
             }
           }, 1500);
         }
         result.autoDispatched = true;
+        result.autoDispatchStatus = 'synthetic-completed';
+        result.note = 'No executor ran: these worker records are synthetic placeholders. Use hooks_worker-dispatch with the daemon for real work.';
         result.workerIds = dispatched;
       }
     }
@@ -4809,7 +5368,10 @@ export const hooksModelRoute: MCPTool = {
       };
     }
 
-    const result = await router.route(task);
+    const result = await router.route(task, undefined, {
+      preferCost: typeof params.preferCost === 'boolean' ? params.preferCost : undefined,
+      preferSpeed: typeof params.preferSpeed === 'boolean' ? params.preferSpeed : undefined,
+    });
     return {
       model: result.model,
       confidence: result.confidence,
@@ -5011,11 +5573,24 @@ export const hooksCodemod: MCPTool = {
     // Resolve the target file set (single / array / glob), with path containment.
     const resolveTargets = (): { abs: string[]; truncated: boolean; error?: string } => {
       const out = new Set<string>();
+      let realRoot: string;
+      try {
+        realRoot = realpathNearest(cwd);
+      } catch (err) {
+        return { abs: [], truncated: false, error: `cannot resolve project root: ${(err as Error).message}` };
+      }
       const addRaw = (p: string): string | undefined => {
         const v = validatePath(p, 'path');
         if (!v.valid) return v.error;
         const abs = resolve(cwd, v.sanitized);
-        if (!abs.startsWith(cwd)) return `path escapes project root: ${p}`;
+        // Anchor containment at a path-separator boundary — an unanchored
+        // `abs.startsWith(cwd)` string-prefix check would let an absolute
+        // path like `${cwd}-staging/x.ts` pass as "inside" `cwd`. Matches
+        // the pattern already used correctly elsewhere in this codebase
+        // (@claude-flow/security's `isWithinPrefix`, hooks/workers, plugins/security).
+        if (abs !== cwd && !abs.startsWith(cwd + sep)) return `path escapes project root: ${p}`;
+        // The lexical check above cannot see symlinks; re-check on real paths.
+        if (!isInsideRealRoot(realRoot, abs)) return `path escapes project root via symlink: ${p}`;
         out.add(abs);
         return undefined;
       };
@@ -5037,7 +5612,9 @@ export const hooksCodemod: MCPTool = {
         }
         for (const m of matches) {
           const abs = resolve(cwd, m);
-          if (abs.startsWith(cwd) && CODEMOD_EXTENSIONS.has(abs.slice(abs.lastIndexOf('.')).toLowerCase())) {
+          // Matches that resolve outside the root (via a symlinked file or
+          // directory) are skipped silently, like other non-matching entries.
+          if ((abs === cwd || abs.startsWith(cwd + sep)) && isInsideRealRoot(realRoot, abs) && CODEMOD_EXTENSIONS.has(abs.slice(abs.lastIndexOf('.')).toLowerCase())) {
             out.add(abs);
           }
         }
@@ -5298,6 +5875,39 @@ export const hooksIntelligenceUnifiedStats: MCPTool = {
   },
 };
 
+/**
+ * #4581 / ADR-502: ingest the ruflo-mods learning loop's verified outcomes.
+ * Never throws; null when the module or SONA is unavailable.
+ */
+async function ingestVerifiedQuietly(force = false) {
+  try {
+    const { ingestVerifiedOutcomes } = await import('../memory/verified-outcomes.js');
+    const sona = await getSONAOptimizer();
+    return await ingestVerifiedOutcomes({ force, sona: sona as never });
+  } catch {
+    return null;
+  }
+}
+
+export const hooksVerifiedIngest: MCPTool = {
+  name: 'hooks_intelligence_verified-ingest',
+  description: 'Ingest the ruflo-mods learning loop\'s recorded turns (.claude-flow/data/verified-trajectories.jsonl, #4581): turns a test, build or typecheck process verified train SONA; unverified turns are counted and never train. Writes .claude-flow/data/learned-lessons.json (patterns at or above the 0.6 routing gate, plus repeated verified failures as cautions). hooks_route and hooks_session-end already ingest automatically; call this to see the counts or to force a re-read. Use when native Bash hooks (via Claude Code\'s settings.json) are wrong because the outcome must reach Ruflo-side state — SONA pattern persistence and routing — and must be gated on a verifier\'s exit status rather than recorded unconditionally.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      dryRun: { type: 'boolean', description: 'Count only: train nothing and write nothing' },
+      force: { type: 'boolean', description: 'Re-read the file even if it has not changed since the last ingest' },
+    },
+  },
+  handler: async (params: Record<string, unknown>) => {
+    const { ingestVerifiedOutcomes } = await import('../memory/verified-outcomes.js');
+    const sona = await getSONAOptimizer();
+    // ADR-503 §2.3: only this explicit ingest may re-verify (run project code), and only when learningLoop.reverify is on.
+    const result = await ingestVerifiedOutcomes({ dryRun: params.dryRun === true, force: params.force === true || params.dryRun === true, sona: sona as never, allowReverify: true });
+    return { success: true, ...result };
+  },
+};
+
 // Export all hooks tools
 export const hooksTools: MCPTool[] = [
   hooksIntelligenceUnifiedStats,
@@ -5327,6 +5937,7 @@ export const hooksTools: MCPTool[] = [
   hooksTrajectoryStart,
   hooksTrajectoryStep,
   hooksTrajectoryEnd,
+  hooksVerifiedIngest,
   hooksPatternStore,
   hooksPatternSearch,
   hooksIntelligenceStats,

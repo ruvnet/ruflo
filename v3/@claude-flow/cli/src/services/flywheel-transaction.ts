@@ -231,6 +231,10 @@ function atomicWriteJson(file: string, value: unknown): void {
     fs.closeSync(fd);
   }
   fs.renameSync(tmp, file);
+  // Windows cannot flush a directory handle (FlushFileBuffers fails with EPERM on NTFS), and there the journaled rename needs no such step.
+  // Skipping it there is the same rule policy-runtime's syncDirectory follows (#3398). On POSIX a failure here means the rename may not be
+  // durable, so it still reaches the caller (#4492).
+  if (process.platform === 'win32') return;
   const dirFd = fs.openSync(path.dirname(file), fs.constants.O_RDONLY);
   try {
     fs.fsyncSync(dirFd);

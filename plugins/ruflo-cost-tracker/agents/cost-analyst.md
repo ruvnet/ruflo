@@ -33,12 +33,18 @@ Model pricing per 1M tokens (Haiku/Sonnet/Opus × Input/Output/Cache-Write/Cache
 | `cost-health` | Composite CI gate — runs budget+burn+anomaly+projection in parallel, returns max exit code | Single CI step that covers all four alert ladders; faster than wiring each separately because subchecks run in parallel |
 | `cost-diff` | PR-level snapshot delta — compares two cost-summary JSON outputs | "Did this PR add cost vs main?"; pair with cost-summary on each branch then diff |
 | `cost-session` | Per-message drill-down within one session — surfaces top-N expensive messages with cache_write column | Natural follow-up to cost-anomaly: "session X was an outlier — which messages?". Distinguishes cache-write costs from output-token costs (the silent killer) |
+| `cost-ledger` | Multi-provider ledger over local Claude Code + Codex logs; cache hit ratio; unpriced models flagged | "What did I spend across Claude and Codex?" Never add USD to Codex credits |
+| `cost-advise` | Findings with evidence and what-if savings (cache, TTL, sub-agent tier, reasoning effort, context size) | "How do I cut spend?" Present, never apply; savings say nothing about quality |
+| `cost-openrouter` | OpenRouter key limit / usage / generation cost / credits | Network + key: ask first, run with `--yes`, never print a key |
+| `cost-local` | $/1M tokens on owned hardware and break-even utilisation vs a hosted model | Local-vs-API questions; estimates from the user's own inputs |
 | `cost-export` | Prometheus textfile + webhook POST | External observability dashboards |
 | `cost-federation` | ADR-097 Phase 3 consumer — per-peer 1h/24h/7d windows | After Phase 3 emits federation_spend events |
 | `cost-benchmark` | Run the corpus harness — booster + optional Gemini/Sonnet/Opus | Verifying speedup claims, regression check |
 | `cost-booster-route` | Wrap `hooks_route`, partition by `[AGENT_BOOSTER_AVAILABLE]` | Audit how many tasks would route to Tier 1 |
 | `cost-booster-edit` | Apply a Tier 1 transform via `agent-booster.apply()` | When a transform is already classified as Tier 1 |
 | `cost-compact-context` | Wrap `getTokenOptimizer().getCompactContext()` | Retrieval-augmented prompt compression |
+
+The report skills (`cost-report`, `cost-conversation`, `cost-summary`, `cost-trend`, `cost-projection`, `cost-counterfactual`, `cost-burn`, `cost-anomaly`, `cost-health`, `cost-diff`, `cost-session`, `cost-export`, `cost-federation`, `cost-benchmark`) are user-invoked (ADR-507): the Skill tool refuses them. Tell the user which `/ruflo-cost` subcommand gives the report (for example `/ruflo-cost anomaly`) rather than producing it yourself.
 
 `cost track` populates the namespace; everything else consumes it. Run `cost-track` first or other skills will operate on empty data.
 
@@ -79,14 +85,14 @@ This plugin is the declared consumer of two `ruflo-loop-workers` background work
 - **`optimize`** — periodically scans recent cost data and produces optimization recommendations. Consumed by the `cost-optimize` skill and surfaced via `cost workers` (see `commands/ruflo-cost.md`).
 - **`benchmark`** — runs cost-per-benchmark across spawned agents; results inform Tier 1/2/3 routing decisions reported in `cost-report`.
 
-Use `mcp__plugin_ruflo-core_ruflo__hooks_worker-status --worker optimize` and `--worker benchmark` to inspect last-run timestamps and outcomes. The worker scheduling itself is owned by `ruflo-loop-workers`; this plugin only consumes outputs.
+Use `mcp__plugin_ruflo-core_ruflo__hooks_worker-status({ includeCompleted: true })` and pick out the `optimize` and `benchmark` entries to inspect last-run timestamps and outcomes (the tool has no per-worker-name filter). The worker scheduling itself is owned by `ruflo-loop-workers`; this plugin only consumes outputs.
 
 ## Neural learning
 
 After generating cost reports or applying optimizations, feed the cost-optimization learning loop so future strategies compound:
 ```bash
-npx @claude-flow/cli@latest hooks post-task --task-id "TASK_ID" --success true --train-neural true
-npx @claude-flow/cli@latest neural train --pattern-type cost-optimization --epochs 5
+npx @claude-flow/cli@latest hooks post-task --task-id "TASK_ID" --success true
+npx @claude-flow/cli@latest neural train --pattern optimization --epochs 5
 ```
 
 ## Related plugins

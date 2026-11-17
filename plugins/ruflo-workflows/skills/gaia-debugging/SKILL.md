@@ -2,7 +2,7 @@
 name: gaia-debugging
 description: Diagnose why a GAIA question failed — extract trace, classify failure mode, and propose a fix. Use when a GAIA benchmark run reports a failed/incorrect task_id and you need to root-cause it before resubmitting.
 argument-hint: "<task_id> [--results=<path>]"
-allowed-tools: Bash Read mcp__plugin_ruflo-core_ruflo__memory_search mcp__plugin_ruflo-core_ruflo__memory_store mcp__plugin_ruflo-core_ruflo__agentdb_pattern_search mcp__plugin_ruflo-core_ruflo__agentdb_pattern_store
+allowed-tools: Bash Read mcp__plugin_ruflo-core_ruflo__memory_search mcp__plugin_ruflo-core_ruflo__memory_store mcp__plugin_ruflo-core_ruflo__agentdb_pattern-search mcp__plugin_ruflo-core_ruflo__agentdb_pattern-store
 ---
 
 # GAIA Debugging Skill
@@ -55,14 +55,26 @@ Look at the trace output:
 
 ```bash
 node v3/@claude-flow/cli/bin/cli.js gaia-bench run \
-  --level 1 --limit 1 \
-  --task-id $TASK_ID \
+  --level 1 --limit N \
   --models claude-sonnet-4-6 \
   --max-turns 20 \
   --output json
 ```
 
-### Step 4 — Apply targeted fix
+`gaia-bench run` cannot select one task: there is no `--task-id` flag (unknown flags are ignored silently). Use the smallest `--limit N` that reaches the question's position in the level's dataset order, and read only the trace for `$TASK_ID` from the output; completed questions are skipped on resume via the checkpoint file.
+
+### Step 4 — Compare reasoning strategies
+
+- **Wrong answer despite relevant evidence:** Re-run the command from Step 3
+  with `--enable-critic --voting-attempts 1`. The critic reviews the answer
+  against the evidence and can trigger one retry with revision guidance.
+  Voting takes precedence when `--voting-attempts` exceeds 1.
+- **Multi-step reasoning failure:** Try a separate run with `--decompose`.
+  This can split a complex question into smaller questions, solve them
+  separately, and synthesize their answers. Compare the result for the same
+  task with the baseline to see whether breaking up the question helps.
+
+### Step 5 — Apply targeted fix
 
 | Failure | Action |
 |---------|--------|
@@ -73,11 +85,11 @@ node v3/@claude-flow/cli/bin/cli.js gaia-bench run \
 | LI — loop | Add a tool-call deduplication guard in `gaia-agent.ts` |
 | AT — timeout | Set `DEFAULT_PER_TURN_TIMEOUT_MS` higher or use `--max-turns` flag |
 
-### Step 5 — Verify fix and store pattern
+### Step 6 — Verify fix and store pattern
 
 ```bash
-# Re-run the single question
-node … gaia-bench run --task-id $TASK_ID --models $MODEL --output json
+# Re-run (no --task-id exists; use the smallest --limit that includes the question)
+node … gaia-bench run --level $LEVEL --limit N --models $MODEL --output json
 
 # If now passing, store the pattern
 npx @claude-flow/cli@latest memory store \

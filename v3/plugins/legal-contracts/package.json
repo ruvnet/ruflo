@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-legal-contracts",
-  "version": "3.0.0-alpha.2",
+  "version": "3.0.0-alpha.3",
   "description": "Legal contract analysis plugin for Claude Flow V3 - clause extraction, risk assessment, contract comparison, obligation tracking, and playbook matching",
   "type": "module",
   "main": "./dist/index.js",
@@ -44,6 +44,7 @@
     "tag": "v3alpha"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
     "plugin",
     "legal",
@@ -58,11 +59,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/plugins/legal-contracts"
   },
   "dependencies": {
-    "zod": "^3.23.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -74,5 +75,9 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "homepage": "https://ruv.io",
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
   }
 }

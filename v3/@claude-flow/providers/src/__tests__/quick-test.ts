@@ -55,7 +55,7 @@ async function testAnthropic() {
     config: {
       provider: 'anthropic',
       apiKey,
-      model: 'claude-3-haiku-20240307', // Use cheaper, widely-available model
+      model: 'claude-haiku-4-5-20251001', // Use cheaper, widely-available model
       maxTokens: 100,
     },
     logger: consoleLogger,
@@ -248,7 +248,7 @@ async function testProviderManager() {
     providers.push({
       provider: 'anthropic' as const,
       apiKey: process.env.ANTHROPIC_API_KEY,
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-haiku-4-5-20251001',
       maxTokens: 100,
     });
   }

@@ -18,11 +18,13 @@ import {
   createThreat
 } from '../entities/threat.js';
 import { createHash } from 'crypto';
+import type { InjectionDetector, PackSelection } from './packs/engine.js';
+import { detectPackThreats, resolvePackDetector } from './packs/adapter.js';
 
 /**
  * Threat pattern definition
  */
-interface ThreatPattern {
+export interface ThreatPattern {
   readonly pattern: RegExp;
   readonly type: ThreatType;
   readonly severity: ThreatSeverity;
@@ -31,10 +33,42 @@ interface ThreatPattern {
 }
 
 /**
- * Prompt injection patterns (50+ patterns from AIMDS)
+ * Prompt injection patterns (originally 50+ patterns from AIMDS).
+ *
+ * Includes the wider-detection pass ported from upstream `aidefence@2.3.0` /
+ * `aimds-*@0.1.1` (ADR-118, #2004). @claude-flow/aidefence 3.0.3 shipped it,
+ * but it was published from an uncommitted tree; ADR-516 restores it to source.
+ *
+ *  - A verb→noun window of 0..6 modifier words catches the
+ *    "ignore all previous instructions" family in its many phrasings
+ *    ("disregard every system prompt above", "forget all of the prior rules").
+ *    The narrow regexes below stay for phrasings the window misses.
+ *  - Role hijack adds `behave (as|like) …`.
+ *  - Jailbreak markers add `god|root|admin|sudo mode`.
  */
+
+/** Verbs that flag a likely override attempt. ADR-118 / #2004. */
+const OVERRIDE_VERBS = ['ignore', 'disregard', 'forget', 'override'].join('|');
+/** Nouns the override targets. `system\s*-?\s*prompts?` matches "system prompt" and "system-prompt". */
+const OVERRIDE_NOUNS = ['instructions?', 'prompts?', 'rules?', 'context', 'system\\s*-?\\s*prompts?'].join('|');
+/**
+ * 0..6 modifier words between verb and noun. ADR-118 specified 0..4; "forget
+ * every single one of the previous prompts" needs 6. `\s+` and `\S+` are
+ * disjoint, so each repetition has exactly one split point and the window
+ * stays linear (timed in threat-detection.test.ts).
+ */
+const OVERRIDE_WINDOW = '(?:\\s+\\S+){0,6}';
+
 const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
-  // Instruction override patterns
+  // ADR-118 window: override verb → target noun across 0..6 modifier words.
+  {
+    pattern: new RegExp(`\\b(${OVERRIDE_VERBS})${OVERRIDE_WINDOW}\\s+(${OVERRIDE_NOUNS})\\b`, 'i'),
+    type: 'instruction_override',
+    severity: 'critical',
+    description: 'Override verb followed by a target noun within 0..6 words (ADR-118)',
+    baseConfidence: 0.96,
+  },
+  // Instruction override patterns (narrow; kept for phrasings the window misses)
   {
     pattern: /ignore\s+(all\s+)?(previous\s+)?instructions/i,
     type: 'instruction_override',
@@ -86,10 +120,18 @@ const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
     description: 'Roleplay instruction that may be legitimate',
     baseConfidence: 0.65,
   },
+  {
+    // ADR-118: `behave as/like a different|new|another|unrestricted …`.
+    pattern: /behave\s+(as|like)\s+(an?\s+)?(different|new|another|unrestricted)/i,
+    type: 'role_switching',
+    severity: 'high',
+    description: 'Behavior-hijack instruction (ADR-118)',
+    baseConfidence: 0.78,
+  },
 
   // Jailbreak patterns
   {
-    pattern: /\bDAN\b.*\bmode\b|\bmode\b.*\bDAN\b/i,
+    pattern: /\bDAN\b[^\n]{0,200}?\bmode\b|\bmode\b[^\n]{0,200}?\bDAN\b/i,
     type: 'jailbreak',
     severity: 'critical',
     description: 'DAN jailbreak attempt',
@@ -123,6 +165,14 @@ const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
     description: 'Attempt to disable safety filters',
     baseConfidence: 0.96,
   },
+  {
+    // ADR-118: privileged-mode jailbreaks beyond DAN / developer mode.
+    pattern: /\b(god|root|admin|sudo)\s*mode\b/i,
+    type: 'jailbreak',
+    severity: 'critical',
+    description: 'Privileged-mode jailbreak attempt (ADR-118)',
+    baseConfidence: 0.94,
+  },
 
   // Context manipulation patterns
   {
@@ -154,7 +204,7 @@ const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
     baseConfidence: 0.75,
   },
   {
-    pattern: /\[\[.*?\]\]|<<.*?>>|\{\{.*?\}\}/,
+    pattern: /\[\[[^\]\n]{0,200}\]\]|<<[^>\n]{0,200}>>|\{\{[^}\n]{0,200}\}\}/,
     type: 'context_manipulation',
     severity: 'medium',
     description: 'Special bracket injection attempt',
@@ -231,47 +281,69 @@ const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
  */
 const PII_PATTERNS = [
   {
-    pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+    // Bounded per RFC 5321 (local part ≤ 64, domain ≤ 253): the unbounded `+`
+    // quantifiers were quadratic on inputs like `a.a.a…` (3.8 s / 100 KB),
+    // and `detect()` runs PII detection on every scan.
+    pattern: /\b[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}\b/,
     type: 'email',
     description: 'Email address',
   },
   {
-    pattern: /\b\d{3}-\d{2}-\d{4}\b/g,
+    pattern: /\b\d{3}-\d{2}-\d{4}\b/,
     type: 'ssn',
     description: 'Social Security Number',
   },
   {
-    pattern: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
+    pattern: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/,
     type: 'credit_card',
     description: 'Credit card number',
   },
   {
-    pattern: /\b(sk-[a-zA-Z0-9]{20,}|sk-ant-[a-zA-Z0-9-]{20,})\b/g,
+    pattern: /\b(sk-[a-zA-Z0-9]{20,}|sk-ant-[a-zA-Z0-9-]{20,})\b/,
     type: 'api_key',
     description: 'API key (OpenAI/Anthropic format)',
   },
   {
-    pattern: /\b(ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{82})\b/g,
+    pattern: /\b(ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{82})\b/,
     type: 'api_key',
     description: 'GitHub token',
   },
   {
-    pattern: /password\s*[:=]\s*["']?[^"'\s]{4,}["']?/gi,
+    pattern: /password\s*[:=]\s*["']?[^"'\s]{4,}["']?/i,
     type: 'password',
     description: 'Hardcoded password',
   },
 ];
 
 /**
+ * Options for ThreatDetectionService. Passing a bare ThreatPattern[] (the
+ * pre-3.1 signature) is still accepted and means `{ patterns }`.
+ */
+export interface ThreatDetectionOptions {
+  /** Replaces the built-in regex patterns. */
+  readonly patterns?: ThreatPattern[];
+  /**
+   * AIMDS pattern packs scanned alongside the built-in patterns (3.1.0).
+   * Default `true`: every vendored pack. `false` disables them; a list or
+   * a record selects packs by name (e.g. `['core', 'exfil_url']`).
+   */
+  readonly packs?: PackSelection;
+}
+
+/**
  * Threat Detection Service
  */
 export class ThreatDetectionService {
   private readonly patterns: ThreatPattern[];
+  private readonly packDetector: InjectionDetector | null;
   private detectionCount = 0;
   private totalDetectionTimeMs = 0;
 
-  constructor(customPatterns?: ThreatPattern[]) {
-    this.patterns = customPatterns ?? PROMPT_INJECTION_PATTERNS;
+  constructor(options?: ThreatPattern[] | ThreatDetectionOptions) {
+    const opts: ThreatDetectionOptions = Array.isArray(options) ? { patterns: options } : options ?? {};
+    this.patterns = opts.patterns ?? PROMPT_INJECTION_PATTERNS;
+    // Packs are compiled once per process; this only selects a detector.
+    this.packDetector = resolvePackDetector(opts.packs);
   }
 
   /**
@@ -285,12 +357,21 @@ export class ThreatDetectionService {
     // Normalize input
     const normalizedInput = this.normalizeInput(input);
 
-    // Pattern matching
+    // Pattern matching. The indicator count is computed once per input,
+    // not once per match (it was O(P^2) per detect).
+    let threatIndicatorCount = 0;
+    const matches: Array<{ pattern: ThreatPattern; match: RegExpExecArray }> = [];
     for (const pattern of this.patterns) {
       const match = pattern.pattern.exec(normalizedInput);
       if (match) {
+        threatIndicatorCount += 1;
+        matches.push({ pattern, match });
+      }
+    }
+    for (const { pattern, match } of matches) {
+      {
         // Calculate confidence with context
-        const confidence = this.calculateConfidence(pattern, match, normalizedInput);
+        const confidence = this.calculateConfidence(pattern, match, normalizedInput, threatIndicatorCount);
 
         threats.push(createThreat({
           type: pattern.type,
@@ -304,6 +385,13 @@ export class ThreatDetectionService {
           },
         }));
       }
+    }
+
+    // AIMDS pattern packs: a separate pass over the RAW input (the pack
+    // normaliser keeps newlines, which some pack regexes rely on). Pack hits
+    // do not feed threatIndicatorCount, so built-in confidences are unchanged.
+    if (this.packDetector) {
+      threats.push(...detectPackThreats(this.packDetector, input));
     }
 
     // PII detection
@@ -341,6 +429,13 @@ export class ThreatDetectionService {
         if (pattern.severity === 'critical') {
           return { threat: true, confidence: maxConfidence };
         }
+      }
+    }
+
+    if (this.packDetector) {
+      for (const t of this.packDetector.detect(input).threats) {
+        threatFound = true;
+        maxConfidence = Math.max(maxConfidence, t.confidence);
       }
     }
 
@@ -391,12 +486,12 @@ export class ThreatDetectionService {
   private calculateConfidence(
     pattern: ThreatPattern,
     match: RegExpExecArray,
-    input: string
+    input: string,
+    threatIndicatorCount: number
   ): number {
     let confidence = pattern.baseConfidence;
 
-    // Boost confidence if multiple threat indicators
-    const threatIndicatorCount = this.patterns.filter(p => p.pattern.test(input)).length;
+    // Boost confidence if multiple threat indicators (counted once by the caller)
     if (threatIndicatorCount > 1) {
       confidence = Math.min(confidence + 0.05 * (threatIndicatorCount - 1), 0.99);
     }
@@ -461,7 +556,7 @@ export class ThreatDetectionService {
  * Create a new ThreatDetectionService instance
  */
 export function createThreatDetectionService(
-  customPatterns?: ThreatPattern[]
+  options?: ThreatPattern[] | ThreatDetectionOptions
 ): ThreatDetectionService {
-  return new ThreatDetectionService(customPatterns);
+  return new ThreatDetectionService(options);
 }

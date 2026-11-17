@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="76" viewBox="0 0 300 76" role="img" aria-labelledby="t d">
+<title id="t">npm downloads: 120.95M observed since October 2025</title>
+<desc id="d">120,946,147 observed npm download events since 2025-10-01, 429 package cohort, evidence through 2026-11-15. Observed lower bound with historical gaps, not unique users or lifetime downloads. No animated counter increments are claimed.</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#202016"/><stop offset="1" stop-color="#0b111d"/></linearGradient>
+<linearGradient id="line"><stop stop-color="#ffe338"/><stop offset="1" stop-color="#29e9bd"/></linearGradient></defs>
+<style>text{font-family:Arial,Helvetica,sans-serif}
+.pulse{animation:pulse 3.5s ease-in-out infinite}
+.scan{stroke-dasharray:35 240;animation:scan 7s linear infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes scan{to{stroke-dashoffset:-550}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<rect x=".5" y=".5" width="299" height="75" rx="9" fill="url(#bg)" stroke="#ffe338" stroke-opacity=".5"/>
+<path d="M57 12V64" stroke="#ffe338" stroke-opacity=".22"/>
+<g transform="translate(14 20)" fill="none" stroke="#ffe338" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+<path d="M14 0V24M5 16l9 9 9-9"/><path d="M2 30H26" opacity=".8"/>
+</g><circle class="pulse" cx="49" cy="15" r="2.2" fill="#29e9bd"/>
+<text x="70" y="17" fill="#b8c2d1" font-size="10" letter-spacing="1.1">NPM DOWNLOADS</text>
+<text x="70" y="46" fill="#ffe338" font-size="28" font-weight="700">120.95M</text>
+<text x="70" y="61" fill="#a8b3c5" font-size="9.3">OBSERVED SINCE OCT 2025</text>
+<path d="M9 70H291" stroke="#ffe338" stroke-opacity=".17"/>
+<path class="scan" d="M9 70H291" stroke="url(#line)" stroke-width="1.5"/>
+</svg>

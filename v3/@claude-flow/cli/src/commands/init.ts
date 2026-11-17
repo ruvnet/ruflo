@@ -16,14 +16,50 @@ import {
   DEFAULT_INIT_OPTIONS,
   MINIMAL_INIT_OPTIONS,
   FULL_INIT_OPTIONS,
+  finalizeDualInstructions,
+  formatPluginDedupSummary,
   type InitOptions,
+  type InitResult,
 } from '../init/index.js';
+import { executeGrokInit } from '../init/grok-generator.js';
 import {
   ENROLLMENT_SCREEN,
   recordEnrollmentOutcome,
   shouldOfferEnrollment,
 } from '../funnel/enrollment.js';
 import { commandExists } from '../services/harness-hosts.js';
+import { riskyModeFromFlags } from '../init/risky-settings-gate.js';
+
+const RISKY_FLAG_OPTIONS = [
+  {
+    // ADR-509 §2.3
+    name: 'keep-risky-settings',
+    description: 'Carry forward project auto-approve keys found in .claude/settings.json (enableAllProjectMcpServers, enabledMcpjsonServers, bypassPermissions, blanket Bash allows, non-ruflo hooks) instead of stopping',
+    type: 'boolean' as const,
+    default: false,
+  },
+  {
+    name: 'drop-risky-settings',
+    description: 'Write the merged .claude/settings.json without those auto-approve keys instead of stopping',
+    type: 'boolean' as const,
+    default: false,
+  },
+];
+
+/** ADR-509 §2.3 — print the keys init stopped on (or kept/dropped). Returns the exit result when it stopped. */
+function reportRiskySettings(result: { riskySettings?: string[]; stoppedOnRiskySettings?: boolean }, mode: string): CommandResult | null {
+  if (!result.riskySettings?.length) return null;
+  const head = result.stoppedOnRiskySettings
+    ? 'Stopped: .claude/settings.json carries project auto-approve keys that would be carried forward:'
+    : mode === 'drop'
+      ? 'Dropped these project auto-approve keys from .claude/settings.json:'
+      : 'Kept these project auto-approve keys in .claude/settings.json (--keep-risky-settings):';
+  (result.stoppedOnRiskySettings ? output.printError : output.printWarning).call(output, head);
+  for (const line of result.riskySettings) output.printInfo(`  • ${line}`);
+  if (!result.stoppedOnRiskySettings) return null;
+  output.printInfo('Nothing was written. Re-run with --drop-risky-settings to write the merged settings without these keys, or --keep-risky-settings to keep them.');
+  return { success: false, exitCode: 1, message: 'Stopped on risky project settings', data: { riskySettings: result.riskySettings } };
+}
 
 /**
  * ADR-302 post-init capability enrollment. One-time, interactive-TTY-only,
@@ -33,7 +69,8 @@ import { commandExists } from '../services/harness-hosts.js';
  */
 async function offerCapabilityEnrollment(ctx: CommandContext): Promise<void> {
   try {
-    const noSignup = Boolean(ctx.flags['no-signup'] || ctx.flags.noSignup);
+    // The CLI parser turns `--no-signup` into `signup: false`.
+    const noSignup = Boolean(ctx.flags['no-signup'] || ctx.flags.noSignup || ctx.flags.signup === false);
     if (ctx.flags.format === 'json') return; // scripted output stays pure
     if (!shouldOfferEnrollment({ noSignup, cwd: ctx.cwd })) return;
     output.writeln();
@@ -56,6 +93,43 @@ async function offerCapabilityEnrollment(ctx: CommandContext): Promise<void> {
   }
 }
 
+/**
+ * One-time opt-in to anonymous usage telemetry (ADR-302 telemetry domain,
+ * ADR-309). Separate from enrollment, which must never toggle telemetry.
+ * Interactive TTY only, never in CI, skipped with --no-telemetry-prompt,
+ * asked once whatever the answer, default No. Never affects init success.
+ */
+async function offerTelemetryOptIn(ctx: CommandContext): Promise<void> {
+  try {
+    if (ctx.flags.format === 'json') return;
+    const noPrompt = Boolean(ctx.flags['no-telemetry-prompt'] || ctx.flags.noTelemetryPrompt || ctx.flags.telemetryPrompt === false);
+    const { shouldOfferTelemetry } = await import('../funnel/activation.js');
+    if (!shouldOfferTelemetry({ noTelemetryPrompt: noPrompt, cwd: ctx.cwd })) return;
+    output.writeln();
+    output.writeln('Help improve ruflo? Opting in sends anonymous usage events: init finished, first agent run, active days.');
+    output.writeln(output.dim('  Daily-bucketed, with a random ID that rotates every 90 days. No code, paths, prompts or account data.'));
+    const accepted = await confirm({ message: 'Share anonymous usage telemetry?', default: false });
+    const { recordConsent } = await import('../funnel/index.js');
+    recordConsent('telemetry', Boolean(accepted), 'init-prompt');
+    output.writeln(output.dim(accepted
+      ? '  Thanks. Turn it off any time with \`ruflo funnel telemetry off\`.'
+      : '  Telemetry stays off. Turn it on later with \`ruflo funnel telemetry on\`.'));
+  } catch {
+    // Optional; init success is never affected.
+  }
+}
+
+/** Activation funnel: no-op without telemetry consent; never throws. */
+async function noteInitCompleted(): Promise<void> {
+  try {
+    const [{ recordInitCompleted }, { rufloPackageVersion }] = await Promise.all([
+      import('../funnel/activation.js'),
+      import('../mcp-protocol.js'),
+    ]);
+    recordInitCompleted(rufloPackageVersion());
+  } catch { /* optional */ }
+}
+
 // Dynamic import of the optional @claude-flow/codex package. Returns
 // undefined (never throws) when the package isn't resolvable anywhere —
 // callers decide whether that's a hard error (explicit --codex/--dual) or a
@@ -75,16 +149,9 @@ async function resolveCodexInitializer(cwd: string): Promise<CodexInitializerCto
   const resolutionStrategies = [
     // Strategy 1: Direct import (works if installed as CLI dependency)
     async () => (await import(codexModuleId)).CodexInitializer,
-    // Strategy 2: Project node_modules (works if installed in user's project)
-    async () => {
-      const projectPath = path.join(cwd, 'node_modules', '@claude-flow', 'codex', 'dist', 'index.js');
-      if (fs.existsSync(projectPath)) {
-        const mod = await import(`file://${projectPath}`);
-        return mod.CodexInitializer;
-      }
-      throw new Error('Not found in project');
-    },
-    // Strategy 3: Global node_modules
+    // (No project node_modules strategy: init must not import code the
+    // target project supplies.)
+    // Strategy 2: Global node_modules
     async () => {
       const { execSync } = await import('child_process');
       const globalPath = execSync('npm root -g', { encoding: 'utf-8' }).trim();
@@ -108,13 +175,22 @@ async function resolveCodexInitializer(cwd: string): Promise<CodexInitializerCto
   return undefined;
 }
 
+// Trust level for a newly generated .codex/config.toml. Safe by default: only
+// an explicit `--codex-trust full` (or RUFLO_CODEX_TRUST=full, read by the
+// adapter) restores danger-full-access. Anything else is rejected here.
+export function readCodexTrustFlag(flags: Record<string, unknown>): 'standard' | 'full' | undefined | null {
+  const raw = flags.codexTrust ?? flags['codex-trust'];
+  if (raw === undefined || raw === null || raw === false || raw === '') return undefined;
+  return raw === 'standard' || raw === 'full' ? raw : null;
+}
+
 // Keep Codex out of the CLI dependency graph so cold `npx ruflo --version`
 // remains fast (#2561). An explicit `init --codex` may fetch the small,
 // stable adapter on demand when it is not already installed by an umbrella
 // package, the current project, or the global npm prefix.
 export function runCodexInitializerCli(
   cwd: string,
-  options: { template: string; force: boolean; dual: boolean },
+  options: { template: string; force: boolean; dual: boolean; codexTrust?: 'standard' | 'full' },
 ): boolean {
   const npxArgs = [
     '-y',
@@ -124,6 +200,7 @@ export function runCodexInitializerCli(
     options.template,
     ...(options.force ? ['--force'] : []),
     ...(options.dual ? ['--dual'] : []),
+    ...(options.codexTrust ? ['--codex-trust', options.codexTrust] : []),
   ];
 
   const result = process.platform === 'win32'
@@ -150,7 +227,10 @@ async function maybeAutoDetectCodex(
   options: { force: boolean; minimal: boolean; full: boolean },
 ): Promise<void> {
   try {
-    if (ctx.flags['no-codex-detect'] === true) return;
+    const codexTrust = readCodexTrustFlag(ctx.flags) ?? undefined;
+    // The CLI parser turns `--no-codex-detect` into `codexDetect: false`.
+    // Retain the literal key for programmatic CommandContext callers.
+    if (ctx.flags.codexDetect === false || ctx.flags['no-codex-detect'] === true) return;
     if (ctx.flags.format === 'json') return; // scripted output stays pure
     if (!commandExists('codex')) return;
 
@@ -168,6 +248,7 @@ async function maybeAutoDetectCodex(
       template: (options.minimal ? 'minimal' : options.full ? 'full' : 'default') as 'minimal' | 'default' | 'full' | 'enterprise',
       force: options.force,
       dual: false, // Claude Code files were already written by the main init flow above
+      codexTrust,
     });
 
     if (!result.success) return; // best-effort — never fail the primary init over this
@@ -328,7 +409,8 @@ function isBloatedRufloSkillDir(dir: string): boolean {
 
 async function maybeInstallSkillsSh(ctx: CommandContext): Promise<void> {
   try {
-    if (ctx.flags['no-skills-sh'] === true) return;
+    // The CLI parser turns `--no-skills-sh` into `skillsSh: false`.
+    if (ctx.flags.skillsSh === false || ctx.flags['no-skills-sh'] === true) return;
     if (ctx.flags.format === 'json') return;
     if (/^(1|true|on|yes)$/i.test(String(process.env.RUFLO_NO_SKILLS_SH || ''))) return;
 
@@ -384,12 +466,118 @@ async function maybeInstallSkillsSh(ctx: CommandContext): Promise<void> {
   }
 }
 
+// Grok Build host initialization (ADR-402)
+async function initGrokAction(
+  ctx: CommandContext,
+  options: { force: boolean; statusLine: boolean; dryRun: boolean }
+): Promise<CommandResult> {
+  const { force, statusLine, dryRun } = options;
+  output.writeln();
+  output.writeln(output.bold(dryRun ? 'Grok Build init (dry run — nothing is written)' : 'Initializing RuFlo for Grok Build'));
+  output.writeln();
+
+  try {
+    const result = executeGrokInit({
+      targetDir: ctx.cwd,
+      force,
+      docs: true,
+      statusLine,
+      dryRun,
+    });
+
+    if (!result.success) {
+      output.printError('Grok initialization failed');
+      for (const err of result.errors) {
+        output.printError(err);
+      }
+      return { success: false, exitCode: 1, message: 'Grok init failed' };
+    }
+
+    output.printBox(
+      [
+        `.grok/config.toml — project MCP (ruflo) + permissions`,
+        `.grok/rules/ruflo-grok.md — host doctrine / tool map`,
+        `.grok/agents/ — ruflo-architect/coder/tester/reviewer`,
+        `.grok/skills/ — agent-teams-grok`,
+        `.grok/hooks/ — SubagentStop advances the team plan`,
+        `scripts/grok-team-bus.mjs (+ grok-team-store.mjs) — ADR-402 team bus CLI`,
+        `scripts/host-statusline.mjs — "what is loaded" row`,
+        `docs/grok/README.md — operator guide`,
+      ].join('\n'),
+      'Grok Build Integration (ADR-402)'
+    );
+    output.writeln();
+
+    const verb = dryRun ? 'Would write' : 'Wrote';
+    output.writeln(output.bold(`${verb} (${result.filesCreated.length}):`));
+    output.printList(result.filesCreated.map((f) => (path.relative(ctx.cwd, f).startsWith('..') ? f : path.relative(ctx.cwd, f))));
+    if (result.filesSkipped.length > 0) {
+      output.printInfo(`Skipped ${result.filesSkipped.length} existing file(s)${force ? '' : ' — use --force to overwrite'}`);
+    }
+    output.writeln();
+
+    const mcp = result.mcp;
+    output.printInfo(
+      mcp.source === 'published'
+        ? `MCP server pinned to ruflo@${mcp.version} (the release that ships the team_* tools)`
+        : `MCP server points at this checkout: ${mcp.args[0]} — rebuild it before use, and re-run init from a published release before committing .grok/config.toml`
+    );
+
+    const uc = result.userConfig;
+    if (uc.action === 'not-requested' || uc.action === 'snippet') {
+      output.writeln();
+      output.writeln(
+        uc.action === 'snippet'
+          ? output.bold(`Did not change ${uc.path}: ${uc.reason}`)
+          : output.bold('Optional status row (Grok reads it only from your user config):')
+      );
+      output.writeln(output.dim(`  Add this to ${uc.path}, or re-run with --grok-statusline to have init merge it`));
+      output.writeln(output.dim(`  (that also installs the script it runs under ~/.grok/ruflo/):`));
+      output.writeln(uc.snippet.trimEnd().split('\n').map((l) => `    ${l}`).join('\n'));
+    } else if (uc.action === 'already-set') {
+      output.printInfo(uc.reason || `${uc.path} already has the Ruflo status row; refreshed the script it runs`);
+    }
+
+    output.writeln();
+    output.writeln(output.bold('Next steps:'));
+    output.printList([
+      'Trust this folder in Grok (/hooks-trust or grok --trust) so MCP, hooks, skills, and rules load together',
+      'Restart Grok so .grok/config.toml is applied',
+      'Read docs/grok/README.md — spawn contract checked on Grok Build 1.0.41',
+      'Verify: grok mcp list && grok mcp doctor ruflo',
+      'Optional: npx ruvnet-brain@latest then enable ruvnet-brain in .grok/config.toml',
+      'Teams: team_create / team_spawn MCP tools (or node scripts/grok-team-bus.mjs)',
+    ]);
+    output.writeln();
+
+    return {
+      success: true,
+      data: {
+        adapter: 'grok',
+        dryRun,
+        filesCreated: result.filesCreated,
+        filesSkipped: result.filesSkipped,
+        mcp: result.mcp,
+        userConfig: { action: uc.action, path: uc.path },
+      },
+    };
+  } catch (e) {
+    output.printError(`Grok initialization failed: ${(e as Error).message}`);
+    return { success: false, exitCode: 1, message: (e as Error).message };
+  }
+}
+
 // Codex initialization action
 async function initCodexAction(
   ctx: CommandContext,
   options: { codexMode: boolean; dualMode: boolean; force: boolean; minimal: boolean; full: boolean }
 ): Promise<CommandResult> {
   const { force, minimal, full, dualMode } = options;
+  const codexTrust = readCodexTrustFlag(ctx.flags);
+  if (codexTrust === null) {
+    output.printError(`Invalid --codex-trust: ${String(ctx.flags.codexTrust ?? ctx.flags['codex-trust'])} (valid: standard, full)`);
+    return { success: false, exitCode: 1 };
+  }
 
   output.writeln();
   output.writeln(output.bold('Initializing RuFlo V3 for OpenAI Codex'));
@@ -407,7 +595,10 @@ async function initCodexAction(
     if (!CodexInitializer) {
       spinner.stop();
       output.printInfo('Fetching the stable Codex adapter for this initialization...');
-      const success = runCodexInitializerCli(ctx.cwd, { template, force, dual: dualMode });
+      // #2638: never pass --dual to a fetched adapter of unknown version — an
+      // older one rewrites CLAUDE.md with its own stub under --force. Without
+      // it, finalizeDualInstructions keeps the full CLAUDE.md.
+      const success = runCodexInitializerCli(ctx.cwd, { template, force, dual: false, codexTrust });
       if (!success) {
         output.printError('Codex initialization failed while running @claude-flow/codex@latest.');
         return { success: false, exitCode: 1 };
@@ -422,6 +613,7 @@ async function initCodexAction(
       template: template as 'minimal' | 'default' | 'full' | 'enterprise',
       force,
       dual: dualMode,
+      codexTrust,
     });
 
     if (!result.success) {
@@ -458,14 +650,22 @@ async function initCodexAction(
     );
     output.writeln();
 
+    // The trust level of .codex/config.toml is always shown (never truncated
+    // behind other warnings): it decides what Codex may do without asking.
+    const isTrustNote = (w: string) => w.startsWith('.codex/config.toml');
+    const trustNotes = (result.warnings ?? []).filter(isTrustNote);
+    for (const note of trustNotes) output.printInfo(note);
+    if (trustNotes.length > 0) output.writeln();
+
     // Warnings
-    if (result.warnings && result.warnings.length > 0) {
+    const otherWarnings = (result.warnings ?? []).filter((w) => !isTrustNote(w));
+    if (otherWarnings.length > 0) {
       output.printWarning('Warnings:');
-      for (const warning of result.warnings.slice(0, 5)) {
+      for (const warning of otherWarnings.slice(0, 5)) {
         output.printInfo(`  • ${warning}`);
       }
-      if (result.warnings.length > 5) {
-        output.printInfo(`  ... and ${result.warnings.length - 5} more`);
+      if (otherWarnings.length > 5) {
+        output.printInfo(`  ... and ${otherWarnings.length - 5} more`);
       }
       output.writeln();
     }
@@ -648,6 +848,18 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     options.skipGlobalClaudeMd = true;
   }
 
+  // #2638 — set by the --dual route below: CLAUDE.md imports AGENTS.md.
+  if (ctx.flags.instructionsSource === 'agents-md') {
+    options.instructionsSource = 'agents-md';
+  }
+
+  const riskyMode = riskyModeFromFlags(ctx.flags);
+  if (typeof riskyMode === 'object') {
+    output.printError(riskyMode.error);
+    return { success: false, exitCode: 1 };
+  }
+  options.riskySettings = riskyMode;
+
   // Create spinner
   const spinner = output.createSpinner({ text: 'Initializing...' });
   spinner.start();
@@ -656,6 +868,10 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     // Execute initialization
     const result = await executeInit(options);
 
+    if (result.stoppedOnRiskySettings) {
+      spinner.fail('Initialization stopped');
+      return reportRiskySettings(result, riskyMode)!;
+    }
     if (!result.success) {
       spinner.fail('Initialization failed');
       for (const error of result.errors) {
@@ -665,6 +881,7 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     }
 
     spinner.succeed('RuFlo V3 initialized successfully!');
+    reportRiskySettings(result, riskyMode);
     output.writeln();
 
     // Display summary
@@ -684,6 +901,13 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
 
     output.printBox(summary.join('\n'), 'Summary');
     output.writeln();
+
+    // #2640: say what was left to the installed ruflo plugins, and why.
+    const pluginLines = result.pluginDedup ? formatPluginDedupSummary(result.pluginDedup) : [];
+    if (pluginLines.length > 0) {
+      output.printBox(pluginLines.join('\n'), 'Provided by installed plugins');
+      output.writeln();
+    }
 
     // Security: surface anything settings-risk-scanner.ts flagged in a
     // pre-existing settings.json this init carried forward unexamined.
@@ -748,17 +972,24 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       output.writeln();
       output.printInfo('Starting services...');
 
-      const { execSync } = await import('child_process');
+      const { execFileSync } = await import('child_process');
+
+      // #4770: drop stderr via stdio, not a shell redirect (breaks on cmd.exe).
+      // shell on win32 so npx.cmd resolves (#2770); args are fixed literals.
+      const runCli = (args: string[]): void => {
+        execFileSync('npx', ['@claude-flow/cli@latest', ...args], {
+          stdio: ['ignore', 'pipe', 'ignore'],
+          cwd: ctx.cwd,
+          timeout: 30000,
+          shell: process.platform === 'win32',
+        });
+      };
 
       // Initialize memory database
       if (startAll) {
         try {
           output.writeln(output.dim('  Initializing memory database...'));
-          execSync('npx @claude-flow/cli@latest memory init 2>/dev/null', {
-            stdio: 'pipe',
-            cwd: ctx.cwd,
-            timeout: 30000
-          });
+          runCli(['memory', 'init']);
           output.writeln(output.success('  ✓ Memory initialized'));
         } catch {
           output.writeln(output.dim('  Memory database already exists'));
@@ -787,11 +1018,7 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       if (startDaemon) {
         try {
           output.writeln(output.dim('  Starting daemon...'));
-          execSync('npx @claude-flow/cli@latest daemon start 2>/dev/null', {
-            stdio: 'pipe',
-            cwd: ctx.cwd,
-            timeout: 30000
-          });
+          runCli(['daemon', 'start']);
           output.writeln(output.success('  ✓ Daemon started'));
         } catch {
           // Daemon dedup hit (already running) OR spawn timed out.
@@ -805,11 +1032,7 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       if (startAll) {
         try {
           output.writeln(output.dim('  Initializing swarm...'));
-          execSync('npx @claude-flow/cli@latest swarm init --topology hierarchical 2>/dev/null', {
-            stdio: 'pipe',
-            cwd: ctx.cwd,
-            timeout: 30000
-          });
+          runCli(['swarm', 'init', '--topology', 'hierarchical']);
           output.writeln(output.success('  ✓ Swarm initialized'));
         } catch {
           output.writeln(output.dim('  Swarm initialization skipped'));
@@ -863,21 +1086,18 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       }
     }
 
-    if (!startDaemon && !startAll) {
-      const bin = (process.argv[1] || '').includes('ruflo') ? 'ruflo' : 'claude-flow';
-      output.writeln(output.bold('Next steps:'));
-      output.printList([
-        `Run ${output.highlight(`${bin} daemon start`)} to start background workers`,
-        // Memory is initialized automatically during init (persistent by
-        // default — see executor.ts) — no separate `memory init` step needed
-        // unless the DB was skipped (MINIMAL_INIT_OPTIONS) or needs --force.
-        `Run ${output.highlight(`${bin} swarm init`)} to initialize a swarm`,
-        `Or use ${output.highlight(`${bin} init --start-all`)} to do all of the above`,
-        options.components.settings ? `Review ${output.highlight('.claude/settings.json')} for hook configurations` : '',
-        // ADR-150 — surface the new metaharness scorecard to every new user.
-        // Optional dep; the command degrades gracefully when not installed.
-        `Run ${output.highlight(`${bin} metaharness score`)} for a 5-dim harness readiness scorecard (ADR-150)`,
-      ].filter(Boolean));
+    // ADR-404 (amended: mods default-on in init) — enable the ruflo mod
+    // plugins in the committed .claude/settings.json, then install them with
+    // claude. Additive: the classic hooks just written stay the fallback.
+    // --no-mods opts out; --no-plugin-install writes settings only.
+    if (ctx.flags.mods !== false) {
+      output.writeln();
+      try {
+        const { applyMods } = await import('../mods/apply.js');
+        await applyMods(ctx.cwd, { scope: 'project', pluginInstall: ctx.flags.pluginInstall !== false && ctx.flags['plugin-install'] !== false, skipInTestEnv: true });
+      } catch (err) {
+        output.writeln(output.warning(`  ruflo mods not enabled: ${err instanceof Error ? err.message : String(err)}`));
+      }
     }
 
     if (ctx.flags.format === 'json') {
@@ -885,6 +1105,32 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     }
 
     await offerCapabilityEnrollment(ctx);
+
+    await offerTelemetryOptIn(ctx);
+
+    await noteInitCompleted();
+
+    if (!startDaemon && !startAll && ctx.flags.format !== 'json') {
+      // End on something about the user's own repo, not a list of commands
+      // (adoption plan item 1). Printed after the optional prompts so it is
+      // the last thing on screen. Local-only, time-capped, never throws.
+      const { snapshotProject, snapshotLines, firstPrompt } = await import('../init/first-win.js');
+      const snap = snapshotProject(ctx.cwd);
+      const lines = snapshotLines(snap);
+      output.writeln();
+      if (lines.length) {
+        output.writeln(output.bold('Your project:'));
+        output.printList(lines);
+        output.writeln();
+      }
+      output.writeln(output.bold('Try it — open Claude Code here and paste:'));
+      output.writeln(`  ${output.highlight(firstPrompt(snap))}`);
+      output.writeln();
+      const bin = (process.argv[1] || '').includes('ruflo') ? 'ruflo' : 'claude-flow';
+      output.writeln(output.dim(`Background workers: ${bin} daemon start · health check: ${bin} doctor`));
+      // ADR-150: surface the metaharness scorecard (optional dep; degrades gracefully when absent).
+      output.writeln(output.dim(`Harness readiness: ${bin} metaharness score (5-dim scorecard)`));
+    }
 
     return { success: true, data: result };
   } catch (error) {
@@ -896,8 +1142,9 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
 
 /**
  * Route platform initialization. Dual mode deliberately runs both native
- * initializers: Claude Code first, then Codex without its compatibility
- * CLAUDE.md stub so the full native Claude scaffold remains authoritative.
+ * initializers: Claude Code first, then Codex. #2638: AGENTS.md carries the
+ * shared instruction sections once and CLAUDE.md imports it (`@AGENTS.md`)
+ * with only the Claude-specific sections; the .claude/ scaffold is unchanged.
  */
 const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const force = ctx.flags.force as boolean;
@@ -905,6 +1152,16 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const full = ctx.flags.full as boolean;
   const codexMode = ctx.flags.codex as boolean;
   const dualMode = ctx.flags.dual as boolean;
+  const grokMode = ctx.flags.grok as boolean;
+
+  // Grok Build host (ADR-402) — separate surface under .grok/
+  if (grokMode) {
+    return initGrokAction(ctx, {
+      force,
+      statusLine: ctx.flags.grokStatusline === true || ctx.flags['grok-statusline'] === true,
+      dryRun: ctx.flags.dryRun === true || ctx.flags['dry-run'] === true,
+    });
+  }
 
   if (codexMode && !dualMode) {
     return initCodexAction(ctx, { codexMode, dualMode: false, force, minimal, full });
@@ -921,6 +1178,8 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
       dual: false,
       // The explicit Codex pass below owns Codex setup.
       'no-codex-detect': true,
+      // #2638 — AGENTS.md owns the shared sections; CLAUDE.md imports it.
+      instructionsSource: 'agents-md',
     },
   };
   const claudeResult = await initClaudeAction(claudeContext);
@@ -928,12 +1187,17 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
 
   const codexResult = await initCodexAction(ctx, {
     codexMode: true,
-    // Preserve the full CLAUDE.md and .claude/ scaffold just generated.
-    dualMode: false,
+    // #2638 — dual AGENTS.md (shared + Codex-only sections). Codex leaves a
+    // CLAUDE.md that already imports AGENTS.md alone.
+    dualMode: true,
     force,
     minimal,
     full,
   });
+  // Keep the @AGENTS.md import only if AGENTS.md really carries the shared
+  // sections; otherwise the full CLAUDE.md is written back.
+  const instructions = finalizeDualInstructions(ctx.cwd, claudeResult.data as InitResult | undefined);
+  if (instructions.action === 'restored' && instructions.message) output.printWarning(instructions.message);
   if (!codexResult.success) {
     return {
       ...codexResult,
@@ -1016,6 +1280,7 @@ const wizardCommand: Command = {
               { value: 'github', label: 'GitHub', hint: 'GitHub integration skills', selected: true },
               { value: 'flowNexus', label: 'Flow Nexus', hint: 'Cloud platform skills', selected: false },
               { value: 'v3', label: 'V3', hint: 'V3 implementation skills', selected: true },
+              { value: 'legacy', label: 'Legacy', hint: 'Skills that document commands v3 does not ship', selected: false },
             ],
           });
 
@@ -1024,6 +1289,7 @@ const wizardCommand: Command = {
           options.skills.github = skillSets.includes('github');
           options.skills.flowNexus = skillSets.includes('flowNexus');
           options.skills.v3 = skillSets.includes('v3');
+          options.skills.legacy = skillSets.includes('legacy');
         }
 
         // Hooks selection
@@ -1138,8 +1404,14 @@ const wizardCommand: Command = {
       const spinner = output.createSpinner({ text: 'Initializing...' });
       spinner.start();
 
+      const wizardRisky = riskyModeFromFlags(ctx.flags);
+      options.riskySettings = typeof wizardRisky === 'object' ? 'stop' : wizardRisky;
       const result = await executeInit(options);
 
+      if (result.stoppedOnRiskySettings) {
+        spinner.fail('Setup stopped');
+        return reportRiskySettings(result, options.riskySettings)!;
+      }
       if (!result.success) {
         spinner.fail('Initialization failed');
         for (const error of result.errors) {
@@ -1160,6 +1432,17 @@ const wizardCommand: Command = {
         }
         if (result.warnings.length > 5) {
           output.printInfo(`  ... and ${result.warnings.length - 5} more`);
+        }
+      }
+
+      // ADR-404 amendment — the wizard enables the mods as `ruflo init` does.
+      if (ctx.flags.mods !== false) {
+        output.writeln();
+        try {
+          const { applyMods } = await import('../mods/apply.js');
+          await applyMods(ctx.cwd, { scope: 'project', pluginInstall: ctx.flags.pluginInstall !== false && ctx.flags['plugin-install'] !== false, skipInTestEnv: true });
+        } catch (err) {
+          output.writeln(output.warning(`  ruflo mods not enabled: ${err instanceof Error ? err.message : String(err)}`));
         }
       }
 
@@ -1227,6 +1510,10 @@ const wizardCommand: Command = {
 
       await offerCapabilityEnrollment(ctx);
 
+      await offerTelemetryOptIn(ctx);
+
+      await noteInitCompleted();
+
       return { success: true, data: result };
     } catch (error) {
       if (error instanceof Error && error.message === 'User cancelled') {
@@ -1287,6 +1574,8 @@ const skillsCommand: Command = {
     { name: 'agentdb', description: 'Install AgentDB skills', type: 'boolean', default: false },
     { name: 'github', description: 'Install GitHub skills', type: 'boolean', default: false },
     { name: 'v3', description: 'Install V3 skills', type: 'boolean', default: false },
+    { name: 'legacy', description: 'Install skills that document commands v3 does not ship (stream-chain, sparc)', type: 'boolean', default: false },
+    { name: 'ecosystem', description: 'Install ecosystem skills (vector quantization, graph min-cut, sublinear solving, injection defense, fast edits, LoRA learning)', type: 'boolean', default: true },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const options: InitOptions = {
@@ -1313,6 +1602,8 @@ const skillsCommand: Command = {
         browser: false,
         v3: ctx.flags.v3 as boolean,
         dualMode: false,
+        legacy: ctx.flags.legacy as boolean,
+        ecosystem: ctx.flags.ecosystem as boolean,
       },
     };
 
@@ -1349,6 +1640,7 @@ const hooksCommand: Command = {
   description: 'Initialize only hooks configuration',
   options: [
     { name: 'all', description: 'Enable all hooks', type: 'boolean', default: true },
+    ...RISKY_FLAG_OPTIONS,
     { name: 'minimal', description: 'Enable only essential hooks', type: 'boolean', default: false },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
@@ -1392,10 +1684,20 @@ const hooksCommand: Command = {
         : DEFAULT_INIT_OPTIONS.hooks,
     };
 
+    const hooksRisky = riskyModeFromFlags(ctx.flags);
+    if (typeof hooksRisky === 'object') {
+      output.printError(hooksRisky.error);
+      return { success: false, exitCode: 1 };
+    }
+    options.riskySettings = hooksRisky;
     const spinner = output.createSpinner({ text: 'Creating hooks configuration...' });
     spinner.start();
 
     const result = await executeInit(options);
+    if (result.stoppedOnRiskySettings) {
+      spinner.fail('Hooks configuration stopped');
+      return reportRiskySettings(result, hooksRisky)!;
+    }
 
     if (result.success) {
       spinner.succeed(`Created settings.json with ${result.summary.hooksEnabled} hooks enabled`);
@@ -1441,14 +1743,33 @@ const upgradeCommand: Command = {
     {
       name: 'settings',
       short: 's',
-      description: 'Merge new settings (Agent Teams, hooks) into existing settings.json',
+      description: 'Merge new settings (Agent Teams, hooks, ruflo mods) into existing settings.json',
       type: 'boolean',
       default: false,
     },
+    {
+      // ADR-404 amendment — the same merge + plugin install as `ruflo init`.
+      name: 'mods',
+      description: 'Merge the ruflo mod plugins into .claude/settings.json and install them (also implied by --add-missing and --settings; --no-mods to skip)',
+      type: 'boolean',
+    },
+    {
+      name: 'plugin-install',
+      description: 'With mods: run claude plugin install (--no-plugin-install to merge settings only)',
+      type: 'boolean',
+      default: true,
+    },
+    ...RISKY_FLAG_OPTIONS,
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
+    const upgradeRisky = riskyModeFromFlags(ctx.flags);
+    if (typeof upgradeRisky === 'object') {
+      output.printError(upgradeRisky.error);
+      return { success: false, exitCode: 1 };
+    }
     const addMissing = (ctx.flags['add-missing'] || ctx.flags.addMissing) as boolean;
     const upgradeSettings = (ctx.flags.settings) as boolean;
+    const upgradeMods = ctx.flags.mods === true || (ctx.flags.mods !== false && (addMissing || upgradeSettings));
 
     output.writeln();
     output.writeln(output.bold('Upgrading RuFlo'));
@@ -1471,9 +1792,14 @@ const upgradeCommand: Command = {
 
     try {
       const result = addMissing
-        ? await executeUpgradeWithMissing(ctx.cwd, upgradeSettings)
-        : await executeUpgrade(ctx.cwd, upgradeSettings);
+        ? await executeUpgradeWithMissing(ctx.cwd, upgradeSettings, upgradeRisky)
+        : await executeUpgrade(ctx.cwd, upgradeSettings, upgradeRisky);
 
+      if (result.stoppedOnRiskySettings) {
+        spinner.fail('Upgrade stopped');
+        return reportRiskySettings(result, upgradeRisky)!;
+      }
+      reportRiskySettings(result, upgradeRisky);
       if (!result.success) {
         spinner.fail('Upgrade failed');
         for (const error of result.errors) {
@@ -1484,6 +1810,15 @@ const upgradeCommand: Command = {
 
       spinner.succeed('Upgrade complete!');
       output.writeln();
+
+      // ADR-404 amendment — merge the mod plugins without clobbering: only
+      // keys that are absent are added, and each is reported.
+      if (upgradeMods) {
+        const { applyMods, describeAdded } = await import('../mods/apply.js');
+        const mods = await applyMods(ctx.cwd, { scope: 'project', pluginInstall: ctx.flags.pluginInstall !== false && ctx.flags['plugin-install'] !== false, skipInTestEnv: true });
+        result.settingsUpdated = [...(result.settingsUpdated ?? []), ...describeAdded(mods.install.added)];
+        output.writeln();
+      }
 
       // Show what was updated
       if (result.updated.length > 0) {
@@ -1599,6 +1934,7 @@ export const initCommand: Command = {
   description: 'Initialize RuFlo in the current directory',
   subcommands: [wizardCommand, checkCommand, skillsCommand, hooksCommand, upgradeCommand],
   options: [
+    ...RISKY_FLAG_OPTIONS,
     {
       name: 'force',
       short: 'f',
@@ -1643,6 +1979,12 @@ export const initCommand: Command = {
       default: false,
     },
     {
+      name: 'no-telemetry-prompt',
+      description: 'Skip the one-time question about anonymous usage telemetry (default answer is No)',
+      type: 'boolean',
+      default: false,
+    },
+    {
       name: 'only-claude',
       description: 'Only create .claude/ directory (skip runtime)',
       type: 'boolean',
@@ -1667,6 +2009,19 @@ export const initCommand: Command = {
       default: false,
     },
     {
+      // ADR-404 amendment — on by default; nothing loads where function hooks are off.
+      name: 'mods',
+      description: 'Enable the ruflo mod plugins in .claude/settings.json (default on; --no-mods to skip); classic hooks stay as fallback',
+      type: 'boolean',
+      default: true,
+    },
+    {
+      name: 'plugin-install',
+      description: 'With mods: refresh the ruflo marketplace and claude plugin install the mods (--no-plugin-install to write settings only)',
+      type: 'boolean',
+      default: true,
+    },
+    {
       name: 'with-embeddings',
       description: 'Initialize ONNX embedding subsystem with hyperbolic support',
       type: 'boolean',
@@ -1686,10 +2041,33 @@ export const initCommand: Command = {
       default: false,
     },
     {
+      name: 'grok',
+      description: 'Initialize for Grok Build host (creates .grok/, team bus scripts, ADR-402 surface)',
+      type: 'boolean',
+      default: false,
+    },
+    {
+      name: 'grok-statusline',
+      description: 'With --grok: also merge the Ruflo status row into ~/.grok/config.toml (user file; off by default)',
+      type: 'boolean',
+      default: false,
+    },
+    {
+      name: 'dry-run',
+      description: 'With --grok: list the files init would write, write nothing',
+      type: 'boolean',
+      default: false,
+    },
+    {
       name: 'dual',
       description: 'Initialize for both Claude Code and OpenAI Codex',
       type: 'boolean',
       default: false,
+    },
+    {
+      name: 'codex-trust',
+      description: 'Trust level of the generated .codex/config.toml: standard (default: workspace-write sandbox, on-request approvals, cached web search) or full (danger-full-access, no approvals, live web search). An existing file is never rewritten',
+      type: 'string',
     },
     {
       name: 'no-codex-detect',
@@ -1717,6 +2095,7 @@ export const initCommand: Command = {
     { command: 'claude-flow init --minimal', description: 'Initialize with minimal configuration' },
     { command: 'claude-flow init --full', description: 'Initialize with all components' },
     { command: 'claude-flow init --force', description: 'Reinitialize and overwrite existing config' },
+    { command: 'claude-flow init --drop-risky-settings', description: 'Merge into an existing settings.json without its auto-approve keys (init stops on them otherwise)' },
     { command: 'claude-flow init --only-claude', description: 'Only create Claude Code integration' },
     { command: 'claude-flow init --skip-claude', description: 'Only create V3 runtime' },
     { command: 'claude-flow init wizard', description: 'Interactive setup wizard' },
@@ -1729,6 +2108,10 @@ export const initCommand: Command = {
     { command: 'claude-flow init upgrade --verbose', description: 'Show detailed upgrade info' },
     { command: 'claude-flow init --codex', description: 'Initialize for OpenAI Codex (AGENTS.md)' },
     { command: 'claude-flow init --codex --full', description: 'Codex init with all canonical packaged skills' },
+    { command: 'claude-flow init --grok', description: 'Initialize for Grok Build (.grok/, team bus, ADR-402)' },
+    { command: 'claude-flow init --grok --force', description: 'Overwrite existing Grok host files' },
+    { command: 'claude-flow init --grok --dry-run', description: 'Show what init --grok would write' },
+    { command: 'claude-flow init --grok --grok-statusline', description: 'Also add the Ruflo status row to ~/.grok/config.toml' },
     { command: 'claude-flow init --dual', description: 'Initialize for both Claude Code and Codex' },
     { command: 'claude-flow init --no-codex-detect', description: 'Skip auto-configuring OpenAI Codex even if it is installed' },
     { command: 'claude-flow init --no-skills-sh', description: 'Skip the post-init skills.sh registration' },

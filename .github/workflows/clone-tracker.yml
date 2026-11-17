@@ -54,7 +54,9 @@ jobs:
 
       - name: Run clone tracker
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The traffic API needs push access, which the Actions GITHUB_TOKEN
+          # lacks. TRAFFIC_TOKEN is a fine-grained PAT with Administration: read.
+          GH_TOKEN: ${{ secrets.TRAFFIC_TOKEN || secrets.GITHUB_TOKEN }}
         run: node scripts/track-clones.mjs
 
       - name: Show resulting artifacts

@@ -14,7 +14,19 @@ name: helpers-manifest-guard
 on:
   pull_request:
     paths:
-      - 'v3/@claude-flow/cli/.claude/helpers/auto-memory-hook.mjs'
+      - '.claude/helpers/**'
+      - 'tests/hook-handler-runwithtimeout.test.cjs'
+      - 'v3/@claude-flow/cli/__tests__/helper-signing.test.ts'
+      - 'v3/@claude-flow/cli/src/init/helper-signing.ts'
+      - 'scripts/check-helper-sync.mjs'
+      - 'v3/@claude-flow/cli/vitest.config.ts'
+      - 'v3/package.json'
+      - 'v3/pnpm-lock.yaml'
+      - 'v3/pnpm-workspace.yaml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'docs/helpers-sync.md'
+      - 'v3/@claude-flow/cli/.claude/helpers/**'
       - 'v3/@claude-flow/cli/.claude/helpers/hook-handler.cjs'
       - 'v3/@claude-flow/cli/.claude/helpers/intelligence.cjs'
       - 'v3/@claude-flow/cli/.claude/helpers/helpers.manifest.json'
@@ -27,6 +39,19 @@ on:
   push:
     branches: [main]
     paths:
+      - '.github/workflows/helpers-manifest-guard.yml'
+      - '.claude/helpers/**'
+      - 'tests/hook-handler-runwithtimeout.test.cjs'
+      - 'v3/@claude-flow/cli/__tests__/helper-signing.test.ts'
+      - 'v3/@claude-flow/cli/src/init/helper-signing.ts'
+      - 'scripts/check-helper-sync.mjs'
+      - 'v3/@claude-flow/cli/vitest.config.ts'
+      - 'v3/package.json'
+      - 'v3/pnpm-lock.yaml'
+      - 'v3/pnpm-workspace.yaml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'docs/helpers-sync.md'
       - 'v3/@claude-flow/cli/.claude/helpers/**'
       - 'v3/@claude-flow/cli/scripts/sign-helpers.mjs'
       - 'v3/@claude-flow/cli/scripts/verify-helpers.mjs'
@@ -39,9 +64,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Match the CLI test install in v3-ci.yml (Test V3 Packages).
+      - uses: pnpm/action-setup@v6
+        with:
+          version: '8'
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: v3/pnpm-lock.yaml
 
       # 1. The scripts themselves must exist. If either is deleted, the
       #    prepublishOnly command below silently no-ops on that step and
@@ -81,3 +112,10 @@ jobs:
             echo "::error::sign-helpers.mjs must run BEFORE verify-helpers.mjs in prepublishOnly (#2593)"
             exit 1
           fi
+
+      - name: Install CLI test dependencies
+        working-directory: v3
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify helper sync and committed manifest (#3206)
+        run: node scripts/check-helper-sync.mjs

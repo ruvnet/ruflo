@@ -1,0 +1,49 @@
+name: Managed dynamic workflows contract
+on:
+  pull_request:
+    paths:
+      - 'v3/@claude-flow/cli/src/mcp-tools/managed-agent-tools.ts'
+      - 'v3/@claude-flow/cli/src/services/managed*.ts'
+      - 'plugins/ruflo-console/**'
+      - 'v3/@claude-flow/cli/__tests__/managed*.test.ts'
+      - 'plugins/ruflo-agent/**'
+      - 'plugins/ruflo-workflows/**'
+      - 'scripts/managed-outcome-verifier.mts'
+      - 'scripts/e2e-managed-*.mts'
+      - '.github/workflows/managed-dynamic-workflows.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['20', '22']
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install isolated test tooling without lifecycle scripts
+        run: |
+          npm install --prefix "$RUNNER_TEMP/managed-tools" --ignore-scripts --no-audit --no-fund vitest@3.2.6 typescript@5.9.3 @types/node@22 @claude-flow/cli-core@3.7.5
+          ln -s "$RUNNER_TEMP/managed-tools/node_modules" node_modules
+      - name: Type check the adapter boundary
+        run: node node_modules/typescript/lib/tsc.js --target es2022 --module nodenext --moduleResolution nodenext --strict --skipLibCheck --types node --noEmit v3/@claude-flow/cli/src/mcp-tools/managed-agent-tools.ts
+      - name: Offline provider and adjacent workflow regressions
+        working-directory: v3/@claude-flow/cli
+        run: node ../../../node_modules/vitest/vitest.mjs run --maxWorkers=2 --config vitest.config.ts __tests__/managed-agent-tools.test.ts __tests__/managed-workflows.test.ts __tests__/managed-mod-integration.test.ts __tests__/managed-learning.test.ts __tests__/managed-learning-loop.test.ts __tests__/managed-memory-isolation.test.ts __tests__/managed-run-collector.test.ts __tests__/managed-run-store.test.ts __tests__/workflow-validation-runtime.test.ts __tests__/workflow-resume-dispatch-r50.test.ts __tests__/workflow-progress-ownership-r50.test.ts
+      - name: Executable independent verifier and feedback cycle
+        run: |
+          node node_modules/typescript/lib/tsc.js --target es2022 --module nodenext --moduleResolution nodenext --strict --skipLibCheck --types node --outDir "$RUNNER_TEMP/managed-e2e" scripts/e2e-managed-loop.mts scripts/managed-outcome-verifier.mts v3/@claude-flow/cli/src/services/managed-memory-worker.ts
+          node "$RUNNER_TEMP/managed-e2e/scripts/e2e-managed-loop.mjs"
+      - name: Plugin and registration contracts
+        run: |
+          bash plugins/ruflo-agent/scripts/smoke.sh
+          bash plugins/ruflo-workflows/scripts/smoke.sh
+          node scripts/audit-cli-mcp-tools.mjs
+
+      - name: Focused console managed integration and rendering
+        run: node node_modules/vitest/vitest.mjs run --maxWorkers=2 plugins/ruflo-console/tests/managed.spec.ts plugins/ruflo-console/tests/managed-palette.spec.ts plugins/ruflo-console/tests/model-tools.spec.ts plugins/ruflo-console/tests/palette-view.spec.ts plugins/ruflo-console/tests/workflows.spec.ts plugins/ruflo-console/tests/mods-section.spec.ts plugins/ruflo-console/tests/render-smoke.spec.ts plugins/ruflo-console/tests/tui-actions.spec.ts

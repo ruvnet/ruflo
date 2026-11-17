@@ -3,6 +3,7 @@ name: cost-export
 description: Export cost-tracking telemetry in Prometheus textfile or webhook JSON formats — for external observability (Grafana, Datadog, custom dashboards)
 argument-hint: "[--prometheus <path>] [--webhook <url>]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 # Cost Export

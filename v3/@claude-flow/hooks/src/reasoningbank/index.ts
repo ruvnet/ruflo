@@ -587,6 +587,9 @@ export class ReasoningBank extends EventEmitter {
       if (now - pattern.createdAt > maxAge && pattern.usageCount < 2) {
         this.shortTermPatterns.delete(id);
         await this.deleteFromStorage(id);
+        if (this.hnswIndex) {
+          await this.hnswIndex.removePoint(id);
+        }
         patternsPruned++;
       }
     }
@@ -594,14 +597,25 @@ export class ReasoningBank extends EventEmitter {
     // Deduplicate similar patterns
     const patterns = Array.from(this.shortTermPatterns.values());
     for (let i = 0; i < patterns.length; i++) {
+      // A prior comparison may have removed this pattern already. Re-entering
+      // its inner loop would compare a tombstone, double-count
+      // duplicatesRemoved, and issue redundant storage/HNSW deletes (#4410).
+      if (!this.shortTermPatterns.has(patterns[i].id)) continue;
       for (let j = i + 1; j < patterns.length; j++) {
+        if (!this.shortTermPatterns.has(patterns[j].id)) continue;
         const similarity = this.cosineSimilarity(patterns[i].embedding, patterns[j].embedding);
         if (similarity > this.config.dedupThreshold) {
           // Keep the one with higher quality
           const toRemove = patterns[i].quality >= patterns[j].quality ? patterns[j] : patterns[i];
           this.shortTermPatterns.delete(toRemove.id);
           await this.deleteFromStorage(toRemove.id);
+          if (this.hnswIndex) {
+            await this.hnswIndex.removePoint(toRemove.id);
+          }
           duplicatesRemoved++;
+          // If `i` lost, every later comparison would be against a removed
+          // pattern. Stop this inner loop entirely (#4415 review).
+          if (toRemove === patterns[i]) break;
         }
       }
     }
@@ -956,9 +970,10 @@ class RealEmbeddingService implements IEmbeddingService {
 }
 
 /**
- * Fallback embedding service (hash-based)
+ * Fallback embedding service (agentic-flow ONNX, then hash-based)
+ * @internal Exported for the event-loop blocking regression test.
  */
-class FallbackEmbeddingService implements IEmbeddingService {
+export class FallbackEmbeddingService implements IEmbeddingService {
   private dimensions: number;
   private cache: Map<string, Float32Array> = new Map();
 
@@ -972,17 +987,25 @@ class FallbackEmbeddingService implements IEmbeddingService {
       return this.cache.get(cacheKey)!;
     }
 
-    // Try agentic-flow ONNX embeddings first
+    // Try agentic-flow ONNX embeddings first. Use the async execFile, not
+    // execFileSync: the latter blocked the event loop for up to 10 s per
+    // embedding whenever the primary path was unavailable (#4410).
     try {
-      const { execFileSync } = await import('child_process');
-      // Use execFileSync with shell: false to prevent command injection
-      // Pass text as argument array to avoid shell interpolation
+      const { execFile } = await import('child_process');
+      // Pass text as an argument array (shell:false), so a prompt cannot
+      // become a shell command.
       const safeText = text.slice(0, 500).replace(/[\x00-\x1f]/g, ''); // Remove control chars
-      const result = execFileSync(
-        'npx',
-        ['agentic-flow@alpha', 'embeddings', 'generate', safeText, '--format', 'json'],
-        { encoding: 'utf-8', timeout: 10000, shell: false, stdio: ['pipe', 'pipe', 'pipe'] }
-      );
+      const result = await new Promise<string>((resolve, reject) => {
+        execFile(
+          process.platform === 'win32' ? 'npx.cmd' : 'npx',
+          ['agentic-flow@alpha', 'embeddings', 'generate', safeText, '--format', 'json'],
+          { encoding: 'utf-8', timeout: 10000, shell: false },
+          (error, stdout) => {
+            if (error) reject(error);
+            else resolve(String(stdout));
+          },
+        );
+      });
       const parsed = JSON.parse(result);
       const embedding = new Float32Array(parsed.embedding || parsed);
       this.cache.set(cacheKey, embedding);

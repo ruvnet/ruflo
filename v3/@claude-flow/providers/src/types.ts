@@ -188,6 +188,10 @@ export interface LLMResponse {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    /** Anthropic prompt-cache write tokens (billed at a premium). */
+    cacheCreationInputTokens?: number;
+    /** Anthropic prompt-cache read tokens (billed at a discount). */
+    cacheReadInputTokens?: number;
   };
 
   // Cost tracking

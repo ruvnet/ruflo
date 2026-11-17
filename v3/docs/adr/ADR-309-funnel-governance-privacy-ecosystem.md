@@ -21,7 +21,7 @@ The funnel turns an open-source developer tool into an acquisition channel for a
 ## Privacy classification and lawful basis
 
 - The pseudonymous funnel ID (ADR-305) plus server-side raw events constitute **personal data** under GDPR and are treated as such under CCPA/CPRA. "Anonymous" is not claimed anywhere identifiers exist.
-- **Operational telemetry** (crash/health, disable rates): **legitimate-interest** basis, with a documented, minimized Legitimate Interest Assessment checked into the repo.
+- **Operational telemetry** (crash/health, disable rates): **legitimate-interest** basis, with a documented, minimized Legitimate Interest Assessment checked into the repo. The one default-on request, the `GET /v1/messages` tips fetch, is assessed in [docs/privacy/funnel-legitimate-interest-assessment.md](../../../docs/privacy/funnel-legitimate-interest-assessment.md) (2026-11-06). It carries only release and OS/CPU family, every opt-out stops it, raw IPs are kept for 30 days, and aggregates are counts only.
 - **Marketing attribution** (signup/conversion events): **explicit opt-in only** — rides the telemetry consent domain (ADR-302), never inferred from product usage.
 - **No cross-product behavioral profiling** without a separate, explicit consent — a Cognitum account must not silently enrich funnel events, and vice versa.
 - **Prohibited in any funnel event, permanently:** raw prompts, command lines, file paths, repository names, model inputs/outputs, hostnames, usernames.

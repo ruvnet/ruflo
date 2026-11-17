@@ -121,6 +121,7 @@ async function getSystemStatus(): Promise<{
     running: number;
     completed: number;
     failed: number;
+    cancelled: number;
   };
   performance: {
     cpuUsage: number;
@@ -167,6 +168,7 @@ async function getSystemStatus(): Promise<{
       running: number;
       completed: number;
       failed: number;
+      cancelled: number;
     }>('task_summary', {});
 
     return {
@@ -220,7 +222,7 @@ async function getSystemStatus(): Promise<{
         backend: 'none',
         performance: { searchTime: 0, cacheHitRate: 0 }
       },
-      tasks: { total: 0, pending: 0, running: 0, completed: 0, failed: 0 },
+      tasks: { total: 0, pending: 0, running: 0, completed: 0, failed: 0, cancelled: 0 },
       performance: {
         cpuUsage: 0,
         memoryUsage: 0,
@@ -289,6 +291,7 @@ function displayStatus(status: Awaited<ReturnType<typeof getSystemStatus>>): voi
       { status: 'Running', count: status.tasks.running },
       { status: 'Completed', count: status.tasks.completed },
       { status: 'Failed', count: status.tasks.failed },
+      { status: 'Cancelled', count: status.tasks.cancelled },
       { status: output.bold('Total'), count: status.tasks.total }
     ]
   });
@@ -355,7 +358,7 @@ function formatHealth(health: string): string {
 const statusAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const watch = ctx.flags.watch as boolean;
   const interval = (ctx.flags.interval as number) || DEFAULT_WATCH_INTERVAL / 1000;
-  const healthCheck = ctx.flags['health-check'] as boolean;
+  const healthCheck = ctx.flags.healthCheck as boolean;
   const cwd = ctx.cwd;
 
   // Check initialization
@@ -521,14 +524,13 @@ const agentsCommand: Command = {
     try {
       const result = await callMCPTool<{
         agents: Array<{
-          id: string;
-          type: string;
+          agentId: string;
+          agentType: string;
           status: string;
-          task?: string;
-          uptime: number;
-          metrics: { tasksCompleted: number; successRate: number };
+          health: number;
+          taskCount: number;
         }>;
-      }>('agent_list', { includeMetrics: true, status: 'all' });
+      }>('agent_list', {});
 
       if (ctx.flags.format === 'json') {
         output.printJson(result);
@@ -540,7 +542,7 @@ const agentsCommand: Command = {
       output.writeln();
 
       if (result.agents.length === 0) {
-        output.printInfo('No agents running');
+        output.printInfo('No agents registered');
         return { success: true, data: result };
       }
 
@@ -549,17 +551,15 @@ const agentsCommand: Command = {
           { key: 'id', header: 'ID', width: 20 },
           { key: 'type', header: 'Type', width: 12 },
           { key: 'status', header: 'Status', width: 10 },
-          { key: 'task', header: 'Current Task', width: 25 },
-          { key: 'uptime', header: 'Uptime', width: 12 },
-          { key: 'success', header: 'Success', width: 8 }
+          { key: 'tasks', header: 'Tasks', width: 8 },
+          { key: 'health', header: 'Health', width: 8 }
         ],
         data: result.agents.map(a => ({
-          id: a.id,
-          type: a.type,
+          id: a.agentId,
+          type: a.agentType,
           status: formatHealth(a.status),
-          task: a.task || '-',
-          uptime: formatUptime(a.uptime),
-          success: `${(a.metrics.successRate * 100).toFixed(0)}%`
+          tasks: a.taskCount,
+          health: a.health
         }))
       });
 
@@ -583,11 +583,11 @@ const tasksCommand: Command = {
     try {
       const result = await callMCPTool<{
         tasks: Array<{
-          id: string;
+          taskId: string;
           type: string;
           status: string;
           priority: string;
-          agent?: string;
+          assignedTo?: string[];
           progress: number;
           createdAt: string;
         }>;
@@ -617,11 +617,11 @@ const tasksCommand: Command = {
           { key: 'progress', header: 'Progress', width: 10 }
         ],
         data: result.tasks.map(t => ({
-          id: t.id,
+          id: t.taskId,
           type: t.type,
           status: formatHealth(t.status),
           priority: t.priority,
-          agent: t.agent || '-',
+          agent: t.assignedTo?.length ? t.assignedTo.join(', ') : '-',
           progress: `${t.progress}%`
         }))
       });

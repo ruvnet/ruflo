@@ -1,0 +1,252 @@
+import type { On } from 'claude-code'
+
+/**
+ * The mod trust gate (ADR-404). Claude Code can now write, install and
+ * hot-reload a mod mid-session, and a mod runs with Claude Code's own access.
+ * A user-tier hook on `plugin.register` judges every hooks module admitted
+ * after it (and every reload), reading what the host scanned the module to
+ * use; it may answer `{ refuse }`. This gate names what a module could do and,
+ * only when the person opts in, refuses user-tier modules that can do the
+ * risky things below. It reads the scan, never the module's own claims.
+ *
+ * What it cannot do: judge modules admitted before it (the host orders
+ * admission), or any prepend/append/builtin module (the organization's and
+ * Claude Code's own, out of a person's reach by design).
+ */
+
+export type TrustPolicy = 'observe' | 'refuse-risky' | 'off'
+
+export type ModuleScan = {
+  readonly name: string
+  readonly tier: string
+  readonly provenance: string
+  /** The plugin's directory (the one holding plugin.json), as the engine loads it. */
+  readonly root?: string
+  readonly uses: { readonly events?: readonly string[]; readonly calls?: readonly string[]; readonly env?: unknown }
+}
+
+/** Calls that reach outside the session: commands, network, the environment. */
+const RISKY_CALLS: Record<string, string> = {
+  'process.run': 'runs host commands',
+  'process.spawn': 'runs host commands',
+  'http.fetch': 'makes network requests',
+  'mcp.call': 'calls MCP tools (any connected server)',
+  'mcp.connect': 'connects MCP servers',
+  'session.send': 'sends messages to other agents',
+  'config.set': 'changes Claude Code settings',
+  'agent.spawn': 'starts subagents (they run tools)',
+  'agent.register': 'defines agent types the model can start',
+  'prompt.submit': 'submits prompts the model acts on',
+  'session.append': 'adds rows to the conversation',
+  'tool.call': 'runs any tool (Bash included)',
+  'command.run': 'runs slash commands',
+  'env.set': 'changes the environment of later hooks and tools',
+  'fs.write': 'writes files (settings, hooks, helpers included)',
+}
+
+/** Hooks that decide for, or over, everything else. */
+const RISKY_EVENTS: Record<string, string> = {
+  'tool.check': 'can answer tool permission verdicts',
+  'tool.call': 'can rewrite or answer tool calls',
+  '*': 'sees every event',
+  'classic.*': 'can answer every settings hook',
+  'plugin.register': 'can refuse other mods',
+  'prompt.compose': 'can rewrite the system prompt',
+  'prompt.submit': 'can add to or rewrite every prompt you send',
+  'agent.spawn': 'can rewrite or answer every agent spawn',
+  'tool.describe': 'can rewrite the tool descriptions the model reads',
+  'session.append': 'can rewrite every row added to the conversation',
+  'prompt.section': 'can rewrite system prompt sections',
+  'prompt.context': 'can rewrite the context added to prompts',
+  'prompt.attachment': 'can rewrite prompt attachments',
+  'skill.prompt': 'can rewrite skill prompts',
+  'session.receive': 'can rewrite or drop messages from other agents',
+  'turn.step': 'can rewrite or answer every model request',
+  'tool.register': 'can rewrite tools other mods register',
+  'session.compact': 'can replace the whole conversation at compaction',
+  'prompt.edit': 'can rewrite what the person types',
+  'attribution.text': 'can rewrite git text the model reads',
+  // Reads other mods decide by: forging them can switch off an enforced policy (the projection reads as absent).
+  'fs.read': "can feed other mods false file contents (ruflo's policy projection included)",
+  'fs.stat': "can hide files from other mods (ruflo's policy projection included)",
+  'fs.exists': 'can hide files from other mods',
+  'fs.list': 'can hide files from other mods',
+  'settings.read': 'can forge the settings other mods decide by',
+  'env.get': 'can forge the environment other mods decide by',
+  'session.root': "can move other mods' project root (ruflo's policy projection read from elsewhere)",
+  'session.cwd': 'can move the directory other mods resolve paths from',
+  'fs.ancestors': 'can hide parent directories from other mods',
+  'command.register': 'can rewrite commands other mods register',
+}
+
+/**
+ * Every call on `$` is also an event a hook above the caller can rewrite or
+ * answer for every other mod, so a hook on a risky call is a risky hook too
+ * (a hook on fs.write can redirect another mod's write; one on env.set can change
+ * the value it sets).
+ */
+const HOOK_RISK: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(RISKY_CALLS).map(([call, does]) => [call, `can rewrite or answer another mod's ${call}, which ${does}`])),
+  ...RISKY_EVENTS,
+}
+
+/**
+ * The risky events a registered pattern reaches. The scan reports patterns as
+ * written, so a glob (`tool.*`) or a negation (`!tool.describe`, every event
+ * but one) must be judged by what it selects, not by its spelling.
+ */
+const escapeRe = (text: string) => text.replace(/[.+?^$()|[\]{}\\]/g, '\\$&')
+
+function riskyEventsOf(pattern: string): string[] {
+  if (Object.hasOwn(HOOK_RISK, pattern)) return [pattern]
+  if (pattern.startsWith('!')) return ['*']
+  // Any settings hook, one by name or a glob of them, can answer it.
+  if (pattern.startsWith('classic.')) return ['classic.*']
+  if (!pattern.includes('*')) return []
+  const glob = new RegExp(`^${pattern.split('*').map(escapeRe).join('.*')}$`)
+  return Object.keys(HOOK_RISK).filter(name => name !== '*' && name !== 'classic.*' && glob.test(name))
+}
+
+const isStrings = (v: unknown): v is readonly string[] => Array.isArray(v) && v.every(s => typeof s === 'string')
+
+/** What a module's scan says it could do that matters, as readable reasons. */
+export function riskOf(scan: ModuleScan): string[] {
+  const calls = isStrings(scan.uses?.calls) ? scan.uses.calls : []
+  const events = isStrings(scan.uses?.events) ? scan.uses.events : []
+  return [
+    ...calls.filter(c => Object.hasOwn(RISKY_CALLS, c)).map(c => `${c} (${RISKY_CALLS[c]})`),
+    ...events.flatMap(ev => riskyEventsOf(ev).map(name => `on ${ev === name ? ev : `${ev} → ${name}`} (${HOOK_RISK[name]})`)),
+  ]
+}
+
+export type TrustDecision = { readonly judged: boolean; readonly risk: readonly string[]; readonly refuse?: string }
+
+/**
+ * Judges one registering module: user-tier modules not on the allow-list;
+ * refusal only under `refuse-risky`. The allow-list matches the loader's
+ * `provenance` (`name@marketplace`, `name@inline`), never the module's own
+ * `name`, which is its manifest's word and a rename walks past. There is no
+ * self-exemption: a module only judges those admitted after it, so ruflo-mods
+ * never meets its own registration, and a mod calling itself "ruflo-mods" is
+ * judged like any other.
+ */
+export function judge(scan: ModuleScan, policy: TrustPolicy, allow: ReadonlySet<string>): TrustDecision {
+  if (policy === 'off' || scan.tier !== 'user' || allow.has(scan.provenance)) {
+    return { judged: false, risk: [] }
+  }
+  const risk = riskOf(scan)
+  return policy === 'refuse-risky' && risk.length > 0
+    ? {
+        judged: true,
+        risk,
+        refuse: `ruflo mod trust (modTrust=refuse-risky): ${scan.name} ${risk.join('; ')}; allow it by provenance (${scan.provenance}) in modTrustAllow`,
+      }
+    : { judged: true, risk }
+}
+
+/** The one line a person reads about a judged module. */
+export const trustLine = (scan: ModuleScan, d: TrustDecision) =>
+  `ruflo mod trust: ${scan.name} (${scan.provenance}) ${d.refuse ? 'REFUSED' : 'loaded'}${d.risk.length ? `; ${d.risk.join('; ')}` : '; no risky calls or hooks'}`
+
+/**
+ * One spelling of a path for the status-file keys: forward slashes, no repeated
+ * or trailing slash, a Windows drive path lower-cased. Byte-identical to the
+ * CLI's normalizeTrustPath (v3/@claude-flow/cli/src/plugins/marketplace-trust/verify-status.ts).
+ */
+export function normalizeTrustPath(p: string): string {
+  let out = p.replace(/\\/g, '/').replace(/\/{2,}/g, '/')
+  if (out.length > 1) out = out.replace(/\/+$/, '')
+  return /^[A-Za-z]:(\/|$)/.test(out) ? out.toLowerCase() : out
+}
+
+/**
+ * The home the CLI's os.homedir() used when it wrote the status file: on Windows that is
+ * USERPROFILE (HOME, when set at all, may be an MSYS /c/... path), elsewhere HOME.
+ */
+export function trustHome(home: string | undefined, userProfile: string | undefined): string | undefined {
+  if (userProfile && /^[A-Za-z]:[\\/]/.test(userProfile)) return userProfile
+  return home || userProfile || undefined
+}
+
+type StatusEntry = { plugins?: Record<string, unknown>; paths?: Record<string, unknown> }
+
+/**
+ * ADR-509: the ruflo marketplace verification `ruflo mods doctor` / `ruflo plugins verify` /
+ * `ruflo mods install` wrote (~/.claude-flow/mods/plugin-verify.json). Returns the refusal for a
+ * user-tier `<name>@ruflo` module whose copy is `modified` or `bad-signature`; undefined otherwise
+ * (no file, no entry, unreadable, or verified/unsigned: unknown is not enforced). The copy is found
+ * by the directory the engine is loading (`scan.root`, keyed per copy, clone or install cache);
+ * when that directory is not in the file, the config dir's entry (the worst of every copy) decides.
+ * Pure: the reads happen in the hook below, where `$` is spelled.
+ */
+export function marketplaceRefusal(scan: ModuleScan, statusText: string | undefined, configDir: string): string | undefined {
+  const at = scan.provenance.lastIndexOf('@')
+  if (scan.tier !== 'user' || at <= 0 || scan.provenance.slice(at + 1) !== 'ruflo' || !statusText) return undefined
+  const name = scan.provenance.slice(0, at)
+  let entries: Array<[string, StatusEntry]>
+  try {
+    const by = (JSON.parse(statusText) as { byConfigDir?: Record<string, StatusEntry> })?.byConfigDir
+    entries = by && typeof by === 'object' ? Object.entries(by).filter(([, e]) => e && typeof e === 'object') : []
+  } catch {
+    return undefined
+  }
+  let result: unknown
+  let where = 'marketplace clone'
+  const root = scan.root ? normalizeTrustPath(scan.root) : undefined
+  // Keys are compared normalized on both sides, so a key another writer spelled differently still matches.
+  const byPath = root
+    ? entries.flatMap(([, e]) => Object.entries(e.paths && typeof e.paths === 'object' ? e.paths : {})).find(([k, r]) => typeof r === 'string' && normalizeTrustPath(k) === root)?.[1]
+    : undefined
+  if (byPath !== undefined) {
+    result = byPath
+    where = `copy at ${scan.root}`
+  } else {
+    const key = normalizeTrustPath(configDir)
+    result = entries.find(([k]) => normalizeTrustPath(k) === key)?.[1].plugins?.[name]
+  }
+  return result === 'modified' || result === 'bad-signature'
+    ? `ruflo mod trust (modTrust=refuse-risky): ${name}@ruflo ${where} is ${result} (ADR-509 signature check); run: ruflo plugins verify ${name}, then claude plugin marketplace update ruflo`
+    : undefined
+}
+
+export function registerTrust(on: On, policy: TrustPolicy, allow: ReadonlySet<string>) {
+  if (policy === 'off') return
+  const told = new Set<string>()
+
+  on('plugin.register', async ($, e, next) => {
+    if (policy === 'refuse-risky' && e.tier === 'user' && e.provenance.endsWith('@ruflo')) {
+      // The allow-list names provenance, which a tampered clone shares, so it does not exempt this check.
+      const home = trustHome(await $.env.get('HOME').catch(() => undefined), await $.env.get('USERPROFILE').catch(() => undefined))
+      const configDir = (await $.env.get('CLAUDE_CONFIG_DIR').catch(() => undefined)) || (home ? `${home}/.claude` : undefined)
+      const status = home ? await $.fs.read(`${home}/.claude-flow/mods/plugin-verify.json`).catch(() => undefined) : undefined
+      const refuse = configDir ? marketplaceRefusal(e, status, configDir) : undefined
+      if (refuse) {
+        try {
+          $.ui.log(refuse)
+        } catch {
+          // a withheld ui.log never decides admission
+        }
+        return { refuse }
+      }
+    }
+    const decision = judge(e, policy, allow)
+    if (!decision.judged) return next(e)
+    // Keyed on what the module can do: a reload that gains a risky call or hook is named again.
+    const key = `${e.provenance}:${decision.refuse ? 'refused' : 'loaded'}:${[...decision.risk].sort().join('|')}`
+    if (!told.has(key)) {
+      told.add(key)
+      try {
+        $.ui.log(trustLine(e, decision), decision.risk.length ? undefined : { to: 'debug' })
+      } catch {
+        // a withheld ui.log never decides admission
+      }
+    }
+    return decision.refuse ? { refuse: decision.refuse } : next(e)
+  }).catch(($, e, next) =>
+    // Observing, a failure admits as Claude Code would without ruflo; set to
+    // refuse, the gate guards something, so a module it could not judge stays out.
+    policy === 'refuse-risky' && e.tier === 'user' && !allow.has(e.provenance)
+      ? { refuse: `ruflo mod trust could not judge ${e.name} (${next.error.message ?? next.error.kind}); refused (modTrust=refuse-risky)` }
+      : next(e),
+  )
+}

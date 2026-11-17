@@ -1,6 +1,6 @@
 ---
 name: harness-gepa
-description: "Inspect and audit GEPA genomes via the `@metaharness/darwin/gepa` library entry (darwin 0.8.0) — load/validate a genome (default is the shipped cand-6 promotion), render the system prompt a genome compiles to, or classify failure modes in a run transcript. The `gepaOptimize` loop itself is library-only (bring your own evaluator) and not surfaced here — use `harness-evolve` for sandbox-scored evolution. Degrades gracefully when @metaharness/darwin is absent."
+description: Load, validate or render a GEPA genome, or classify failure modes in a run transcript, via @metaharness/darwin/gepa. Use when inspecting or auditing a genome; use harness-evolve for sandbox-scored evolution. Degrades gracefully without darwin.
 argument-hint: "--op genome|validate|render|analyze [--path <genome.json>] [--transcript <t.json>] [--alert-on-invalid]"
 allowed-tools: Bash
 ---
@@ -39,7 +39,7 @@ cross a subprocess boundary. Two supported paths instead:
 Implementation: [`scripts/gepa.mjs`](../../scripts/gepa.mjs).
 
 1. `import('@metaharness/darwin/gepa')`; on MODULE_NOT_FOUND fall back to a
-   one-time `npm install --prefix ~/.ruflo/darwin-cache-0.8.0` and import
+   one-time `npm install --prefix ~/.ruflo/darwin-cache-<pin>` and import
    the cached `dist/gepa/index.js` (versioned dir → pin bumps invalidate).
 2. Dispatch `--op`:
    - `genome`  → `loadGenome(fs, path)` or `loadCand6Genome()` + `validateGenome`

@@ -68,6 +68,15 @@ export interface MemoryProfile {
 // Benchmark Runner
 // ============================================================================
 
+/** Number of interleaved timing trials per comparison (median is reported). */
+const BENCH_TRIALS = 5;
+
+function median(xs: number[]): number {
+  const s = [...xs].sort((a, b) => a - b);
+  const mid = s.length >> 1;
+  return s.length % 2 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
+}
+
 export class AttentionBenchmarkRunner {
   /**
    * Run comprehensive benchmark suite across multiple dimensions
@@ -120,24 +129,39 @@ export class AttentionBenchmarkRunner {
       }
     }
 
-    // Benchmark Flash Attention
-    const flashStart = performance.now();
-    for (let i = 0; i < iterations; i++) {
+    // Warm up both paths (untimed) so JIT / native-binding first-call cost
+    // does not land on whichever method happens to be timed first.
+    const warmup = Math.max(1, Math.min(iterations, Math.ceil(iterations / 10)));
+    for (let i = 0; i < warmup; i++) {
       flash.computeRaw(query, keys, values);
-    }
-    const flashEnd = performance.now();
-    const flashTimeMs = flashEnd - flashStart;
-    const flashAvgMs = flashTimeMs / iterations;
-    const flashOps = 1000 / flashAvgMs;
-
-    // Benchmark baseline
-    const baselineStart = performance.now();
-    for (let i = 0; i < iterations; i++) {
       baseline.computeRaw(query, keys, values);
     }
-    const baselineEnd = performance.now();
-    const baselineTimeMs = baselineEnd - baselineStart;
-    const baselineAvgMs = baselineTimeMs / iterations;
+
+    // Split the timed iterations into interleaved trials with alternating
+    // order, and report the median per-call time of each method. This removes
+    // the order bias of timing one method in a single block before the other.
+    const trials = Math.min(BENCH_TRIALS, iterations);
+    const flashTrialMs: number[] = [];
+    const baselineTrialMs: number[] = [];
+    for (let t = 0; t < trials; t++) {
+      const n = Math.floor(iterations / trials) + (t < iterations % trials ? 1 : 0);
+      const flashFirst = t % 2 === 0;
+      for (const which of flashFirst ? ['flash', 'baseline'] : ['baseline', 'flash']) {
+        const impl = which === 'flash' ? flash : baseline;
+        const start = performance.now();
+        for (let i = 0; i < n; i++) {
+          impl.computeRaw(query, keys, values);
+        }
+        (which === 'flash' ? flashTrialMs : baselineTrialMs).push(
+          (performance.now() - start) / n
+        );
+      }
+    }
+
+    // Guard against a 0ms reading on a coarse timer (would make speedup Infinity/NaN).
+    const flashAvgMs = Math.max(median(flashTrialMs), Number.EPSILON);
+    const flashOps = 1000 / flashAvgMs;
+    const baselineAvgMs = Math.max(median(baselineTrialMs), Number.EPSILON);
     const baselineOps = 1000 / baselineAvgMs;
 
     const speedup = baselineAvgMs / flashAvgMs;
@@ -418,7 +442,7 @@ V3 Performance Target Validation
 Target Range:    2.49x - 7.47x
 Actual Speedup:  ${validation.actualSpeedup.toFixed(2)}x
 Meets Minimum:   ${validation.meetsMinimum ? 'YES ✓' : 'NO ✗'}
-Within Range:    ${validation.meetsMaximum ? 'YES ✓' : 'NO ✗'}
+Within Range:    ${validation.meetsMinimum && validation.meetsMaximum ? 'YES ✓' : 'NO ✗'}
   `.trim());
 
   return validation.meetsMinimum && validation.meetsMaximum;

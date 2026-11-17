@@ -1,8 +1,31 @@
 {
   "name": "@claude-flow/memory",
-  "version": "3.0.0-alpha.23",
+  "version": "3.3.3",
   "type": "module",
   "description": "Memory module - AgentDB unification, HNSW indexing, vector search, hybrid SQLite+AgentDB backend (ADR-009)",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/memory"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
+  "keywords": [
+    "agent-memory",
+    "vector-search",
+    "vector-database",
+    "hnsw",
+    "semantic-search",
+    "embeddings",
+    "agentdb",
+    "sqlite",
+    "ai-agents",
+    "claude-flow",
+    "ruflo",
+    "typescript"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -17,12 +40,13 @@
     "prepublishOnly": "npm run build && node -e \"const m = await import('./dist/index.js'); const required = ['ControllerRegistry','MemoryService','UnifiedMemoryService','PersistentSonaCoordinator','RvfLearningStore','RvfMigrator']; const missing = required.filter(k => !m[k]); if (missing.length) { console.error('Missing exports:', missing); process.exit(1); } const forbidden = ['HnswLite','RvfBackend']; const leaks = forbidden.filter(k => k in m); if (leaks.length) { console.error('Forbidden public exports present (ADR-125):', leaks); process.exit(1); } console.log('All required exports present; ADR-125 surface clean');\""
   },
   "dependencies": {
-    "@claude-flow/security": "^3.0.0-alpha.12",
-    "agentdb": "^3.0.0-alpha.17",
+    "@claude-flow/security": "^3.0.0",
+    "agentdb": "^3.10.0",
     "sql.js": "^1.10.3"
   },
   "optionalDependencies": {
-    "better-sqlite3": "^12.9.0"
+    "better-sqlite3": "^12.9.0",
+    "@ruvnet/sublinear-core": "^1.0.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
@@ -34,8 +58,7 @@
     "README.md"
   ],
   "publishConfig": {
-    "access": "public",
-    "tag": "v3alpha"
+    "access": "public"
   },
   "os": [
     "darwin",

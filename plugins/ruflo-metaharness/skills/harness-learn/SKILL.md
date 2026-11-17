@@ -1,8 +1,9 @@
 ---
 name: harness-learn
-description: Run a GEPA learning cycle via `metaharness learn` (upstream ADR-235, metaharness@0.3.0) — optimizes a harness genome against a SWE-bench-style slice manifest. $0 dry-run by default; `--run` is the explicit spend opt-in. Requires a metaharness repo checkout (`--repo` or $METAHARNESS_REPO) — without one it reports `checkout-required` with clone instructions. Degrades gracefully when metaharness is absent.
+description: Run a GEPA learning cycle via `metaharness learn`, optimizing a harness genome against a SWE-bench-style slice. Use when training a harness genome. $0 dry-run by default; `--run` opts into spend. Needs a metaharness checkout (--repo or $METAHARNESS_REPO).
 argument-hint: "--host <h> --model <m> --slice <manifest> [--repo <checkout>] [--run] [--alert-on-fail]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 Surfaces `metaharness learn` — the upstream GEPA learning harness that
@@ -41,7 +42,7 @@ ADR-235 follow-up and not available yet.
 Implementation: [`scripts/learn.mjs`](../../scripts/learn.mjs).
 
 1. Validate `--repo` exists when given; export it as `$METAHARNESS_REPO`.
-2. Invoke the pinned `metaharness` binary (`metaharness@~0.3.0`, local install
+2. Invoke the pinned `metaharness` binary (`metaharness@~0.4.1`, local install
    or one-time versioned cache — never `@latest`): `metaharness learn --host <h>
    --model <m> --slice <s> [--run]` via `_harness.mjs` (graceful degradation,
    hard timeout).

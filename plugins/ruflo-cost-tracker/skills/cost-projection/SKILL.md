@@ -3,6 +3,7 @@ name: cost-projection
 description: Forward-looking spend extrapolation. Computes a USD-per-day rate from the recent measurement window, projects to 7d/30d/90d/365d horizons, and surfaces "days until budget exhausted" when a budget is configured. Predictive counterpart to `cost-budget-check` (reactive).
 argument-hint: "[--window 7d] [--horizons 7d,30d,90d,365d] [--format table|json]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 Forward-looking cost projection that pairs with `cost-budget-check`:

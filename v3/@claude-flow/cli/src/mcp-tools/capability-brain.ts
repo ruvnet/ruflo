@@ -123,8 +123,8 @@ export const RUFLO_CLI_COMMANDS = [
   'doctor', 'verify', 'analyze', 'route', 'progress', 'issues', 'update',
   'ruvector', 'benchmark', 'guidance', 'appliance', 'appliance-advanced',
   'transfer-store', 'cleanup', 'autopilot', 'gaia-bench', 'metaharness',
-  'eject', 'funnel', 'settings', 'auth', 'proxy', 'advisor', 'spinner',
-  'announcements',
+  'eject', 'funnel', 'settings', 'auth', 'proxy', 'advisor', 'spinner', 'cost',
+  'announcements', 'tui', 'harness',
 ] as const;
 
 export interface ImplementationLoopStep {
@@ -244,7 +244,7 @@ export const CAPABILITY_DOMAINS: readonly CapabilityDomainDefinition[] = [
   {
     id: 'guidance',
     name: 'Capability Guidance',
-    prefixes: ['guidance_'],
+    prefixes: ['guidance_', 'seraphina_'],
     description: 'Live capability inventory, task routing, workflow guidance, and system discovery.',
     taskSignals: ['guidance', 'discover', 'capability', 'what can ruflo do'],
     commands: ['guidance compile', 'guidance retrieve', 'guidance gates', 'guidance optimize'],
@@ -403,9 +403,10 @@ export const CAPABILITY_DOMAINS: readonly CapabilityDomainDefinition[] = [
   {
     id: 'swarm-coordination',
     name: 'Swarm & Coordination',
-    prefixes: ['swarm_', 'coordination_', 'daa_'],
+    // team_: host-agnostic Agent Teams bus (ADR-402)
+    prefixes: ['swarm_', 'coordination_', 'daa_', 'team_'],
     description: 'Topology-aware multi-agent coordination, task ownership, and collective scheduling.',
-    taskSignals: ['swarm', 'concurrent', 'parallel', 'coordinate', 'multi-agent'],
+    taskSignals: ['swarm', 'concurrent', 'parallel', 'coordinate', 'multi-agent', 'agent team'],
     commands: ['swarm init', 'swarm status', 'swarm coordinate'],
     skills: ['swarm-orchestration', 'swarm-advanced'],
     agents: ['coordinator', 'coder', 'tester', 'reviewer'],
@@ -433,7 +434,7 @@ export const CAPABILITY_DOMAINS: readonly CapabilityDomainDefinition[] = [
   {
     id: 'tasks-workflows-sessions',
     name: 'Tasks, Workflows, Sessions & Progress',
-    prefixes: ['task_', 'workflow_', 'session_', 'progress_'],
+    prefixes: ['task_', 'workflow_', 'session_', 'progress_', 'mission_'],
     description: 'Task orchestration, reusable workflows, session state, progress, and handoff.',
     taskSignals: ['task', 'workflow', 'session', 'handoff', 'progress'],
     commands: ['task create', 'task status', 'workflow run'],
@@ -530,6 +531,22 @@ export const CAPABILITY_DOMAINS: readonly CapabilityDomainDefinition[] = [
     verifyBeforeUse: ['Check network target policy, authentication, side effects, and runtime provider health.'],
   },
   {
+    id: 'reverse-engineering',
+    name: 'Reverse Engineering (ruRE)',
+    prefixes: ['rure_'],
+    description: 'Static JS/Electron analysis: evidence-sourced module/import/export graphs and Electron process-boundary detection. Parses only, never executes analyzed code; Phase 1 of ADR-0001 — native binary, .NET, EVM and dynamic-instrumentation analysis are future phases.',
+    taskSignals: ['reverse engineer', 'how does this feature work', 'electron app', 'asar', 'decompile', 'static analysis'],
+    commands: [],
+    skills: ['analyze-app'],
+    agents: ['reverse-engineer'],
+    maturity: 'experimental',
+    authority: 'capability-plane',
+    risk: 'reversible',
+    riskFlags: ['read', 'local-write', 'credential-pii'],
+    useWhen: 'Understanding or reimplementing a feature from a local app you are authorized to study; refuses DRM/license-circumvention requests.',
+    verifyBeforeUse: ['Confirm authorization context (own app, licensed target, or research/CTF). Never trust redacted-content markers as absent data — report them as withheld.'],
+  },
+  {
     id: 'github-delivery',
     name: 'GitHub & Delivery',
     prefixes: ['github_', 'pr_', 'release_'],
@@ -549,7 +566,7 @@ export const CAPABILITY_DOMAINS: readonly CapabilityDomainDefinition[] = [
     id: 'business-collaboration',
     name: 'AgentBBS & Business Pods',
     // Metadata classification only; execution remains behind the existing loadAgentbbs guard.
-    prefixes: ['agentbbs_', 'business_pod_', 'federation_bbs_'],
+    prefixes: ['agentbbs_', 'business_pod_', 'federation_bbs_', 'x_federation_'],
     description: 'Federated business rooms, domain-affinity routing, and business-pod validation.',
     taskSignals: ['business pod', 'bbs', 'room', 'domain affinity'],
     commands: [],
@@ -678,6 +695,10 @@ const TOOL_OWNERSHIP: ReadonlyArray<{
   { prefixes: ['testgen_'], packageOwner: '@claude-flow/cli', pluginOwner: 'ruflo-testgen' },
   { prefixes: ['managed_agent_', 'wasm_agent_', 'wasm_gallery_'], packageOwner: '@claude-flow/cli', pluginOwner: 'ruflo-agent' },
   { prefixes: ['guidance_'], packageOwner: '@claude-flow/guidance', pluginOwner: 'ruflo-core' },
+  { prefixes: ['seraphina_'], packageOwner: '@claude-flow/cli', pluginOwner: 'ruflo-core' },
+  { prefixes: ['x_federation_'], packageOwner: '@claude-flow/cli', pluginOwner: 'ruflo-x-gateway' },
+  { prefixes: ['rure_'], packageOwner: '@claude-flow/cli', pluginOwner: 'ruflo-rure' },
+  { prefixes: ['team_'], packageOwner: '@claude-flow/cli' },
 ] as const;
 
 function ownershipForTool(

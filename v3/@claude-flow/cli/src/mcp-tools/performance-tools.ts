@@ -23,6 +23,7 @@ const STORAGE_DIR = '.claude-flow';
 const PERF_DIR = 'performance';
 const METRICS_FILE = 'metrics.json';
 const BENCHMARKS_FILE = 'benchmarks.json';
+const MAX_BENCHMARK_ITERATIONS = 10_000;
 
 interface PerfMetrics {
   timestamp: string;
@@ -293,14 +294,18 @@ export const performanceTools: MCPTool[] = [
       type: 'object',
       properties: {
         suite: { type: 'string', enum: ['all', 'memory', 'neural', 'swarm', 'io'], description: 'Benchmark suite' },
-        iterations: { type: 'number', description: 'Number of iterations' },
+        iterations: { type: 'integer', minimum: 1, maximum: MAX_BENCHMARK_ITERATIONS, description: 'Number of iterations (maximum 10000)' },
         warmup: { type: 'boolean', description: 'Include warmup phase' },
       },
     },
     handler: async (input) => {
+      const requestedIterations = input.iterations === undefined ? 100 : input.iterations;
+      if (typeof requestedIterations !== 'number' || !Number.isSafeInteger(requestedIterations) || requestedIterations < 1) {
+        return { success: false, error: 'iterations must be a positive safe integer' };
+      }
+      const iterations = Math.min(requestedIterations, MAX_BENCHMARK_ITERATIONS);
       const store = loadPerfStore();
       const suite = (input.suite as string) || 'all';
-      const iterations = (input.iterations as number) || 100;
       const warmup = input.warmup !== false;
 
       // Synthetic data benchmarks — measures actual CPU/memory throughput
@@ -660,6 +665,15 @@ export const performanceTools: MCPTool[] = [
       const cpuStats = calcStats(cpuHistory, cpuPercent);
       const memStats = calcStats(memHistory, memUsedMB);
 
+      // #4554: latency/throughput used to be fixed literals (45ms, 1250 ops/s).
+      // Report the samples performance_report records (ADR-093 F8), or say none exist.
+      const sampled = (values: number[], unit: string) => {
+        const real = values.filter(n => Number.isFinite(n));
+        return real.length === 0
+          ? { available: false, unit, samples: 0, _real: false, _note: 'No samples recorded yet: run performance_report to record one.' }
+          : { ...calcStats(real, real[real.length - 1]), unit, samples: real.length, _real: true };
+      };
+
       const allMetrics = {
         cpu: {
           ...cpuStats,
@@ -678,31 +692,13 @@ export const performanceTools: MCPTool[] = [
           unit: 'MB',
           _real: true,
         },
-        latency: {
-          current: 45,
-          avg: 52,
-          min: 15,
-          max: 250,
-          p50: 48,
-          p95: 150,
-          p99: 220,
-          unit: 'ms',
-        },
-        throughput: {
-          current: 1250,
-          avg: 1100,
-          min: 500,
-          max: 2000,
-          p50: 1050,
-          p95: 1800,
-          p99: 1950,
-          unit: 'ops/s',
-        },
+        latency: sampled(history.map(m => m.latency?.avg), 'ms'),
+        throughput: sampled(history.map(m => m.throughput?.operations), 'ops/s'),
       };
 
       if (metric === 'all') {
         return {
-          _real: true,
+          _real: Object.values(allMetrics).every(m => m._real),
           metrics: allMetrics,
           aggregation,
           historySize: history.length,
@@ -712,9 +708,9 @@ export const performanceTools: MCPTool[] = [
 
       const selectedMetric = allMetrics[metric as keyof typeof allMetrics];
       return {
-        _real: ['cpu', 'memory'].includes(metric),
+        _real: selectedMetric._real,
         metric,
-        value: selectedMetric[aggregation as keyof typeof selectedMetric],
+        value: (selectedMetric as Record<string, unknown>)[aggregation] ?? null,
         unit: selectedMetric.unit,
         details: selectedMetric,
         timestamp: new Date().toISOString(),

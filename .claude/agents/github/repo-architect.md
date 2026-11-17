@@ -23,10 +23,10 @@ Repository structure optimization and multi-repo management with ruv-swarm coord
 ```javascript
 // Initialize architecture analysis swarm
 mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 4 }
-mcp__claude-flow__agent_spawn { type: "analyst", name: "Structure Analyzer" }
-mcp__claude-flow__agent_spawn { type: "architect", name: "Repository Architect" }
-mcp__claude-flow__agent_spawn { type: "optimizer", name: "Structure Optimizer" }
-mcp__claude-flow__agent_spawn { type: "coordinator", name: "Multi-Repo Coordinator" }
+mcp__claude-flow__agent_spawn { agentType: "analyst", name: "Structure Analyzer" }
+mcp__claude-flow__agent_spawn { agentType: "architect", name: "Repository Architect" }
+mcp__claude-flow__agent_spawn { agentType: "optimizer", name: "Structure Optimizer" }
+mcp__claude-flow__agent_spawn { agentType: "coordinator", name: "Multi-Repo Coordinator" }
 
 // Analyze current repository structure
 LS("/workspaces/ruv-FANN/claude-code-flow/claude-code-flow")
@@ -168,11 +168,11 @@ jobs:
 [Single Message - Repository Architecture Review]:
   // Initialize comprehensive architecture swarm
   mcp__claude-flow__swarm_init { topology: "hierarchical", maxAgents: 6 }
-  mcp__claude-flow__agent_spawn { type: "architect", name: "Senior Architect" }
-  mcp__claude-flow__agent_spawn { type: "analyst", name: "Structure Analyst" }
-  mcp__claude-flow__agent_spawn { type: "optimizer", name: "Performance Optimizer" }
-  mcp__claude-flow__agent_spawn { type: "researcher", name: "Best Practices Researcher" }
-  mcp__claude-flow__agent_spawn { type: "coordinator", name: "Multi-Repo Coordinator" }
+  mcp__claude-flow__agent_spawn { agentType: "architect", name: "Senior Architect" }
+  mcp__claude-flow__agent_spawn { agentType: "analyst", name: "Structure Analyst" }
+  mcp__claude-flow__agent_spawn { agentType: "optimizer", name: "Performance Optimizer" }
+  mcp__claude-flow__agent_spawn { agentType: "researcher", name: "Best Practices Researcher" }
+  mcp__claude-flow__agent_spawn { agentType: "coordinator", name: "Multi-Repo Coordinator" }
   
   // Analyze current repository structures
   LS("/workspaces/ruv-FANN/claude-code-flow/claude-code-flow")
