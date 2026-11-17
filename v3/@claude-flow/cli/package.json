@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/cli",
-  "version": "3.77.0",
+  "version": "3.77.1",
   "type": "module",
   "description": "Ruflo CLI - Enterprise AI agent orchestration with 60+ specialized agents, swarm coordination, MCP server, self-learning hooks, and vector memory for Claude Code",
   "main": "dist/src/index.js",
@@ -11,13 +11,13 @@
     "claude-flow": "bin/cli.js",
     "claude-flow-mcp": "bin/mcp-server.js"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow#readme",
+  "homepage": "https://ruv.io",
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues"
+    "url": "https://github.com/ruvnet/ruflo/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/@claude-flow/cli"
   },
   "keywords": [
@@ -38,7 +38,10 @@
     "vector-database",
     "embeddings",
     "self-learning",
-    "enterprise"
+    "enterprise",
+    "local-vector-search",
+    "rvf",
+    "mcp-server"
   ],
   "author": "RuvNet <ruv@ruv.io> (https://ruv.io)",
   "license": "MIT",
@@ -134,12 +137,12 @@
     "ws": "^8.21.0",
     "yaml": "^2.8.0",
     "zod": "^3.22.0",
-    "@claude-flow/memory": "3.3.2"
+    "@claude-flow/memory": "3.3.3"
   },
   "optionalDependencies": {
     "@agntcy/slim-bindings": "2.1.1",
-    "@claude-flow/aidefence": "3.2.1",
-    "@claude-flow/memory": "3.3.2",
+    "@claude-flow/aidefence": "3.2.2",
+    "@claude-flow/memory": "3.3.3",
     "@metaharness/flywheel": "~0.1.10",
     "@metaharness/radio": "~0.1.0",
     "@metaharness/turn-credit": "~0.1.0",

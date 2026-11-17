@@ -9,6 +9,10 @@
 [package]
 name = "ruflo-watermark"
 version = "0.1.0"
+# This crate is a stale, non-canonical snapshot. The published crate (0.3.x)
+# and npm package (0.4.x) are built from ruvnet/ai-text-watermark; see #4959.
+# Keep every publish path closed so a release here cannot overwrite them.
+publish = false
 edition = "2021"
 rust-version = "1.74"
 license = "MIT"

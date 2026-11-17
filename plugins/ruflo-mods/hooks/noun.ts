@@ -60,8 +60,9 @@ export function registerNoun(on: On, state: ModState) {
       snapshot: async () => snapshotOf(state),
     }
 
-    // Beneath wins: if another step already added `ruflo`, ours never replaces it.
-    const added = { ruflo }
-    return { ...added, ...beneath }
+    // Claude Code's validator (2.1.323+) accepts an engine.create hook only in its form: spread the value of
+    // next(e), then add this mod's own noun. Reading beneath.ruflo to let an earlier step win is refused too
+    // ("$.ruflo is used as a value"). No other plugin defines engine.create, so nothing else adds `ruflo`.
+    return { ...beneath, ruflo }
   })
 }

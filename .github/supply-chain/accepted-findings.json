@@ -27,8 +27,8 @@
       "via": ["@xenova/transformers"],
       "tracking": "ADR-124 — Moot finding: @xenova/transformers is now an OPTIONAL dependency of agentic-flow as of 2.0.12 (PR ruvnet/agentic-flow#154). The vulnerable module is not installed when consumers pass `npm install --omit=optional`. `npm audit` still reports the finding because it reads the lockfile graph (including optionals) rather than what's actually on disk — a known npm limitation. Real-world impact: zero when consumers use --omit=optional; same as before when they include optionals.",
       "trackingIssue": "https://github.com/ruvnet/agentic-flow/pull/154",
-      "expiresAt": "2026-11-19",
-      "rationale": "Cannot fully eliminate from the audit graph until either @xenova/transformers itself ships a fix OR agentic-flow drops it entirely (covered by ADR-121 Phase 4 migration). The browser substrate does not invoke embedding code paths, so the optional-dep path is the right install profile. Re-audit when ADR-121 Phase 4 lands or @xenova/transformers ships a CVE-clean version."
+      "expiresAt": "2026-12-17",
+      "rationale": "Cannot fully eliminate from the audit graph until either @xenova/transformers itself ships a fix OR agentic-flow drops it entirely (covered by ADR-121 Phase 4 migration). The browser substrate does not invoke embedding code paths, so the optional-dep path is the right install profile. Re-audit when ADR-121 Phase 4 lands or @xenova/transformers ships a CVE-clean version. Extended 2026-11-17 to 2026-12-17: re-audited, the finding is unchanged (agentic-flow via @xenova/transformers, an optional dependency) and no upstream release clears it yet."
     },
     {
       "package": "v3/@claude-flow/browser",
@@ -67,8 +67,28 @@
       "via": ["GHSA-mrhx-c7xc-m3w5"],
       "tracking": "ruflo#4442 — Zod <4.6.6 can exhaust memory validating oversized constrained collections (GHSA-mrhx-c7xc-m3w5). This project's OWN zod dependency is upgraded to ^4.6.7 (locked 4.6.7), so the schemas this project defines are patched. The audit still reports the package name `zod` because the lockfile also holds zod 3.25.76 copies NESTED inside other packages (@claude-flow/cli, hooks, security, plugin-gastown-bridge, and agentic-flow), none of which is this project's code; zod 3.x has no patched release.",
       "trackingIssue": "https://github.com/ruvnet/ruflo/issues/4442",
-      "expiresAt": "2026-11-23",
-      "rationale": "The remaining 3.x copies belong to sibling @claude-flow/* packages and agentic-flow, which still depend on zod 3; moving them is a repo-wide zod 4 migration (each package's schemas and tests), tracked in #4442, not something to force through npm overrides here (zod 4 changes z.record and error APIs that code written for zod 3 relies on, and that cannot be tested from this project). Expires 2026-11-23 so the audit fails again and forces the decision."
+      "expiresAt": "2026-12-17",
+      "rationale": "The remaining 3.x copies belong to sibling @claude-flow/* packages and agentic-flow, which still depend on zod 3; moving them is a repo-wide zod 4 migration (each package's schemas and tests), tracked in #4442, not something to force through npm overrides here (zod 4 changes z.record and error APIs that code written for zod 3 relies on, and that cannot be tested from this project). Expires 2026-11-23 so the audit fails again and forces the decision. Extended 2026-11-17 to 2026-12-17: re-audited, still reported via nested zod 3.25.76 copies; the zod 4 migration (#4535) is being integrated and is the removal path."
+    },
+    {
+      "package": "plugins/ruflo-graph-intelligence",
+      "depName": "vitest",
+      "severity": "high",
+      "via": ["picomatch", "tinyglobby", "GHSA-fc5q-39xc-vjpf"],
+      "tracking": "GHSA-fc5q-39xc-vjpf — picomatch ReDoS through single-branch repeated extglobs. The vulnerable range (<= 4.0.7) covers every published picomatch release and the advisory lists no patched version, so no bump can clear it. It reaches this package only through vitest, a devDependency that is never in a published tarball or the runtime path, and the ReDoS needs an attacker-controlled glob; vitest only compiles globs from this repo's own test config. The audit began failing on main at 17:30Z on 2026-11-17 with no dependency change, when the advisory entered the npm audit database.",
+      "trackingIssue": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+      "expiresAt": "2026-12-17",
+      "rationale": "devDependency-only, globs are repo-controlled, no upstream fix exists. Drop this entry once picomatch ships a patched release and the lockfile picks it up."
+    },
+    {
+      "package": "v3/@claude-flow/browser",
+      "depName": "vitest",
+      "severity": "high",
+      "via": ["picomatch", "tinyglobby", "GHSA-fc5q-39xc-vjpf"],
+      "tracking": "GHSA-fc5q-39xc-vjpf — picomatch ReDoS through single-branch repeated extglobs. The vulnerable range (<= 4.0.7) covers every published picomatch release and the advisory lists no patched version, so no bump can clear it. It reaches this package only through vitest, a devDependency that is never in a published tarball or the runtime path, and the ReDoS needs an attacker-controlled glob; vitest only compiles globs from this repo's own test config. The audit began failing on main at 17:30Z on 2026-11-17 with no dependency change, when the advisory entered the npm audit database.",
+      "trackingIssue": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+      "expiresAt": "2026-12-17",
+      "rationale": "devDependency-only, globs are repo-controlled, no upstream fix exists. Drop this entry once picomatch ships a patched release and the lockfile picks it up."
     }
   ],
   "lockfile": [
