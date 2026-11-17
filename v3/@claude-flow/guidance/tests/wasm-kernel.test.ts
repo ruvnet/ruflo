@@ -175,6 +175,21 @@ describe('WASM Kernel: Secret Scanning', () => {
     const result = JSON.parse(wasm.scan_secrets(content));
     expect(result.length).toBe(0);
   });
+
+  // The Rust unit test for this lives in wasm-kernel/src/gates.rs, but it cannot notice a stale
+  // committed binary: wasm-pkg/guidance_kernel_bg.wasm is what ships, so the shipped binary is
+  // exercised here. A byte-index slice inside a multi-byte character used to trap ("unreachable").
+  it('redacts a non-ASCII secret by character, without trapping', () => {
+    if (!wasm) return;
+    const result = JSON.parse(wasm.scan_secrets('password = "passéé"'));
+    expect(result).toEqual([`pass${'*'.repeat(11)}séé"`]);
+  });
+
+  it('fully masks a short non-ASCII secret, one star per character', () => {
+    if (!wasm) return;
+    const result = JSON.parse(wasm.scan_secrets('pwd="éééé"'));
+    expect(result).toEqual(['*'.repeat(10)]);
+  });
 });
 
 // ============================================================================

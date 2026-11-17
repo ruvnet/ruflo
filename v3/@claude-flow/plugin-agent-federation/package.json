@@ -2,7 +2,15 @@
   "name": "@claude-flow/plugin-agent-federation",
   "version": "1.0.7",
   "description": "Cross-installation agent federation with zero-trust security, PII-gated data flow, and compliance-grade audit trails.",
-  "homepage": "https://github.com/ruvnet/ruflo",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/plugin-agent-federation"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -49,11 +57,15 @@
   "keywords": [
     "federation",
     "multi-agent",
-    "trust",
+    "ai-agents",
+    "zero-trust",
     "pii",
     "security",
-    "audit",
-    "compliance"
+    "audit-trail",
+    "compliance",
+    "claude-flow-plugin",
+    "claude-flow",
+    "ruflo"
   ],
   "author": "Claude Flow Team",
   "license": "MIT"

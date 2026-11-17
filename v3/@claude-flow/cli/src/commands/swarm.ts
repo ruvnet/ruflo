@@ -10,6 +10,7 @@ import { callMCPTool, MCPClientError } from '../mcp-client.js';
 import { swarmJoinCommand } from './agntcy/swarm-join.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getProjectRoot } from '../services/project-root.js';
 import { noteFirstAgentRun } from '../funnel/activation.js';
 
 // Read the CLI-side swarm state file (`.swarm/state.json`), written by
@@ -133,7 +134,7 @@ function getSwarmStatus(swarmId?: string) {
   // instead of reporting Total 0 while `agent list` shows N agents.
   if (totalAgents === 0) {
     try {
-      const activityPath = path.join(process.cwd(), '.claude-flow', 'metrics', 'swarm-activity.json');
+      const activityPath = path.join(getProjectRoot(), '.claude-flow', 'metrics', 'swarm-activity.json');
       if (fs.existsSync(activityPath)) {
         const activity = JSON.parse(fs.readFileSync(activityPath, 'utf-8'));
         const count = Math.max(0, Number((activity?.swarm?.agent_count)) || 0);

@@ -43,3 +43,43 @@ describe('ControllerRegistry hands AgentDB controllers an embedder (ADR-514)', (
     await reg.shutdown();
   }, 60_000);
 });
+
+describe('ControllerRegistry honours a configured embedder and dimension (#4984)', () => {
+  it('sizes AgentDB at config.dimension and routes agentdb.embedder through embeddingGenerator', async () => {
+    const DIM = 8;
+    const calls: string[] = [];
+    const reg = new ControllerRegistry();
+    await reg.initialize({
+      dbPath: join(dir, 'agentdb-4984.db'),
+      dimension: DIM,
+      embeddingGenerator: async (t: string) => { calls.push(t); return new Float32Array(DIM).fill(0.5); },
+      controllers: { reasoningBank: true } as any,
+    });
+    const agentdb: any = reg.getAgentDB();
+    if (!agentdb) {
+      expect(reg.getAgentDBInitError()).toBeTruthy();
+      await reg.shutdown();
+      return;
+    }
+    expect(agentdb.config?.vectorDimension).toBe(DIM);
+    const v = await agentdb.embedder.embed('hello');
+    expect(v.length).toBe(DIM);
+    expect(calls).toContain('hello');
+    const q = typeof agentdb.embedder.embedQuery === 'function' ? await agentdb.embedder.embedQuery('q') : v;
+    expect(q.length).toBe(DIM);
+    await reg.shutdown();
+  }, 60_000);
+
+  it('rejects a generator vector whose length differs from config.dimension', async () => {
+    const reg = new ControllerRegistry();
+    await reg.initialize({
+      dbPath: join(dir, 'agentdb-4984b.db'),
+      dimension: 8,
+      embeddingGenerator: async () => new Float32Array(3),
+      controllers: { reasoningBank: true } as any,
+    });
+    const agentdb: any = reg.getAgentDB();
+    if (agentdb) await expect(agentdb.embedder.embed('x')).rejects.toThrow(/expected 8/);
+    await reg.shutdown();
+  }, 60_000);
+});

@@ -2,6 +2,15 @@
   "name": "@claude-flow/embeddings",
   "version": "3.0.0-alpha.18",
   "description": "V3 Embedding Service - OpenAI, Transformers.js, Agentic-Flow (ONNX), Mock providers with hyperbolic embeddings, normalization, and chunking",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/embeddings"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -24,17 +33,17 @@
   },
   "keywords": [
     "embeddings",
+    "vector-embeddings",
     "openai",
     "transformers",
-    "vector",
-    "similarity",
-    "claude-flow",
-    "v3",
-    "hyperbolic",
+    "onnx",
+    "hyperbolic-embeddings",
     "poincare",
-    "normalization",
     "chunking",
-    "neural-substrate"
+    "semantic-search",
+    "vector-search",
+    "claude-flow",
+    "ruflo"
   ],
   "author": "Claude Flow Team",
   "license": "MIT",

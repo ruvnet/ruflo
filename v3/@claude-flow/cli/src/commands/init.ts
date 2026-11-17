@@ -16,7 +16,10 @@ import {
   DEFAULT_INIT_OPTIONS,
   MINIMAL_INIT_OPTIONS,
   FULL_INIT_OPTIONS,
+  finalizeDualInstructions,
+  formatPluginDedupSummary,
   type InitOptions,
+  type InitResult,
 } from '../init/index.js';
 import { executeGrokInit } from '../init/grok-generator.js';
 import {
@@ -592,7 +595,10 @@ async function initCodexAction(
     if (!CodexInitializer) {
       spinner.stop();
       output.printInfo('Fetching the stable Codex adapter for this initialization...');
-      const success = runCodexInitializerCli(ctx.cwd, { template, force, dual: dualMode, codexTrust });
+      // #2638: never pass --dual to a fetched adapter of unknown version — an
+      // older one rewrites CLAUDE.md with its own stub under --force. Without
+      // it, finalizeDualInstructions keeps the full CLAUDE.md.
+      const success = runCodexInitializerCli(ctx.cwd, { template, force, dual: false, codexTrust });
       if (!success) {
         output.printError('Codex initialization failed while running @claude-flow/codex@latest.');
         return { success: false, exitCode: 1 };
@@ -842,6 +848,11 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     options.skipGlobalClaudeMd = true;
   }
 
+  // #2638 — set by the --dual route below: CLAUDE.md imports AGENTS.md.
+  if (ctx.flags.instructionsSource === 'agents-md') {
+    options.instructionsSource = 'agents-md';
+  }
+
   const riskyMode = riskyModeFromFlags(ctx.flags);
   if (typeof riskyMode === 'object') {
     output.printError(riskyMode.error);
@@ -890,6 +901,13 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
 
     output.printBox(summary.join('\n'), 'Summary');
     output.writeln();
+
+    // #2640: say what was left to the installed ruflo plugins, and why.
+    const pluginLines = result.pluginDedup ? formatPluginDedupSummary(result.pluginDedup) : [];
+    if (pluginLines.length > 0) {
+      output.printBox(pluginLines.join('\n'), 'Provided by installed plugins');
+      output.writeln();
+    }
 
     // Security: surface anything settings-risk-scanner.ts flagged in a
     // pre-existing settings.json this init carried forward unexamined.
@@ -1124,8 +1142,9 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
 
 /**
  * Route platform initialization. Dual mode deliberately runs both native
- * initializers: Claude Code first, then Codex without its compatibility
- * CLAUDE.md stub so the full native Claude scaffold remains authoritative.
+ * initializers: Claude Code first, then Codex. #2638: AGENTS.md carries the
+ * shared instruction sections once and CLAUDE.md imports it (`@AGENTS.md`)
+ * with only the Claude-specific sections; the .claude/ scaffold is unchanged.
  */
 const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const force = ctx.flags.force as boolean;
@@ -1159,6 +1178,8 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
       dual: false,
       // The explicit Codex pass below owns Codex setup.
       'no-codex-detect': true,
+      // #2638 — AGENTS.md owns the shared sections; CLAUDE.md imports it.
+      instructionsSource: 'agents-md',
     },
   };
   const claudeResult = await initClaudeAction(claudeContext);
@@ -1166,12 +1187,17 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
 
   const codexResult = await initCodexAction(ctx, {
     codexMode: true,
-    // Preserve the full CLAUDE.md and .claude/ scaffold just generated.
-    dualMode: false,
+    // #2638 — dual AGENTS.md (shared + Codex-only sections). Codex leaves a
+    // CLAUDE.md that already imports AGENTS.md alone.
+    dualMode: true,
     force,
     minimal,
     full,
   });
+  // Keep the @AGENTS.md import only if AGENTS.md really carries the shared
+  // sections; otherwise the full CLAUDE.md is written back.
+  const instructions = finalizeDualInstructions(ctx.cwd, claudeResult.data as InitResult | undefined);
+  if (instructions.action === 'restored' && instructions.message) output.printWarning(instructions.message);
   if (!codexResult.success) {
     return {
       ...codexResult,

@@ -1,0 +1,69 @@
+{
+  "runAt": "2026-11-09T03:00:00.755Z",
+  "benchmark": "darwin-inprocess",
+  "adr": "ADR-526",
+  "darwinVersion": "0.13.0",
+  "node": "v22.23.2",
+  "cpu": "AMD Ryzen 9 9950X 16-Core Processor",
+  "runs": 20,
+  "method": "one long-lived node process; subprocess = spawnSync of the plugin script (the pre-ADR-526 MCP path); in-process = darwin-lib.js, cold = first call after cache reset, warm = cached module",
+  "results": [
+    {
+      "op": "gepa validate",
+      "subprocessMs": {
+        "n": 20,
+        "median": 21.44,
+        "p90": 23.77,
+        "min": 19.69,
+        "max": 23.82
+      },
+      "inProcessColdMs": 2.93,
+      "inProcessWarmMs": {
+        "n": 20,
+        "median": 0.03,
+        "p90": 0.1,
+        "min": 0.02,
+        "max": 0.17
+      },
+      "warmSpeedupMedian": 714.7
+    },
+    {
+      "op": "gepa render",
+      "subprocessMs": {
+        "n": 20,
+        "median": 21.9,
+        "p90": 23.49,
+        "min": 19.57,
+        "max": 24.32
+      },
+      "inProcessColdMs": 0.34,
+      "inProcessWarmMs": {
+        "n": 20,
+        "median": 0.02,
+        "p90": 0.06,
+        "min": 0.01,
+        "max": 0.14
+      },
+      "warmSpeedupMedian": 1095
+    },
+    {
+      "op": "bench verify",
+      "subprocessMs": {
+        "n": 20,
+        "median": 59.72,
+        "p90": 67.06,
+        "min": 56.35,
+        "max": 69.95
+      },
+      "inProcessColdMs": 39.96,
+      "inProcessWarmMs": {
+        "n": 20,
+        "median": 0.05,
+        "p90": 0.22,
+        "min": 0.03,
+        "max": 0.64
+      },
+      "warmSpeedupMedian": 1194.4
+    }
+  ]
+}

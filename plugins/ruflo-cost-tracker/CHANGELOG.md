@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-cost-tracker`.
 
+## 0.31.3 — 2026-11-09
+- fix: `scripts/compact.mjs` exits once its output has been flushed. With a patched agentic-flow (>= 2.0.14, GHSA-vcv2-r9jh-99m5) the ReasoningBank backend leaves a timer alive, so the script printed its result and then never exited. `scripts/smoke-compact-exit.mjs` guards it.
+
 ## 0.31.2 — 2026-11-05
 - fix: `cost-health` resolves an npx CLI once before starting its four subchecks in parallel. With a cold npm cache, four concurrent first installs raced in one `~/.npm/_npx` directory and left a broken install (#4711). Skip with `HEALTH_SKIP_WARMUP=1`.
 - fix: budget, burn, anomaly and projection report a failed `memory list` as an error (exit 2, with the CLI's stderr) instead of treating it as no data, which showed "no budget set" (#4711).

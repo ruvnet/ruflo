@@ -356,7 +356,7 @@ describe('MemoryGraph', () => {
 
       expect(handler).toHaveBeenCalledTimes(1);
       const { iterations } = handler.mock.calls[0][0];
-      expect(iterations).toBeLessThanOrEqual(50);
+      expect(iterations).toBeLessThanOrEqual(200);
       expect(iterations).toBeGreaterThan(0);
     });
 

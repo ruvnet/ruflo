@@ -34,6 +34,17 @@
  * @module @claude-flow/memory/tiered-memory
  */
 
+import {
+  getPersistedEntry,
+  listPersistedEntries,
+  TieredMemoryUnsupportedError,
+  type TieredGetOptions,
+  type TieredInventoryDeps,
+  type TieredInventoryEntry,
+  type TieredListOptions,
+  type TieredListResult,
+} from './tiered-memory-inventory.js';
+
 /** Temporal options accepted by {@link TieredMemoryStore.store}. */
 export interface TemporalStoreOptions {
   /** ISO-8601 timestamp from which the fact is valid (default: always). */
@@ -114,7 +125,8 @@ CREATE INDEX IF NOT EXISTS idx_tiered_memory_key ON tiered_memory(key);
 CREATE INDEX IF NOT EXISTS idx_tiered_memory_tier ON tiered_memory(tier, archived);
 `;
 
-interface TieredMemoryRow {
+/** Raw `tiered_memory` row as returned by the driver. */
+export interface TieredMemoryRow {
   id: string;
   key: string;
   value: string;
@@ -213,6 +225,12 @@ export function isTemporallyValid(
   return true;
 }
 
+const INVENTORY_DEPS: TieredInventoryDeps = {
+  decode: rowToEntry,
+  isValid: isTemporallyValid,
+  validTiers: VALID_TIERS,
+};
+
 /**
  * Tier-aware in-memory store with temporal validity and per-tier size
  * limits to prevent unbounded memory growth.
@@ -276,6 +294,29 @@ export class TieredMemoryStore {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Page through every PERSISTED entry (not the hydrated maps, which are
+   * capped at 5,000 per tier), newest first (`ts DESC, id DESC`). Filters by
+   * tier and status (default `active`); `limit` is clamped to 1..1000. Throws
+   * {@link TieredMemoryUnsupportedError} on a volatile store (#4712).
+   */
+  listEntries(options?: TieredListOptions): TieredListResult {
+    return listPersistedEntries(this.requireDb('listEntries'), options, INVENTORY_DEPS);
+  }
+
+  /**
+   * Exact read of one persisted entry by stable id, with its status. Null when
+   * missing, or when inactive and `includeInactive` is not set (#4712).
+   */
+  getEntry(id: string, options?: TieredGetOptions): TieredInventoryEntry | null {
+    return getPersistedEntry(this.requireDb('getEntry'), id, options, INVENTORY_DEPS);
+  }
+
+  private requireDb(operation: string): TieredMemoryDb {
+    if (!this.db) throw new TieredMemoryUnsupportedError(operation);
+    return this.db;
   }
 
   /** Load persisted rows back into the tier maps and the archive. */

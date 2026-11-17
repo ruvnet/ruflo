@@ -136,6 +136,7 @@ export type Options = GuardOptions & ConvoOptions & SessionOptions & {
   eventsPersist: boolean
   /** ADR-499: outside folders ruRE may read, alias -> absolute folder. Set only by the person (a plugin option); empty by default. */
   rureFolders: Folders
+  /** #4861: PII the mission screen finds blocks guidance (on, default) or is only reported (off); a secret always blocks. */ piiGuard: boolean
 }
 
 const num = (value: unknown, fallback: number, lo: number, hi: number): number => {
@@ -159,6 +160,7 @@ export function optionsOf(raw: PluginOptions | undefined): Options {
     boot: value.boot !== false,
     eventsPersist: value.eventsPersist !== false && value.eventsPersist !== 'false',
     rureFolders: parseFolders(value.rureFolders),
+    piiGuard: value.piiGuard !== false && value.piiGuard !== 'false' && value.piiGuard !== 'off',
     ...guardOptionsOf(raw),
     ...convoOptionsOf(raw),
     ...sessionOptionsOf(raw),
