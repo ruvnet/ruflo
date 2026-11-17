@@ -95,9 +95,11 @@ const MKDIR = 'mkdir -p -- "$(dirname -- "$1")" || exit 1;'
 /**
  * The whole set of POSIX write scripts. umask 022 makes a created file 0644 (as `install -m 0644`); the touch uses 077 and chmod 600.
  * `set -C` (noclobber) makes the shell open with O_CREAT|O_EXCL, so an exclusive create fails on a file that is already there.
+ * The append needs `conv=notrunc`: uutils dd (the default coreutils on Ubuntu 26.04) truncates its stdout to its own offset after
+ * writing (`lseek(1, 0, SEEK_CUR)` then `ftruncate`), which cuts off every batch another writer appended in between (#4978).
  */
 export const POSIX_SCRIPTS = Object.freeze({
-  append: `umask 022; ${GUARD} exec dd bs=1M iflag=fullblock status=none >> "$1"`,
+  append: `umask 022; ${GUARD} exec dd bs=1M iflag=fullblock conv=notrunc status=none >> "$1"`,
   createExclusive: `umask 022; ${GUARD} set -C; exec cat > "$1"`,
   createExclusiveWithDirs: `umask 022; ${MKDIR} ${GUARD} set -C; exec cat > "$1"`,
   replace: `umask 022; ${GUARD} exec cat > "$1"`,
