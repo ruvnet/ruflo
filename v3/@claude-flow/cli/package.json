@@ -141,7 +141,7 @@
   },
   "optionalDependencies": {
     "@agntcy/slim-bindings": "2.1.1",
-    "@claude-flow/aidefence": "3.2.1",
+    "@claude-flow/aidefence": "3.2.2",
     "@claude-flow/memory": "3.3.3",
     "@metaharness/flywheel": "~0.1.10",
     "@metaharness/radio": "~0.1.0",
