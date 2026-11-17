@@ -136,7 +136,7 @@
     "typescript": "^5.3.0",
     "ws": "^8.21.0",
     "yaml": "^2.8.0",
-    "zod": "^3.22.0",
+    "zod": "^4.6.7",
     "@claude-flow/memory": "3.3.3"
   },
   "optionalDependencies": {
