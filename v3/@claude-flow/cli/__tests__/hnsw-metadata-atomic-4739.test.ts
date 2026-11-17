@@ -11,9 +11,11 @@ const state = vi.hoisted(() => ({
 
 // Only the vector engine is stubbed; persistence uses the real atomic helper
 // and filesystem, with a failure injected at the final publication boundary.
-// vitest.config.ts externalizes @ruvector/*; Vite exposes its dynamic imports
-// under /@id/, so mock that external module ID rather than a native addon.
-vi.mock('/@id/@ruvector/core', () => ({
+// The package config (cli/vitest.config.ts) externalizes @ruvector/*, and Vite
+// exposes those dynamic imports under /@id/; the workspace config (v3/
+// vitest.config.ts, used by CI's "Test V3 Packages") does not, so the import
+// resolves as the bare specifier. Register the same stub under both IDs.
+const ruvectorCoreStub = vi.hoisted(() => () => ({
   default: {
     VectorDb: class {
       async len() { return 0; }
@@ -21,6 +23,8 @@ vi.mock('/@id/@ruvector/core', () => ({
     },
   },
 }));
+vi.mock('/@id/@ruvector/core', ruvectorCoreStub);
+vi.mock('@ruvector/core', ruvectorCoreStub);
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>();
