@@ -69,6 +69,26 @@
       "trackingIssue": "https://github.com/ruvnet/ruflo/issues/4442",
       "expiresAt": "2026-11-23",
       "rationale": "The remaining 3.x copies belong to sibling @claude-flow/* packages and agentic-flow, which still depend on zod 3; moving them is a repo-wide zod 4 migration (each package's schemas and tests), tracked in #4442, not something to force through npm overrides here (zod 4 changes z.record and error APIs that code written for zod 3 relies on, and that cannot be tested from this project). Expires 2026-11-23 so the audit fails again and forces the decision."
+    },
+    {
+      "package": "plugins/ruflo-graph-intelligence",
+      "depName": "vitest",
+      "severity": "high",
+      "via": ["picomatch", "tinyglobby", "GHSA-fc5q-39xc-vjpf"],
+      "tracking": "GHSA-fc5q-39xc-vjpf — picomatch ReDoS through single-branch repeated extglobs. The vulnerable range (<= 4.0.7) covers every published picomatch release and the advisory lists no patched version, so no bump can clear it. It reaches this package only through vitest, a devDependency that is never in a published tarball or the runtime path, and the ReDoS needs an attacker-controlled glob; vitest only compiles globs from this repo's own test config. The audit began failing on main at 17:30Z on 2026-11-17 with no dependency change, when the advisory entered the npm audit database.",
+      "trackingIssue": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+      "expiresAt": "2026-12-17",
+      "rationale": "devDependency-only, globs are repo-controlled, no upstream fix exists. Drop this entry once picomatch ships a patched release and the lockfile picks it up."
+    },
+    {
+      "package": "v3/@claude-flow/browser",
+      "depName": "vitest",
+      "severity": "high",
+      "via": ["picomatch", "tinyglobby", "GHSA-fc5q-39xc-vjpf"],
+      "tracking": "GHSA-fc5q-39xc-vjpf — picomatch ReDoS through single-branch repeated extglobs. The vulnerable range (<= 4.0.7) covers every published picomatch release and the advisory lists no patched version, so no bump can clear it. It reaches this package only through vitest, a devDependency that is never in a published tarball or the runtime path, and the ReDoS needs an attacker-controlled glob; vitest only compiles globs from this repo's own test config. The audit began failing on main at 17:30Z on 2026-11-17 with no dependency change, when the advisory entered the npm audit database.",
+      "trackingIssue": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+      "expiresAt": "2026-12-17",
+      "rationale": "devDependency-only, globs are repo-controlled, no upstream fix exists. Drop this entry once picomatch ships a patched release and the lockfile picks it up."
     }
   ],
   "lockfile": [
