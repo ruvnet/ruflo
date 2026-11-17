@@ -8,7 +8,11 @@ import { mkdirSync, writeFileSync, existsSync, readFileSync, statSync, unlinkSyn
 import * as nodeFs from 'fs';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'path';
 import { type MCPTool, getProjectCwd } from './types.js';
+import { dispatchQueueDir } from '../services/dispatch-queue.js';
+import { resolveMemoryRoot } from '../memory/memory-root.js';
+import { getProjectRoot } from '../services/project-root.js';
 import { validateIdentifier, validateText, validatePath } from './validate-input.js';
+import { realpathNearest, isInsideRealRoot } from './realpath-containment.js';
 import { commandRecordingDisabled, redactCommandForStorage } from '../services/command-recording.js';
 import { checkCommandLoop, recordCommandOutcome } from './tool-loop-guardrail.js';
 import {
@@ -21,8 +25,17 @@ import {
   DEFAULT_ROUTER_EMBEDDER,
   embedForRouter,
   resolveRouterEmbedder,
+  routerEmbedderModel,
   type RouterEmbedderKind,
 } from '../ruvector/router-embedder.js';
+import {
+  ABSTAIN_LABEL,
+  centroidRouterEnabled,
+  classify,
+  loadCentroidArtifact,
+  resolveMargin,
+  type CentroidDecision,
+} from '../ruvector/centroid-router.js';
 
 // Real vector search functions - lazy loaded to avoid circular imports
 let searchEntriesFn: ((options: {
@@ -390,12 +403,16 @@ async function buildSemanticRouter(kind: RouterEmbedderKind, selectionReason?: s
 
     if (router.VectorDb && router.DistanceMetric) {
       // Try to create VectorDb - may fail with lock error in concurrent envs
+      // Native VectorDb otherwise creates ruvector.db in process.cwd().
+      const memoryRoot = resolveMemoryRoot(getProjectRoot());
+      mkdirSync(memoryRoot, { recursive: true });
       const db = new router.VectorDb({
         dimensions: 384,
         distanceMetric: router.DistanceMetric.Cosine,
         hnswM: 16,
         hnswEfConstruction: 200,
         hnswEfSearch: 100,
+        storagePath: join(memoryRoot, 'ruvector.db'),
       });
 
       // Initialize with static + runtime-learned task patterns
@@ -1355,6 +1372,7 @@ export const hooksRoute: MCPTool = {
               complexity,
             },
             swarmRecommendation: agents.length > 2 ? { topology: 'hierarchical', agents, coordination: 'queen-led' } : null,
+            ...centroidBypassed(`AgentDB ${agentdbRoute.controller}`, agents[0]),
           };
         }
       } catch {
@@ -1403,6 +1421,7 @@ export const hooksRoute: MCPTool = {
             },
             swarmRecommendation: null,
             learning: { source: suggestion.source, matchedKeywords: suggestion.matchedKeywords },
+            ...centroidBypassed('a persisted SONA pattern', suggestion.agent),
           };
         }
       } catch {
@@ -1420,6 +1439,40 @@ export const hooksRoute: MCPTool = {
  * so the benchmark measures this local path. (Body kept at its original
  * indentation to keep this refactor's diff small.)
  */
+/**
+ * ADR-527 centroid routing for one query. Returns null when the flag is off.
+ * Never throws: an unusable artifact or embedder comes back as `unavailable`.
+ */
+/**
+ * ADR-527: learned routes (AgentDB, persisted SONA patterns) answer before the
+ * centroid router. Say so under the flag, so a pilot's fallback rate counts them.
+ */
+function centroidBypassed(by: string, agent: string): { centroid?: CentroidDecision & { baselineAgent: string } } {
+  return centroidRouterEnabled()
+    ? { centroid: { status: 'bypassed', reason: `${by} answered before the centroid router`, baselineAgent: agent } }
+    : {};
+}
+
+async function centroidRoute(
+  queryText: string,
+  task: string,
+  baselineAgent: string,
+): Promise<(CentroidDecision & { baselineAgent: string }) | null> {
+  if (!centroidRouterEnabled()) return null;
+  try {
+    if (!hasRoutableText(task)) {
+      return { status: 'unavailable', reason: 'task has no letters or digits', baselineAgent };
+    }
+    const { artifact, error } = loadCentroidArtifact();
+    if (!artifact) return { status: 'unavailable', reason: error ?? 'centroid artifact unavailable', baselineAgent };
+    const q = await embedForRouter([queryText], 'minilm');
+    const d = classify(artifact, q.vectors[0], q.embedder, routerEmbedderModel(), resolveMargin(artifact));
+    return { ...d, ...(d.status === 'unavailable' && q.reason ? { reason: `${d.reason}; ${q.reason}` } : {}), baselineAgent };
+  } catch (err) {
+    return { status: 'unavailable', reason: `centroid router failed: ${err instanceof Error ? err.message : String(err)}`, baselineAgent };
+  }
+}
+
 async function routeTaskLocal(
   task: string,
   context: string | undefined,
@@ -1538,6 +1591,27 @@ async function routeTaskLocal(
       }
     }
 
+    // ADR-527: opt-in nearest-centroid router. The current router's pick is
+    // kept as `baselineAgent` so a pilot can compare the two on outcomes.
+    const centroid = await centroidRoute(queryText, task, agents[0]);
+    if (centroid?.status === 'decided') {
+      if (centroid.label === ABSTAIN_LABEL) {
+        noMatchDetail = `Centroid router: no agent fits (closest is "none", score ${centroid.score}).`;
+        matchedPattern = 'centroid-abstain';
+        confidence = NO_MATCH_CONFIDENCE; // #3567: a no-match ranks below every real match
+      } else {
+        agents = [centroid.label, ...agents.filter(a => a !== centroid.label)];
+        // Cosine runs about 0.2-0.6 here, so a raw score could rank a real match
+        // below a no-match (#3567). Rescale monotonically into (NO_MATCH, 1];
+        // the raw cosine stays in `centroid.score`. Not a probability.
+        confidence = Math.round((NO_MATCH_CONFIDENCE + 0.01 + (0.99 - NO_MATCH_CONFIDENCE) * Math.max(0, Math.min(1, centroid.score))) * 100) / 100;
+        matchedPattern = `centroid:${centroid.label}`;
+        noMatchDetail = null;
+      }
+      routingMethod = 'centroid';
+      backendInfo = 'nearest centroid (MiniLM)';
+    }
+
     // Determine complexity
     const taskLower = task.toLowerCase();
     const complexity = taskLower.includes('complex') || taskLower.includes('architecture') || task.length > 200
@@ -1565,7 +1639,9 @@ async function routeTaskLocal(
       primaryAgent: {
         type: agents[0],
         confidence: Math.round(confidence * 100) / 100,
-        reason: routingMethod.startsWith('semantic')
+        reason: routingMethod === 'centroid' && noMatchDetail === null
+          ? `Nearest agent centroid (${Math.round(confidence * 100)}% cosine)`
+          : routingMethod.startsWith('semantic')
           ? `Semantic similarity to "${matchedPattern}" pattern (${Math.round(confidence * 100)}%)`
           : noMatchDetail !== null
             ? `Nothing matched; default suggestion only. ${noMatchDetail}`
@@ -1589,6 +1665,7 @@ async function routeTaskLocal(
       } : null,
       // ADR-390: which embedder the semantic index + query used ('hash' when degraded).
       embedder: handle.embedder,
+      ...(centroid ? { centroid } : {}),
       ...(handle.embedderReason ? { embedderReason: handle.embedderReason } : {}),
     };
 }
@@ -1860,16 +1937,35 @@ export const hooksPreTask: MCPTool = {
   },
 };
 
+// #4887 — advertise the grammar validateIdentifier() (cli-core) plus the CLI
+// reserved-name wrapper enforce, so callers learn it from the schema instead of
+// from a refusal. NATIVE_ID_PATTERN is IDENTIFIER_RE (with '-' moved last so no
+// escape is needed); the shell-meta and path-traversal checks can never fire on a
+// string it accepts. ASCII-only, so maxLength (code points) and the 128 .length
+// cap agree. The HTTP transport enforces pattern/minLength at runtime, so a
+// field the handler treats as omitted when empty (agent) must accept ''.
+const NATIVE_ID_BODY = '[a-zA-Z0-9_][a-zA-Z0-9_.:-]{0,127}';
+const NATIVE_ID_RESERVED = ['__proto__', 'constructor', 'prototype'];
+const NATIVE_ID_RULES = '1-128 chars of A-Z a-z 0-9 _ - . : (first char alphanumeric or _); not __proto__, constructor or prototype. Must be a registered native ID, not a host path such as /root/x.';
+const nativeIdSchema = (description: string, opts: { emptyMeansOmitted?: boolean } = {}) => ({
+  type: 'string',
+  ...(opts.emptyMeansOmitted ? {} : { minLength: 1 }),
+  maxLength: 128,
+  pattern: opts.emptyMeansOmitted ? `^(?:${NATIVE_ID_BODY})?$` : `^${NATIVE_ID_BODY}$`,
+  not: { enum: NATIVE_ID_RESERVED },
+  description: `${description} ${NATIVE_ID_RULES}`,
+});
+
 export const hooksPostTask: MCPTool = {
   name: 'hooks_post-task',
   description: 'Record task completion for learning Use when native Bash hooks (via Claude Code\'s settings.json) are wrong because you need Ruflo-side state — pattern persistence, neural training signals, model-routing learning, cost tracking, audit chain. For one-off shell commands, plain Bash hooks are fine.',
   inputSchema: {
     type: 'object',
     properties: {
-      taskId: { type: 'string', description: 'Task identifier' },
+      taskId: nativeIdSchema('Task identifier.'),
       patterns: feedbackPatternsSchema,
       success: { type: 'boolean', description: 'Whether task was successful' },
-      agent: { type: 'string', description: 'Agent that completed the task' },
+      agent: nativeIdSchema('Agent that completed the task. An empty string is treated as omitted.', { emptyMeansOmitted: true }),
       quality: { type: 'number', minimum: 0, maximum: 1, description: 'Quality score (0-1)' },
       task: { type: 'string', description: 'Task description text (used for learning keyword extraction)' },
       duration: { type: 'number', description: 'Observed task duration in milliseconds (used by pheromone-adaptive topology)' },
@@ -1878,7 +1974,7 @@ export const hooksPostTask: MCPTool = {
       agentRole: { type: 'string', description: 'Role for role-local pheromone normalization (default agent)' },
       storeDecisions: { type: 'boolean', description: 'Also store routing decision in memory DB' },
       // ADR-147 P2: nested-subagent spawn-tree capture
-      parentAgentId: { type: 'string', description: 'ID of the parent agent (from Claude Code\'s parent_agent_id OTel span tag / x-claude-code-parent-agent-id header). Omit for top-level work.' },
+      parentAgentId: nativeIdSchema('ID of the parent agent (from Claude Code\'s parent_agent_id OTel span tag / x-claude-code-parent-agent-id header). Omit for top-level work.'),
       depth: { type: 'number', description: 'Chain depth from root lead session (0 = lead, 1+ = subagent). Used by ADR-147 P3 depth-aware guardrail.' },
     },
     required: ['taskId'],
@@ -2435,8 +2531,19 @@ export const hooksBuildAgents: MCPTool = {
       if (!v.valid) return { success: false, error: v.error };
     }
     const outputDir = resolve(getProjectCwd(), (params.outputDir as string) || './agents');
+    // validatePath allows absolute paths, so keep the real output dir inside
+    // the real project root (CWE-22/59): configs are only ever project files.
+    let realProjectRoot: string;
+    try { realProjectRoot = nodeFs.realpathSync(getProjectCwd()); } catch { realProjectRoot = getProjectCwd(); }
+    if (!isInsideRealRoot(realProjectRoot, outputDir)) {
+      return { success: false, error: 'outputDir must be inside the project directory' };
+    }
     const focus = (params.focus as string) || 'all';
-    const format = (params.format as string) || 'yaml';
+    // format is spliced into each file name; only the two supported formats.
+    const format = params.format === undefined ? 'yaml' : params.format;
+    if (format !== 'yaml' && format !== 'json') {
+      return { success: false, error: 'format must be "yaml" or "json"' };
+    }
     const persist = params.persist !== false; // Default to true
 
     const agents = [
@@ -2508,7 +2615,8 @@ export const hooksTransfer: MCPTool = {
   },
   handler: async (params: Record<string, unknown>) => {
     const sourcePath = params.sourcePath as string;
-    const minConfidence = (params.minConfidence as number) || 0.7;
+    // #4728: an explicit 0 must not fall through to 0.7 (`0 || 0.7` is 0.7).
+    const minConfidence = (params.minConfidence as number) ?? 0.7;
     const filter = params.filter as string;
 
     { const v = validatePath(sourcePath, 'sourcePath'); if (!v.valid) return { success: false, error: v.error }; }
@@ -3677,7 +3785,8 @@ export const hooksPatternStore: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const pattern = params.pattern as string;
     const type = (params.type as string) || 'general';
-    const confidence = (params.confidence as number) || 0.8;
+    // #4728: an explicit 0 must not fall through to 0.8 (`0 || 0.8` is 0.8).
+    const confidence = (params.confidence as number) ?? 0.8;
     const metadata = params.metadata as Record<string, unknown> | undefined;
     const timestamp = new Date().toISOString();
 
@@ -3758,7 +3867,8 @@ export const hooksPatternSearch: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const query = params.query as string;
     const topK = (params.topK as number) || 5;
-    const minConfidence = (params.minConfidence as number) || 0.3;
+    // #4728: an explicit 0 must not fall through to 0.3 (`0 || 0.3` is 0.3).
+    const minConfidence = (params.minConfidence as number) ?? 0.3;
     const namespace = (params.namespace as string) || 'pattern';
     const strategy = (params.strategy as string) || 'semantic';
 
@@ -5026,14 +5136,17 @@ export const hooksWorkerDispatch: MCPTool = {
       // 3.7.0-alpha.11 the dispatch only updated a process-local Map that
       // the daemon (separate process) could never see, so `queued` was a
       // lie. The queue file makes it real and inspectable on disk.
-      const queueDir = join(cwd, '.claude-flow', 'daemon-queue');
+      // User state dir, keyed by project: a repository must not be able to ship queue entries.
+      const queueDir = dispatchQueueDir(cwd);
       const queuePath = join(queueDir, `${workerId}.json`);
       let queueWritten = false;
       try {
-        if (!existsSync(queueDir)) mkdirSync(queueDir, { recursive: true });
+        // Private to the user, like the other state under ~/.claude-flow.
+        if (!existsSync(queueDir)) mkdirSync(queueDir, { recursive: true, mode: 0o700 });
         writeFileSync(
           queuePath,
           JSON.stringify({ workerId, trigger, context, priority, enqueuedAt: new Date().toISOString() }, null, 2),
+          { mode: 0o600 },
         );
         queueWritten = true;
       } catch (err) {
@@ -5043,7 +5156,7 @@ export const hooksWorkerDispatch: MCPTool = {
       }
       if (queueWritten) {
         reportedStatus = 'queued';
-        note = `Worker queued for daemon (pid ${daemonPid}) at ${queuePath}. Daemon polls every 5s; processed entries move to .claude-flow/daemon-queue/.processed/. Poll hooks_worker-status until status === "completed".`;
+        note = `Worker queued for daemon (pid ${daemonPid}) at ${queuePath}. Daemon polls every 5s; processed entries move to ${join(queueDir, '.processed')}. Poll hooks_worker-status until status === "completed".`;
       } else {
         reportedStatus = 'mcp-only';
       }
@@ -5153,7 +5266,8 @@ export const hooksWorkerDetect: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const prompt = params.prompt as string;
     const autoDispatch = params.autoDispatch as boolean;
-    const minConfidence = (params.minConfidence as number) || 0.5;
+    // #4728: an explicit 0 must not fall through to 0.5 (`0 || 0.5` is 0.5).
+    const minConfidence = (params.minConfidence as number) ?? 0.5;
 
     { const v = validateText(prompt, 'prompt'); if (!v.valid) return { success: false, error: v.error }; }
 
@@ -5260,7 +5374,10 @@ export const hooksModelRoute: MCPTool = {
       };
     }
 
-    const result = await router.route(task);
+    const result = await router.route(task, undefined, {
+      preferCost: typeof params.preferCost === 'boolean' ? params.preferCost : undefined,
+      preferSpeed: typeof params.preferSpeed === 'boolean' ? params.preferSpeed : undefined,
+    });
     return {
       model: result.model,
       confidence: result.confidence,
@@ -5411,36 +5528,6 @@ function codemodLangForExt(abs: string): 'javascript' | 'typescript' | 'jsx' | '
   if (ext === '.jsx') return 'jsx';
   if (ext === '.js' || ext === '.mjs' || ext === '.cjs') return 'javascript';
   return 'typescript';
-}
-
-// Canonicalize a path that may not exist yet: realpath the nearest existing
-// ancestor and re-attach the missing tail, so a symlinked parent still
-// resolves to its real location (mirrors @claude-flow/security's
-// canonicalizeSync, which is not exported).
-function realpathNearest(p: string): string {
-  try {
-    return nodeFs.realpathSync(p);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException)?.code !== 'ENOENT') throw err;
-  }
-  const parent = dirname(p);
-  if (parent === p) return p;
-  return join(realpathNearest(parent), basename(p));
-}
-
-// CWE-59 (#4346): containment must compare real paths on BOTH sides — a
-// symlink inside the project pointing outside it must not pass, and a
-// symlinked project root (e.g. macOS /var -> /private/var) must not make
-// every path fail. Fails closed if canonicalization throws (ELOOP, EACCES).
-function isInsideRealRoot(realRoot: string, abs: string): boolean {
-  let real: string;
-  try {
-    real = realpathNearest(abs);
-  } catch {
-    return false;
-  }
-  const rel = relative(realRoot, real);
-  return rel === '' || (rel !== '..' && !rel.startsWith('..' + sep) && !isAbsolute(rel));
 }
 
 // Deterministic codemod execution — the real Tier-1 path (ADR-143)

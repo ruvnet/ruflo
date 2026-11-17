@@ -27,9 +27,9 @@ import { drawn } from './fixtures/views'
 describe('vector lab', () => {
   test('vector lab: every section, its fields and tagged entries; opening it runs no ruvector command', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
-    const vecRuns = () => world.runs.filter(argv => argv[3] === 'ruvector@0.3.3')
+    const vecRuns = () => world.runs.filter(argv => argv[3] === 'ruvector@0.3.13')
 
-    world.respond = argv => (argv[3] !== 'ruvector@0.3.3' ? cliAnswer(argv) : { exitCode: 0, stdout: '{"success": true}', stderr: '' })
+    world.respond = argv => (argv[3] !== 'ruvector@0.3.13' ? cliAnswer(argv) : { exitCode: 0, stdout: '{"success": true}', stderr: '' })
     mock.clock(on)
     await $.session.start(SESSION)
 
@@ -48,9 +48,9 @@ describe('vector lab', () => {
 
   test('vector lab: a local read runs one fixed argv at once and shows its lines; the shared brain asks first', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
-    const vecRuns = () => world.runs.filter(argv => argv[3] === 'ruvector@0.3.3').map(argv => argv.slice(4).join(' '))
+    const vecRuns = () => world.runs.filter(argv => argv[3] === 'ruvector@0.3.13').map(argv => argv.slice(4).join(' '))
 
-    world.respond = argv => (argv[3] !== 'ruvector@0.3.3' ? cliAnswer(argv) : argv[4] === 'hooks' && argv[5] === 'stats' ? { exitCode: 0, stdout: VEC_OUT.hooksStats, stderr: '' } : argv[4] === 'hooks' ? { exitCode: 0, stdout: VEC_OUT.route, stderr: '' } : { exitCode: 0, stdout: '{"total_memories": 12}', stderr: '' })
+    world.respond = argv => (argv[3] !== 'ruvector@0.3.13' ? cliAnswer(argv) : argv[4] === 'hooks' && argv[5] === 'stats' ? { exitCode: 0, stdout: VEC_OUT.hooksStats, stderr: '' } : argv[4] === 'hooks' ? { exitCode: 0, stdout: VEC_OUT.route, stderr: '' } : { exitCode: 0, stdout: '{"total_memories": 12}', stderr: '' })
     mock.clock(on)
     await $.session.start(SESSION)
     await $.command.run(command('vector'))
@@ -59,7 +59,7 @@ describe('vector lab', () => {
 
     await pane.press({ key: 'vec-hooks-stats' })
     expect(textOf(await pane.drawn())).toContain('2 Q-learning patterns')
-    expect(world.runs.filter(argv => argv[3] === 'ruvector@0.3.3')).toEqual([['npx', '--offline', '-y', 'ruvector@0.3.3', 'hooks', 'stats']])
+    expect(world.runs.filter(argv => argv[3] === 'ruvector@0.3.13')).toEqual([['npx', '--offline', '-y', 'ruvector@0.3.13', 'hooks', 'stats']])
 
     await pane.input({ key: 'vec-in-task', text: 'write the login tests', kind: 'submit' })
     expect(textOf(await pane.drawn())).toContain('recommended: coder')
@@ -69,7 +69,7 @@ describe('vector lab', () => {
 
     const asked = textOf(await pane.drawn())
 
-    expect(asked).toContain('runs: npx --offline -y ruvector@0.3.3 brain status')
+    expect(asked).toContain('runs: npx --offline -y ruvector@0.3.13 brain status')
     expect(asked).toContain('reaches pi.ruv.io')
     expect(vecRuns()).toHaveLength(2)
 
@@ -86,9 +86,9 @@ describe('vector lab', () => {
 
   test('vector lab headless: /ruflo run vec-<id> <text> answers with the lines; a network one asks and runs on yes', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
-    const vecRuns = () => world.runs.filter(argv => argv[3] === 'ruvector@0.3.3').map(argv => argv.slice(4).join(' '))
+    const vecRuns = () => world.runs.filter(argv => argv[3] === 'ruvector@0.3.13').map(argv => argv.slice(4).join(' '))
 
-    world.respond = argv => (argv[3] !== 'ruvector@0.3.3' ? cliAnswer(argv) : argv[4] === 'hooks' ? { exitCode: 0, stdout: VEC_OUT.route, stderr: '' } : { exitCode: 1, stdout: '', stderr: VEC_OUT.brainMissing })
+    world.respond = argv => (argv[3] !== 'ruvector@0.3.13' ? cliAnswer(argv) : argv[4] === 'hooks' ? { exitCode: 0, stdout: VEC_OUT.route, stderr: '' } : { exitCode: 1, stdout: '', stderr: VEC_OUT.brainMissing })
     mock.clock(on)
     await $.session.start({ ...SESSION, isInteractive: false })
 

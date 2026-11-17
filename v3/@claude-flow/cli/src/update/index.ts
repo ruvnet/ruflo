@@ -3,7 +3,7 @@
  *
  * Features:
  * - Rate-limited update checks (24h default)
- * - Automatic patch updates for security packages
+ * - Explicitly opted-in patch updates
  * - Compatibility validation before updates
  * - Rollback capability
  * - Update history logging
@@ -45,9 +45,20 @@ export type { UpdateHistoryEntry, UpdateExecutionResult } from './executor.js';
 
 // Re-export a convenience function for startup
 import { checkForUpdates, DEFAULT_CONFIG } from './checker.js';
-import type { UpdateCheckResult } from './checker.js';
+import type { UpdateCheckResult, UpdateConfig } from './checker.js';
 import { executeMultipleUpdates } from './executor.js';
 import { getInstalledVersion } from './checker.js';
+
+/** Resolve the same opt-in policy for startup and update diagnostics. */
+export function resolveStartupUpdateConfig(options: { autoUpdate?: boolean } = {}): UpdateConfig {
+  const autoUpdate = options.autoUpdate === undefined
+    ? /^(1|true|yes|on)$/i.test((process.env.RUFLO_AUTO_UPDATE ?? '').trim())
+    : options.autoUpdate === true;
+  return {
+    ...DEFAULT_CONFIG,
+    autoUpdate: { ...DEFAULT_CONFIG.autoUpdate, patch: autoUpdate },
+  };
+}
 
 /**
  * Run auto-update check on startup
@@ -56,7 +67,7 @@ import { getInstalledVersion } from './checker.js';
 export async function runStartupUpdateCheck(options: {
   verbose?: boolean;
   autoUpdate?: boolean;
-}): Promise<{
+} = {}): Promise<{
   checked: boolean;
   updatesAvailable: UpdateCheckResult[];
   updatesApplied: string[];
@@ -70,7 +81,8 @@ export async function runStartupUpdateCheck(options: {
   };
 
   try {
-    const { results, skipped, reason } = await checkForUpdates(DEFAULT_CONFIG);
+    const config = resolveStartupUpdateConfig(options);
+    const { results, skipped, reason } = await checkForUpdates(config);
 
     if (skipped) {
       result.skippedReason = reason;
@@ -81,7 +93,7 @@ export async function runStartupUpdateCheck(options: {
     result.updatesAvailable = results;
 
     // Auto-update if enabled
-    if (options.autoUpdate !== false) {
+    if (config.autoUpdate.patch) {
       const autoUpdateable = results.filter((r) => r.shouldAutoUpdate);
 
       if (autoUpdateable.length > 0) {

@@ -1,4 +1,5 @@
 import { hasSecret, textsOf } from './screen'
+import type { ModOptions } from './options'
 
 /** The tool name without its `mcp__<server>__` prefix. */
 const tail = (name: string) => (name.startsWith('mcp__') ? name.slice(name.lastIndexOf('__') + 2) : name)
@@ -27,12 +28,15 @@ const isFederationMemory = (input: unknown) => {
   return o.namespace === 'federation'
 }
 
-/** The reason an outbound federation call is refused, or undefined when it may go. Names the category, never the value. */
-export function verdict(tool: string, input: unknown): string | undefined {
+/**
+ * The reason an outbound federation call is refused, or undefined when it may go. Names the category, never the value. A secret (or input too
+ * large to screen) is always refused; personal data only while `piiGuard` is on.
+ */
+export function verdict(tool: string, input: unknown, opts: Pick<ModOptions, 'piiGuard'>): string | undefined {
   const t = tail(tool)
   if (!(OUTBOUND.test(t) || (t === 'memory_store' && isFederationMemory(input)))) return undefined
   const texts = textsOf(input)
   if (texts.some(hasSecret)) return 'ruflo-federation: this message holds what looks like a secret (a key, token or password). It would leave this installation: remove it.'
-  if (texts.some(hasPii)) return 'ruflo-federation: this message holds what looks like personal data (an SSN or card number). It would leave this installation: remove it or route it through the PII pipeline.'
+  if (opts.piiGuard && texts.some(hasPii)) return 'ruflo-federation: this message holds what looks like personal data (an SSN or card number). It would leave this installation: remove it or route it through the PII pipeline.'
   return undefined
 }

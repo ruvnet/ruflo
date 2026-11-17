@@ -43,6 +43,10 @@ export function launchArgsError(value: unknown): string | null {
  * pass — for example a selector or typed text of "--executable-path".
  */
 export function commandArgvError(args: readonly string[]): string | null {
+  if (args[0] === 'open') {
+    const urlError = browserUrlError(args[1]);
+    if (urlError) return urlError;
+  }
   for (const arg of args) {
     if (typeof arg !== 'string') return 'browser command arguments must be strings';
     if (arg.startsWith('--')) {
@@ -53,4 +57,28 @@ export function commandArgvError(args: readonly string[]): string | null {
     }
   }
   return null;
+}
+
+/**
+ * Returns an error when a navigation target is not a web page. The browser
+ * tools return page text to the caller, so a `file:` URL (or `view-source:`,
+ * `chrome:`, `data:` and the like) would read local files or browser state
+ * that `http_fetch` never serves. Only http(s) URLs, `about:blank`, and
+ * scheme-less targets such as `example.com/path` or `localhost:3000` (which
+ * agent-browser opens over http(s)) are accepted.
+ */
+export function browserUrlError(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return 'url must be a non-empty string';
+  // Chromium drops tabs and newlines anywhere in a URL and trims leading
+  // control characters and spaces, so check what it would actually parse.
+  const url = value.replace(/[\t\n\r]/g, '').replace(/^[\u0000- ]+/, '');
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url);
+  if (!scheme) return null;
+  const name = scheme[1].toLowerCase();
+  if (name === 'http' || name === 'https') return null;
+  if (url.toLowerCase() === 'about:blank') return null;
+  // `host:port` with no scheme, e.g. `localhost:3000/app`. The host must be
+  // `localhost` or contain a dot, so `file:1/...` is not mistaken for one.
+  if ((name === 'localhost' || name.includes('.')) && /^[a-z0-9.-]+:\d{1,5}(?:[/?#]|$)/i.test(url)) return null;
+  return `url scheme not allowed: ${JSON.stringify(name.slice(0, 40))} (use http or https)`;
 }

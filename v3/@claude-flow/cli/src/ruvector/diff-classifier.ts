@@ -121,8 +121,7 @@ function isSecuritySensitivePath(path: string): boolean {
 
 export class DiffClassifier {
   private config: DiffClassifierConfig;
-  private ruvectorEngine: unknown = null;
-  private useNative = false;
+  private readonly useNative = false;
   private classificationCache: Map<string, DiffClassification> = new Map();
 
   constructor(config: Partial<DiffClassifierConfig> = {}) {
@@ -130,14 +129,9 @@ export class DiffClassifier {
   }
 
   async initialize(): Promise<void> {
-    try {
-      // @ruvector/diff is optional - gracefully fallback if not installed
-      const ruvector = await import('@ruvector/diff' as string).catch(() => null);
-      if (ruvector) {
-        this.ruvectorEngine = (ruvector as any).createDiffClassifier?.(this.config);
-        this.useNative = !!this.ruvectorEngine;
-      }
-    } catch { this.useNative = false; }
+    // Pure-JS analysis. This used to try `import('@ruvector/diff')`, a package that has
+    // never been published (npm 404), so it always fell through to here. ruvector@0.3's
+    // parseDiff is a plain-JS parser equivalent to parseDiff() below.
   }
 
   parseDiff(diffContent: string): FileDiff[] {

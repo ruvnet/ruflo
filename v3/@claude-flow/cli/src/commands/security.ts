@@ -505,7 +505,7 @@ const cveCommand: Command = {
     // If --check CVE-XXXX is given, filter to that specific CVE ID.
     let auditJson: string;
     try {
-      auditJson = execSync('npm audit --json 2>/dev/null', {
+      auditJson = execSync('npm audit --json', {
         encoding: 'utf-8',
         timeout: 30000,
         stdio: ['pipe', 'pipe', 'pipe'],

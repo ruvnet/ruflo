@@ -12,24 +12,23 @@ Every browser session you open MUST be allocated as an RVF cognitive container a
 
 ```bash
 SID=$(date +%Y%m%d-%H%M%S)-<task-slug>
-npx -y ruvector@0.2.27 rvf create "$SID.rvf" --dimension 384
-npx -y ruvector@0.2.27 hooks trajectory-begin --session-id "$SID" --task "<human-task>"
+npx -y ruvector@0.3.12 rvf create "$SID.rvf" --dimension 384
+npx -y ruvector@0.3.12 hooks trajectory-begin --context "$SID: <human-task>" --agent browser-session
 ```
 
 Per action (click, fill, eval, snapshot, screenshot, navigate):
 
 ```bash
-npx -y ruvector@0.2.27 hooks trajectory-step \
-  --session-id "$SID" --action <tool> --args '<json>' \
-  --selector '<sel>' --result <ok|fail>
+npx -y ruvector@0.3.12 hooks trajectory-step \
+  --action '<tool> <json args, incl. selector>' --result <ok|fail>
 ```
 
 At session-end:
 
 ```bash
-npx -y ruvector@0.2.27 hooks trajectory-end --session-id "$SID" --verdict <pass|fail|partial>
-npx -y ruvector@0.2.27 rvf compact "$SID.rvf"
-npx -y ruvector@0.2.27 rvf export "$SID.rvf" -o "<dest>"
+npx -y ruvector@0.3.12 hooks trajectory-end --quality <1|0.5|0>   # add --success when it passed
+npx -y ruvector@0.3.12 rvf compact "$SID.rvf"
+npx -y ruvector@0.3.12 rvf export "$SID.rvf" -o "<dest>"
 ```
 
 ## MCP tools you use

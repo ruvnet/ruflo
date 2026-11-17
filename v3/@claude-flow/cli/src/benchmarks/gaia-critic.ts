@@ -10,8 +10,7 @@
  * without requiring better search backends.  Expected L1 lift: +3-5pp.
  *
  * Design:
- *  - NEW file only; NOT wired into gaia-bench.ts yet to avoid merge conflicts
- *    with in-flight iter 29/31/34 branches.  Wiring is a small follow-up PR.
+ *  - gaia-bench.ts loads the wrapper when critic review is enabled.
  *  - `criticReview()` — single Sonnet call, returns structured verdict.
  *  - `runGaiaAgentWithCritic()` — orchestration wrapper: runs agent, calls
  *    critic, retries once on "fail".  "uncertain" is treated as "pass" (don't
@@ -24,11 +23,6 @@
  *  - Critic uses claude-sonnet-4-6 (separate from the agent's default Haiku).
  *  - One critic call + one optional retry = max 2 extra Sonnet calls per Q.
  *  - Approximate extra cost per question: ~$0.003-0.005 (well within budget).
- *
- * Plugin sync TODO (follow-up PR after gaia-bench wiring):
- *  - Update plugins/ruflo-workflows/commands/gaia-run.md with --enable-critic flag.
- *  - Update plugins/ruflo-workflows/skills/gaia-debugging/SKILL.md: add critic
- *    as a recommended diagnostic step for wrong-answer analysis.
  *
  * Refs: ADR-135, ADR-133, iter 29 finding, #2156
  */

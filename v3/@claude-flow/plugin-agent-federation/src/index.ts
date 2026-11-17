@@ -69,6 +69,7 @@ export {
 } from './domain/services/discovery-service.js';
 export {
   HandshakeService,
+  HANDSHAKE_SIGNATURE_CONTEXT,
   type HandshakeChallenge,
   type HandshakeChallengeResponse,
   type HandshakeResult,

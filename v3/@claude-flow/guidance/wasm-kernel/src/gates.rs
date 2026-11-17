@@ -48,21 +48,23 @@ fn get_destructive_patterns() -> &'static Vec<Regex> {
 /// Scan content for secret patterns. Returns a vec of redacted matches.
 ///
 /// Each match is redacted: first 4 and last 4 chars visible, middle replaced
-/// with asterisks. Matches shorter than 12 chars are fully masked.
+/// with asterisks. Matches of 12 chars or fewer are fully masked.
 pub fn scan_secrets(content: &str) -> Vec<String> {
     let patterns = get_secret_patterns();
     let mut results = Vec::new();
 
     for pattern in patterns.iter() {
         for mat in pattern.find_iter(content) {
-            let matched = mat.as_str();
-            let redacted = if matched.len() > 12 {
-                let start = &matched[..4];
-                let end = &matched[matched.len() - 4..];
-                let stars = "*".repeat(matched.len() - 8);
+            // Count characters, not bytes: a byte index can land inside a
+            // multi-byte character in the secret value and panic.
+            let chars: Vec<char> = mat.as_str().chars().collect();
+            let redacted = if chars.len() > 12 {
+                let start: String = chars[..4].iter().collect();
+                let end: String = chars[chars.len() - 4..].iter().collect();
+                let stars = "*".repeat(chars.len() - 8);
                 format!("{}{}{}", start, stars, end)
             } else {
-                "*".repeat(matched.len())
+                "*".repeat(chars.len())
             };
             results.push(redacted);
         }
@@ -87,6 +89,18 @@ pub fn detect_destructive(command: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_scan_secrets_non_ascii_value() {
+        // The last 4 bytes of this match start inside an "é", so byte slicing
+        // used to panic (a trap in WASM) instead of returning a result.
+        let matches = scan_secrets(r#"password = "passéé""#);
+        assert_eq!(matches, vec![format!("pass{}séé\"", "*".repeat(11))]);
+
+        // Short non-ASCII matches are fully masked, one star per character.
+        let matches = scan_secrets(r#"pwd="éééé""#);
+        assert_eq!(matches, vec!["*".repeat(10)]);
+    }
 
     #[test]
     fn test_scan_secrets_api_key() {

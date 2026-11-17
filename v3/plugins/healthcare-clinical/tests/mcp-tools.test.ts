@@ -245,6 +245,20 @@ describe('Healthcare Clinical MCP Tools', () => {
         })
       );
     });
+
+    it('should record a collision-resistant SHA-256 query hash in audit entries', async () => {
+      const auditLogger = { log: vi.fn().mockResolvedValue(undefined) };
+      const context = createMockContext({ auditLogger });
+      const input = { patientFeatures: { diagnoses: ['E11.9'] } };
+
+      await patientSimilarityTool.handler(input, context);
+
+      const { createHash } = await import('node:crypto');
+      const expected = createHash('sha256').update(JSON.stringify(input)).digest('hex');
+      const entry = auditLogger.log.mock.calls[0][0];
+      expect(entry.queryHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(entry.queryHash).toBe(expected);
+    });
   });
 
   describe('healthcare/drug-interactions', () => {

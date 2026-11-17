@@ -93,10 +93,40 @@ describe('scanAllowRuleForRisk', () => {
     });
   });
 
+  // Dream Cycle 2026-11-11 (security): `node`/`deno`/`bun`/`php` are
+  // GTFOBins-documented shell-breakout interpreters in the same risk tier as
+  // `python`/`ruby`/`perl` (already covered above) but were absent from the
+  // scanner's word list — this repo's own `.claude/settings.json` carries a
+  // live, fully-unscoped `Bash(node:*)` allow-rule this exact scanner never
+  // flagged. See INTERPRETER_WORDS in settings-risk-scanner.ts.
+  describe('general-purpose interpreter preapprove words (2026-11-11)', () => {
+    it.each([
+      ['Bash(node:*)'],
+      ['Bash(node .claude/*)'],
+      ['Bash(deno:*)'],
+      ['Bash(bun:*)'],
+      ['Bash(php:*)'],
+    ])('flags "%s"', (rule) => {
+      expect(scanAllowRuleForRisk(rule).length).toBeGreaterThan(0);
+    });
+
+    // Adversarial-critic caveat (2026-11-11): the new words are matched with a
+    // boundary-char terminator `(:| |\))`, not a generic `\b`, specifically so
+    // a prefix collision like `nodemon`/`phpunit`/`bunx` does NOT false-positive.
+    // Verified by the critic by hand; pinned here as a real test going forward.
+    it.each([
+      ['Bash(nodemon:*)'],
+      ['Bash(phpunit:*)'],
+      ['Bash(bunx:*)'],
+      ['Bash(denoland:*)'],
+    ])('does not flag the prefix collision "%s"', (rule) => {
+      expect(scanAllowRuleForRisk(rule)).toEqual([]);
+    });
+  });
+
   it.each([
     ['Bash(git:*)'],
     ['Bash(npm test)'],
-    ['Bash(node:*)'],
     ['Read(*)'],
   ])('does not flag "%s"', (rule) => {
     expect(scanAllowRuleForRisk(rule)).toEqual([]);

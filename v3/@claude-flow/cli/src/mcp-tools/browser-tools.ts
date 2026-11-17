@@ -10,6 +10,9 @@ import type { MCPTool, MCPToolResult } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { resolveAgentBrowserLaunch, resolveNpxLaunch } from '../runtime/browser-command.js';
 import { commandArgvError, launchArgsError } from './browser-argv.js';
+import { containedWritePath } from './path-containment.js';
+
+const SCREENSHOT_EXTENSIONS = ['.png', '.jpg', '.jpeg'] as const;
 
 // Session registry for multi-session support
 const browserSessions = new Map<string, {
@@ -325,7 +328,16 @@ export const browserTools: MCPTool[] = [
         fullPage?: boolean;
       };
       const args = ['screenshot'];
-      if (path) args.push(path);
+      if (path) {
+        // The browser writes the image wherever it is told and replaces what
+        // is there, so a caller-named path must stay inside the project.
+        const target = containedWritePath(path, SCREENSHOT_EXTENSIONS);
+        if (!target) {
+          const error = `path must be a new or regular file inside the project ending in ${SCREENSHOT_EXTENSIONS.join(', ')}`;
+          return { content: [{ type: 'text', text: JSON.stringify({ success: false, error }) }], isError: true };
+        }
+        args.push(target);
+      }
       if (fullPage) args.push('--full');
       return execBrowserCommand(args, session);
     },

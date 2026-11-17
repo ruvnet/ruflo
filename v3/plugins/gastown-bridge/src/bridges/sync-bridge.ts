@@ -99,7 +99,7 @@ const AgentDBEntrySchema = z.object({
   key: z.string(),
   value: z.unknown(),
   namespace: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   embedding: z.array(z.number()).optional(),
   createdAt: z.string().datetime().optional(),
   updatedAt: z.string().datetime().optional(),

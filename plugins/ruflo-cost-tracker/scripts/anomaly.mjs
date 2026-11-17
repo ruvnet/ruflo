@@ -221,4 +221,10 @@ function main() {
   if (alertTriggered) process.exit(1);
 }
 
-main();
+try {
+  main();
+} catch (err) {
+  // A failed CLI read (#4711) is an error, not empty data: say why, exit 2.
+  console.error(`[cost-tracker] ${err?.message || err}`);
+  process.exit(2);
+}

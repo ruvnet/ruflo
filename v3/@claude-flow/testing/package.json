@@ -3,6 +3,15 @@
   "version": "3.0.0",
   "type": "module",
   "description": "Testing module - TDD London School framework, test utilities, fixtures, and mock services for V3 Claude-Flow",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/testing"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -37,13 +46,17 @@
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
-    "claude-flow",
     "testing",
     "vitest",
     "tdd",
     "london-school",
     "mocks",
-    "fixtures"
+    "test-fixtures",
+    "test-utilities",
+    "ai-agents",
+    "claude-flow",
+    "ruflo",
+    "typescript"
   ],
   "peerDependencies": {
     "@claude-flow/memory": "^3.0.0",

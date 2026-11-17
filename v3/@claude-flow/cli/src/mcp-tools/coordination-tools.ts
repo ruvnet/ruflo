@@ -435,11 +435,13 @@ export const coordinationTools: MCPTool[] = [
       if (action === 'heartbeat') {
         const nodeId = input.nodeId as string;
 
-        if (store.nodes[nodeId]) {
-          store.nodes[nodeId].lastHeartbeat = new Date().toISOString();
-          store.nodes[nodeId].status = 'active';
-          saveCoordStore(store);
+        if (!store.nodes[nodeId]) {
+          return { success: false, error: 'Node not found' };
         }
+
+        store.nodes[nodeId].lastHeartbeat = new Date().toISOString();
+        store.nodes[nodeId].status = 'active';
+        saveCoordStore(store);
 
         return {
           success: true,

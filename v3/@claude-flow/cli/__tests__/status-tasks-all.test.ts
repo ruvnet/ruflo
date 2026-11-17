@@ -4,7 +4,7 @@
  * read `id` / `agent`, while task_list returns `taskId` / `assignedTo`.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { taskTools } from '../src/mcp-tools/task-tools.js';
@@ -63,6 +63,14 @@ describe('status tasks', () => {
   });
 
   it('status tasks shows the task id and assigned agents in the table', async () => {
+    mkdirSync(join(dir, '.claude-flow/agents'), { recursive: true });
+    writeFileSync(join(dir, '.claude-flow/agents/store.json'), JSON.stringify({
+      agents: {
+        'agent-a': { agentId: 'agent-a', status: 'idle', currentTask: null },
+        'agent-b': { agentId: 'agent-b', status: 'idle', currentTask: null },
+      },
+      version: '3.0.0',
+    }));
     await tool('task_assign').handler({ taskId: pending, agentIds: ['agent-a', 'agent-b'] });
     const printTable = vi.spyOn(output, 'printTable').mockImplementation(() => {});
     vi.spyOn(output, 'writeln').mockImplementation(() => {});

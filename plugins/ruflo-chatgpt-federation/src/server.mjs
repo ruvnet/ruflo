@@ -140,7 +140,7 @@ export function createPublisherService({ relay, keyPath, port } = {}) {
       'Sign a message with this connector\'s own key and publish it to a public swarm channel over its own NIP-42 authenticated relay connection. Use when this connector has something the federation needs — a status, a finding, a result. Requires the caller token; public (pub:) channels only, because publishing to a private channel needs a channel key this connector deliberately does not hold.',
       { channel: z.string().describe('Public channel id, e.g. "pub:announce".'),
         msgType: z.string().describe('Message type, e.g. "Status", "Result", "Question".'),
-        payload: z.record(z.any()).describe('Message body. Never put secrets or credentials here — channel content is readable by every relay member.') },
+        payload: z.record(z.string(), z.any()).describe('Message body. Never put secrets or credentials here — channel content is readable by every relay member.') },
       async ({ channel, msgType, payload }) => {
         // OAuth scope is the real gate. The caller token remains a transitional
         // fallback and only while OAuth is not yet mandatory.

@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.2.15 — 2026-11-06
+- feat: the MCP launcher sets `RUFLO_LAUNCH_SURFACE=plugin`, so the CLI's existing 6h-cached funnel fetch can count people who use ruflo only as a plugin. Every funnel opt-out still stops the request; it takes effect with the next CLI release
+
 ## 0.2.14 — 2026-11-04
 - fix: the `researcher` agent writes its research summary from graph findings and `memory_search` / `memory_retrieve` records, and uses `agentdb_context-synthesize` only for past task outcomes. That tool summarizes validated task episodes and answers `no-eligible-episodes` for documents and graph entities, which is correct and not a gap in the research (#4691, thanks @sparkling)
 

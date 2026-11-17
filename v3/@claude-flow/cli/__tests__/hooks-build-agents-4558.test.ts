@@ -6,7 +6,7 @@
  *   - reported patternsApplied = agents * 3 although no pretrain data is read.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { existsSync, mkdtempSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -53,6 +53,25 @@ describe('hooks_build-agents (#4558)', () => {
     const r = await build({ persist: false });
     expect(r.stats).toMatchObject({ configsGenerated: 5, patternsApplied: 0 });
     expect(r._note).toMatch(/templates/);
+  });
+
+  it('rejects an absolute outputDir outside the project without writing', async () => {
+    const r = await build({ outputDir: join(elsewhere, 'out') });
+    expect(r).toMatchObject({ success: false, error: expect.stringMatching(/inside the project/) });
+    expect(existsSync(join(elsewhere, 'out'))).toBe(false);
+  });
+
+  it('rejects an outputDir that escapes the project through a symlink', async () => {
+    symlinkSync(elsewhere, join(project, 'link'));
+    const r = await build({ outputDir: 'link/out' });
+    expect(r).toMatchObject({ success: false, error: expect.stringMatching(/inside the project/) });
+    expect(existsSync(join(elsewhere, 'out'))).toBe(false);
+  });
+
+  it('rejects a format other than yaml/json (it is spliced into file names)', async () => {
+    const r = await build({ format: 'json/../../x' });
+    expect(r).toMatchObject({ success: false, error: expect.stringMatching(/format/) });
+    expect(existsSync(join(project, 'agents'))).toBe(false);
   });
 
   it('still honours an explicit absolute outputDir (control)', async () => {

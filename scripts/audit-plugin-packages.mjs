@@ -27,6 +27,13 @@
  *      but the build only emits .cjs". CI builds the plugins before running
  *      this script so check D is live there.
  *
+ *   E. Dependency confusion: a dependency name (any field) that is NOT
+ *      registered on npm. npm installs optionalDependencies automatically, so
+ *      whoever registers the name first runs code on every install. The
+ *      names in UNREGISTERED_NAMES were checked with `npm view <name>`
+ *      (E404); the source can still try a dynamic import, but the manifest
+ *      must not declare them until they are published under our control.
+ *
  * Usage:
  *   node scripts/audit-plugin-packages.mjs            # audit, exit 1 on any issue
  *   node scripts/audit-plugin-packages.mjs --json     # machine-readable report
@@ -126,6 +133,17 @@ const plugins = existsSync(PLUGINS_DIR)
     })
   : [];
 
+// Unscoped names that 404 on npm (checked 2026-11-08 with `npm view <name> name`).
+const UNREGISTERED_NAMES = new Set([
+  'micro-hnsw-wasm',
+  'ruvector-economy-wasm',
+  'ruvector-learning-wasm',
+  'ruvector-sparse-inference-wasm',
+  'ruvector-hyperbolic-hnsw-wasm',
+  'ruvector-exotic-wasm',
+  'ruvector-nervous-system-wasm',
+]);
+
 const issues = [];
 const note = (plugin, code, message) => issues.push({ plugin, code, message });
 
@@ -164,6 +182,15 @@ for (const dir of plugins) {
     note(dir, 'B', `peerDependency "${name}": "${range}" can't resolve any @claude-flow publish — they're all 3.x prereleases. Use ">=${String(range).replace(/^[\^~>=\s]+/, '')}-0" or "*".`);
   }
 
+  // --- Check E: unregistered (squattable) dependency names
+  for (const field of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
+    for (const name of Object.keys(pkg[field] || {})) {
+      if (UNREGISTERED_NAMES.has(name)) {
+        note(dir, 'E', `${field} "${name}" is not registered on npm — anyone can publish it and npm will install it. Remove it from the manifest.`);
+      }
+    }
+  }
+
   // --- Check C: export-ish paths must be covered by `files`
   const exportPaths = collectExportPaths(pkg);
   for (const rel of exportPaths) {
@@ -198,7 +225,7 @@ if (JSON_OUT) {
   if (issues.length === 0) {
     console.log('  ✓ no install-safety issues');
   } else {
-    const labels = { A: 'unpublished @claude-flow dep', B: 'prerelease-unsafe peer range', C: 'export not in files', D: 'export missing after build', PARSE: 'invalid package.json' };
+    const labels = { A: 'unpublished @claude-flow dep', B: 'prerelease-unsafe peer range', C: 'export not in files', D: 'export missing after build', E: 'unregistered dependency name', PARSE: 'invalid package.json' };
     for (const i of issues) {
       console.log(`  ✗ [${i.code}] ${i.plugin}: ${i.message}`);
     }

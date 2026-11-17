@@ -40,7 +40,7 @@ export const register: Register = (on, options) => {
 
   if (s.opts.guard) {
     on('tool.call', async ($, e, next) => {
-      const reason = verdict(e.tool, e)
+      const reason = verdict(e.tool, e, s.opts)
       if (reason === undefined) return next(e)
       s.stats.blocked++
       await flush($, s)

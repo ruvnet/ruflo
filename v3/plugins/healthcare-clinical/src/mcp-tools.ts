@@ -9,6 +9,7 @@
  * - ontology-navigate: Navigate medical ontology hierarchies
  */
 
+import { createHash } from 'node:crypto';
 import type {
   MCPTool,
   MCPToolResult,
@@ -89,13 +90,9 @@ async function logAudit(
 }
 
 function hashInput(input: unknown): string {
-  const str = JSON.stringify(input);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(16);
+  // SHA-256: a 32-bit rolling hash collides trivially, which lets two
+  // different queries share one audit fingerprint.
+  return createHash('sha256').update(JSON.stringify(input)).digest('hex');
 }
 
 // ============================================================================

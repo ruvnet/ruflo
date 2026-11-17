@@ -48,10 +48,10 @@ grep -q "## Namespace convention" "$ROOT/README.md" \
   && ok || bad "Namespace convention section missing"
 
 # 1. Plugin version + new keywords
-step "1. plugin.json declares version 0.4.11 with rabitq + namespace-convention keywords"
+step "1. plugin.json declares version 0.4.13 with rabitq + namespace-convention keywords"
 v=$(grep -E '"version"[[:space:]]*:' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.4.11" ]]; then
-  bad "expected 0.4.11, got '$v'"
+if [[ "$v" != "0.4.13" ]]; then
+  bad "expected 0.4.13, got '$v'"
 else
   miss=""
   for k in rabitq quantization namespace-convention controller-bridge; do

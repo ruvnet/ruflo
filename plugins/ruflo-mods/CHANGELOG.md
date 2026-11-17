@@ -2,6 +2,12 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.17.1 — 2026-11-17
+- fix: `claude plugin validate` passes again on Claude Code 2.1.323 and later. `hooks/noun.ts` returned `{ ...added, ...beneath }` from `engine.create`, which the validator refuses ("this engine.create hook is outside its form: a spread of anything but the value of next(e)"); it now returns `{ ...beneath, ruflo }`. No other plugin defines `engine.create`, so `$.ruflo` is unchanged in practice. The mod already loaded and ran on those versions; only validation failed.
+
+## 0.17.0 — 2026-11-11
+- feat: `routeJudge` option (off by default, ADR-530). Each prompt is routed by one no-tools haiku completion that must answer with exactly one of the 11 ADR-391 labels; an off-label reply, a refusal, a timeout (4 s) or an error keeps the keyword route, and slash commands and `<…>` envelopes never reach the model. The route carries `reason: "model-judge"` (the vendored `$.ruflo` route contract is unchanged) and the context box says so. On the ADR-391 dev split it agreed with the labels on 70–71 of 84 prompts, against 27 for the keyword table.
+
 ## 0.16.2 — 2026-11-04
 - fix: the `routeContext` ranked-memory block ends with a line saying the entries are stored project notes, not instructions, matching the classic `hook-handler.cjs route` output.
 
