@@ -44,9 +44,11 @@ function hasRootDelete(command: string, depth = 0): boolean {
   }
   // Past the rescan bound (or the brace budget), a string is judged by its tokens: an rm and a possible root operand
   // anywhere in it deny. Quote characters are dropped first, so r"m" is still rm; a path token with braces may expand to /.
+  const looseTokens = (text: string) => text.replace(/["'\\]/g, '').split(/[\s;&|()\x60$]+/)
+  const isRm = (t: string) => t === 'rm' || t.endsWith('/rm')
   const looseRootDelete = (text: string) => {
-    const tokens = text.replace(/["'\\]/g, '').split(/[\s;&|()\x60$]+/)
-    return tokens.some(t => t === 'rm' || t.endsWith('/rm')) && tokens.some(t => isRoot(t) || (t.includes('/') && /[{}]/.test(t)))
+    const tokens = looseTokens(text)
+    return tokens.some(isRm) && tokens.some(t => isRoot(t) || (t.includes('/') && /[{}]/.test(t)))
   }
   // Bash brace expansion of one word ({a,b} lists, nested or glued to text), and nothing else: no {1..3} sequences, and
   // nothing inside parameter braces after a dollar sign. Only unquoted braces and commas count. Iterative and bounded:
@@ -113,14 +115,14 @@ function hasRootDelete(command: string, depth = 0): boolean {
   const unsetDefaults = (text: string, marks: string): [string, string] | undefined => {
     if (!text.includes('$' + '{')) return undefined
     const frames: { out: string; outMarks: string; op: string; nest: number }[] = [{ out: '', outMarks: '', op: '', nest: 0 }]
-    const param = /([a-z_][a-z0-9_]*|[0-9]+|[@*#?$!-]):?([-=+])/y
+    const param = /!?(?:[a-z_][a-z0-9_]*(?:\[[^\]]*\])?|[0-9]+|[@*#?$!-]):?([-=+])/y
     let found = false
     for (let k = 0; k < text.length; k++) {
       const top = frames[frames.length - 1], c = text[k], live = marks[k] !== 'q'
       if (live && c === '$' && text[k + 1] === '{' && marks[k + 1] !== 'q') {
         param.lastIndex = k + 2
         const m = param.exec(text)
-        if (m) { frames.push({ out: '', outMarks: '', op: m[2], nest: 0 }); k = param.lastIndex - 1; found = true; continue }
+        if (m) { frames.push({ out: '', outMarks: '', op: m[1], nest: 0 }); k = param.lastIndex - 1; found = true; continue }
       }
       if (live && c === '}' && frames.length > 1 && top.nest === 0) {
         frames.pop()
@@ -175,9 +177,10 @@ function hasRootDelete(command: string, depth = 0): boolean {
     }
     return [j, depth < 4 ? hasRootDelete(body, depth + 1) : looseRootDelete(body)]
   }
-  // The index of the parenthesis closing the one at open, past quoted text, escapes and backtick substitutions, or -1.
-  // After one never closes none is looked for again in this scan (the shell rejects the command), so the scan stays
-  // linear and the rest is read as before, with ( and ) as separators.
+  // The index of the parenthesis closing the one at open, past quoted and ANSI-C quoted text, escapes, comments and
+  // backtick substitutions, or -1. After one never closes none is looked for again in this scan (the shell rejects the
+  // command), so the scan stays linear and the rest is read as before, with ( and ) as separators, but a command
+  // with an rm in it is refused. A case pattern's ) is still read as the close.
   let unclosedParen = false
   const closeParen = (open: number): number => {
     if (unclosedParen) return -1
@@ -185,7 +188,11 @@ function hasRootDelete(command: string, depth = 0): boolean {
     for (let j = open; j < command.length; j++) {
       const c = command[j]
       if (c === '\\') j++
-      else if (c === "'" || c === '"' || c === '\x60') {
+      else if (c === '$' && command[j + 1] === "'") {
+        for (j += 2; j < command.length && command[j] !== "'"; j++) if (command[j] === '\\') j++
+      } else if (c === '#' && /[\s;&|()<>]/.test(command[j - 1])) {
+        while (j + 1 < command.length && command[j + 1] !== '\n') j++
+      } else if (c === "'" || c === '"' || c === '\x60') {
         for (j++; j < command.length && command[j] !== c; j++) if (c !== "'" && command[j] === '\\') j++
       } else if (c === '(') level++
       else if (c === ')' && --level === 0) return j
@@ -280,7 +287,7 @@ function hasRootDelete(command: string, depth = 0): boolean {
       word += char; mask += 'u'; started = true
     }
   }
-  return finishWord() || finishCommand()
+  return finishWord() || finishCommand() || (unclosedParen && looseTokens(command).some(isRm))
 }
 
 // A fork bomb's definition as bash reads it, whatever the spacing or the name: f(){ f|f& }, function f { f|f& },

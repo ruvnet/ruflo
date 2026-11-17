@@ -413,6 +413,16 @@ describe('#3698 root deletion guard parity', () => {
     ['rm -rf /$((0))', false],
     ['echo "$(date)" /', false],
     ['echo $(echo ")"); ls /', false],
+    // $'...' escapes and comments do not close a $(...); one that never closes in a command with an rm is refused.
+    ["rm -rf $(echo $'\\'')/", true],
+    ['rm -rf $(: # )\n)/', true],
+    ["rm -rf $(echo $'\\'') ; rm -rf $(echo)/", true],
+    ['rm -rf $(echo $#)/', true],
+    ['rm -rf "$(pwd)"/*', true],
+    ['rm -rf build $(echo', true],
+    ['echo $(date', false],
+    ["rm -rf $(echo $'\\'')/tmp", false],
+    ['rm -rf $(: # )\n)/tmp', false],
     // #4742: a parameter's default is a word the shell uses when it is unset; single quotes keep it literal.
     ['rm -rf ${X:-/}', true],
     ['rm -rf "${X:-/}"', true],
@@ -427,6 +437,11 @@ describe('#3698 root deletion guard parity', () => {
     ['rm -rf ${TMPDIR:-/tmp}/build', false],
     ['rm -rf "${TMPDIR:-/tmp}/x"', false],
     ['rm -rf ${v:-{/,}}', false],
+    // Array elements and indirect parameters take defaults too.
+    ['rm -rf ${A[0]:-/}', true],
+    ['rm -rf ${!X:-/}', true],
+    ['rm -rf ${A[@]-/}', true],
+    ['rm -rf ${A[0]:-/tmp}/x', false],
     // $'...' is decoded as bash does: escapes stand for the characters they name, \0 ends the string, \' does not close it.
     ["rm -rf $'/'", true],
     ["rm -rf $'\\x2f'", true],
