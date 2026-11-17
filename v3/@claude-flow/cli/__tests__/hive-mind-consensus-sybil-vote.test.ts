@@ -23,11 +23,14 @@
  * process restart/reopen) after each denial.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hiveMindTools, getHiveTokenForCli } from '../src/mcp-tools/hive-mind-tools.js';
+import { agentTools } from '../src/mcp-tools/agent-tools.js';
+
+vi.mock('../src/ruvector/graph-backend.js', () => ({ addNode: vi.fn() }));
 
 // ADR-476: these tests model an UNTRUSTED remote (HTTP) caller -- the only
 // caller class the capability token is a boundary for. Local stdio/CLI
@@ -57,10 +60,17 @@ describe('hive-mind_consensus / join / leave capability-token authentication', (
   let dir: string;
   let prevCwd: string | undefined;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     dir = mkdtempSync(join(tmpdir(), 'hive-mind-sybil-'));
     prevCwd = process.env.CLAUDE_FLOW_CWD;
     process.env.CLAUDE_FLOW_CWD = dir;
+    // #4727: only registered agents may join; registration does not join them.
+    for (let i = 0; i < 5; i++) {
+      const agent = await agentTools.find(t => t.name === 'agent_spawn')!.handler({
+        agentId: `worker-${i}`, agentType: 'worker', model: 'sonnet',
+      }) as any;
+      expect(agent.success).toBe(true);
+    }
   });
 
   afterEach(() => {

@@ -68,10 +68,10 @@
         "source": "git-subdir",
         "url": "https://github.com/ruvnet/agentdb.git",
         "path": "plugins/agentdb",
-        "ref": "plugin-v3.3.0",
-        "sha": "d3df60d4f94f29199373fd45e837085c0d92a2b2"
+        "ref": "main",
+        "sha": "27678c302e6c70d6db800c9ad1259b41800f420e"
       },
-      "description": "AgentDB (external: maintained in ruvnet/agentdb, pinned to plugin-v3.3.0): agentdb's own standalone MCP server pinned to agentdb@3.3.0 (vector memory with get/list/update/delete for records, patterns and skills, hybrid keyword + vector episode search and an opt-in local cross-encoder, reflexion, skills, outcome feedback, capabilities report), a memory-specialist agent, 3 skills, /agentdb-status, and the agentdb mod guard that keeps secrets out of memory and refuses delete/reset unless allowed. Complements ruflo-agentdb, which reaches AgentDB through ruflo's server"
+      "description": "AgentDB (external: maintained in ruvnet/agentdb, pinned to commit 27678c3, plugin 3.6.0): agentdb's own standalone MCP server pinned to agentdb@3.6.0 (vector memory with get/list/update/delete for records, patterns and skills, hybrid keyword + vector episode search and an opt-in local cross-encoder, an opt-in aidefence injection guard on memory writes, reflexion, skills, outcome feedback, capabilities report), a memory-specialist agent, 3 skills, /agentdb-status, and the agentdb mod guard that keeps secrets out of memory and refuses delete/reset unless allowed. Complements ruflo-agentdb, which reaches AgentDB through ruflo's server"
     },
     {
       "name": "agentic-flow",
@@ -79,10 +79,10 @@
         "source": "git-subdir",
         "url": "https://github.com/ruvnet/agentic-flow.git",
         "path": "plugins/agentic-flow",
-        "ref": "plugin-v3.1.0",
-        "sha": "2c86073bf55a105282bbdd4476fc18f5b7e6f97d"
+        "ref": "main",
+        "sha": "d19737b8574c956d17d695f09113e8b445d965b0"
       },
-      "description": "agentic-flow (external: maintained in ruvnet/agentic-flow, pinned to plugin-v3.1.0): the agentic-flow MCP server pinned to agentic-flow@3.1.0 (ReasoningBank learning, multi-provider routing, autopilot learning; readonly profile by default, no tool pre-approved), 2 agents, 3 skills, /agentic-flow-status, and a mod guard on agentic_flow_agent with /agentic-flow-guard"
+      "description": "agentic-flow (external: maintained in ruvnet/agentic-flow, pinned to commit d19737b, plugin 3.4.0): the agentic-flow MCP server pinned to agentic-flow@3.4.0 (ReasoningBank learning, ecosystem tools prompt_injection_scan, swarm_partition_tasks, sublinear_solve, sublinear_pagerank and ecosystem_status, multi-provider routing, autopilot learning; readonly profile by default, no tool pre-approved), 2 agents, 4 skills, /agentic-flow-status, and a mod guard on agentic_flow_agent with /agentic-flow-guard"
     },
     {
       "name": "ruflo-docs",

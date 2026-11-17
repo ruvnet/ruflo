@@ -16,6 +16,13 @@
  *        Issue #1880: scheduled runners use this to distinguish a
  *        "needs install+build" environment from a real verification
  *        failure, so we stop filing recurring issues on every cron run.
+ *
+ * JSON output carries `status`: 'ok' | 'fail' | 'not-built' |
+ * 'no-source-entries'. 'not-built' (exit 2, `precondition: 'dist-not-built'`)
+ * is reported only when the signature is valid, no source entry regressed
+ * or is missing, and NONE of the manifest's dist/ entries exist on disk —
+ * i.e. the build never ran. If any dist/ entry exists, missing dist files
+ * are a real failure (exit 1), not a precondition (#4885).
  */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -58,6 +65,7 @@ const skippedGenerated = allFixes.length - selectedFixes.length;
 if (sourceOnly && selectedFixes.length === 0) {
   const result = {
     ok: false,
+    status: 'no-source-entries',
     scope: 'source-only',
     precondition: 'no-source-entries',
     signature: sig,
@@ -88,32 +96,58 @@ const summary = {
   skippedGenerated,
 };
 
-// Issue #1880 / #2528 — heuristic: if the only missing entries are
-// generated `/dist/` artifacts and no marker regressed, the checkout was
-// source-only (dependencies may be installed, but no build ran). That's a
-// precondition failure, not a regression. Source-file drift is still
-// reported in the JSON summary, but the operator action is the same:
-// install + build before verifying the dist-layer witness entries.
-const allMissing = fileResults.length > 0
-                && summary.missing === fileResults.length;
-const missingResults = fileResults.filter(r => r.status === 'missing');
-const missingOnlyDist = missingResults.length > 0
-  && missingResults.every(r => isGeneratedDistPath(r.file));
-const referencesDist = fileResults.some(r => isGeneratedDistPath(r.file));
-if (!sourceOnly && ((allMissing && referencesDist) || (missingOnlyDist && summary.regressed === 0))) {
+// Issue #1880 / #2528 / #4885 — a checkout where the build never ran is a
+// precondition failure (exit 2), not an integrity failure. That verdict is
+// narrow on purpose so it can never mask a real one:
+//   - the signature block must be fully valid (a tampered manifest on an
+//     unbuilt checkout still fails with exit 1);
+//   - no source (non-dist) entry may be regressed or missing;
+//   - NO dist/ entry may exist on disk. One deleted or renamed dist file in
+//     an otherwise built tree is a missing artifact (exit 1), not "not built".
+const sigOk = sig.signatureValid && sig.manifestHashOk && sig.publicKeyReproducible;
+const distResults = fileResults.filter(r => isGeneratedDistPath(r.file));
+const distMissing = distResults.filter(r => r.status === 'missing').length;
+const sourceMissing = summary.missing - distMissing;
+const notBuilt = !sourceOnly
+  && sigOk
+  && distResults.length > 0
+  && distMissing === distResults.length
+  && sourceMissing === 0
+  && summary.regressed === 0;
+
+if (notBuilt) {
+  const notBuiltInfo = {
+    distEntries: distResults.length,
+    sourceEntries: fileResults.length - distResults.length,
+    distDirs: [...new Set(distResults.map(r => distDirOf(r.file)))].sort(),
+  };
   if (asJson) {
     console.log(JSON.stringify(
-      { ok: false, scope: 'full', precondition: 'dist-not-built', signature: sig, summary },
+      {
+        ok: false,
+        status: 'not-built',
+        scope: 'full',
+        precondition: 'dist-not-built',
+        notBuilt: notBuiltInfo,
+        signature: sig,
+        summary,
+        results: fileResults,
+      },
       null, 2
     ));
   } else {
     console.error(
-      `verify.mjs: every manifest entry is missing and the manifest references\n` +
-      `dist/ artifacts. The checkout appears to be source-only (no build run).\n` +
+      `verify.mjs: NOT BUILT — precondition not met, this is not an integrity failure.\n` +
       `\n` +
-      `Fix: from the repo root, run \`npm ci && npm run build\` (or the\n` +
-      `equivalent for the workspaces witness markers reference) before\n` +
-      `invoking this script. See #1880 for the full diagnosis.`
+      `  manifest signature:  valid\n` +
+      `  source entries:      ${notBuiltInfo.sourceEntries} checked — pass=${summary.pass} drift=${summary.drift} regressed=0 missing=0\n` +
+      `  dist/ entries:       ${notBuiltInfo.distEntries} not verified — none of them exist on disk\n` +
+      `  unbuilt dist dirs:   ${notBuiltInfo.distDirs.join(', ')}\n` +
+      `\n` +
+      `The dist/ layer cannot be verified until it is built. Build it, then re-run:\n` +
+      `  (cd v3 && pnpm install --frozen-lockfile && pnpm --recursive run build)\n` +
+      `To verify only the source layer without building, pass --source-only.\n` +
+      `Exit 2 = precondition (not built); exit 1 = verification failure. See #1880, #4885.`
     );
   }
   process.exit(2);
@@ -125,7 +159,7 @@ const ok = sig.signatureValid && sig.manifestHashOk && sig.publicKeyReproducible
 
 if (asJson) {
   console.log(JSON.stringify(
-    { ok, scope: sourceOnly ? 'source-only' : 'full', signature: sig, summary, results: fileResults },
+    { ok, status: ok ? 'ok' : 'fail', scope: sourceOnly ? 'source-only' : 'full', signature: sig, summary, results: fileResults },
     null,
     2
   ));
@@ -238,6 +272,11 @@ function verifySignature(witness, options = {}) {
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function distDirOf(file) {
+  const parts = file.split(/[\\/]/);
+  return parts.slice(0, parts.indexOf('dist') + 1).join('/');
 }
 
 function isGeneratedDistPath(file) {

@@ -1,6 +1,7 @@
 {
+  "homepage": "https://ruv.io",
   "name": "@claude-flow/plugin-code-intelligence",
-  "version": "3.0.0-alpha.3",
+  "version": "3.0.0-alpha.4",
   "description": "Advanced code intelligence plugin for Claude Flow V3 - semantic search, architecture analysis, refactoring impact, module splitting, and pattern learning",
   "type": "module",
   "main": "./dist/index.js",
@@ -44,6 +45,7 @@
     "tag": "v3alpha"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
     "plugin",
     "code-intelligence",
@@ -57,11 +59,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/plugins/code-intelligence"
   },
   "dependencies": {
-    "zod": "^3.23.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -73,5 +75,9 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "homepage": "https://ruv.io",
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
   }
 }

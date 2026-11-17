@@ -133,3 +133,14 @@ documented. Also re-verified on 0.3.3: `optimize` and `hooks force-learn` run,
 graph-mincut` still fails, `compare` still does not exist, `mcp tools` lists 97.
 `@ruvector/pi-brain` is still needed for `brain`; `sona` falls back to JS. The
 filename keeps the original number so links stay valid.
+
+## Addendum (2026-11-06) — pin moved to ruvector 0.3.13
+
+`scripts/smoke.sh` passes 14/14 against 0.3.13. 0.3.13 adds `diskann
+build|search` and the `diskann_build`/`diskann_search` MCP tools (118 tools in
+`tools/list`; `mcp tools` still prints 97), RaBitQ-backed hook recall in
+long-lived processes above `RUVECTOR_RABITQ_THRESHOLD` (default 5000), and
+moves to `@ruvector/attention ^2.2.3` (GHSA-p62c-q7fc-qmg9) and
+`@ruvector/sona ^0.1.11`. A DiskANN build + search round trip was run on
+0.3.13 with the `diskann` extra. The agent no longer lists `sona_*`,
+`attention_*` or `gnn_*` MCP tools: the server never registered them.

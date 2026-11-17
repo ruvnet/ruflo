@@ -160,7 +160,7 @@ export const wasmCreateCommand: Command = {
         info = await wasm.createWasmAgent({
           model: ctx.flags.model as string | undefined,
           instructions: ctx.flags.instructions as string | undefined,
-          maxTurns: ctx.flags['max-turns'] as number | undefined,
+          maxTurns: ctx.flags.maxTurns as number | undefined,
         });
       }
 
@@ -219,7 +219,7 @@ export const wasmPromptCommand: Command = {
     { command: 'claude-flow agent wasm-prompt -a wasm-agent-1-abc -i "Write a hello world"', description: 'Send prompt to WASM agent' },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const agentId = ctx.flags['agent-id'] as string || ctx.args[0];
+    const agentId = ctx.flags.agentId as string || ctx.args[0];
     const promptInput = ctx.flags.input as string || ctx.args[1];
 
     if (!agentId) {

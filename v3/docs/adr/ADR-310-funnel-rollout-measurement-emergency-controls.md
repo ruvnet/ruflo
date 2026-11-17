@@ -80,6 +80,6 @@ Disclosure acceptance, disable rate, signup initiation, account completion, prox
 Take an existing **offline** installation, upgrade it, and run the CLI in TTY, non-TTY, CI, screen-reader/reduced-motion, and enterprise-disabled configurations. Prove that:
 
 1. No promotional content appears before the ADR-301 disclosure.
-2. No network request occurs without opt-in (verified by the zero-unexpected-network-calls gate under packet capture).
+2. No network request occurs without opt-in, except the ADR-309 operational `GET /v1/messages` fetch ([Legitimate Interest Assessment](../../../docs/privacy/funnel-legitimate-interest-assessment.md)). Every opt-out source above disables that fetch too (verified by `v3/@claude-flow/cli/__tests__/funnel-telemetry-optout.test.ts`; the packet-capture gate this rule originally named does not exist in CI yet).
 3. `RUFLO_FUNNEL=0` suppresses every funnel surface (ADR-301, 302, 303).
 4. All core ruflo commands remain behaviorally identical — exit codes, operational output, and latency within gate thresholds — across every configuration above.

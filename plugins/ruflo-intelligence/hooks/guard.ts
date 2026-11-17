@@ -26,7 +26,8 @@ export function verdict(tool: string, input: unknown, opts: ModOptions): string 
   if (texts.some(hasSecret)) {
     return 'ruflo-intelligence: this learning write holds what looks like a secret (a key, token or password). Learned patterns are recalled and can be published, so leave it out.'
   }
-  if (name === 'hooks_transfer' && texts.some(t => EMAIL.test(t))) {
+  // Personal data only while `piiGuard` is on; the secret check above does not depend on it.
+  if (opts.piiGuard && name === 'hooks_transfer' && texts.some(t => EMAIL.test(t))) {
     return 'ruflo-intelligence: this transfer holds an email address, and IPFS is public. Strip personal data first (aidefence_has_pii), then publish.'
   }
   return undefined

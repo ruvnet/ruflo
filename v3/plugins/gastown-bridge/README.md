@@ -1,5 +1,42 @@
 # @claude-flow/plugin-gastown-bridge
 
+<!-- adr-356:quickstart:start -->
+![Animated diagram: an agent calls a gt_ MCP tool, inputs are validated, and the bridge runs the gt or bd CLI against Gas Town](https://raw.githubusercontent.com/ruvnet/ruflo/main/v3/plugins/gastown-bridge/assets/gastown-flow.svg)
+
+**@claude-flow/plugin-gastown-bridge** — A Ruflo plugin that lets agents drive the [Gas Town](https://github.com/steveyegge/gastown) orchestrator (beads, convoys, formulas) through validated MCP tools that call the `gt` and `bd` CLIs.
+
+**Supported environments:** Node.js 20+ · ESM and CommonJS · the `gt`/`bd` CLIs for live calls
+
+## Quickstart
+
+```bash
+npm install @claude-flow/plugin-gastown-bridge
+```
+
+```js
+import { GasTownBridgePlugin, validateBeadId } from '@claude-flow/plugin-gastown-bridge';
+
+const plugin = new GasTownBridgePlugin();
+console.log('tools:', plugin.getMCPTools().length);
+console.log('bead id:', validateBeadId('gt-abc12'));
+try {
+  validateBeadId('gt-abc; echo injected');
+} catch (err) {
+  console.log('rejected:', err.code);
+}
+```
+
+Expected output:
+
+```text
+tools: 20
+bead id: gt-abc12
+rejected: GT_INVALID_BEAD_ID
+```
+
+Install it into a Ruflo project with [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli): `npx @claude-flow/cli@latest plugins install -n @claude-flow/plugin-gastown-bridge`.
+<!-- adr-356:quickstart:end -->
+
 > **WASM-Accelerated Bridge to Steve Yegge's Gas Town Multi-Agent Orchestrator**
 
 [![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-gastown-bridge.svg)](https://www.npmjs.com/package/@claude-flow/plugin-gastown-bridge)
@@ -647,3 +684,9 @@ MIT License - see [LICENSE](./LICENSE) for details.
 ---
 
 **Built with ❤️ by the Claude Flow Team**
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/plugins/gastown-bridge)
+<!-- adr-356:footer:end -->

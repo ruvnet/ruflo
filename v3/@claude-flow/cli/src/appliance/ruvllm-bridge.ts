@@ -203,10 +203,11 @@ export class RuvllmBridge {
     const start = performance.now();
     const modelName = request.model ?? this.config.defaultModel ?? this.activeModel ?? '';
 
-    // Tier 1: Agent Booster
-    const booster = this.tryAgentBooster(request.prompt);
+    // Tier 1: deterministic codemod hint (ADR-143). The prompt carries no code,
+    // so nothing can be applied here; this points the caller at hooks_codemod.
+    const booster = this.tryCodemodHint(request.prompt);
     if (booster !== null) {
-      return { text: booster, model: 'agent-booster', tokensUsed: 0, latencyMs: performance.now() - start, tier: 1, cached: false };
+      return { text: booster, model: 'codemod', tokensUsed: 0, latencyMs: performance.now() - start, tier: 1, cached: false };
     }
 
     // Tier 2: Local model (GGUF engine preferred, then @ruvector/core)
@@ -251,7 +252,7 @@ export class RuvllmBridge {
     const complexity = estimateComplexity(description);
     const words = description.split(/\s+/).length;
 
-    if (words < 15 && complexity < 0.25) return { tier: 1, model: 'agent-booster', confidence: 0.9 };
+    if (words < 15 && complexity < 0.25) return { tier: 1, model: 'codemod', confidence: 0.9 };
     if (complexity < 0.55 && this.activeModel) return { tier: 2, model: this.activeModel, confidence: 0.7 };
     return { tier: 3, model: 'cloud', confidence: 0.6 };
   }
@@ -310,16 +311,20 @@ export class RuvllmBridge {
     try { return await import(pkg); } catch { return null; }
   }
 
-  /** Tier-1 Agent Booster: handle trivial transforms without any LLM. */
-  private tryAgentBooster(prompt: string): string | null {
+  /**
+   * Tier-1 codemod hint for trivial transforms, no LLM. Not agent-booster:
+   * that engine merges a code snippet into code (hooks_fast-apply) and cannot
+   * act on an instruction alone.
+   */
+  private tryCodemodHint(prompt: string): string | null {
     const t = prompt.trim();
     if (t.length > 200) return null;
     if (/^(convert|change)\s+(var|let)\s+to\s+const$/i.test(t)) {
-      return 'Use the Edit tool to replace `var`/`let` declarations with `const`.';
+      return 'Call hooks_codemod with intent="var-to-const" (deterministic, $0), or use the Edit tool.';
     }
     if (/^remove\s+console\.(log|warn|error|debug|info)$/i.test(t)) {
       const m = t.toLowerCase().match(/console\.(\w+)/)?.[1] ?? 'log';
-      return `Use the Edit tool to remove all \`console.${m}\` calls.`;
+      return `Call hooks_codemod with intent="remove-console" (deterministic, $0), or use the Edit tool to remove all \`console.${m}\` calls.`;
     }
     return null;
   }

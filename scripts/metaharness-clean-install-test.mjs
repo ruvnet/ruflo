@@ -47,9 +47,10 @@ async function main() {
 
   const specs = [];
   for (const name of Object.keys(API_CONTRACT)) {
-    const range = pkg.optionalDependencies?.[name];
+    // ADR-526: @metaharness/darwin is a regular dependency; the rest stay optional.
+    const range = pkg.dependencies?.[name] ?? pkg.optionalDependencies?.[name];
     if (!range) {
-      results.push({ name, status: 'FAIL', note: 'not declared in optionalDependencies — a clean install never materializes it' });
+      results.push({ name, status: 'FAIL', note: 'not declared in dependencies or optionalDependencies — a clean install never materializes it' });
       failed = true;
       continue;
     }

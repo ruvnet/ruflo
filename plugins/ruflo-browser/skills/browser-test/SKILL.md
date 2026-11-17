@@ -25,7 +25,7 @@ Automated UI testing. **Now backed by a recorded RVF session container** instead
 4. **Validate** with `browser_get-text` / `browser_get-value` / `browser_get-title` / `browser_get-url`. Validation outcomes go into `findings.md` inside the RVF container.
 5. **Screenshot** before / after key interactions for visual regression. Filenames follow `<step-id>.png`.
 6. **Snapshot** the accessibility tree at navigation boundaries.
-7. **End** the session: `trajectory-end --verdict pass|fail`, `rvf compact`, AgentDB index in `browser-sessions`.
+7. **End** the session: `trajectory-end --quality 1 --success` (pass) or `--quality 0` (fail), `rvf compact`, AgentDB index in `browser-sessions`.
 8. **(Optional) Diff against `--against <prior-session-id>`**: invoke `browser-screenshot-diff` to compare the new run with a baseline.
 
 ## Navigation

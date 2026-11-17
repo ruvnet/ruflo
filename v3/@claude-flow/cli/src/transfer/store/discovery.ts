@@ -17,6 +17,7 @@ import {
   DEFAULT_STORE_CONFIG,
   deserializeRegistry,
 } from './registry.js';
+import { verifyEd25519 } from './security.js';
 
 /**
  * Discovery result
@@ -114,7 +115,7 @@ export class PatternDiscovery {
 
     // Verify registry if trusted
     if (knownRegistry.trusted && registry.registrySignature) {
-      const verified = this.verifyRegistry(registry, knownRegistry.publicKey);
+      const verified = await this.verifyRegistry(registry, knownRegistry.publicKey);
       if (!verified) {
         console.warn(`[Discovery] Warning: Registry signature verification failed`);
       }
@@ -391,14 +392,31 @@ export class PatternDiscovery {
   /**
    * Verify registry signature
    */
-  verifyRegistry(registry: PatternRegistry, expectedPublicKey: string): boolean {
+  async verifyRegistry(registry: PatternRegistry, expectedPublicKey: string): Promise<boolean> {
     if (!registry.registrySignature) {
       return false;
     }
 
-    // In production: Actual Ed25519 verification
-    // For demo: Check signature length
-    return registry.registrySignature.length === 64;
+    // Verify the signature over the serialized registry content against the
+    // expected key (#4750). Replaces the old length === 64 stub.
+    const payload = Buffer.from(
+      JSON.stringify({
+        version: registry.version,
+        updatedAt: registry.updatedAt,
+        ipnsName: registry.ipnsName,
+        previousCid: registry.previousCid,
+        patterns: registry.patterns,
+        categories: registry.categories,
+        authors: registry.authors,
+        totalPatterns: registry.totalPatterns,
+        totalDownloads: registry.totalDownloads,
+        totalAuthors: registry.totalAuthors,
+        featured: registry.featured,
+        trending: registry.trending,
+        newest: registry.newest,
+      })
+    );
+    return verifyEd25519(payload, registry.registrySignature, expectedPublicKey);
   }
 
   /**

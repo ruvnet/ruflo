@@ -8,7 +8,7 @@
 import type { AgentsMdOptions, AgentsMdTemplate } from '../types.js';
 import { BUILT_IN_SKILLS } from '../templates/index.js';
 
-function concurrentRufloWorkflow(): string {
+export function concurrentRufloWorkflow(): string {
   return `## Ruflo + Codex Automated Workflow
 
 Ruflo is the coordination ledger and policy decision point; Codex workers execute code, tests, and commands. A Ruflo coordination call records work but never replaces implementation.
@@ -270,7 +270,7 @@ Use MCP tools for coordination, then keep coding:
 | \`swarm_init\` | Start coordination | \`swarm_init({topology: "hierarchical"})\` |
 | \`memory_store\` | Save patterns | \`memory_store({key: "auth", value: "JWT"})\` |
 | \`memory_search\` | Find patterns | \`memory_search({query: "auth patterns"})\` |
-| \`task_orchestrate\` | Assign work | \`task_orchestrate({task: "implement"})\` |
+| \`task_create\` | Track work | \`task_create({type: "feature", description: "implement"})\` |
 
 ## Code Standards
 
@@ -413,9 +413,9 @@ npx ruflo mcp tools
 | \`agent_spawn\` | Spawn new agents | \`agent_spawn({type: "coder", name: "dev-1"})\` |
 | \`memory_store\` | Store in AgentDB | \`memory_store({key: "pattern", value: "..."})\` |
 | \`memory_search\` | Semantic search | \`memory_search({query: "auth patterns"})\` |
-| \`task_orchestrate\` | Task coordination | \`task_orchestrate({task: "implement feature"})\` |
+| \`coordination_orchestrate\` | Task coordination | \`coordination_orchestrate({task: "implement feature", strategy: "parallel"})\` |
 | \`neural_train\` | Train neural patterns | \`neural_train({iterations: 10})\` |
-| \`benchmark_run\` | Performance benchmarks | \`benchmark_run({type: "all"})\` |
+| \`performance_benchmark\` | Performance benchmarks | \`performance_benchmark({suite: "all"})\` |
 
 ## Hooks System
 

@@ -18,6 +18,8 @@ const sources = [
   'cli/src/mcp-tools/types.ts', 'cli-core/src/mcp-tools/types.ts',
 ];
 if (existsSync(join(packageRoot, 'src/memory/stats-file-lock.ts'))) sources.push('cli/src/memory/stats-file-lock.ts');
+// #2633: lora-adapter.ts imports the project-root anchor.
+if (existsSync(join(packageRoot, 'src/services/project-root.ts'))) sources.push('cli/src/services/project-root.ts');
 for (const source of sources) {
   const input = join(sourceRoot, source);
   const output = join(compiled, source.replace(/\.ts$/, '.js'));

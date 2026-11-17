@@ -16,7 +16,7 @@ import { spawnNpxSync } from './_npx.mjs';
 // iter 73 — shared session-loader (was duplicated across 6 scripts).
 // Only the session-list path consolidates; budget-config reads stay local
 // because they have their own "latest stamp" upsert resolution logic.
-import { loadSessions } from './_sessions.mjs';
+import { cliFailure, loadSessions } from './_sessions.mjs';
 
 // ADR-100 / #1748 Issue 3 — opt into cli-core's lite path with CLI_CORE=1.
 // Cold-cache wall-time drops from ~25s to ~2s. JSON backend instead of
@@ -70,7 +70,7 @@ function memoryRetrieve(key) {
       CLI_PKG, 'memory', 'list',
       '--namespace', NS, '--format', 'json',
     ], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf-8', shell: process.platform === 'win32' });
-    if (list.status !== 0) return null;
+    if (list.status !== 0) throw new Error(cliFailure('memory list', list));
     const m = /\[[\s\S]*\]/.exec(list.stdout || '');
     if (!m) return null;
     let entries;
@@ -213,4 +213,10 @@ function main() {
   }
 }
 
-main();
+try {
+  main();
+} catch (err) {
+  // A failed CLI read (#4711) is an error, not empty data: say why, exit 2.
+  console.error(`[cost-tracker] ${err?.message || err}`);
+  process.exit(2);
+}

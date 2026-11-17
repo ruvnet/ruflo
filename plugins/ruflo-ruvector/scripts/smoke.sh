@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Smoke test for ruflo-ruvector plugin against ruvector@0.3.3.
+# Smoke test for ruflo-ruvector plugin against ruvector@0.3.13.
 # Exits non-zero if any contracted CLI surface is missing or behaves
-# differently from documented. Run after `npm install ruvector@0.3.3`
+# differently from documented. Run after `npm install ruvector@0.3.13`
 # (or rely on the npx fetch).
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PIN="ruvector@0.3.3"
+PIN="ruvector@0.3.13"
 PASS=0
 FAIL=0
 WORKDIR="$(mktemp -d -t ruvector-smoke.XXXXXX)"
@@ -21,7 +21,7 @@ run() { npx -y "$PIN" "$@" 2>&1; }
 step "version pin"
 # --version output may include npm warnings; take the last non-empty line.
 ver=$(run --version | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | tail -1)
-[[ "$ver" == "0.3.3" ]] && ok || bad "expected 0.3.3, got '$ver'"
+[[ "$ver" == "0.3.13" ]] && ok || bad "expected 0.3.13, got '$ver'"
 
 step "top-level help mentions hooks/embed/rvf/attention/gnn/brain/sona"
 help=$(run --help)
@@ -57,9 +57,9 @@ step "gnn info reports Available"
 out=$(run gnn info)
 grep -q "Status:.*Available" <<<"$out" && ok || bad "gnn info did not report Available"
 
-step "info reports CLI Version 0.3.3"
+step "info reports CLI Version 0.3.13"
 out=$(run info)
-grep -q "CLI Version: 0.3.3" <<<"$out" && ok || bad "info did not report 0.3.3"
+grep -q "CLI Version: 0.3.13" <<<"$out" && ok || bad "info did not report 0.3.13"
 
 step "doctor exits 0"
 run doctor >/dev/null && ok || bad "doctor returned non-zero"

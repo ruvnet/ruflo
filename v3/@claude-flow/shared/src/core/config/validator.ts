@@ -42,12 +42,29 @@ export interface ValidationError {
 /**
  * Convert Zod error to validation errors
  */
-function zodErrorToValidationErrors(error: ZodError): ValidationError[] {
-  return error.errors.map((e) => ({
-    path: e.path.join('.'),
+function zodErrorToValidationErrors(error: Pick<ZodError, 'issues'>): ValidationError[] {
+  return error.issues.map((e) => ({
+    path: e.path.map(String).join('.'),
     message: e.message,
     code: e.code,
   }));
+}
+
+function isZodErrorLike(error: unknown): error is Pick<ZodError, 'issues'> {
+  if (!(error instanceof Error) || error.name !== 'ZodError') return false;
+  const issues = (error as { issues?: unknown }).issues;
+  return (
+    Array.isArray(issues) &&
+    issues.length > 0 &&
+    issues.every(
+      (i) =>
+        i !== null &&
+        typeof i === 'object' &&
+        Array.isArray((i as { path?: unknown }).path) &&
+        typeof (i as { message?: unknown }).message === 'string' &&
+        typeof (i as { code?: unknown }).code === 'string',
+    )
+  );
 }
 
 /**
@@ -55,7 +72,7 @@ function zodErrorToValidationErrors(error: ZodError): ValidationError[] {
  * Uses parse + try/catch to get output types with defaults applied
  */
 function validate<TInput, TOutput>(
-  schema: z.ZodType<TOutput, z.ZodTypeDef, TInput>,
+  schema: z.ZodType<TOutput, TInput>,
   data: unknown
 ): ValidationResult<TOutput> {
   try {
@@ -65,7 +82,9 @@ function validate<TInput, TOutput>(
       data: parsed,
     };
   } catch (error) {
-    if (error instanceof z.ZodError) {
+    // Callers may pass a schema built with another zod copy (e.g. zod 3),
+    // whose ZodError is not an instance of this one. Match on shape.
+    if (error instanceof z.ZodError || isZodErrorLike(error)) {
       return {
         success: false,
         errors: zodErrorToValidationErrors(error),
@@ -132,7 +151,7 @@ export class ConfigValidator {
    * Validate and throw on error
    */
   static validateOrThrow<TInput, TOutput>(
-    schema: z.ZodType<TOutput, z.ZodTypeDef, TInput>,
+    schema: z.ZodType<TOutput, TInput>,
     data: unknown,
     configName: string
   ): TOutput {
@@ -201,7 +220,7 @@ export class ConfigValidator {
    * Check if data matches schema
    */
   static isValid<TInput, TOutput>(
-    schema: z.ZodType<TOutput, z.ZodTypeDef, TInput>,
+    schema: z.ZodType<TOutput, TInput>,
     data: unknown
   ): boolean {
     return validate(schema, data).success;

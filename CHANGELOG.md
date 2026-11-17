@@ -5,6 +5,11 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+- `@claude-flow/plugin-agent-federation`: `signatureMode` defaults to `require-jcs`. A legacy-v1 signature covers only `id` and `type`, so `payload`, `targetNodeId` and `sessionId` went unsigned (#4748). **Breaking:** a peer that does not advertise `ruflo-signature-jcs-v1` (an older release, or one joined by endpoint without a verified manifest) can no longer exchange heartbeat or status messages. Set `signatureMode: 'prefer-jcs'` to allow legacy-v1 for those two types again.
+
 ## [3.71.0] - 2026-11-01
 
 Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.71.0 — automatic context delegation through ruflo-mods 0.15.0 (ADR-522). Off by default.

@@ -9,6 +9,7 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { existsSync, readFileSync, statSync, openSync, readSync, closeSync } from 'fs';
 import { join, dirname } from 'path';
+import { homedir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { createHash } from 'crypto';
 import { ownInstallAncestors } from '../plugins/own-install.js';
@@ -206,7 +207,7 @@ async function checkStaleSettingsNpx(): Promise<HealthCheck> {
   // Look in both project-local and home-dir settings.
   const candidates = [
     join(process.cwd(), '.claude', 'settings.json'),
-    join(process.env.HOME ?? '', '.claude', 'settings.json'),
+    join(homedir(), '.claude', 'settings.json'),
   ].filter((p, i, a) => p && a.indexOf(p) === i);
 
   const offenders: Array<{ path: string; where: string }> = [];
@@ -280,7 +281,7 @@ export async function checkHelperIntegrity(opts: {
   const { verifyInstalledCriticalHelpers } = await import('../init/helper-integrity.js');
   const { CRITICAL_HELPERS, findPackageHelpersDir } = await import('../init/helper-refresh.js');
   const envLocked = /^(1|true|on|yes)$/i.test(String(process.env.RUFLO_HELPERS_LOCKED || ''));
-  const home = opts.homeDir ?? process.env.HOME ?? '';
+  const home = opts.homeDir ?? homedir();
   const dirs = [
     join(opts.cwd ?? process.cwd(), '.claude', 'helpers'),
     ...(home ? [join(home, '.claude', 'helpers')] : []),
@@ -2285,14 +2286,16 @@ async function checkMetaharnessDeclaredPackages(): Promise<HealthCheck> {
     }
     if (!root) return { name: NAME, status: 'warn', message: 'could not locate the @claude-flow/cli package root' };
 
-    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8')) as { optionalDependencies?: Record<string, string> };
-    const declared = Object.keys(pkg.optionalDependencies ?? {}).filter((n) => n === 'metaharness' || n.startsWith('@metaharness/'));
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8')) as { dependencies?: Record<string, string>; optionalDependencies?: Record<string, string> };
+    // ADR-526: @metaharness/darwin is a regular dependency; the rest stay optional.
+    const declared = Object.keys({ ...(pkg.dependencies ?? {}), ...(pkg.optionalDependencies ?? {}) })
+      .filter((n) => n === 'metaharness' || n.startsWith('@metaharness/'));
     if (declared.length === 0) {
       return {
         name: NAME,
         status: 'fail',
-        message: 'no @metaharness/* packages declared in optionalDependencies — the dependency contract regressed (peer-only declarations are never installed)',
-        fix: 'Restore @metaharness/darwin, @metaharness/flywheel, @metaharness/radio, @metaharness/turn-credit to optionalDependencies in @claude-flow/cli',
+        message: 'no @metaharness/* packages declared in dependencies or optionalDependencies — the dependency contract regressed (peer-only declarations are never installed)',
+        fix: 'Restore @metaharness/darwin to dependencies and @metaharness/flywheel, @metaharness/radio, @metaharness/turn-credit to optionalDependencies in @claude-flow/cli',
       };
     }
 

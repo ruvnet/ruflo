@@ -14,7 +14,7 @@ import type { MCPTool, MCPToolResult } from './types.js';
 import { validateText, validateIdentifier } from './validate-input.js';
 import { autoInstallPackage } from './auto-install.js';
 import { createRequire } from 'module';
-import { findKnownMiss, recordKnownMiss } from './aidefence-known-misses.js';
+import { findKnownMiss, recordKnownMiss, retractKnownMiss } from './aidefence-known-misses.js';
 
 // Create require for resolving module paths
 const require = createRequire(import.meta.url);
@@ -43,6 +43,44 @@ const wrapperStats = {
   quickScanThreats: 0,
 };
 
+const KNOWN_PACKS = new Set([
+  'core',
+  'tool_invocation',
+  'exfil_url',
+  'encoded_instruction',
+  'slack_markup_forgery',
+  'instruction_override_i18n',
+]);
+
+/**
+ * Pattern-pack selection for the shared defender (#4785, ADR-517), read once
+ * per process from RUFLO_AIDEFENCE_PACKS:
+ *   unset/empty  current default (option omitted)
+ *   true|false   all enabled packs | built-in patterns only
+ *   a,b,c        exactly the named packs
+ * Anything else is refused rather than silently falling back.
+ */
+export function aidefencePackSelection(raw = process.env.RUFLO_AIDEFENCE_PACKS): boolean | string[] | undefined {
+  const value = raw?.trim();
+  if (!value) return undefined;
+  const lower = value.toLowerCase();
+  if (lower === 'true') return true;
+  if (lower === 'false') return false;
+  const names = value.split(',').map(name => name.trim()).filter(Boolean);
+  const unknown = names.filter(name => !KNOWN_PACKS.has(name));
+  if (names.length === 0 || unknown.length > 0) {
+    throw new Error(
+      `Invalid RUFLO_AIDEFENCE_PACKS=${JSON.stringify(value)}: use true, false, or a comma list of ${[...KNOWN_PACKS].join(', ')}`,
+    );
+  }
+  return [...new Set(names)];
+}
+
+function aidefenceOptions(): { enableLearning: true; packs?: boolean | string[] } {
+  const packs = aidefencePackSelection();
+  return packs === undefined ? { enableLearning: true } : { enableLearning: true, packs };
+}
+
 /**
  * Get or create AIDefence instance (throws if unavailable)
  */
@@ -56,7 +94,7 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
   // First attempt - try to load via dynamic import (ESM)
   try {
     const aidefence = await import(packageName);
-    const instance = aidefence.createAIDefence({ enableLearning: true });
+    const instance = aidefence.createAIDefence(aidefenceOptions());
     if (!instance) {
       throw new Error('createAIDefence returned null');
     }
@@ -96,7 +134,7 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
   // the module cache is stable across the await boundary.
   try {
     const aidefence = await import(packageName);
-    const instance = aidefence.createAIDefence({ enableLearning: true });
+    const instance = aidefence.createAIDefence(aidefenceOptions());
     if (instance) {
       aidefenceInstance = instance;
       console.error(`[claude-flow] ${packageName} loaded after install (resolver path)`);
@@ -110,7 +148,7 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
     const modulePath = require.resolve(packageName);
     const cacheBust = `?t=${Date.now()}`;
     const aidefence = await import(`file://${modulePath}${cacheBust}`);
-    const instance = aidefence.createAIDefence({ enableLearning: true });
+    const instance = aidefence.createAIDefence(aidefenceOptions());
     if (!instance) {
       throw new Error('createAIDefence returned null after install');
     }
@@ -140,7 +178,8 @@ const aidefenceScanTool: MCPTool = {
     properties: {
       input: {
         type: 'string',
-        description: 'Text to scan for threats',
+        maxLength: 10000,
+        description: 'Text to scan for threats. Max 10000 UTF-16 code units (JavaScript string length); longer input is refused. JSON Schema maxLength counts code points, so text with astral characters (emoji, some CJK) can pass this schema and still exceed the limit — each such character counts as 2.',
       },
       quick: {
         type: 'boolean',
@@ -356,12 +395,15 @@ const aidefenceStatsTool: MCPTool = {
   },
 };
 
+// A threatType that names PII rather than a threat (#4862).
+const PII_THREAT_TYPE = /pii|personal/i;
+
 /**
  * Record detection feedback for learning
  */
 const aidefenceLearnTool: MCPTool = {
   name: 'aidefence_learn',
-  description: 'Record detection feedback for pattern learning. Improves future detection accuracy. Use when nothing native exists — Claude Code does not have a PII / prompt-injection / adversarial-text scanner. Pair with any tool that ingests untrusted input (browser scrape, federation envelope, memory_import_claude).',
+  description: 'Record detection feedback for pattern learning. Improves future detection accuracy. Feedback on PII detection is not threat feedback and is not recorded as a missed threat; pass retract=true to remove a wrongly recorded miss. Use when nothing native exists — Claude Code does not have a PII / prompt-injection / adversarial-text scanner. Pair with any tool that ingests untrusted input (browser scrape, federation envelope, memory_import_claude).',
   inputSchema: {
     type: 'object',
     properties: {
@@ -371,7 +413,7 @@ const aidefenceLearnTool: MCPTool = {
       },
       wasAccurate: {
         type: 'boolean',
-        description: 'Whether the detection was accurate',
+        description: 'Whether the THREAT detection (prompt injection, jailbreak, etc.) was accurate. Covers threats only, not PII detection: false with no threat detected records the input as a missed threat. Ignored when retract=true.',
       },
       verdict: {
         type: 'string',
@@ -390,6 +432,10 @@ const aidefenceLearnTool: MCPTool = {
         type: 'boolean',
         description: 'Whether the mitigation was successful',
       },
+      retract: {
+        type: 'boolean',
+        description: 'Remove the known-miss entry recorded for this exact input and threatType (default prompt_injection) instead of learning. Other entries are kept.',
+      },
     },
     required: ['input', 'wasAccurate'],
   },
@@ -403,17 +449,60 @@ const aidefenceLearnTool: MCPTool = {
     const threatType = args.threatType as string | undefined;
     const mitigationStrategy = args.mitigationStrategy as string | undefined;
     const mitigationSuccess = args.mitigationSuccess as boolean | undefined;
+    const missType = threatType || 'prompt_injection';
 
     try {
+      // Retract (#4862): drop exactly the matching hash+type entry. Only the
+      // registry affects verdicts, so no detector is needed for this.
+      if (args.retract === true) {
+        const retracted = retractKnownMiss(input, missType);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              retracted,
+              threatType: missType,
+              message: retracted
+                ? `Known-miss entry for this input (threatType ${missType}) removed; aidefence_scan no longer flags it from the registry.`
+                : `No known-miss entry for this input with threatType ${missType}; nothing was changed.`,
+            }, null, 2),
+          }],
+        };
+      }
+
       const defender = await getAIDefence();
 
       // Re-detect to get result for learning
       const result = await defender.detect(input);
 
+      // #4862: wasAccurate covers threat detection only. When the scan found
+      // PII and the feedback is about PII (no threatType, or one naming PII),
+      // it says nothing about a missed threat, so nothing is recorded.
+      const piiFeedback = !wasAccurate && result.threats.length === 0 && result.piiFound === true
+        && (!threatType || PII_THREAT_TYPE.test(threatType));
+      if (piiFeedback) {
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              message: 'PII feedback is not threat feedback: the scan found PII and no threat, so nothing was recorded as a missed threat. To report a missed threat in this input, pass its threatType (e.g. prompt_injection).',
+              learned: 0,
+              learnedFrom: {
+                input: input.slice(0, 50) + (input.length > 50 ? '...' : ''),
+                wasAccurate,
+                threatCount: 0,
+                piiFound: true,
+              },
+            }, null, 2),
+          }],
+        };
+      }
+
       // A false negative (wasAccurate=false, nothing detected) gives
       // learnFromDetection() no threat to store, so record the miss itself.
       const falseNegative = !wasAccurate && result.threats.length === 0;
-      const missType = threatType || 'prompt_injection';
       let learned = result.threats.length;
       let newlyRecorded = false;
       if (falseNegative) {

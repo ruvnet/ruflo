@@ -1,7 +1,38 @@
-# @claude-flow/plugin-performance-optimizer
+# @claude-flow/plugin-perf-optimizer
 
-[![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-performance-optimizer.svg)](https://www.npmjs.com/package/@claude-flow/plugin-performance-optimizer)
-[![npm downloads](https://img.shields.io/npm/dm/@claude-flow/plugin-performance-optimizer.svg)](https://www.npmjs.com/package/@claude-flow/plugin-performance-optimizer)
+<!-- adr-356:quickstart:start -->
+![Animated diagram: telemetry is checked by input schemas, analysed, and returned as findings with recommendations](https://raw.githubusercontent.com/ruvnet/ruflo/main/v3/plugins/perf-optimizer/assets/perf-flow.svg)
+
+**@claude-flow/plugin-perf-optimizer** — A Ruflo plugin that gives agents MCP tools to find bottlenecks in traces, analyse memory, optimise queries and bundles, and tune configuration.
+
+**Supported environments:** Node.js 18+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/plugin-perf-optimizer
+```
+
+```js
+import { perfOptimizerTools, MemoryAnalyzeInputSchema } from '@claude-flow/plugin-perf-optimizer';
+
+console.log('tools:', perfOptimizerTools.map((t) => t.name).join(', '));
+const check = MemoryAnalyzeInputSchema.safeParse({ analysis: ['leak_detection'] });
+console.log('valid input:', check.success);
+```
+
+Expected output:
+
+```text
+tools: perf/bottleneck-detect, perf/memory-analyze, perf/query-optimize, perf/bundle-optimize, perf/config-optimize
+valid input: true
+```
+
+Install it into a Ruflo project with [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli): `npx @claude-flow/cli@latest plugins install -n @claude-flow/plugin-perf-optimizer`.
+<!-- adr-356:quickstart:end -->
+
+[![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-perf-optimizer.svg)](https://www.npmjs.com/package/@claude-flow/plugin-perf-optimizer)
+[![npm downloads](https://img.shields.io/npm/dm/@claude-flow/plugin-perf-optimizer.svg)](https://www.npmjs.com/package/@claude-flow/plugin-perf-optimizer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A comprehensive performance optimization plugin combining sparse inference for efficient trace analysis with graph neural networks for dependency chain optimization. The plugin enables intelligent bottleneck detection, memory leak identification, N+1 query detection, and bundle size optimization while providing explainable recommendations based on historical performance patterns.
@@ -19,19 +50,19 @@ A comprehensive performance optimization plugin combining sparse inference for e
 ### npm
 
 ```bash
-npm install @claude-flow/plugin-performance-optimizer
+npm install @claude-flow/plugin-perf-optimizer
 ```
 
 ### CLI
 
 ```bash
-npx claude-flow plugins install --name @claude-flow/plugin-performance-optimizer
+npx claude-flow plugins install --name @claude-flow/plugin-perf-optimizer
 ```
 
 ## Quick Start
 
 ```typescript
-import { PerfOptimizerPlugin } from '@claude-flow/plugin-performance-optimizer';
+import { PerfOptimizerPlugin } from '@claude-flow/plugin-perf-optimizer';
 
 // Initialize the plugin
 const plugin = new PerfOptimizerPlugin();
@@ -274,3 +305,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/plugins/perf-optimizer)
+<!-- adr-356:footer:end -->
