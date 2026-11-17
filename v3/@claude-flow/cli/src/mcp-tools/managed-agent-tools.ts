@@ -338,8 +338,8 @@ export const managedAgentTools: MCPTool[] = [
       }
 
       if (!s.data || typeof s.data.id !== 'string' || !/^sesn_[A-Za-z0-9]+$/.test(s.data.id)) return { success: false, stage: 'session', agentId: a.data.id, environmentId: e.data.id, error: 'Invalid session acknowledgement; inspect provider resources before retrying', cleanupRequired: true };
-      let ledgerRecorded = true;
-      try { recordManagedSession(getProjectCwd(), s.data.id, e.data.id); } catch { ledgerRecorded = false; }
+      let ledgerRecorded = true, dropped: ManagedSessionRecord[] = [];
+      try { dropped = recordManagedSession(getProjectCwd(), s.data.id, e.data.id); } catch { ledgerRecorded = false; }
       return {
         success: true,
         runtime: 'managed',
@@ -353,6 +353,7 @@ export const managedAgentTools: MCPTool[] = [
         budget: config.budget,
         verification: 'unverified',
         ...(ledgerRecorded ? {} : { ledgerRecorded, warning: 'Session was not recorded locally; the other managed_agent_* tools refuse it until it is added to RUFLO_MANAGED_CONTROL_SESSIONS.' }),
+        ...(dropped.length === 0 ? {} : { ledgerDropped: dropped.map(d => d.sessionId), warning: `The local session ledger is full (1000 sessions), so ${dropped.map(d => d.sessionId).join(', ')} was dropped from it and the other managed_agent_* tools now refuse it. A running session keeps billing: add it to RUFLO_MANAGED_CONTROL_SESSIONS to terminate it.` }),
         note: 'Cloud agent provisioned. Send work with managed_agent_prompt({sessionId, message}); inspect with managed_agent_events; clean up with managed_agent_terminate (running sessions consume runtime and tokens).',
       };
     },
@@ -516,11 +517,13 @@ export const managedAgentTools: MCPTool[] = [
       const access = sessionAccess(sessionId);
       if (!access) return { success: false, sessionId, error: NOT_OWNED };
       const wantsEnvironment = typeof input.environmentId === 'string' && input.environmentId.length > 0;
-      let ownEnvironment = access.owned?.environmentId;
-      if (wantsEnvironment && !ownEnvironment) {
+      // The provider, not the local ledger, says which environment the session runs in; a ledger entry can be edited.
+      let ownEnvironment: string | undefined;
+      if (wantsEnvironment) {
         const g = await maRequest<MaSession>('GET', `/sessions/${encodeURIComponent(sessionId)}`);
         if (!g.ok) return { success: false, error: g.error };
-        ownEnvironment = g.data.environment_id;
+        ownEnvironment = g.data?.environment_id;
+        if (access.owned?.environmentId !== undefined && access.owned.environmentId !== ownEnvironment) ownEnvironment = undefined;
       }
       const s = await maRequest('DELETE', `/sessions/${encodeURIComponent(sessionId)}`);
       const result: Record<string, unknown> = { runtime: 'managed', sessionId, sessionDeleted: s.ok };
