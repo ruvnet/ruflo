@@ -74,7 +74,8 @@ describe('the argv that shipped before is unchanged', () => {
 
   it('whole-set digests of the GNU and the BSD argv (taken before this change)', () => {
     expect(digest('gnu')).toBe('cfd9124d0ee8208f81f0c8dc87ccdc9505b17d632267f9b8a942a6ae987094ad')
-    expect(digest('posix')).toBe('4c60ee6b0510418188772bc443afc9b8744a46d18e6b07c82837f8960a4e1160')
+    // Re-pinned on purpose for #4978: the POSIX append gained `conv=notrunc` (uutils dd truncates its stdout after writing). GNU is unchanged.
+    expect(digest('posix')).toBe('fe9db855288c1dfa7fa87d443bb42062c75b9e82cc7c53a9ab55ea3aec8784d1')
   })
 
   it('writeVia on gnu and posix is the same host.run call as before (argv, timeout, stdin)', async () => {
