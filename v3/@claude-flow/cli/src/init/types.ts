@@ -364,6 +364,20 @@ export interface InitOptions {
    * (--drop-risky-settings).
    */
   riskySettings?: 'stop' | 'keep' | 'drop';
+  /**
+   * #2638 — where the shared project instructions live. `claude-md` (default,
+   * single-host) writes the full CLAUDE.md. `agents-md` (set by `init --dual`)
+   * writes CLAUDE.md as `@AGENTS.md` plus Claude-only sections; AGENTS.md,
+   * written by the Codex pass, carries the shared sections.
+   */
+  instructionsSource?: 'claude-md' | 'agents-md';
+  /**
+   * #2640 — when the ruflo Claude Code plugins are installed (ruflo-core@ruflo
+   * enabled), skip the agents/commands/skills they already ship and the
+   * standalone `claude-flow` MCP server. On by default; `--full` turns it off.
+   * No effect when the plugins are absent.
+   */
+  deferToPlugins?: boolean;
 }
 
 /**
@@ -373,6 +387,7 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
   targetDir: process.cwd(),
   force: false,
   interactive: true,
+  deferToPlugins: true,
   components: {
     settings: true,
     skills: true,
@@ -560,6 +575,8 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
  */
 export const FULL_INIT_OPTIONS: InitOptions = {
   ...DEFAULT_INIT_OPTIONS,
+  // #2640: --full copies everything, even what installed plugins provide.
+  deferToPlugins: false,
   components: {
     settings: true,
     skills: true,
@@ -638,4 +655,16 @@ export interface InitResult {
   riskySettings?: string[];
   /** ADR-509 §2.3 — init stopped before writing anything because of riskySettings. */
   stoppedOnRiskySettings?: boolean;
+  /**
+   * #2638 — set when this run wrote CLAUDE.md in its `@AGENTS.md` import form.
+   * `fullForm` is the single-host CLAUDE.md to restore if AGENTS.md turns out
+   * not to carry the shared sections (see finalizeDualInstructions).
+   */
+  dualInstructions?: { importForm: string; fullForm: string };
+  /** #2640 — what init left to the installed ruflo plugins (absent when none are installed). */
+  pluginDedup?: {
+    plugins: string[];
+    skipped: { agents: string[]; commands: string[]; skills: string[] };
+    mcpServerSkipped: boolean;
+  };
 }

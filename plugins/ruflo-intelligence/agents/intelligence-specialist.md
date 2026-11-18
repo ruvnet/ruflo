@@ -38,6 +38,9 @@ You are an intelligence specialist for the Ruflo self-learning system. You drive
 | List learned patterns | `neural_patterns` |
 | Compress patterns for storage | `neural_compress` |
 | Optimize the neural pipeline | `neural_optimize` |
+| Fingerprint a dense model / the centroid router | CLI `neural wsp inspect [-m model.json]` (ruv-FANN WSP, optional deps; ADR-528) |
+| Check the centroid router still separates its labels | CLI `neural wsp check [--min-gap 0.05]` |
+| Accept or reject a bounded weight patch (≤128 edits) | CLI `neural wsp gate -m model.json -p patch.json -s suites.json` — evidence only, never promotes |
 | Create a SONA instance | `ruvllm_sona_create` |
 | Adapt SONA weights from feedback | `ruvllm_sona_adapt` |
 | Create a MicroLoRA adapter | `ruvllm_microlora_create` |

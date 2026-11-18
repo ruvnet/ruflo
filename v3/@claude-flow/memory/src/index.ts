@@ -186,6 +186,23 @@ export type {
   TieredMemoryEntry,
   TieredStoreResult,
 } from './tiered-memory.js';
+// #4712: persisted inventory + exact-ID reads
+export {
+  TieredMemoryInventoryError,
+  TieredMemoryUnsupportedError,
+  TieredMemoryCursorError,
+  TIERED_STATUS_FILTERS,
+  TIERED_LIST_MAX_LIMIT,
+} from './tiered-memory-inventory.js';
+export type {
+  TieredEntryStatus,
+  TieredStatusFilter,
+  TieredListOptions,
+  TieredListResult,
+  TieredGetOptions,
+  TieredInventoryEntry,
+  TieredInventoryErrorCode,
+} from './tiered-memory-inventory.js';
 
 // ===== Core Components =====
 export { AgentDBAdapter } from './agentdb-adapter.js';

@@ -9,7 +9,9 @@ import { pathToFileURL } from 'node:url';
 const require = createRequire(import.meta.url);
 const entry = new URL('../src/index.ts', import.meta.url).href;
 
-describe('doctor JSON through CLI.run', () => {
+// Each test cold-starts tsx in a child (spawnSync allows 30 s). The repo-root
+// vitest config has no testTimeout, so give the tests the child budget plus slack.
+describe('doctor JSON through CLI.run', { timeout: 45_000 }, () => {
   let project: string;
   beforeAll(() => {
     project = mkdtempSync(join(tmpdir(), 'doctor-json-cli-'));

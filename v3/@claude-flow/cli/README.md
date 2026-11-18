@@ -52,6 +52,11 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
 
 ## Quick Start
 
+
+<a href="https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/main/docs/assets/readme/rvf-mcp-search.svg" width="720" alt="Search a portable RVF index locally through stdio MCP"></a>
+
+[Optional recipe: local vector search with RVF and MCP](https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md) · [Ruvnet ecosystem](https://ruv.io)
+
 There are **two different install paths** with very different surface areas. Pick based on what you need (#1744):
 
 | | **Claude Code Plugin** | **CLI install (`npx ruflo init`)** |
@@ -230,7 +235,21 @@ Without a token, a loopback server is still unauthenticated: any process on the 
 
 ---
 
+Startup checks report available updates without installing them. To opt in to
+automatic patch installation, set `RUFLO_AUTO_UPDATE=true` (`1`, `yes` and `on`
+also work). Minor and major updates remain manual; critical package priority
+does not bypass an opt-out. CI detection and `CLAUDE_FLOW_AUTO_UPDATE=false`
+still disable the update check.
+
 ## What You Get
+
+Companion helper refresh (`session.cjs` / `memory.cjs`) skips symlinked helper
+directories and symlinked/non-file targets. Regular files are preserved on
+startup and replaced on an explicit upgrade through an exclusive temporary
+file and rename. A skipped companion is left in place; remove or repair the
+unsafe path before retrying. These pathname checks do not protect against an
+attacker concurrently replacing ancestor directories, and do not extend the
+signed helper set or protect other state writers.
 
 | Capability | Description |
 |------------|-------------|

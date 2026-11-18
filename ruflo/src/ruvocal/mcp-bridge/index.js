@@ -1,6 +1,7 @@
 import express from "express";
 import { spawn } from "child_process";
 import { randomUUID, timingSafeEqual } from "crypto";
+import { assertPublicUrl } from "./url-guard.js";
 
 // =============================================================================
 // CONFIGURATION
@@ -84,10 +85,10 @@ const TOOL_GROUPS = {
     prefixes: ["neural_", "daa_"],
   },
 
-  // --- Agentic Flow (agentic-flow@alpha) ---
+  // --- Agentic Flow (agentic-flow, pinned in BACKEND_VERSIONS) ---
   "agentic-flow": {
     enabled: process.env.MCP_GROUP_AGENTIC_FLOW === "true",
-    description: "Execute 66+ specialized agents, batch code editing, AgentDB patterns (agentic-flow)",
+    description: "Agent catalog lookup and AgentDB reasoning-pattern search (agentic-flow)",
     source: "agentic-flow",
     prefixes: ["agentic_flow_", "agent_booster_", "agentdb_"],
   },
@@ -122,6 +123,15 @@ if (process.env.MCP_GROUP_CODEX === "true") {
 // STDIO MCP CLIENT — Connects to external MCP servers via child process
 // =============================================================================
 
+// Backends inherit the provider keys they need, but not the bridge's own
+// bearer token: a backend has no use for it, and holding it would let a
+// compromised backend call the bridge as an authenticated client.
+function backendEnv() {
+  const env = { ...process.env };
+  delete env.MCP_AUTH_TOKEN;
+  return env;
+}
+
 class StdioMcpClient {
   constructor(name, command, args = []) {
     this.name = name;
@@ -139,7 +149,7 @@ class StdioMcpClient {
       try {
         this.process = spawn(this.command, this.args, {
           stdio: ["pipe", "pipe", "pipe"],
-          env: { ...process.env },
+          env: backendEnv(),
         });
 
         this.process.stdout.on("data", (data) => this._onData(data.toString()));
@@ -260,12 +270,21 @@ class StdioMcpClient {
 // BACKEND REGISTRY
 // =============================================================================
 
+// Exact versions for backends that are third-party or were tracking a
+// pre-release tag, so a new upload cannot change what the bridge executes.
+// ruvector and ruflo are first-party and follow `latest`. Keep these in step
+// with the Dockerfile's pre-install lines.
+const BACKEND_VERSIONS = {
+  "agentic-flow": "3.5.4", // stable; 3.0.0-alpha.2 pulled protobufjs@6 via @xenova/transformers (ADR-513)
+  "gemini-mcp-server": "1.2.2",
+};
+
 const BACKEND_DEFS = [
   { name: "ruvector",       command: "npx", args: ["-y", "ruvector", "mcp", "start"],   groups: ["intelligence"] },
   { name: "ruflo",          command: "npx", args: ["-y", "ruflo", "mcp", "start"],      groups: ["agents", "memory", "devtools", "security", "browser", "neural"] },
-  { name: "agentic-flow",   command: "npx", args: ["-y", "agentic-flow@alpha", "mcp", "start"], groups: ["agentic-flow"] },
+  { name: "agentic-flow",   command: "npx", args: ["-y", `agentic-flow@${BACKEND_VERSIONS["agentic-flow"]}`, "mcp", "start"], groups: ["agentic-flow"] },
   { name: "claude",         command: "claude", args: ["mcp", "serve"],                  groups: ["claude-code"] },
-  { name: "gemini-mcp",     command: "npx", args: ["-y", "gemini-mcp-server"],          groups: ["gemini"] },
+  { name: "gemini-mcp",     command: "npx", args: ["-y", `gemini-mcp-server@${BACKEND_VERSIONS["gemini-mcp-server"]}`],          groups: ["gemini"] },
 ];
 
 const mcpBackends = new Map();
@@ -559,22 +578,22 @@ Neural network operations and Decentralized Autonomous Agents.
 - Autonomous agent workflows
 - Knowledge transfer between agents`,
 
-    "agentic-flow": `# Agentic Flow Group (agentic-flow@alpha)
+    "agentic-flow": `# Agentic Flow Group (agentic-flow)
 
-Execute 66+ specialized agents with boosted code editing and AgentDB.
+Look up agentic-flow's agent catalog and search AgentDB reasoning patterns.
 
 ## Key Tools
-- **agentic-flow__agentic_flow_agent** — Execute any of 66+ specialized agents
 - **agentic-flow__agentic_flow_list_agents** — List available agent types
-- **agentic-flow__agent_booster_edit_file** — 352x faster code editing
-- **agentic-flow__agent_booster_batch_edit** — Multi-file refactoring
-- **agentic-flow__agentdb_pattern_store** — Store reasoning patterns
-- **agentic-flow__agentdb_pattern_search** — Search similar patterns
+- **agentic-flow__agentic_flow_list_all_agents** — List package and local custom agents, with source
+- **agentic-flow__agentic_flow_agent_info** — Show an agent's source, category and system-prompt preview
+- **agentic-flow__agentic_flow_check_conflicts** — Find local agents that shadow package agents
+- **agentic-flow__agentdb_pattern_search** — Search past reasoning patterns by task description
+- **agentic-flow__agentdb_pattern_stats** — Aggregated stats and critique summary for a task's patterns
+- **agentic-flow__agentdb_stats** — AgentDB table counts and memory usage
 
 ## When to Use
-- Complex code generation with specialized agents
-- Batch code refactoring across files
-- Agent selection when you need the right specialist`,
+- Choosing the right specialist agent for a task
+- Recalling how similar tasks were approached before`,
 
     "claude-code": `# Claude Code Group
 
@@ -724,36 +743,25 @@ async function geminiGroundedSearch(query, mode = "search") {
 // SSRF GUARD — Reject requests to private/loopback ranges (CWE-918)
 // =============================================================================
 
-const PRIVATE_IP_RE = /^(?:10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|127\.|0\.|::1|fc|fd)/i;
-
-function assertSafeUrl(rawUrl) {
-  let parsed;
-  try {
-    parsed = new URL(rawUrl);
-  } catch {
-    throw new Error(`SSRF guard: invalid URL — ${rawUrl}`);
-  }
-  if (parsed.protocol !== "https:") {
-    throw new Error(`SSRF guard: only HTTPS URLs are permitted, got ${parsed.protocol}`);
-  }
-  const host = parsed.hostname;
-  if (PRIVATE_IP_RE.test(host) || host === "localhost" || host.endsWith(".local")) {
-    throw new Error(`SSRF guard: private/loopback host rejected — ${host}`);
-  }
-}
+// Implemented in ./url-guard.js so it can be unit-tested (test-url-guard.mjs).
 
 // =============================================================================
 // HELPER — Call a backend Cloud Function / API
 // =============================================================================
 
 async function callCloudFunction(url, payload, timeoutMs = 25000) {
-  // Validate the URL before making any network request.
-  assertSafeUrl(url);
+  // Validate the URL, and what it resolves to, before any network request.
+  try {
+    await assertPublicUrl(url);
+  } catch (err) {
+    return { error: err.message };
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const resp = await fetch(url, {
       method: "POST",
+      redirect: "error", // a redirect could point somewhere the guard never saw
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       signal: controller.signal,

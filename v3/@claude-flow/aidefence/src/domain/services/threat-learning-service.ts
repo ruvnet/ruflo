@@ -5,7 +5,7 @@
  * and ReasoningBank-style pattern storage.
  *
  * Features:
- * - HNSW-indexed threat pattern search (150x-12,500x faster)
+ * - Semantic threat pattern search (HNSW via the optional agentdb peer)
  * - Pattern learning from successful detections
  * - Effectiveness tracking for adaptive mitigation
  * - Integration with agentic-flow attention mechanisms
@@ -164,8 +164,8 @@ export class ThreatLearningService {
   }
 
   /**
-   * Search for similar threat patterns using HNSW
-   * When connected to AgentDB, achieves 150x-12,500x speedup
+   * Search for similar threat patterns
+   * Ranked by embedding similarity when the store is AgentDB-backed
    */
   async searchSimilarThreats(
     query: string,
@@ -175,7 +175,9 @@ export class ThreatLearningService {
       namespace: this.namespace,
       query,
       k: options.k ?? 10,
-      minSimilarity: options.minSimilarity ?? 0.7,
+      // No floor by default: InMemoryVectorStore never applied one, and cosine
+      // scores over regex-source pattern text sit well below 0.7.
+      minSimilarity: options.minSimilarity ?? 0,
     });
 
     return results.map(r => r.value as LearnedThreatPattern);

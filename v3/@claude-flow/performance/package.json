@@ -3,6 +3,28 @@
   "version": "3.0.2",
   "type": "module",
   "description": "Performance module - benchmarking, Flash Attention validation, optimization",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/performance"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
+  "keywords": [
+    "benchmark",
+    "benchmarking",
+    "performance",
+    "regression-detection",
+    "memory-profiling",
+    "statistics",
+    "flash-attention",
+    "ai-agents",
+    "claude-flow",
+    "ruflo",
+    "typescript"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

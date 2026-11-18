@@ -19,6 +19,11 @@
  *      .md file in plugins/(any plugin)/agents/. Enforces the "plugin is canonical"
  *      dedup rule from ADR-128 Phase 2.
  *
+ *   4. NO INIT–PLUGIN COMMAND NAME COLLISION — no .md file in
+ *      v3/@claude-flow/cli/.claude/commands/(any path) shares a basename with
+ *      any .md file in plugins/(any plugin)/commands/ (#2640). README.md is
+ *      not a command and is ignored.
+ *
  * Zero runtime dependencies — pure readFileSync + regex + readdirSync.
  * Exit 0: all assertions pass.
  * Exit 1: one or more assertions fail (file + details reported).
@@ -166,10 +171,41 @@ for (const pluginFile of pluginAgentFiles) {
 }
 
 // ---------------------------------------------------------------------------
+// Assertion 4: No init-template command name collides with a plugin command
+// ---------------------------------------------------------------------------
+// Claude Code names a project command after its file (`.claude/commands/x/run.md`
+// is `/run`), so a bundled command sharing a basename with a plugin command
+// shadows or is shadowed by the plugin one (#2640).
+
+const initCommandFiles = collectFiles(join(CLI_DOT_CLAUDE, 'commands'), '.md')
+  .filter(f => f.split('/').pop() !== 'README.md');
+const pluginCommandFiles = existsSync(PLUGINS_DIR)
+  ? readdirSync(PLUGINS_DIR, { withFileTypes: true })
+      .filter(e => e.isDirectory())
+      .flatMap(e => collectFiles(join(PLUGINS_DIR, e.name, 'commands'), '.md'))
+      .filter(f => f.split('/').pop() !== 'README.md')
+  : [];
+const pluginCommandByName = new Map(pluginCommandFiles.map(f => [f.split('/').pop(), f]));
+
+const commandCollisions = [];
+for (const initFile of initCommandFiles) {
+  const basename = initFile.split('/').pop();
+  const pluginFile = pluginCommandByName.get(basename);
+  if (pluginFile) {
+    commandCollisions.push({
+      type: 'command-collision',
+      init: initFile.replace(REPO_ROOT + '/', ''),
+      plugin: pluginFile.replace(REPO_ROOT + '/', ''),
+      message: `/${basename.replace(/\.md$/, '')} exists in both init template and plugin`,
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Report results
 // ---------------------------------------------------------------------------
 
-const allViolations = [...orphanViolations, ...missingSkills, ...collisionViolations];
+const allViolations = [...orphanViolations, ...missingSkills, ...collisionViolations, ...commandCollisions];
 
 if (allViolations.length === 0) {
   console.log('ok: init-bundle invariants pass (no orphans, all skills present, no plugin-init overlap)');
@@ -177,6 +213,7 @@ if (allViolations.length === 0) {
   console.log(`  agents dirs checked: ${agentsDirs.length}`);
   console.log(`  skills checked: ${skillsMapValues.size}`);
   console.log(`  plugin agent basenames checked: ${pluginAgentFiles.length}`);
+  console.log(`  init commands checked against ${pluginCommandFiles.length} plugin commands: ${initCommandFiles.length}`);
   process.exit(0);
 }
 
@@ -197,6 +234,11 @@ for (const v of allViolations) {
     console.error(`    init:   ${v.init}`);
     console.error(`    plugin: ${v.plugin}`);
     console.error(`    Fix: delete the init-template copy; the plugin version is canonical (ADR-128 §Phase 2).`);
+  } else if (v.type === 'command-collision') {
+    console.error(`  [COMMAND-COLLISION] ${v.message}`);
+    console.error(`    init:   ${v.init}`);
+    console.error(`    plugin: ${v.plugin}`);
+    console.error(`    Fix: rename or remove the init-template command; the plugin one is canonical (#2640).`);
   }
 }
 

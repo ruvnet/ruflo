@@ -1,16 +1,16 @@
 {
   "name": "ruflo",
   "mcpName": "io.github.ruvnet/ruflo",
-  "version": "3.72.2",
+  "version": "3.77.2",
   "description": "Ruflo - Enterprise AI agent orchestration platform. Deploy 60+ specialized agents in coordinated swarms with self-learning, fault-tolerant consensus, vector memory, and MCP integration",
   "main": "bin/ruflo.js",
   "type": "module",
   "bin": {
     "ruflo": "bin/ruflo.js"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow#readme",
+  "homepage": "https://ruv.io",
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues",
+    "url": "https://github.com/ruvnet/ruflo/issues",
     "email": "support@ruv.io"
   },
   "funding": {
@@ -19,7 +19,6 @@
   },
   "files": [
     "bin/**",
-    "src/**",
     "dist/**",
     "README.md",
     "LICENSE"
@@ -41,7 +40,7 @@
     "package:rvf": "bash src/scripts/package-rvf.sh"
   },
   "dependencies": {
-    "@claude-flow/cli": "3.72.2"
+    "@claude-flow/cli": "3.77.2"
   },
   "optionalDependencies": {},
   "overrides": {
@@ -84,7 +83,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git"
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "ruflo"
   },
   "keywords": [
     "ruflo",
@@ -103,7 +103,10 @@
     "cli",
     "developer-tools",
     "enterprise",
-    "self-learning"
+    "self-learning",
+    "local-vector-search",
+    "rvf",
+    "mcp-server"
   ],
   "author": {
     "name": "RuvNet",

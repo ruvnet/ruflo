@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-ai-team`.
 
+## 0.4.1 — 2026-11-09
+- fix(deps): zod ^4.6.7 (GHSA-mrhx-c7xc-m3w5: zod < 4.6.6 can exhaust memory validating oversized constrained collections).
+
 ## 0.4.0 — 2026-10-26
 - feat: `memory_search` ranks by meaning through Cognitum's managed `/v1/embeddings` (`cognitum-embed`, 384-dim) when `RUFLO_AI_TEAM_EMBEDDINGS_KEY` is set; vectors are stored with each memory (only if the text is unchanged), never returned to callers, and an outage or a missing key falls back to the labelled lexical index, so a search never fails because embeddings did
 - feat: memory listing reads newest first, so a team with more than 1000 memories keeps the latest; needs the composite index in `deploy/firestore.indexes.json`, and without it the read falls back to the old unordered query rather than erroring

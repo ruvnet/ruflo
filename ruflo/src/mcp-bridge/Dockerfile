@@ -11,12 +11,13 @@ RUN npm install --production
 # Each installed separately so one failure doesn't block others
 RUN npm install -g ruvector || true
 RUN npm install -g ruflo || true
-RUN npm install -g agentic-flow@alpha || true
-RUN npm install -g gemini-mcp-server || true
+RUN npm install -g agentic-flow@3.5.4 || true
+RUN npm install -g gemini-mcp-server@1.2.2 || true
 RUN npm install -g @openai/codex || true
 
 COPY index.js ./
 COPY mcp-stdio-kernel.js ./
+COPY url-guard.js ./
 
 # Create writable directories for MCP backends (ruflo, ruvector, agentic-flow)
 # These tools write state/tasks/memory to the working directory at runtime

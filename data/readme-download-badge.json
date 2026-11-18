@@ -1,0 +1,13 @@
+{
+  "schema": "ruflo-readme-download-badge/v1",
+  "source_repository": "ruvnet/ruvnet",
+  "source_path": "data/ecosystem-running-totals.json",
+  "source_metric": "npm_billion_goal.observed_download_events_lower_bound",
+  "observed_download_events_lower_bound": 120946147,
+  "observed_since": "2025-10-01",
+  "baseline_through": "2026-11-15",
+  "verified_at": "2026-11-16T14:08:56.772457+00:00",
+  "package_cohort_size": 429,
+  "qualifier": "Observed lower bound, not unique users or lifetime downloads. Historical coverage gaps and provisional days remain.",
+  "metric_scope": "npm download events only; excludes crates.io and release assets."
+}

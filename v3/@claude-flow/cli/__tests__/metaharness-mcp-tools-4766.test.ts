@@ -10,6 +10,13 @@ vi.mock('node:fs', async (importOriginal) => {
   const fs = await importOriginal<typeof import('node:fs')>();
   return { ...fs, existsSync: vi.fn(fs.existsSync) };
 });
+// These cases cover the script fallback. ADR-526 serves bench verify and gepa
+// in-process when darwin imports; simulate it not importing so the fallback
+// path stays under test (in-process parity lives in darwin-inprocess-adr526).
+vi.mock('../src/metaharness/darwin-lib.js', () => ({
+  benchVerify: vi.fn(async () => null),
+  gepaOp: vi.fn(async () => null),
+}));
 vi.mock('node:child_process', async (importOriginal) => ({
   ...await importOriginal<typeof import('node:child_process')>(),
   spawn: vi.fn(() => { throw new Error('Unexpected MetaHarness subprocess'); }),

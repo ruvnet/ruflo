@@ -9,6 +9,7 @@ import { confirm, select } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { runStartAll } from './start-all.js';
 
 // Default configuration
 const DEFAULT_PORT = 3000;
@@ -16,7 +17,7 @@ const DEFAULT_TOPOLOGY = 'hierarchical-mesh';
 const DEFAULT_MAX_AGENTS = 15;
 
 // Check if project is initialized
-function isInitialized(cwd: string): boolean {
+export function isInitialized(cwd: string): boolean {
   const configPath = path.join(cwd, '.claude-flow', 'config.yaml');
   return fs.existsSync(configPath);
 }
@@ -87,7 +88,7 @@ function loadConfig(cwd: string): Record<string, unknown> | null {
 }
 
 // Main start action
-const startAction = async (ctx: CommandContext): Promise<CommandResult> => {
+export const startAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const daemon = ctx.flags.daemon as boolean;
   const port = (ctx.flags.port as number) || DEFAULT_PORT;
   const topology = (ctx.flags.topology as string) || DEFAULT_TOPOLOGY;
@@ -400,6 +401,12 @@ const restartCommand: Command = {
   }
 };
 
+/** Project init shared by `start quick` and `start all`: `init --minimal`. Callers check isInitialized() first. */
+export async function runMinimalProjectInit(ctx: CommandContext): Promise<CommandResult | void> {
+  const { initCommand } = await import('./init.js');
+  return initCommand.action!({ ...ctx, flags: { ...ctx.flags, minimal: true } });
+}
+
 // Quick start subcommand
 const quickCommand: Command = {
   name: 'quick',
@@ -411,13 +418,7 @@ const quickCommand: Command = {
       output.printInfo('Project not initialized, running init first...');
       output.writeln();
 
-      // Call init with minimal settings
-      const { initCommand } = await import('./init.js');
-      const initCtx = {
-        ...ctx,
-        flags: { ...ctx.flags, minimal: true }
-      };
-      await initCommand.action!(initCtx);
+      await runMinimalProjectInit(ctx);
       output.writeln();
     }
 
@@ -429,11 +430,18 @@ const quickCommand: Command = {
   }
 };
 
+// Start-all subcommand (#1177); steps live in start-all.ts
+const allCommand: Command = {
+  name: 'all',
+  description: 'Init the project and memory if needed, start the daemon if not running, then start the system',
+  action: (ctx: CommandContext): Promise<CommandResult> => runStartAll(ctx),
+};
+
 // Main start command
 export const startCommand: Command = {
   name: 'start',
   description: 'Start the RuFlo orchestration system',
-  subcommands: [stopCommand, restartCommand, quickCommand],
+  subcommands: [stopCommand, restartCommand, quickCommand, allCommand],
   options: [
     {
       name: 'daemon',
@@ -470,6 +478,7 @@ export const startCommand: Command = {
     { command: 'claude-flow start --topology mesh', description: 'Start with mesh topology' },
     { command: 'claude-flow start --skip-mcp', description: 'Start without MCP server' },
     { command: 'claude-flow start quick', description: 'Quick start with defaults' },
+    { command: 'claude-flow start all', description: 'Init project/memory if needed, start the daemon, then start' },
     { command: 'claude-flow start stop', description: 'Stop the running system' }
   ],
   action: startAction

@@ -545,7 +545,7 @@ export class CLI {
    */
   private async checkForUpdatesOnStartup(): Promise<void> {
     try {
-      const result = await runStartupUpdateCheck({ autoUpdate: true });
+      const result = await runStartupUpdateCheck({});
 
       // Show notifications for available updates that weren't auto-applied
       if (result.checked && result.updatesAvailable.length > 0) {

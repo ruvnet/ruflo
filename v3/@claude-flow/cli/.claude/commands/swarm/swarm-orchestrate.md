@@ -1,4 +1,4 @@
-# /swarm
+# /swarm-orchestrate
 
 Main swarm orchestration command for Claude Flow V3.
 

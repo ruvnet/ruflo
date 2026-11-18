@@ -7,9 +7,9 @@ step() { printf "→ %s ... " "$1"; }
 ok()   { printf "PASS\n"; PASS=$((PASS+1)); }
 bad()  { printf "FAIL: %s\n" "$1"; FAIL=$((FAIL+1)); }
 
-step "1. plugin.json declares 0.3.7 with new keywords"
+step "1. plugin.json declares 0.4.0 with new keywords"
 v=$(grep -E '"version"' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.3.7" ]]; then bad "expected 0.3.7, got '$v'"; else
+if [[ "$v" != "0.4.0" ]]; then bad "expected 0.4.0, got '$v'"; else
   miss=""
   for k in mcp pii-pipeline audit-log; do
     grep -q "\"$k\"" "$ROOT/.claude-plugin/plugin.json" || miss="$miss $k"
@@ -92,10 +92,10 @@ for f in options screen guard command status register; do
 done
 [[ $mod_ok -eq 1 ]] && ok || bad "mod hooks incomplete or too long"
 
-step "M2. mod: guard defaults on, and it is the only userConfig option"
+step "M2. mod: guard and piiGuard default on, and they are the only userConfig options"
 node -e '
 const c = require(process.argv[1]).userConfig || {}
-process.exit(c.guard && c.guard.default === "on" && Object.keys(c).length === 1 ? 0 : 1)
+process.exit(c.guard && c.guard.default === "on" && c.piiGuard && c.piiGuard.default === "on" && Object.keys(c).length === 2 ? 0 : 1)
 ' "$ROOT/.claude-plugin/plugin.json" && ok || bad "userConfig defaults wrong"
 
 step "M3. mod: hooks never touch the network or spawn a process"
