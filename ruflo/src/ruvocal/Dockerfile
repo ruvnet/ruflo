@@ -29,7 +29,12 @@ RUN mkdir -p /home/user/.npm && chown -R 1000:1000 /home/user/.npm
 USER user
 
 
-COPY --chown=1000 .env /app/.env
+# .env is optional in the build context: a fresh clone has none (the repo does
+# not commit .env files), while deploy builds may supply one. Copy it when
+# present, otherwise write the public default the chat-ui image expects.
+RUN --mount=type=bind,source=.,target=/tmp/ctx \
+    if [ -f /tmp/ctx/.env ]; then cp /tmp/ctx/.env /app/.env; \
+    else printf 'OPENAI_BASE_URL=https://router.huggingface.co/v1\n' > /app/.env; fi
 # Remove empty placeholder values that block .env.local overrides via dotenv-cli -c
 RUN sed -i 's/^MODELS=$/# MODELS=/' /app/.env && \
     sed -i 's/^TASK_MODEL=$/# TASK_MODEL=/' /app/.env

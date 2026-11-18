@@ -973,7 +973,8 @@ const handlers = {
     const dangerous = ['rm -rf /', 'format c:', 'del /s /q c:\\', ':(){:|:&};:'];
     // Join literal quote fragments and normalize root paths without shell evaluation.
     function hasRootDelete(command, depth = 0) {
-      // mask has one letter per character of word: 'u' unquoted, 'q' quoted or escaped (only unquoted braces expand).
+      // mask has one letter per character of word: 'u' unquoted, 'd' double-quoted, 'q' otherwise quoted or escaped
+      // (only unquoted braces expand; a parameter's default expands unquoted or double-quoted).
       let word = '', mask = '', quote = '', started = false, redirect = false
       let ansiNul = false // a NUL inside $'...' ends that string, as in bash
       let inRm = false, optionsEnded = false, recursive = false, force = false, root = false
@@ -1006,9 +1007,11 @@ const handlers = {
       }
       // Past the rescan bound (or the brace budget), a string is judged by its tokens: an rm and a possible root operand
       // anywhere in it deny. Quote characters are dropped first, so r"m" is still rm; a path token with braces may expand to /.
+      const looseTokens = (text) => text.replace(/["'\\]/g, '').split(/[\s;&|()\x60$]+/)
+      const isRm = (t) => t === 'rm' || t.endsWith('/rm')
       const looseRootDelete = (text) => {
-        const tokens = text.replace(/["'\\]/g, '').split(/[\s;&|()\x60$]+/)
-        return tokens.some(t => t === 'rm' || t.endsWith('/rm')) && tokens.some(t => isRoot(t) || (t.includes('/') && /[{}]/.test(t)))
+        const tokens = looseTokens(text)
+        return tokens.some(isRm) && tokens.some(t => isRoot(t) || (t.includes('/') && /[{}]/.test(t)))
       }
       // Bash brace expansion of one word ({a,b} lists, nested or glued to text), and nothing else: no {1..3} sequences, and
       // nothing inside parameter braces after a dollar sign. Only unquoted braces and commas count. Iterative and bounded:
@@ -1069,10 +1072,42 @@ const handlers = {
         } else root = root || isRoot(w)
         return inRm && recursive && force && root
       }
+      // The word as the shell reads it with its parameters unset: a default (dollar-brace X:-word, X-word, X:=word or
+      // X=word) becomes its word, taken literally, and an alternate (X:+word, X+word) becomes nothing. Undefined when the
+      // word has neither. Linear: nested parameters are frames on a stack, not recursion.
+      const unsetDefaults = (text, marks) => {
+        if (!text.includes('$' + '{')) return undefined
+        const frames = [{ out: '', outMarks: '', op: '', nest: 0 }]
+        const param = /!?(?:[a-z_][a-z0-9_]*(?:\[[^\]]*\])?|[0-9]+|[@*#?$!-]):?([-=+])/y
+        let found = false
+        for (let k = 0; k < text.length; k++) {
+          const top = frames[frames.length - 1], c = text[k], live = marks[k] !== 'q'
+          if (live && c === '$' && text[k + 1] === '{' && marks[k + 1] !== 'q') {
+            param.lastIndex = k + 2
+            const m = param.exec(text)
+            if (m) { frames.push({ out: '', outMarks: '', op: m[1], nest: 0 }); k = param.lastIndex - 1; found = true; continue }
+          }
+          if (live && c === '}' && frames.length > 1 && top.nest === 0) {
+            frames.pop()
+            const parent = frames[frames.length - 1]
+            if (top.op !== '+') { parent.out += top.out; parent.outMarks += 'q'.repeat(top.out.length) }
+            continue
+          }
+          if (live && c === '{') top.nest++
+          else if (live && c === '}' && top.nest > 0) top.nest--
+          top.out += c; top.outMarks += marks[k]
+        }
+        return found && frames.length === 1 ? [frames[0].out, frames[0].outMarks] : undefined
+      }
       const finishWord = () => {
         if (!started) return false
         const text = word, marks = mask
         word = ''; mask = ''; started = false
+        // A default is a word the shell may use instead: rm -rf with a default of / deletes the root when it is unset.
+        const unset = unsetDefaults(text, marks)
+        return judgeWord(text, marks) || (unset !== undefined && judgeWord(unset[0], unset[1]))
+      }
+      const judgeWord = (text, marks) => {
         // Literal shell strings (e.g. sh -c 'rm -rf /', or sh -c '{rm,-rf,/}') also carried the old guard.
         // Bound rescanning to four levels; beyond that judge the string by its tokens.
         if (/[\s;&|()\x60{]/.test(text)) {
@@ -1105,6 +1140,38 @@ const handlers = {
         }
         return [j, depth < 4 ? hasRootDelete(body, depth + 1) : looseRootDelete(body)]
       }
+      // The index of the parenthesis closing the one at open, past quoted and ANSI-C quoted text, escapes, comments and
+      // backtick substitutions, or -1. After one never closes none is looked for again in this scan (the shell rejects the
+      // command), so the scan stays linear and the rest is read as before, with ( and ) as separators, but a command
+      // with an rm in it is refused. A case pattern's ) is still read as the close.
+      let unclosedParen = false
+      const closeParen = (open) => {
+        if (unclosedParen) return -1
+        let level = 0
+        for (let j = open; j < command.length; j++) {
+          const c = command[j]
+          if (c === '\\') j++
+          else if (c === '$' && command[j + 1] === "'") {
+            for (j += 2; j < command.length && command[j] !== "'"; j++) if (command[j] === '\\') j++
+          } else if (c === '#' && /[\s;&|()<>]/.test(command[j - 1])) {
+            while (j + 1 < command.length && command[j + 1] !== '\n') j++
+          } else if (c === "'" || c === '"' || c === '\x60') {
+            for (j++; j < command.length && command[j] !== c; j++) if (c !== "'" && command[j] === '\\') j++
+          } else if (c === '(') level++
+          else if (c === ')' && --level === 0) return j
+        }
+        unclosedParen = true
+        return -1
+      }
+      // A $(...) substitution from its dollar sign: the body is scanned as written and its output taken as empty, as a
+      // backtick one's is. $((...)) is arithmetic, a number: its body is still scanned (it may hold a substitution) and
+      // a digit stands in the word for it. Returns the closing parenthesis, whether the body deletes the root, and the
+      // text the word keeps.
+      const parenSubstitution = (at) => {
+        const end = closeParen(at + 1)
+        const body = command.slice(at + 2, end)
+        return [end, depth < 4 ? hasRootDelete(body, depth + 1) : looseRootDelete(body), command[at + 2] === '(' ? '0' : '']
+      }
       const finishCommand = () => {
         const denied = inRm && recursive && force && root
         inRm = optionsEnded = recursive = force = root = false
@@ -1134,12 +1201,19 @@ const handlers = {
             if (command[end + 1] === '#') { word += '\u0001'; mask += 'q' }
             i = end
           }
+          else if (quote === '"' && char === '$' && command[i + 1] === '(' && closeParen(i + 1) > i) {
+            const [end, denied, kept] = parenSubstitution(i)
+            if (denied) return true
+            word += kept; mask += 'q'.repeat(kept.length)
+            if (command[end + 1] === '#') { word += '\u0001'; mask += 'q' }
+            i = end
+          }
           else if (quote === '"' && char === '\\' && i + 1 < command.length &&
             (command[i + 1] === '"' || command[i + 1] === '\\' || command[i + 1] === '$' ||
               command.charCodeAt(i + 1) === 96 || command[i + 1] === '\n')) {
             const next = command[++i]
             if (next !== '\n') { word += next; mask += 'q' }
-          } else { word += char; mask += 'q' }
+          } else { word += char; mask += quote === '"' ? 'd' : 'q' }
           continue
         }
         if (char === '\\' && i + 1 < command.length) {
@@ -1151,6 +1225,12 @@ const handlers = {
           // and the word has started (a # right after it is not a comment).
           const [end, denied] = substitution(i + 1, false)
           if (denied) return true
+          i = end; started = true
+        } else if (char === '$' && command[i + 1] === '(' && closeParen(i + 1) > i) {
+          // $(...) is a command substitution too, and the rm being parsed keeps its state across it.
+          const [end, denied, kept] = parenSubstitution(i)
+          if (denied) return true
+          word += kept; mask += 'q'.repeat(kept.length)
           i = end; started = true
         } else if (char === '$' && (command[i + 1] === "'" || command[i + 1] === '"')) {
           // ANSI-C ($'...': escapes decoded) and locale ($"...") quoting: the $ is not part of the word.
@@ -1170,7 +1250,7 @@ const handlers = {
           word += char; mask += 'u'; started = true
         }
       }
-      return finishWord() || finishCommand()
+      return finishWord() || finishCommand() || (unclosedParen && looseTokens(command).some(isRm))
     }
 
     // A fork bomb's definition as bash reads it, whatever the spacing or the name: f(){ f|f& }, function f { f|f& },

@@ -5,6 +5,11 @@ Newest first. One `## <version> — <date>` heading per version, then `feat:`, `
 ## 0.17.3 — 2026-11-17
 - fix: learning-loop lessons are shown only from a `learned-lessons.json` the CLI on this machine wrote (#4747). The ingest stamps the file with an id kept in `~/.claude-flow/learning-loop-origin`, and the mod and the classic `learning-loop.cjs` helper show nothing from a file without it, so one committed to a cloned repository is never presented as the project's own test and build history. A file written before this version shows nothing until the next ingest rewrites it.
 
+## 0.17.2 — 2026-11-17
+- fix: the dangerous-command guard reads `$(...)` as a command substitution, as it already read backticks, so `rm -rf "$(echo)"/` is refused, and it skips `$((...))` arithmetic. A parameter's default is a word the shell may use, so `rm -rf ${X:-/}` is refused too, as are `${A[0]:-/}` and `${!X:-/}` (#4742). Same change in both classic `hook-handler.cjs` copies and the generated fallback.
+- fix: a `$(` is closed past `$'...'` escapes and `#` comments, and a command with an rm in it whose `$(` never closes is refused instead of read the old way. A case pattern's `)` is still taken as the close.
+- fix: `rm -rf "$(pwd)"/*` is now refused, as ``rm -rf "`pwd`"/*`` already was, since a substitution's output is read as empty and the operand becomes `/*`. `rm -rf $(echo /)` still passes, like its backtick twin.
+
 ## 0.17.1 — 2026-11-17
 - fix: `claude plugin validate` passes again on Claude Code 2.1.323 and later. `hooks/noun.ts` returned `{ ...added, ...beneath }` from `engine.create`, which the validator refuses ("this engine.create hook is outside its form: a spread of anything but the value of next(e)"); it now returns `{ ...beneath, ruflo }`. No other plugin defines `engine.create`, so `$.ruflo` is unchanged in practice. The mod already loaded and ran on those versions; only validation failed.
 

@@ -1,7 +1,8 @@
 /** Bounded console projections and a fail-closed cross-process collector lease. */
-import { closeSync, constants, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { closeSync, constants, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readSync, realpathSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { createHash, randomUUID } from 'node:crypto';
 import type { ManagedRunSnapshot } from './managed-run-collector.js';
 
 const flights = new Map<string, { scope: string; promise: Promise<unknown> }>();
@@ -82,6 +83,96 @@ export async function executeManagedControl(input: Record<string, unknown>, deps
   if (current.status === 'terminated') return { success: true, currentStatus: 'terminated', cancellationConfirmed: true };
   if (action === 'interrupt') return { success: true, currentStatus: current.status, interruptRequested: true, cancellationConfirmed: false, result: await deps.interrupt(sessionId) };
   return { success: true, currentStatus: current.status, cancellationConfirmed: true, result: await deps.terminate(sessionId) };
+}
+
+/** Sessions this project created. Every other session in the organisation needs a host allowlist entry. */
+export interface ManagedSessionRecord { sessionId: string; environmentId?: string; createdMs: number }
+const LEDGER_LIMIT = 1000;
+
+// The ledger lives in the user's state directory, keyed by project, never in the workspace: an agent that can write
+// project files must not be able to grant itself another session. Same base directory as the dispatch queue.
+export function managedLedgerPath(root: string): string {
+  let project = resolve(root);
+  try { project = realpathSync.native(project); } catch { /* a missing project keeps its resolved path */ }
+  const override = process.env.RUFLO_AI_BUDGET_DIR;
+  const base = override && isAbsolute(override) ? override : join(homedir(), '.claude-flow');
+  return join(base, 'managed', `${createHash('sha256').update(project).digest('hex')}.json`);
+}
+
+function ledgerEntries(path: string): ManagedSessionRecord[] {
+  if (!existsSync(path)) return [];
+  if (!lstatSync(path).isFile() || lstatSync(path).isSymbolicLink()) throw new Error('Invalid managed session ledger');
+  const fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  try {
+    const buffer = Buffer.alloc(256_001);
+    const count = readSync(fd, buffer, 0, buffer.length, 0);
+    if (count > 256_000) throw new Error('Managed session ledger exceeds limit');
+    const value = JSON.parse(buffer.subarray(0, count).toString('utf8'));
+    if (value.version !== 1 || !Array.isArray(value.sessions) || value.sessions.length > LEDGER_LIMIT) throw new Error('Invalid managed session ledger');
+    for (const s of value.sessions) {
+      if (typeof s?.sessionId !== 'string' || !/^sesn_[A-Za-z0-9]+$/.test(s.sessionId) || (s.environmentId !== undefined && (typeof s.environmentId !== 'string' || !/^env_[A-Za-z0-9]+$/.test(s.environmentId)))) throw new Error('Invalid managed session ledger');
+    }
+    return value.sessions;
+  } finally { closeSync(fd); }
+}
+
+// Reads treat an unreadable ledger as owning nothing. A write keeps it aside for inspection and starts empty.
+function writableEntries(path: string): ManagedSessionRecord[] {
+  try { return ledgerEntries(path); } catch {
+    renameSync(path, `${path}.corrupt-${Date.now()}`);
+    return [];
+  }
+}
+
+const LOCK_STALE_MS = 5_000;
+
+// A lost record would strand a session this project just paid for, so wait briefly for another writer. The lock
+// names its owner; one older than LOCK_STALE_MS was left by a writer that died, and is broken.
+function ledgerLock(path: string): number {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const fd = openSync(path, 'wx', 0o600);
+      try { writeFileSync(fd, `${process.pid} ${Date.now()}\n`); } catch (error) { closeSync(fd); unlinkSync(path); throw error; }
+      return fd;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST' || attempt >= 20) throw error;
+      try {
+        const lock = lstatSync(path);
+        if (lock.isFile() && Date.now() - lock.mtimeMs > LOCK_STALE_MS) { unlinkSync(path); continue; }
+      } catch { /* released meanwhile */ continue; }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+    }
+  }
+}
+
+// Returns the records the size cap dropped.
+function updateLedger(root: string, change: (sessions: ManagedSessionRecord[]) => ManagedSessionRecord[]): ManagedSessionRecord[] {
+  const path = managedLedgerPath(root), dir = dirname(path);
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  if (!lstatSync(dir).isDirectory() || lstatSync(dir).isSymbolicLink()) throw new Error('Managed session ledger directory must be regular');
+  const lockPath = `${path}.lock`, temp = join(dir, `${randomUUID()}.tmp`);
+  const fd = ledgerLock(lockPath);
+  try {
+    const sessions = change(writableEntries(path));
+    const out = openSync(temp, 'wx', 0o600);
+    try { writeFileSync(out, JSON.stringify({ version: 1, sessions: sessions.slice(0, LEDGER_LIMIT) })); fsyncSync(out); } finally { closeSync(out); }
+    renameSync(temp, path);
+    return sessions.slice(LEDGER_LIMIT);
+  } finally { if (existsSync(temp)) unlinkSync(temp); closeSync(fd); unlinkSync(lockPath); }
+}
+
+export function recordManagedSession(root: string, sessionId: string, environmentId: string): ManagedSessionRecord[] {
+  if (!/^sesn_[A-Za-z0-9]+$/.test(sessionId) || !/^env_[A-Za-z0-9]+$/.test(environmentId)) throw new Error('Invalid managed session ID');
+  return updateLedger(root, sessions => [{ sessionId, environmentId, createdMs: Date.now() }, ...sessions.filter(s => s.sessionId !== sessionId)]);
+}
+
+export function forgetManagedSession(root: string, sessionId: string): void {
+  updateLedger(root, sessions => sessions.filter(s => s.sessionId !== sessionId));
+}
+
+/** Reads never create state. A missing ledger owns nothing; an unreadable one throws. */
+export function ownedManagedSession(root: string, sessionId: string): ManagedSessionRecord | undefined {
+  return ledgerEntries(managedLedgerPath(root)).find(s => s.sessionId === sessionId);
 }
 
 /** Successful provider deletion is a session fact, never an acceptance verdict. */

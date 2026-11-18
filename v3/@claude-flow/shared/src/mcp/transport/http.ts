@@ -47,8 +47,12 @@ export interface HttpTransportConfig {
   /** Accept a non-loopback bind with no token (the operator's own risk). */
   allowUnauthenticated?: boolean;
   maxRequestSize?: string;
+  /** Largest WebSocket frame accepted on /ws, in bytes (default 10 MiB). */
+  maxMessageSize?: number;
   requestTimeout?: number;
 }
+
+const DEFAULT_MAX_WS_PAYLOAD = 10 * 1024 * 1024;
 
 /**
  * HTTP Transport Implementation
@@ -103,6 +107,10 @@ export class HttpTransport extends EventEmitter implements ITransport {
     this.wss = new WebSocketServer({
       server: this.server,
       path: '/ws',
+      maxPayload:
+        typeof this.config.maxMessageSize === 'number' && this.config.maxMessageSize > 0
+          ? this.config.maxMessageSize
+          : DEFAULT_MAX_WS_PAYLOAD,
       verifyClient: (info: { req: IncomingMessage }) =>
         this.config.auth?.enabled === true || refuseOpenRequest(info.req, this.config.host, this.config.corsOrigins) === undefined,
     });

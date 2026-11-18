@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import {
+  DEFAULT_FEDERATION_MAX_PAYLOAD,
   loadFederationTransport,
 } from '../../src/transport/midstream-aware-loader.js';
 
@@ -36,7 +37,7 @@ vi.mock('agentic-flow/transport/loader', async () => {
   };
 });
 
-const wsServerOptions = vi.hoisted(() => [] as Array<{ port?: number; host?: string }>);
+const wsServerOptions = vi.hoisted(() => [] as Array<{ port?: number; host?: string; maxPayload?: number }>);
 
 vi.mock('ws', async () => {
   class MockWebSocket {
@@ -45,7 +46,7 @@ vi.mock('ws', async () => {
     close() {}
   }
   class MockWebSocketServer {
-    constructor(options: { port?: number; host?: string }) {
+    constructor(options: { port?: number; host?: string; maxPayload?: number }) {
       wsServerOptions.push(options);
     }
     on(event: string, handler: () => void) {
@@ -164,6 +165,19 @@ describe('loadFederationTransport — ADR-120 Step 2', () => {
     }
 
     expect(wsServerOptions.map((o) => o.host)).toEqual(['127.0.0.1', '0.0.0.0', '127.0.0.1']);
+  });
+
+  it('the fallback listener caps inbound frames instead of using the ws 100 MiB default (#4752)', async () => {
+    const mod = await import('agentic-flow/transport/loader');
+    const loaderFn = (mod as unknown as { loadQuicTransport: ReturnType<typeof vi.fn> })
+      .loadQuicTransport;
+    for (let i = 0; i < 2; i++) loaderFn.mockResolvedValueOnce({ send: vi.fn() });
+
+    wsServerOptions.length = 0;
+    await (await loadFederationTransport({ port: 0 })).transport.listen!(0);
+    await (await loadFederationTransport({ port: 0, maxPayload: 65536 })).transport.listen!(0);
+
+    expect(wsServerOptions.map((o) => o.maxPayload)).toEqual([DEFAULT_FEDERATION_MAX_PAYLOAD, 65536]);
   });
 
   it('returned envelope has the documented LoadedFederationTransport shape', async () => {
