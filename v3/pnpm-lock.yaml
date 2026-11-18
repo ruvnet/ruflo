@@ -136,7 +136,7 @@ importers:
         specifier: 3.0.7
         version: link:../security
       '@claude-flow/shared':
-        specifier: 3.0.8
+        specifier: 3.0.9
         version: link:../shared
       '@electron/asar':
         specifier: ^4.3.1
