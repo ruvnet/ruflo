@@ -528,7 +528,7 @@ async function doImport() {
   const { pkg: memPkg, searched } = await resolveMemoryPackage({ record: true });
   if (!memPkg) {
     warnMemoryUnavailable(searched);
-    return;
+    return 1; // #4963: nothing was imported/synced, so this is a failure, not a success
   }
 
   const config = readConfig();
@@ -614,7 +614,7 @@ async function doSync() {
   const { pkg: memPkg, searched } = await resolveMemoryPackage({ record: true });
   if (!memPkg) {
     warnMemoryUnavailable(searched);
-    return;
+    return 1; // #4963: nothing was imported/synced, so this is a failure, not a success
   }
 
   const config = readConfig();
@@ -870,8 +870,8 @@ process.on('unhandledRejection', (reason) => {
 let exitCode = 0;
 try {
   switch (command) {
-    case 'import': await doImport(); break;
-    case 'sync': await doSync(); break;
+    case 'import': exitCode = (await doImport()) || 0; break;
+    case 'sync': exitCode = (await doSync()) || 0; break;
     case 'status': await doStatus(); break;
     case 'read': exitCode = await doRead(commandArgs); break;
     case 'read-id': exitCode = await doReadId(commandArgs); break;

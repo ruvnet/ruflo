@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Structural smoke test for ruflo-intelligence v0.5.0.
+# Structural smoke test for ruflo-intelligence v0.6.0.
 # Per ADR-0001 §6 Verification: 13 contract checks + 3 doc invariants.
 # Offline-safe; no live MCP calls.
 set -u
@@ -27,10 +27,10 @@ grep -qE "IPFS.+pattern|pattern.+IPFS|Pinata" "$ROOT/README.md" \
   && ok || bad "README missing IPFS / Pinata transfer docs"
 
 # 1. plugin.json bump + new keywords
-step "1. plugin.json declares 0.5.0 with new keywords"
+step "1. plugin.json declares 0.6.0 with new keywords"
 v=$(grep -E '"version"[[:space:]]*:' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.5.0" ]]; then
-  bad "expected 0.5.0, got '$v'"
+if [[ "$v" != "0.6.0" ]]; then
+  bad "expected 0.6.0, got '$v'"
 else
   miss=""
   for k in microlora ewc attention moe pattern-transfer model-routing; do
@@ -168,6 +168,14 @@ process.exit(need.every(k => c[k] && c[k].default === "on") ? 0 : 1)
 
 step "M3. mod: hooks never touch the network or spawn a process"
 if grep -nE '\$\.(http|process)\.|child_process|fetch\(' "$ROOT"/hooks/*.ts >/dev/null; then bad "network or process call in hooks"; else ok; fi
+
+step "W1. neural wsp (ADR-528) documented in command, agent and route skill"
+miss=""
+for f in commands/neural.md agents/intelligence-specialist.md skills/intelligence-route/SKILL.md; do
+  grep -q "neural wsp\\|\\*\\*wsp\\*\\*" "$ROOT/$f" || miss="$miss $f"
+done
+grep -q "evidence only\\|Evidence only" "$ROOT/commands/neural.md" || miss="$miss no-authority-note"
+[[ -z "$miss" ]] && ok || bad "missing:$miss"
 
 printf "\n%s passed, %s failed\n" "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]] || exit 1

@@ -728,7 +728,7 @@ const routeCommand: Command = {
       if (result.routing) {
         output.writeln();
         output.writeln(output.bold('Routing Method'));
-        const methodDisplay = result.routing.method.startsWith('semantic')
+        const methodDisplay = result.routing.method.startsWith('semantic') || result.routing.method === 'centroid'
           ? output.success(`${result.routing.method} (${result.routing.backend || 'semantic'})`)
           : 'keyword';
         output.printList([

@@ -28,7 +28,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ruvnet/sublinear-core": "^1.0.0",
+    "@ruvnet/sublinear-core": "^1.0.1",
     "zod": "^4.6.7"
   },
   "overrides": {

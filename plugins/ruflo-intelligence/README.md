@@ -15,6 +15,7 @@ User-facing surface for Ruflo's self-learning system. Wraps **29 intelligence-re
 
 - **CLI:** checked against `@claude-flow/cli` 3.56.x (`mcp exec`, `hooks`, `neural` flags as in `--help`).
 - **Verification:** `bash plugins/ruflo-intelligence/scripts/smoke.sh` is the contract.
+- **ruv-FANN weight-space tooling (`@claude-flow/cli` 3.77.0+, ADR-528):** `neural wsp` inspects, invariant-checks and regression-gates dense models through three optional dependencies (`ruv-fann-wsp` 0.2.0, `ruv-fann-wsp-invariants` 0.1.0, `ruv-fann-wsp-lifecycle` 0.1.0) on the same `ruv-fann` 0.1.2 core agentdb already installs. It is evidence only and does not change routing; it is unavailable in the `claude-flow` umbrella and with `--omit=optional`.
 - **Learning backends (`@claude-flow/cli` 3.72.1+):** MicroLoRA training runs on `@ruvector/learning-wasm` (an optional dependency of the CLI; about 2 µs per 256-dim adaptation), and falls back to JS when `--omit=optional` skipped it. The SONA coordinator and contrastive trainer come from `@ruvector/ruvllm` ^4.1.0; `ruvllm_status` shows `native.coordinator` and `native.trainingBackend`. 4.0.x lacked those classes, so anything that resolved it trained on the JS fallback.
 
 ## Tool inventory
@@ -118,7 +119,7 @@ Inspect with `npx @claude-flow/cli@latest mcp exec -t hooks_intelligence -p '{"s
 ## Commands
 
 - `/intelligence` — Dashboard: stats, metrics, model-tier distribution, routing rationale on demand
-- `/neural` — Neural training and prediction (`train`, `status`, `patterns`, `predict`, `optimize`, `compress`)
+- `/neural` — Neural training and prediction (`train`, `status`, `patterns`, `predict`, `optimize`, `compress`), plus ruv-FANN weight-space checks (`wsp`: `status`, `inspect`, `check`, `gate`, `export-centroid`)
 
 ## Skills
 

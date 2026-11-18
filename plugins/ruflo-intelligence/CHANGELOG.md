@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.6.0 — 2026-11-11
+- feat: `/neural wsp` and the intelligence-specialist agent cover the ruv-FANN weight-space tooling in `@claude-flow/cli` 3.77.0 (ADR-528): `status`, `inspect`, `check` (centroid-router self-routing invariants), `gate` (bounded-patch regression gate) and `export-centroid`. intelligence-route runs `neural wsp check` after a centroid artifact is replaced. Evidence only; nothing promotes or reroutes
+
 ## 0.5.0 — 2026-11-09
 - feat: a separate `piiGuard` option (default on, so nothing changes unless you turn it off). With it off, a `hooks_transfer` that holds an email address may publish, while a key, token or password in any learning write is still refused whenever `guard` is on. Before, the only way to stop the email refusal was `guard: off`, which also dropped secret screening (#4861)
 

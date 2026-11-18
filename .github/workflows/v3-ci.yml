@@ -813,6 +813,13 @@ jobs:
     # so direct-to-main changes (rare) are caught.
     name: Supply-chain audit (#2046)
     runs-on: ubuntu-latest
+    env:
+      # npm audit reads the lockfile graph; it never loads onnxruntime. The
+      # nested onnxruntime-node under agentic-flow's transformers postinstalls
+      # a CUDA tarball from microsoft/onnxruntime releases v1.21.0, which no
+      # longer exists (404 since 2026-11-18), failing the browser install.
+      ONNXRUNTIME_NODE_INSTALL: skip
+      ONNXRUNTIME_NODE_INSTALL_CUDA: skip
 
     steps:
       - name: Checkout code

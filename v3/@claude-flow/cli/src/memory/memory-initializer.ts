@@ -795,9 +795,13 @@ function saveHNSWMetadata(): void {
     const swarmDir = getMemoryRoot();
     const metadataPath = path.join(swarmDir, 'hnsw.metadata.json');
     const metadata = Array.from(hnswIndex.entries.entries());
-    fs.writeFileSync(metadataPath, JSON.stringify(metadata));
-  } catch {
-    // Silently fail - metadata save is best-effort
+    writeFileAtomic(metadataPath, Buffer.from(JSON.stringify(metadata), 'utf-8'));
+  } catch (error) {
+    // Metadata is best-effort, but persistence failures must be visible.
+    console.warn(
+      '[memory] Failed to save hnsw.metadata.json:',
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 

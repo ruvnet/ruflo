@@ -8,6 +8,7 @@
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { getProjectRoot } from '../services/project-root.js';
+import { wspCommand } from './neural-wsp.js';
 
 // Train subcommand - REAL WASM training with RuVector
 const trainCommand: Command = {
@@ -4694,7 +4695,7 @@ const distillCommand: Command = {
 export const neuralCommand: Command = {
   name: 'neural',
   description: 'Neural pattern training, MoE, Flash Attention, pattern learning',
-  subcommands: [trainCommand, statusCommand, patternsCommand, predictCommand, optimizeCommand, benchmarkCommand, listCommand, exportCommand, importCommand, routerCommand, distillCommand],
+  subcommands: [trainCommand, statusCommand, patternsCommand, predictCommand, optimizeCommand, benchmarkCommand, listCommand, exportCommand, importCommand, routerCommand, distillCommand, wspCommand],
   examples: [
     { command: 'claude-flow neural status', description: 'Check neural system status' },
     { command: 'claude-flow neural train -p coordination', description: 'Train coordination patterns' },

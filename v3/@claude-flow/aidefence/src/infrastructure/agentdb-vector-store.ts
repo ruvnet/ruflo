@@ -61,6 +61,20 @@ export interface AgentDBVectorStoreOptions {
 interface Entry {
   value: unknown;
   indexed: boolean;
+  /** The indexed vector, kept so search can recover what the ANN graph misses. */
+  vector?: Float32Array;
+}
+
+function cosine(a: Float32Array, b: Float32Array): number {
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  return na === 0 || nb === 0 ? 0 : dot / Math.sqrt(na * nb);
 }
 
 const SEP = '\u0000';
@@ -202,7 +216,7 @@ export class AgentDBVectorStore implements VectorStore {
     // Some backends (RuVector) are async-only and throw from the sync methods.
     if (ready.backend.insertAsync) await ready.backend.insertAsync(id, vector, meta);
     else ready.backend.insert(id, vector, meta);
-    ns.set(params.key, { value: params.value, indexed: true });
+    ns.set(params.key, { value: params.value, indexed: true, vector });
   }
 
   async search(params: {
@@ -234,13 +248,35 @@ export class AgentDBVectorStore implements VectorStore {
     const hits = ready.backend.searchAsync
       ? await ready.backend.searchAsync(vector, fetchK)
       : ready.backend.search(vector, fetchK);
+    let nsHits = 0;
     for (const hit of hits) {
-      if (!hit.id.startsWith(prefix) || hit.similarity < min) continue;
+      if (!hit.id.startsWith(prefix)) continue;
+      nsHits++;
+      if (hit.similarity < min) continue;
       const key = hit.id.slice(prefix.length);
       const entry = ns.get(key);
       if (!entry) continue;
       out.push({ key, value: entry.value, similarity: hit.similarity });
       if (out.length >= k) break;
+    }
+
+    // HNSW is approximate: after a delete and re-insert, ruvector-core can leave
+    // a node unreachable from the graph's entry point, so a stored entry is
+    // silently missing from the results (~1% of overwrites in a small index).
+    // When the graph returned fewer of this namespace's entries than it holds
+    // (before the minSimilarity filter, so a floor alone never triggers this),
+    // score the rest exactly from the vectors kept at store time. Cosine, like
+    // the default AgentDB backend (similarity = 1 - cosine distance).
+    if (nsHits < Math.min(k, ns.size)) {
+      const seen = new Set(out.map(o => o.key));
+      for (const [key, entry] of ns) {
+        if (seen.has(key) || !entry.vector) continue;
+        const similarity = cosine(vector, entry.vector);
+        if (similarity < min) continue;
+        out.push({ key, value: entry.value, similarity });
+      }
+      out.sort((a, b) => b.similarity - a.similarity);
+      out.length = Math.min(out.length, k);
     }
     return out;
   }

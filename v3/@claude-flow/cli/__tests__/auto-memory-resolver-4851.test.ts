@@ -156,7 +156,7 @@ for (const [name, source] of [['package', packageHook], ['repository', dogfoodHo
       write(p.sidecar, JSON.stringify({ distPath: wrong }));
 
       const r = run(p.hook, p.dir, p.home, 'import');
-      expect(r.status).toBe(0); // loud but non-fatal, as before
+      expect(r.status).toBe(1); // #4963: loud and a failure, so the hook runner can see nothing was imported
       expect(r.stdout).toContain('self-learning imports are DISABLED');
       expect(r.stdout).toContain('npm i -D @claude-flow/memory');
       expect(r.stdout).toContain('Searched:');
@@ -165,6 +165,7 @@ for (const [name, source] of [['package', packageHook], ['repository', dogfoodHo
       expect(r.stdout).toContain(`require.resolve from ${join(p.dir, '.claude', 'helpers')}: not found`);
       expect(r.stdout).toContain(`@claude-flow/cli dependencies from ${p.dir}: not found`);
       expect(r.stderr).toContain('Searched:');
+      expect(run(p.hook, p.dir, p.home, 'sync').status).toBe(1); // #4963: sync fails the same way
       expect(readSidecar(p.sidecar)).toEqual({ distPath: wrong }); // left as it was
       expect(fs.existsSync(join(p.dir, '.claude-flow', 'data', 'auto-memory-store.json'))).toBe(false);
     });
