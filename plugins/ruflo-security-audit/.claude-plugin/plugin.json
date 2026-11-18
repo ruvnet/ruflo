@@ -2,6 +2,7 @@
   "name": "ruflo-security-audit",
   "description": "Security review, dependency scanning, policy gates, and CVE monitoring",
   "version": "0.3.5",
+  "repository": "https://github.com/ruvnet/ruflo",
   "author": {
     "name": "ruvnet",
     "url": "https://github.com/ruvnet"

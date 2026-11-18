@@ -101,7 +101,7 @@ export function eventsView(ctx: Ctx): RenderElement {
   if (act.prefs.searches.length > 0) rows.push(...flow(ctx, act.prefs.searches.map((item, i) => ({ key: `ev-del-${i}`, label: ` ✕ ${clip(item.name, 12)} `, onPress: () => a.deleteSearch(item.name) })), 'ev-dels', 'forget '))
 
   if (act.prefs.pins.length > 0) {
-    rows.push(text(ctx, ` 📌 pinned (${act.prefs.pins.length}/${MAX_PINS})`, { bold: true }))
+    rows.push(text(ctx, ` 📌 pinned (${act.prefs.pins.length}/${MAX_PINS})`, { weight: 'semibold' }))
 
     for (const [i, pin] of act.prefs.pins.slice(-3).reverse().entries()) {
       rows.push(row(ctx, [ctx.kit.Text({ color: LEVEL_COLOR[pin.level](), children: ` ${LEVEL_MARK[pin.level]} ${ago(pin.atMs, nowMs).padStart(8)} ` }), ctx.kit.Text({ children: clip(pin.text, Math.max(8, ctx.columns - 26)) }), ctx.kit.Button({ key: `ev-unpin-${i}`, label: '✕', plain: true, onPress: safe(() => a.unpin(pin.atMs, pin.text)) })], `ev-pin-${i}`))

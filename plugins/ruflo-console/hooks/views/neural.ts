@@ -41,7 +41,7 @@ function trainingRows(ctx: Ctx): RenderElement[] {
     const head = at < BAR ? at : BAR * 2 - at - 1
     const bar = Array.from({ length: BAR }, (_, i) => (Math.abs(i - head) <= 2 ? '█' : '░')).join('')
 
-    rows.push(text(ctx, ` ${spinAt(nowMs)} ${running.label} [${bar}] ${Math.round((nowMs - running.startedAtMs) / 1000)}s`, { bold: true, color: THEME.warn }))
+    rows.push(text(ctx, ` ${spinAt(nowMs)} ${running.label} [${bar}] ${Math.round((nowMs - running.startedAtMs) / 1000)}s`, { weight: 'semibold', color: THEME.warn }))
   }
 
   rows.push(
@@ -57,8 +57,8 @@ function trainingRows(ctx: Ctx): RenderElement[] {
       row(
         ctx,
         [
-          ctx.kit.Text({ bold: true, color: THEME.warn, children: ' cpu ' }),
-          ctx.kit.Text({ bold: true, color: THEME.head, children: ` ${pattern} `.padEnd(16, '.') }),
+          ctx.kit.Text({ weight: 'semibold', color: THEME.warn, children: ' cpu ' }),
+          ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: ` ${pattern} `.padEnd(16, '.') }),
           ctx.kit.Text({ color: THEME.info, children: ' epochs ' }),
           ...EPOCHS.map(epochs => ctx.kit.Button({ key: `run-nn-train-${pattern}-${epochs}`, label: ` ▸ ${epochs}`, plain: true, onPress: () => void ctx.act.run(`nn-train-${pattern}-${epochs}`) })),
         ],

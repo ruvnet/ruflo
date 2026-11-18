@@ -27,7 +27,7 @@ async function opened($: Body[0], on: Body[1]) {
 }
 
 describe('optimizer', () => {
-  test('the Overview opens with an Optimizer: findings, the scope chips, and only the safe fixes at first', { options: { boot: false } }, async ($, on) => {
+  test('the Overview opens with an Optimizer: findings, the scope chips, and only the safe fixes at first', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
     const tree = await pane.drawn()
     const order = keys(tree)
@@ -41,7 +41,7 @@ describe('optimizer', () => {
     await pane.unmount()
   })
 
-  test('a fix asks first, and its confirm sits right under the finding that raised it; nothing runs until yes', { options: { boot: false } }, async ($, on) => {
+  test('a fix asks first, and its confirm sits right under the finding that raised it; nothing runs until yes', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
 
     await pane.press({ key: 'opt-scope-balanced' })

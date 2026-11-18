@@ -30,6 +30,8 @@ import {
 } from './helpers-generator.js';
 import { getInstalledCliVersion, HELPERS_STAMP_FILE } from './helper-refresh.js';
 import { generateClaudeMd } from './claudemd-generator.js';
+import { writeDualClaudeMd } from './dual-instructions.js';
+import { detectRufloPlugins, emptyDedupReport, type PluginDedupReport, type PluginProvided } from './plugin-dedup.js';
 import { recordMemoryPackagePath } from './memory-package-resolver.js';
 import { COMMONJS_COMPANION_HELPERS, ensureCommonJsCompanions } from './helper-companions.js';
 import { scanSettingsForRisk, formatRiskFindingsAsWarnings, RISKY_SETTINGS_HINT, type RiskySettingsMode } from './settings-risk-scanner.js';
@@ -43,11 +45,9 @@ const SKILLS_MAP: Record<string, string[]> = {
   core: [
     'swarm-orchestration',
     'swarm-advanced',
-    'sparc-methodology',
     'hooks-automation',
     'pair-programming',
     'verification-quality',
-    'stream-chain',
     'skill-builder',
   ],
   browser: ['browser'],  // agent-browser integration
@@ -61,12 +61,11 @@ const SKILLS_MAP: Record<string, string[]> = {
     'reasoningbank-agentdb',
     'reasoningbank-intelligence',
   ],
+  // github-code-review and github-project-management only use hooks, which v3
+  // ships; the other three drive `ruflo github`, so they live in skills.legacy.
   github: [
     'github-code-review',
-    'github-multi-repo',
     'github-project-management',
-    'github-release-management',
-    'github-workflow-automation',
   ],
   flowNexus: [
     'flow-nexus-neural',
@@ -83,6 +82,28 @@ const SKILLS_MAP: Record<string, string[]> = {
     'v3-performance-optimization',
     'v3-security-overhaul',
     'v3-swarm-coordination',
+  ],
+  // ADR-128 / #4539: skills that document v2-era verbs v3 does not ship
+  // (`stream-chain`, `sparc`, `github`). Their examples fail with `Unknown
+  // command`, so they are opt-in like skills.v3 instead of being installed by
+  // default.
+  legacy: [
+    'github-multi-repo',
+    'github-release-management',
+    'github-workflow-automation',
+    'sparc-methodology',
+    'stream-chain',
+  ],
+  // How and when to use the ecosystem packages ruflo ships or wires in:
+  // ruvector + @ruvector/mincut-wasm, @ruvector/rabitq-wasm, sublinear-time-solver,
+  // @claude-flow/aidefence, agent-booster, @ruvector/learning-wasm.
+  ecosystem: [
+    'vector-quantization',
+    'graph-mincut',
+    'sublinear-solver',
+    'injection-defense',
+    'fast-code-edits',
+    'lora-learning',
   ],
 };
 
@@ -217,6 +238,14 @@ export async function executeInit(options: InitOptions): Promise<InitResult> {
     }
   }
 
+  // #2640: what the installed ruflo plugins already ship (null: none installed,
+  // or --full). Read-only detection; any doubt means "copy as before".
+  const c = options.components;
+  const provided = options.deferToPlugins && (c.mcp || c.skills || c.commands || c.agents)
+    ? detectRufloPlugins(targetDir)
+    : null;
+  const dedup = provided ? emptyDedupReport(provided) : undefined;
+
   try {
     // Create directory structure
     await createDirectories(targetDir, options, result);
@@ -228,23 +257,25 @@ export async function executeInit(options: InitOptions): Promise<InitResult> {
 
     // Generate and write .mcp.json
     if (options.components.mcp) {
-      await writeMCPConfig(targetDir, options, result);
+      await writeMCPConfig(targetDir, options, result, dedup);
     }
 
     // Copy skills
     if (options.components.skills) {
-      await copySkills(targetDir, options, result);
+      await copySkills(targetDir, options, result, provided, dedup);
     }
 
     // Copy commands
     if (options.components.commands) {
-      await copyCommands(targetDir, options, result);
+      await copyCommands(targetDir, options, result, provided, dedup);
     }
 
     // Copy agents
     if (options.components.agents) {
-      await copyAgents(targetDir, options, result);
+      await copyAgents(targetDir, options, result, provided, dedup);
     }
+
+    if (dedup) result.pluginDedup = dedup;
 
     // Generate helpers
     if (options.components.helpers) {
@@ -1123,7 +1154,8 @@ function normalizeProjectKey(p: string): string {
 async function writeMCPConfig(
   targetDir: string,
   options: InitOptions,
-  result: InitResult
+  result: InitResult,
+  dedup?: PluginDedupReport,
 ): Promise<void> {
   const mcpPath = path.join(targetDir, '.mcp.json');
 
@@ -1171,6 +1203,16 @@ async function writeMCPConfig(
     }
   }
 
+  // #2640: ruflo-core provides the ruflo MCP server. A second, standalone
+  // `claude-flow` server against the same project is a second writer on the
+  // same memory DB. Keep any other servers the preset asks for. Checked after
+  // the guards above, so it is only reported when init would have written it.
+  if (dedup && options.mcp.claudeFlow) {
+    dedup.mcpServerSkipped = true;
+    options = { ...options, mcp: { ...options.mcp, claudeFlow: false } };
+    if (!options.mcp.ruvSwarm && !options.mcp.flowNexus) return;
+  }
+
   const content = generateMCPJson(options);
   fs.writeFileSync(mcpPath, content, 'utf-8');
   result.created.files.push('.mcp.json');
@@ -1182,7 +1224,9 @@ async function writeMCPConfig(
 async function copySkills(
   targetDir: string,
   options: InitOptions,
-  result: InitResult
+  result: InitResult,
+  provided: PluginProvided | null = null,
+  dedup?: PluginDedupReport,
 ): Promise<void> {
   const skillsConfig = options.skills;
   const targetSkillsDir = path.join(targetDir, '.claude', 'skills');
@@ -1201,6 +1245,8 @@ async function copySkills(
     if (skillsConfig.browser) skillsToCopy.push(...SKILLS_MAP.browser);
     if (skillsConfig.v3) skillsToCopy.push(...SKILLS_MAP.v3);
     if (skillsConfig.dualMode) skillsToCopy.push(...SKILLS_MAP.dualMode);
+    if (skillsConfig.legacy) skillsToCopy.push(...SKILLS_MAP.legacy);
+    if (skillsConfig.ecosystem ?? true) skillsToCopy.push(...SKILLS_MAP.ecosystem);
   }
 
   // Find source skills directory
@@ -1212,6 +1258,10 @@ async function copySkills(
 
   // Copy each skill
   for (const skillName of [...new Set(skillsToCopy)]) {
+    if (provided?.skills.has(skillName)) {
+      dedup?.skipped.skills.push(skillName);
+      continue;
+    }
     const sourcePath = path.join(sourceSkillsDir, skillName);
     const targetPath = path.join(targetSkillsDir, skillName);
 
@@ -1233,7 +1283,9 @@ async function copySkills(
 async function copyCommands(
   targetDir: string,
   options: InitOptions,
-  result: InitResult
+  result: InitResult,
+  provided: PluginProvided | null = null,
+  dedup?: PluginDedupReport,
 ): Promise<void> {
   const commandsConfig = options.commands;
   const targetCommandsDir = path.join(targetDir, '.claude', 'commands');
@@ -1282,7 +1334,16 @@ async function copyCommands(
     if (fs.existsSync(sourcePath)) {
       if (!fs.existsSync(targetPath) || options.force) {
         if (fs.statSync(sourcePath).isDirectory()) {
-          copyDirRecursive(sourcePath, targetPath);
+          if (provided) {
+            // #2640: leave out the commands an installed plugin already ships.
+            const copied = copyDirSkipping(sourcePath, targetPath, provided.commands, dedup?.skipped.commands ?? []);
+            if (copied === 0) continue;
+          } else {
+            copyDirRecursive(sourcePath, targetPath);
+          }
+        } else if (provided?.commands.has(path.basename(cmdName))) {
+          dedup?.skipped.commands.push(cmdName);
+          continue;
         } else {
           fs.copyFileSync(sourcePath, targetPath);
         }
@@ -1301,7 +1362,9 @@ async function copyCommands(
 async function copyAgents(
   targetDir: string,
   options: InitOptions,
-  result: InitResult
+  result: InitResult,
+  provided: PluginProvided | null = null,
+  dedup?: PluginDedupReport,
 ): Promise<void> {
   const agentsConfig = options.agents;
   const targetAgentsDir = path.join(targetDir, '.claude', 'agents');
@@ -1341,9 +1404,16 @@ async function copyAgents(
 
     if (fs.existsSync(sourcePath)) {
       if (!fs.existsSync(targetPath) || options.force) {
-        copyDirRecursive(sourcePath, targetPath);
-        // Count agent files (.md only — .yaml agents were migrated to .md)
-        const mdFiles = countFiles(sourcePath, '.md');
+        let mdFiles: number;
+        if (provided) {
+          // #2640: leave out the agents an installed plugin already ships.
+          mdFiles = copyDirSkipping(sourcePath, targetPath, provided.agents, dedup?.skipped.agents ?? []);
+          if (mdFiles === 0) continue;
+        } else {
+          copyDirRecursive(sourcePath, targetPath);
+          // Count agent files (.md only — .yaml agents were migrated to .md)
+          mdFiles = countFiles(sourcePath, '.md');
+        }
         result.summary.agentsCount += mdFiles;
         result.created.files.push(`.claude/agents/${agentCategory}`);
       } else {
@@ -2283,7 +2353,9 @@ async function writeClaudeMd(
 ): Promise<void> {
   const claudeMdPath = path.join(targetDir, 'CLAUDE.md');
 
-  if (fs.existsSync(claudeMdPath) && !options.force) {
+  if (options.instructionsSource === 'agents-md') {
+    writeDualClaudeMd(claudeMdPath, options, result);
+  } else if (fs.existsSync(claudeMdPath) && !options.force) {
     result.skipped.push('CLAUDE.md');
   } else {
     // #2208: if overwriting an existing CLAUDE.md (force mode), back it up first so
@@ -2429,6 +2501,37 @@ function copyDirRecursive(src: string, dest: string): void {
       fs.copyFileSync(srcPath, destPath);
     }
   }
+}
+
+/**
+ * #2640: copy a bundle directory, leaving out every `.md` whose basename an
+ * installed plugin provides. Returns the number of agent/command `.md` files
+ * copied (README.md excluded); writes nothing at all when that is zero.
+ */
+function copyDirSkipping(src: string, dest: string, provided: Map<string, string>, skipped: string[]): number {
+  const plan: Array<[string, string]> = [];
+  let kept = 0;
+  const walk = (from: string, to: string) => {
+    for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+      const srcPath = path.join(from, entry.name);
+      const destPath = path.join(to, entry.name);
+      if (entry.isDirectory()) {
+        walk(srcPath, destPath);
+      } else if (entry.name.endsWith('.md') && provided.has(entry.name)) {
+        skipped.push(entry.name.replace(/\.md$/, ''));
+      } else {
+        plan.push([srcPath, destPath]);
+        if (entry.name.endsWith('.md') && entry.name !== 'README.md') kept++;
+      }
+    }
+  };
+  walk(src, dest);
+  if (kept === 0) return 0;
+  for (const [from, to] of plan) {
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.copyFileSync(from, to);
+  }
+  return kept;
 }
 
 /**

@@ -9,7 +9,7 @@ export function subhead(ctx: Ctx, title: string, right = ''): RenderElement {
   const tail = right === '' ? '' : ` ${right} `
   const fill = Math.max(2, ctx.columns - 12 - head.length - tail.length)
 
-  return row(ctx, [ctx.kit.Text({ bold: true, color: THEME.head, children: head }), ctx.kit.Text({ dimColor: true, children: '─'.repeat(fill) }), ...(tail === '' ? [] : [ctx.kit.Text({ dimColor: true, children: tail })])])
+  return row(ctx, [ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: head }), ctx.kit.Text({ dimColor: true, children: '─'.repeat(fill) }), ...(tail === '' ? [] : [ctx.kit.Text({ dimColor: true, children: tail })])])
 }
 
 /** An explanation under a block: dim, wrapped (never clipped), indented one column. */

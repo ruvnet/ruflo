@@ -7,8 +7,8 @@
  * Windows (USERPROFILE is used) and 'C:\' is not '/', so both checks were
  * no-ops there and MCP tools wrote project state under the user's home.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, parse, sep } from 'node:path';
 import { getProjectCwd } from '../src/mcp-tools/types.js';
@@ -20,9 +20,15 @@ describe('getProjectCwd home/root guard', () => {
 
   beforeEach(() => {
     project = mkdtempSync(join(tmpdir(), 'project-cwd-'));
+    // #2633: getProjectCwd() now walks up from process.cwd() to a Ruflo
+    // marker. Pin cwd to a marker-free, git-bounded directory so "falls back
+    // to process.cwd()" does not depend on where the suite is run from.
+    mkdirSync(join(project, '.git'));
+    vi.spyOn(process, 'cwd').mockReturnValue(project);
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     process.env = { ...SAVED };
     rmSync(project, { recursive: true, force: true });
   });

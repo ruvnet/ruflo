@@ -202,7 +202,6 @@
       "private_tunnel": {
         "protocol": "http",
         "scope": "docker-network-only",
-        "patch": "chat-ui/patch-mcp-url-safety.sh",
         "adr": "docs/adr/ADR-032-RVF-PRIVATE-MCP-TUNNEL.md"
       },
       "env_only_keys": [

@@ -178,6 +178,13 @@ export interface HeadlessExecutionResult {
   outputTokens?: number;
   costUsd?: number;
 
+  /**
+   * When the stored claude.ai sign-in the worker ran under ends (ISO 8601),
+   * from `credential_expires_at` in the `claude -p` JSON result (Claude Code
+   * 2.1.318+). Absent for API-key auth and older CLIs.
+   */
+  credentialExpiresAt?: string;
+
   /** Model used for execution */
   model: string;
 
@@ -596,6 +603,25 @@ export interface ClaudePrintEnvelope {
   outputTokens?: number;
   costUsd?: number;
   durationMs?: number;
+  /** ISO 8601 end of the stored claude.ai sign-in (Claude Code 2.1.318+). */
+  credentialExpiresAt?: string;
+}
+
+/** Days before a sign-in ends at which the executor emits 'credential-expiring' (matches Claude Code's own stderr warning). */
+export const CREDENTIAL_EXPIRY_WARN_DAYS = 10;
+
+/**
+ * Normalise `credential_expires_at` to ISO 8601. Accepts an ISO string or an
+ * epoch number (seconds or milliseconds); anything else is undefined.
+ */
+export function normalizeCredentialExpiry(v: unknown): string | undefined {
+  let ms: number | undefined;
+  if (typeof v === 'number' && Number.isFinite(v) && v > 0) ms = v < 1e12 ? v * 1000 : v;
+  else if (typeof v === 'string' && v.trim()) {
+    const t = Date.parse(v);
+    if (Number.isFinite(t)) ms = t;
+  }
+  return ms === undefined ? undefined : new Date(ms).toISOString();
 }
 
 /**
@@ -631,6 +657,7 @@ export function parseClaudePrintJsonEnvelope(raw: string): ClaudePrintEnvelope |
     outputTokens: numOrUndef(usage?.output_tokens ?? usage?.outputTokens),
     costUsd: numOrUndef(obj.total_cost_usd ?? obj.cost_usd ?? obj.totalCostUsd),
     durationMs: numOrUndef(obj.duration_ms ?? obj.durationMs),
+    credentialExpiresAt: normalizeCredentialExpiry(obj.credential_expires_at ?? obj.credentialExpiresAt),
   };
 }
 
@@ -1082,7 +1109,17 @@ export class HeadlessWorkerExecutor extends EventEmitter {
         executionId,
         error: result.error,
         ...(result.missingPlugins ? { missingPlugins: result.missingPlugins } : {}),
+        ...(result.credentialExpiresAt ? { credentialExpiresAt: result.credentialExpiresAt } : {}),
       };
+
+      // Claude Code 2.1.318: surface a claude.ai sign-in that ends soon, so the
+      // daemon can say so before workers start failing on auth.
+      if (result.credentialExpiresAt) {
+        const daysLeft = (Date.parse(result.credentialExpiresAt) - Date.now()) / 86_400_000;
+        if (daysLeft <= CREDENTIAL_EXPIRY_WARN_DAYS) {
+          this.emit('credential-expiring', { expiresAt: result.credentialExpiresAt, daysLeft: Math.max(0, Math.floor(daysLeft)), workerType });
+        }
+      }
 
       // Log result
       this.logExecution(executionId, 'result', JSON.stringify(executionResult, null, 2));
@@ -1360,6 +1397,7 @@ Analyze the above codebase context and provide your response following the forma
     outputTokens?: number;
     costUsd?: number;
     apiDurationMs?: number;
+    credentialExpiresAt?: string;
     error?: string;
     missingPlugins?: string[];
   }> {
@@ -1534,6 +1572,7 @@ Analyze the above codebase context and provide your response following the forma
             : undefined,
           costUsd: envelope?.costUsd,
           apiDurationMs: envelope?.durationMs,
+          credentialExpiresAt: envelope?.credentialExpiresAt,
           error: code !== 0 ? stderr || `Process exited with code ${code}` : undefined,
         });
       });

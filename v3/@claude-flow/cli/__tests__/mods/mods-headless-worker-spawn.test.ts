@@ -79,7 +79,7 @@ describe('ADR-510 HeadlessWorkerExecutor', () => {
     const r = await runExecutor();
     expect(r.success).toBe(true);
     const call = fake.calls.find((c) => c.cmd === 'claude')!;
-    expect(call.argv).toEqual(['--print', '--output-format', 'json', '--plugin-dir', MODS()]);
+    expect(call.argv).toEqual(['--print', '--output-format', 'json', '--permission-mode', 'auto', '--plugin-dir', MODS()]);
     expect(call.opts.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS).toBe('1');
     expect(r.missingPlugins).toBeUndefined();
   });
@@ -88,7 +88,7 @@ describe('ADR-510 HeadlessWorkerExecutor', () => {
     const r = await runExecutor();
     expect(r.success).toBe(true);
     const call = fake.calls.find((c) => c.cmd === 'claude')!;
-    expect(call.argv).toEqual(['--print', '--output-format', 'json']);
+    expect(call.argv).toEqual(['--print', '--output-format', 'json', '--permission-mode', 'auto']);
     expect(r.missingPlugins).toEqual(['ruflo-mods']);
   });
 });
@@ -99,7 +99,7 @@ describe('ADR-510 hive-mind work (runWithClaude)', () => {
     const r = await runWithClaude('task', { mcpConfig: '/tmp/m.json', timeoutMs: 10_000, cwd: project });
     expect(r.ok).toBe(true);
     const call = fake.calls.find((c) => c.cmd === 'claude')!;
-    expect(call.argv).toEqual(['-p', '--output-format', 'json', '--mcp-config=/tmp/m.json', '--plugin-dir', MODS()]);
+    expect(call.argv).toEqual(['-p', '--output-format', 'json', '--mcp-config=/tmp/m.json', '--permission-mode', 'auto', '--plugin-dir', MODS()]);
     expect(call.opts.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS).toBe('1');
   });
 

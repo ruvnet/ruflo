@@ -54,7 +54,8 @@ describe('workflow list', () => {
     expect(state.info).not.toHaveBeenCalledWith('No workflows found');
     const rows = state.table.mock.calls[0][0].data;
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ id: workflowId, status: 'running' });
+    // #4609: workflow_run creates a 'ready' workflow; it is not running until workflow_execute.
+    expect(rows[0]).toMatchObject({ id: workflowId, status: 'ready' });
   });
 });
 
@@ -75,7 +76,7 @@ describe('workflow status', () => {
 });
 
 describe('workflow stop', () => {
-  it('stops a running workflow', async () => {
+  it('stops a workflow that has not finished', async () => {
     const workflowId = await start();
     const result = await run('stop', [workflowId], { force: true });
     expect(result).toMatchObject({ success: true });

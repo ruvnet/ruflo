@@ -99,7 +99,7 @@ function boardRows(ctx: Ctx, board: WfRun): RenderElement[] {
 
     const mark = phase.failed > 0 ? '✖' : phase.total > 0 && phase.done === phase.total ? '✔' : phase.running > 0 ? '◐' : '○'
 
-    rows.push(text(ctx, ` ${mark} ${phase.title}  ${phase.done}/${phase.total}${phase.running > 0 ? ` · ${phase.running} running` : ''}`, { bold: true, ...(phase.failed > 0 ? { color: THEME.bad } : {}) }))
+    rows.push(text(ctx, ` ${mark} ${phase.title}  ${phase.done}/${phase.total}${phase.running > 0 ? ` · ${phase.running} running` : ''}`, { weight: 'semibold', ...(phase.failed > 0 ? { color: THEME.bad } : {}) }))
     used += 1
 
     for (const agent of phase.agents) {

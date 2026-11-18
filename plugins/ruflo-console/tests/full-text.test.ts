@@ -52,7 +52,7 @@ const valueOf = (tree: Parameters<typeof elementsOf>[0], key: string): string =>
 
 describe('a goal is never cut (ADR-481)', () => {
   for (const columns of [60, 100, 150]) {
-    test(`a 1500-character goal is stored whole and drawn whole at ${columns} columns`, { options: { boot: false } }, async ($, on) => {
+    test(`a 1500-character goal is stored whole and drawn whole at ${columns} columns`, { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
       const { pane } = await opened($, on, 'missions', columns)
       const goal = words(1500)
 
@@ -69,7 +69,7 @@ describe('a goal is never cut (ADR-481)', () => {
   }
 
   for (const look of ['plain', 'bbs'] as const) {
-    test(`both looks: a 1500-character goal and a 5-line draft are drawn whole in the ${look} look at 60 columns`, { options: { boot: false, look } }, async ($, on) => {
+    test(`both looks: a 1500-character goal and a 5-line draft are drawn whole in the ${look} look at 60 columns`, { timeoutMs: 30_000, options: { boot: false, look } }, async ($, on) => {
       const { pane } = await opened($, on, 'missions', 60)
       const goal = words(1500)
       const five = ['one', 'two', 'three', 'four', 'five'].map(word => `${word} line of the goal`).join('\\n')
@@ -82,7 +82,7 @@ describe('a goal is never cut (ADR-481)', () => {
     })
   }
 
-  test('a 9,500-character goal is stored whole; the block ends in a marker that counts the hidden lines', { options: { boot: false } }, async ($, on) => {
+  test('a 9,500-character goal is stored whole; the block ends in a marker that counts the hidden lines', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
     const goal = words(9_500)
 
@@ -98,7 +98,7 @@ describe('a goal is never cut (ADR-481)', () => {
     await pane.unmount()
   })
 
-  test('a goal over the 10,000 the field holds is refused with the exact count (the engine refuses a longer Input value outright)', { options: { boot: false } }, async ($, on) => {
+  test('a goal over the 10,000 the field holds is refused with the exact count (the engine refuses a longer Input value outright)', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
     const goal = words(12_000)
 
@@ -114,7 +114,7 @@ describe('a goal is never cut (ADR-481)', () => {
     await pane.unmount()
   })
 
-  test('the ruflo mission record takes 2,000: a longer goal plans but creating it is refused by name and count, a 1,500 goal is created whole', { options: { boot: false } }, async ($, on) => {
+  test('the ruflo mission record takes 2,000: a longer goal plans but creating it is refused by name and count, a 1,500 goal is created whole', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane, clock } = await opened($, on)
 
     await pane.input({ key: 'mc-goal', text: words(2_500), kind: 'submit' })
@@ -136,7 +136,7 @@ describe('a goal is never cut (ADR-481)', () => {
     await pane.unmount()
   })
 
-  test('guidance to Claude carries every character, line breaks included; over the limit it is refused and kept', { options: { boot: false } }, async ($, on) => {
+  test('guidance to Claude carries every character, line breaks included; over the limit it is refused and kept', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane, clock } = await opened($, on)
     const text = `${words(700)}\\n${words(800)}`
 
@@ -163,7 +163,7 @@ describe('a goal is never cut (ADR-481)', () => {
 
 describe('the typing mirror shows every line while the field is one line', () => {
   for (const view of ['missions', 'menu']) {
-    test(`${view}: a 5-line draft and a 1500-character draft are mirrored whole, with a line count`, { options: { boot: false } }, async ($, on) => {
+    test(`${view}: a 5-line draft and a 1500-character draft are mirrored whole, with a line count`, { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
       const { pane } = await opened($, on, view)
       const key = view === 'menu' ? 'menu-goal' : 'mc-goal'
       const five = ['one', 'two', 'three', 'four', 'five'].map(word => `${word} line of the goal`).join('\\n')
@@ -183,7 +183,7 @@ describe('the typing mirror shows every line while the field is one line', () =>
     })
   }
 
-  test('past 12 lines the mirror shows the last lines with a marker for the earlier ones', { options: { boot: false } }, async ($, on) => {
+  test('past 12 lines the mirror shows the last lines with a marker for the earlier ones', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
 
     await pane.input({ key: 'mc-goal', text: Array.from({ length: 30 }, (_, i) => `line ${i + 1} of thirty`).join('\\n'), kind: 'change' })

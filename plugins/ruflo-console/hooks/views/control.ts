@@ -34,7 +34,7 @@ export function controlRows(ctx: Ctx): RenderElement[] {
   rows.push(row(ctx, [button(ctx, 'control-pause', control.paused ? 'Give control back' : 'Take back control', () => ctx.act.control.pause(!control.paused))], 'control-buttons'))
 
   for (const entry of control.log.slice(-6)) {
-    rows.push(row(ctx, [ctx.kit.Text({ bold: true, color: COLOR[entry.outcome], children: ` ${MARK[entry.outcome]} ` }), ctx.kit.Text({ children: `${entry.summary} ` }), ctx.kit.Text({ dimColor: true, children: ago(entry.atMs, ctx.nowMs) })], `control-log-${entry.atMs}`))
+    rows.push(row(ctx, [ctx.kit.Text({ weight: 'semibold', color: COLOR[entry.outcome], children: ` ${MARK[entry.outcome]} ` }), ctx.kit.Text({ children: `${entry.summary} ` }), ctx.kit.Text({ dimColor: true, children: ago(entry.atMs, ctx.nowMs) })], `control-log-${entry.atMs}`))
   }
 
   if (control.log.length === 0) rows.push(text(ctx, ' Nothing yet: Claude has not used the console.', { dimColor: true }))

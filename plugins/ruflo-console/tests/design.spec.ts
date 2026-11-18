@@ -46,7 +46,7 @@ describe('a cost tag', () => {
     for (const [color, ground] of [[THEME.ok, COST_CHIP.ok], [THEME.info, COST_CHIP.info], [THEME.warn, COST_CHIP.warn], [THEME.bad, COST_CHIP.bad]] as const) {
       const shown = texts(chip(color)).find(node => node.props.inverse === true)
 
-      expect(shown?.props, color).toMatchObject({ color: ground, inverse: true, bold: true, children: ' $0 ' })
+      expect(shown?.props, color).toMatchObject({ color: ground, inverse: true, weight: 'semibold', children: ' $0 ' })
     }
   })
 
@@ -76,7 +76,7 @@ describe('the nav card', () => {
     const bbs = tab(open('secure').card, 'secure')
     const chipText = texts(bbs).find(node => String(node.props.children).includes('SECURITY & DOCTOR'))
 
-    expect(chipText?.props).toMatchObject({ color: NAV_ACCENT.SAFETY, inverse: true, bold: true, children: '[u: 🔒 SECURITY & DOCTOR]' })
+    expect(chipText?.props).toMatchObject({ color: NAV_ACCENT.SAFETY, inverse: true, weight: 'semibold', children: '[u: 🔒 SECURITY & DOCTOR]' })
 
     setLook('plain')
 

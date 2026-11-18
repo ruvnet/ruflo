@@ -127,7 +127,7 @@ export function stepsRows(ctx: Ctx): RenderElement[] {
     return row(
       ctx,
       [
-        text(ctx, ` ${mark} ${i + 1}. ${step.label}`, { bold: isNext, ...(done[i] === true ? { color: THEME.ok } : isNext ? { color: THEME.head } : { dimColor: true }) }),
+        text(ctx, ` ${mark} ${i + 1}. ${step.label}`, { weight: isNext ? 'semibold' : 'regular', ...(done[i] === true ? { color: THEME.ok } : isNext ? { color: THEME.head } : { dimColor: true }) }),
         text(ctx, `  ${clip(step.why, Math.max(8, ctx.columns - step.label.length - 24))}`, { dimColor: true }),
         ...(done[i] === true ? [] : [ctx.kit.Button({ key: `step-${ctx.state.view}-${i}`, label: isNext ? ' ▸ do this ' : ' ▸ ', ...(isNext ? { variant: 'primary' as const } : { plain: true as const }), onPress: press })]),
       ],

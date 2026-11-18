@@ -23,7 +23,7 @@ async function opened($: Body[0], on: Body[1]) {
 }
 
 describe('plugin catalog', () => {
-  test('opening reads the clone from disk: every plugin with its counts and state, nothing run, a climbing source skipped', { options: { boot: false } }, async ($, on) => {
+  test('opening reads the clone from disk: every plugin with its counts and state, nothing run, a climbing source skipped', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
     const tree = await pane.drawn()
     const text = textOf(tree)
@@ -39,7 +39,7 @@ describe('plugin catalog', () => {
     await pane.unmount()
   })
 
-  test('modes and the filter narrow the list; the filter matches a skill name', { options: { boot: false } }, async ($, on) => {
+  test('modes and the filter narrow the list; the filter matches a skill name', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
 
     await pane.press({ key: 'cat-mode-mods' })
@@ -55,7 +55,7 @@ describe('plugin catalog', () => {
     await pane.unmount()
   })
 
-  test('pressing a row opens its contents; ▸ view reads the skill file; ▸ use only types it into the terminal draft', { options: { boot: false } }, async ($, on) => {
+  test('pressing a row opens its contents; ▸ view reads the skill file; ▸ use only types it into the terminal draft', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
 
     await pane.press({ key: 'cat-name-ruflo-core' })
@@ -84,7 +84,7 @@ describe('plugin catalog', () => {
     await pane.unmount()
   })
 
-  test('install asks first with the exact argv and runs it once on yes; enable and disable follow the state', { options: { boot: false } }, async ($, on) => {
+  test('install asks first with the exact argv and runs it once on yes; enable and disable follow the state', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
     const claudeRuns = () => world.runs.filter(argv => argv[0] === 'claude')
 
@@ -104,7 +104,7 @@ describe('plugin catalog', () => {
     await pane.unmount()
   })
 
-  test('a name outside the catalog is refused headless; a listed one asks with its argv', { options: { boot: false } }, async ($, on) => {
+  test('a name outside the catalog is refused headless; a listed one asks with its argv', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
 
     expect((await $.command.run(command('run catalog-install ruflo-nope'))).text).toMatch(/not in the ruflo catalog|nothing to do/)

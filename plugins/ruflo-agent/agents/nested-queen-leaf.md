@@ -2,6 +2,8 @@
 name: nested-queen-leaf
 description: Tier-2 leaf — bottom of a queen-led tree. Deliberately no Task tool (least-privilege), but DOES record trajectory steps, AIDefence-scan its own inbound prompt, and report cost — so the queen's intelligence pipeline learns from every leaf outcome
 model: haiku
+effort: low
+omitClaudeMd: true
 tools:
   - Read
   - Grep

@@ -52,6 +52,7 @@ describe('memory export explicit dbPath (#3196)', () => {
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'memory-export-path-'));
+    process.env.CLAUDE_FLOW_CWD = dir; // MCP export paths are contained to the project
     prevMemoryPath = process.env.CLAUDE_FLOW_MEMORY_PATH;
     prevBridge = process.env.CLAUDE_FLOW_DISABLE_BRIDGE;
     process.env.CLAUDE_FLOW_MEMORY_PATH = join(dir, 'default-memory-root');

@@ -51,11 +51,11 @@ function previewRows(ctx: Ctx, found: SessionRow): RenderElement[] {
   const caps = workspaceOf(state).index?.reports.find(report => report.id === found.harness)?.capabilities
   const rows: RenderElement[] = [rule(ctx, 'Preview', `${found.harness} · ${clip(found.nativeId, 12)}`)]
 
-  rows.push(text(ctx, ` ${titleOf(ctx, found.harness, found.key, found.title)}`, { bold: true }))
+  rows.push(text(ctx, ` ${titleOf(ctx, found.harness, found.key, found.title)}`, { weight: 'semibold' }))
   rows.push(text(ctx, ` ${found.status}${found.stale === null ? '' : ` · STALE: ${found.stale}`} · ${found.external ? 'started outside Ruflo' : 'started by Ruflo'} · updated ${found.updatedMs > 0 ? ago(found.updatedMs, nowMs) : 'n/a'} · ${costText(found.cost)}`, { dimColor: true }))
   // The recorded cwd and git branch are transcript text (a branch name can be any words): drawn for a person, never in a text answer.
   if (found.cwd !== null && ctx.text !== true) rows.push(text(ctx, ` in ${clip(found.cwd, Math.max(20, ctx.columns - 10))}${found.branch === null ? '' : ` @ ${found.branch}`}`, { dimColor: true }))
-  for (const [i, line] of found.context.entries()) rows.push(text(ctx, ` ${clip(line, ctx.columns - 6)}`, { dimColor: true, ...(i === 0 && { bold: false }) }))
+  for (const [i, line] of found.context.entries()) rows.push(text(ctx, ` ${clip(line, ctx.columns - 6)}`, { dimColor: true, ...(i === 0 && { weight: 'regular' }) }))
 
   if (found.unassigned !== null) {
     rows.push(text(ctx, ` Unassigned: ${found.unassigned}. Nothing is shown for it, so it cannot be mistaken for another session.`, { color: THEME.warn }))
@@ -107,7 +107,7 @@ export function sessionRows(ctx: Ctx): RenderElement[] {
       row(
         ctx,
         [
-          text(ctx, ` ${KIND_LABEL[item.kind].padEnd(14)}`, { bold: true, color: KIND_COLOR[item.kind] }),
+          text(ctx, ` ${KIND_LABEL[item.kind].padEnd(14)}`, { weight: 'semibold', color: KIND_COLOR[item.kind] }),
           text(ctx, `${item.harness.padEnd(8)}`, { dimColor: true }),
           item.rowKey === null ? text(ctx, clip(item.title, ctx.columns - 36)) : button(ctx, `sess-jump-${item.id}`, clip(titleOf(ctx, item.harness, item.rowKey, item.title), Math.max(12, ctx.columns - 36)), () => ctx.act.sessions.jump(item.id)),
           text(ctx, ` ${ago(item.atMs, nowMs)}${item.stale ? ' · stale' : ''}`, { dimColor: true }),
@@ -137,7 +137,7 @@ export function sessionRows(ctx: Ctx): RenderElement[] {
   for (const [n, group] of index.groups.entries()) {
     if (left <= 0) break
 
-    body.push(text(ctx, ` ${groupLabelOf(ctx, group, n + 1)}`, { bold: true, color: group.unassigned ? THEME.warn : THEME.head }))
+    body.push(text(ctx, ` ${groupLabelOf(ctx, group, n + 1)}`, { weight: 'semibold', color: group.unassigned ? THEME.warn : THEME.head }))
 
     for (const found of group.rows.slice(0, left)) {
       const picked = ws.selected === found.key

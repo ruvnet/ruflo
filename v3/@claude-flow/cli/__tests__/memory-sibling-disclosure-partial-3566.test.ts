@@ -46,6 +46,7 @@ const run = (cmd: typeof search, flags: Record<string, unknown>) =>
 const siblingWarnings = () => mocks.warning.mock.calls.map(c => String(c[0])).filter(m => m.includes(SIBLING.path));
 
 const dir = mkdtempSync(join(tmpdir(), 'mem-3566-'));
+process.env.CLAUDE_FLOW_CWD = dir; // MCP import paths are contained to the project
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 beforeEach(() => {

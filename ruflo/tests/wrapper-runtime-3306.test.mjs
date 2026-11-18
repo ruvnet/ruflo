@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -75,6 +75,32 @@ test('a matching runtime still receives MCP commands', () => {
   const fixture = install(wrapperVersion);
   const result = run(fixture, ['mcp', 'start']);
   assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, '');
+  assert.equal(existsSync(fixture.marker), true);
+});
+
+for (const args of [['--version'], ['--help'], ['mcp', 'start']]) {
+  test(`a missing CLI fails with recovery guidance for ${args.join(' ')} (#4679)`, () => {
+    const fixture = install(wrapperVersion);
+    rmSync(fixture.cliDir, { recursive: true, force: true });
+    const result = run(fixture, args);
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /ruflo installation is incomplete/);
+    assert.match(result.stderr, /@claude-flow\/cli/);
+    assert.match(result.stderr, /MCP.*npm install -g ruflo@latest/);
+    assert.doesNotMatch(result.stderr, /ERR_MODULE_NOT_FOUND|continuing/);
+  });
+}
+
+test('a source checkout can still delegate to its existing monorepo CLI', () => {
+  const fixture = install(wrapperVersion);
+  const devCliDir = join(fixture.cliDir, '..', '..', 'v3', '@claude-flow', 'cli');
+  mkdirSync(join(devCliDir, '..'), { recursive: true });
+  renameSync(fixture.cliDir, devCliDir);
+  const result = run(fixture, ['mcp', 'start']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, '');
   assert.equal(result.stderr, '');
   assert.equal(existsSync(fixture.marker), true);
 });

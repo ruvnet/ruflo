@@ -11,9 +11,7 @@
  * Expected L1 lift: +5-10pp on multi-step questions (~30-40% of L1 set).
  *
  * Design:
- *  - NEW standalone file only; NOT wired into gaia-bench.ts to avoid merge
- *    conflicts with in-flight iter 29/31/34/35/36 branches.
- *    Wiring is a small follow-up PR.
+ *  - gaia-bench.ts loads the decomposer when decomposition is enabled.
  *  - `decomposeQuestion()` — Haiku-cheap classification + decomposition
  *    (~$0.0003 per question).
  *  - `synthesizeFromSubAnswers()` — Sonnet synthesis from sub-answers
@@ -25,11 +23,6 @@
  *  - Decomposition uses claude-haiku-4-5 (~$0.0003/question).
  *  - Synthesis uses claude-sonnet-4-6 (~$0.002/question).
  *  - Total overhead per question (when decomposed): ~$0.002-0.003.
- *
- * Plugin sync TODO (follow-up PR after gaia-bench wiring):
- *  - Update plugins/ruflo-workflows/commands/gaia-run.md with --decompose flag.
- *  - Update plugins/ruflo-workflows/skills/gaia-debugging/SKILL.md: add
- *    decomposition as a recommended strategy for multi-step failures.
  *
  * Refs: ADR-135, ADR-133, iter 29 finding, #2156
  */

@@ -97,7 +97,7 @@ function lastRows(ctx: Ctx): RenderElement[] {
 
   if (last === null) return []
 
-  return [frameResult(ctx, [rule(ctx, 'Result', last.ok ? '✓' : '✗'), text(ctx, ` ${last.label}`, { bold: true, color: last.ok ? THEME.ok : THEME.bad }), ...last.lines.slice(0, 40).map(line => text(ctx, `   ${line}`))], last.ok ? 'ok' : 'bad')]
+  return [frameResult(ctx, [rule(ctx, 'Result', last.ok ? '✓' : '✗'), text(ctx, ` ${last.label}`, { weight: 'semibold', color: last.ok ? THEME.ok : THEME.bad }), ...last.lines.slice(0, 40).map(line => text(ctx, `   ${line}`))], last.ok ? 'ok' : 'bad')]
 }
 
 /**

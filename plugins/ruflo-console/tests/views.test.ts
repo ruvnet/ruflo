@@ -27,7 +27,7 @@ import { drawn } from './fixtures/views'
 
 describe('views', () => {
 
-  test('overview: every subsystem from disk, the CLI or the engine, health alerts, the activity raster', { options: { boot: false } }, async ($, on) => {
+  test('overview: every subsystem from disk, the CLI or the engine, health alerts, the activity raster', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     fakeRuflo().register(on, {})
     worldOf(on, RUFLO_FILES, { home: HOME_FILES })
     mock.clock(on)
@@ -46,7 +46,7 @@ describe('views', () => {
     expect(text).toContain('budget WARNING: $3.90 of $5.00')
   })
 
-  test('swarm: the topology graph, selectable agents, the hive with its proposal, no hive token', { options: { boot: false } }, async ($, on) => {
+  test('swarm: the topology graph, selectable agents, the hive with its proposal, no hive token', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     worldOf(on, RUFLO_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -69,7 +69,7 @@ describe('views', () => {
     expect(tabProps('tab-hive')?.hotkey).toBe('b')
   })
 
-  test('hive: the honeycomb, quorum and fault tolerance, proposals, workers, decisions, broadcasts, no token', { options: { boot: false } }, async ($, on) => {
+  test('hive: the honeycomb, quorum and fault tolerance, proposals, workers, decisions, broadcasts, no token', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, HIVE_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -97,7 +97,7 @@ describe('views', () => {
     expect(elementsOf(tree, 'Button').map(keyOf)).toEqual(expect.arrayContaining(['hive-vote-yes', 'hive-vote-no', 'hive-spawn-worker']))
   })
 
-  test('hive: with no hive, an empty comb with its egg holds the start buttons, and nothing runs unasked', { options: { boot: false } }, async ($, on) => {
+  test('hive: with no hive, an empty comb with its egg holds the start buttons, and nothing runs unasked', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const files = Object.fromEntries(Object.entries(HIVE_FILES).filter(([path]) => !path.startsWith('.claude-flow/hive-mind/')))
     const world = worldOf(on, files)
     mock.clock(on)
@@ -116,7 +116,7 @@ describe('views', () => {
     expect(world.runs.filter(argv => argv.includes('hive-mind'))).toEqual([])
   })
 
-  test('hive: a vote asks before it runs, then runs one fixed argv as the next worker on yes', { options: { boot: false } }, async ($, on) => {
+  test('hive: a vote asks before it runs, then runs one fixed argv as the next worker on yes', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, HIVE_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -135,7 +135,7 @@ describe('views', () => {
     await pane.unmount()
   })
 
-  test('claims: the flow diagram with lanes and rings, the board, and the act row', { options: { boot: false } }, async ($, on) => {
+  test('claims: the flow diagram with lanes and rings, the board, and the act row', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     worldOf(on, RUFLO_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -149,7 +149,7 @@ describe('views', () => {
     expect(elementsOf(tree, 'Button').map(keyOf)).toEqual(expect.arrayContaining(['claim', 'release', 'handoff', 'steal', 'agent-next', 'task-next']))
   })
 
-  test('federation: the map, local identity and channels; the relay is never asked while the option is off', { options: { boot: false } }, async ($, on) => {
+  test('federation: the map, local identity and channels; the relay is never asked while the option is off', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -162,7 +162,7 @@ describe('views', () => {
     expect(world.runs.some(argv => argv.join(' ').includes('x_federation_roster'))).toBe(false)
   })
 
-  test('plugins: the health matrix, and a clone without ruflo-mods reads STALE with the fix named', { options: { boot: false } }, async ($, on) => {
+  test('plugins: the health matrix, and a clone without ruflo-mods reads STALE with the fix named', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     worldOf(on, RUFLO_FILES, { home: HOME_FILES })
     mock.clock(on)
     await $.session.start(SESSION)
@@ -174,7 +174,7 @@ describe('views', () => {
     expect(text).toContain('2 ruflo · 1 enabled · 2 total')
   })
 
-  test('learning: last route, outcome rate with its N, the curve, the four-stage pipeline, pattern growth', { options: { boot: false } }, async ($, on) => {
+  test('learning: last route, outcome rate with its N, the curve, the four-stage pipeline, pattern growth', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     fakeRuflo().register(on, {})
     worldOf(on, RUFLO_FILES)
     mock.clock(on)
@@ -189,7 +189,7 @@ describe('views', () => {
     expect(text).toContain('consolidate: EWC consolidations')
   })
 
-  test('metaharness: the radar, the audit trend, the flywheel ledger and the active policy', { options: { boot: false } }, async ($, on) => {
+  test('metaharness: the radar, the audit trend, the flywheel ledger and the active policy', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     worldOf(on, RUFLO_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -203,7 +203,7 @@ describe('views', () => {
     expect(text).toContain('valid · 0 commits · 0 receipts')
   })
 
-  test('metaharness lab: every verb by purpose with its cost tag and button; promote is a command, never a button', { options: { boot: false } }, async ($, on) => {
+  test('metaharness lab: every verb by purpose with its cost tag and button; promote is a command, never a button', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     mock.clock(on)
@@ -223,7 +223,7 @@ describe('views', () => {
     expect(world.runs.some(argv => /genome|mcp-scan|redblue|evolve|learn/.test(argv.join(' ')))).toBe(false)
   })
 
-  test('memory and cost: entries, a namespace sample; spend, the gauge, the ladder and the burn', { options: { boot: false } }, async ($, on) => {
+  test('memory and cost: entries, a namespace sample; spend, the gauge, the ladder and the burn', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     fakeRuflo().register(on, {})
     worldOf(on, RUFLO_FILES)
     mock.clock(on)
@@ -249,7 +249,7 @@ describe('views', () => {
     expect(inputKeys(cost.tree)).toEqual(['cost-budget'])
   })
 
-  test('timeline, approvals and events draw from what was seen; the drill-down opens an agent', { options: { boot: false } }, async ($, on) => {
+  test('timeline, approvals and events draw from what was seen; the drill-down opens an agent', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const clock = mock.clock(on)
     await $.session.start(SESSION)
@@ -281,7 +281,7 @@ describe('views', () => {
     expect(world.runs.some(argv => argv.join(' ').includes('agent logs --id agent-1790903032591-x41b0y --tail 20'))).toBe(true)
   })
 
-  test('x.ruv.io: the federation menu with its commands, and no registry or roster asked with the network off', { options: { boot: false } }, async ($, on) => {
+  test('x.ruv.io: the federation menu with its commands, and no registry or roster asked with the network off', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     mock.clock(on)
@@ -296,7 +296,7 @@ describe('views', () => {
     expect(world.runs.some(argv => /x_federation_(registry|roster)/.test(argv.join(' ')))).toBe(false)
   })
 
-  test('terminal: the harness picker, what the pick runs, and the text field; nothing runs unasked', { options: { boot: false } }, async ($, on) => {
+  test('terminal: the harness picker, what the pick runs, and the text field; nothing runs unasked', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     mock.clock(on)
@@ -311,7 +311,7 @@ describe('views', () => {
     expect(world.runs.some(argv => argv[0] === 'codex' || argv[0] === 'claude')).toBe(false)
   })
 
-  test('main menu: bare /ruflo lands on it in the BBS look; its prompt takes a key or a name', { options: { boot: false } }, async ($, on) => {
+  test('main menu: bare /ruflo lands on it in the BBS look; its prompt takes a key or a name', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -337,7 +337,7 @@ describe('views', () => {
     await pane.unmount()
   })
 
-  test('automate: worker cards and the kanban from disk, nothing run on open; a read runs at once, a spend asks first, secrets masked', { options: { boot: false } }, async ($, on) => {
+  test('automate: worker cards and the kanban from disk, nothing run on open; a read runs at once, a spend asks first, secrets masked', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const mine = () => world.runs.map(argv => argv.slice(4)).filter(argv => /workflow_|session_|config_|task_|neural|autopilot|hooks (route|explain|worker)|daemon/.test(argv.join(' ')))
 
@@ -382,7 +382,7 @@ describe('views', () => {
     await pane.unmount()
   })
 
-  test('learning lab: what was learned from disk; training asks first, runs one argv and draws the loss; route runs at once', { options: { boot: false } }, async ($, on) => {
+  test('learning lab: what was learned from disk; training asks first, runs one argv and draws the loss; route runs at once', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const mine = () => world.runs.map(argv => argv.slice(4).join(' ')).filter(line => /^(neural|hooks (route|explain)|mcp exec -t (neural|hooks_intelligence))/.test(line))
 

@@ -54,6 +54,8 @@ export interface RunOptions {
   allowedTools?: string[];
   /** Kill the run after this long. */
   timeoutMs?: number;
+  /** Answers a request that offers no tools (a plugin's `$.model.complete`); undefined keeps the mock's default. */
+  unscripted?: (body: any) => string | undefined;
   /** Commands shadowed on PATH by a recorder that writes `<name>` to `<tmp>/shadowed.log` and exits 0. */
   shadow?: string[];
 }
@@ -140,7 +142,7 @@ export async function runClaude(opts: RunOptions): Promise<RunResult> {
   // `--plugin-dir` loads the plugin as `<name>@inline`; the bare name is kept for older engines.
   writeFileSync(settings, JSON.stringify(pluginOptions ? { pluginConfigs: { 'ruflo-mods@inline': pluginOptions, 'ruflo-mods': pluginOptions } } : {}));
 
-  const mock = await startMockModel(typeof opts.script === 'function' ? opts.script(project) : (opts.script ?? []));
+  const mock = await startMockModel(typeof opts.script === 'function' ? opts.script(project) : (opts.script ?? []), opts.unscripted);
   const env: NodeJS.ProcessEnv = {
     PATH: `${bin}:${process.env.PATH ?? '/usr/bin:/bin'}`,
     HOME: home,

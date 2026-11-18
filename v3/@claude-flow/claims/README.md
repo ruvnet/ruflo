@@ -1,5 +1,31 @@
 # @claude-flow/claims
 
+<!-- adr-356:quickstart:start -->
+**@claude-flow/claims** — Lets humans and agents claim issues, hand work off and steal stalled work without conflicts, and exposes those operations as MCP tools.
+
+**Supported environments:** Node.js 18+ · ESM · Linux, macOS, Windows (pure JavaScript)
+
+## Quickstart
+
+```bash
+npm install @claude-flow/claims
+```
+
+```js
+import { claimsTools, getClaimsToolByName } from '@claude-flow/claims';
+
+console.log(claimsTools.length, getClaimsToolByName('claims/issue_claim')?.name);
+```
+
+Expected output:
+
+```text
+17 claims/issue_claim
+```
+
+Optional peer: [`@claude-flow/shared`](https://www.npmjs.com/package/@claude-flow/shared) for the shared event types.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/claims.svg)](https://www.npmjs.com/package/@claude-flow/claims)
 [![npm downloads](https://img.shields.io/npm/dm/@claude-flow/claims.svg)](https://www.npmjs.com/package/@claude-flow/claims)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -263,3 +289,9 @@ claims:
 ## License
 
 MIT
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/@claude-flow/claims)
+<!-- adr-356:footer:end -->

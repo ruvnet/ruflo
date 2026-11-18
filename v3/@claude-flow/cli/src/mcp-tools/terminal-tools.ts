@@ -5,6 +5,7 @@
  */
 
 import { type MCPTool, getProjectCwd } from './types.js';
+import { nullPrototypeRecords } from './record-store.js';
 import { existsSync } from 'node:fs';
 import {
   mkdirRestricted,
@@ -59,12 +60,16 @@ function loadTerminalStore(): TerminalStore {
       // ADR-096 Phase 3: readFileMaybeEncrypted handles both legacy
       // plaintext stores and post-migration encrypted ones via the RFE1
       // magic-byte sniff.
-      return JSON.parse(readFileMaybeEncrypted(path, 'utf-8'));
+      const parsed = JSON.parse(readFileMaybeEncrypted(path, 'utf-8'));
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        parsed.sessions = nullPrototypeRecords(parsed.sessions);
+        return parsed;
+      }
     }
   } catch {
     // Return empty store
   }
-  return { sessions: {}, version: '3.0.0' };
+  return { sessions: nullPrototypeRecords<TerminalStore['sessions']>(undefined), version: '3.0.0' };
 }
 
 function saveTerminalStore(store: TerminalStore): void {
@@ -164,8 +169,24 @@ export const terminalTools: MCPTool[] = [
       const sessionId = input.sessionId as string;
       const command = input.command as string;
 
+      // An explicit sessionId must name a stored session; only fall back to
+      // (or create) the default session when no sessionId was given.
+      if (sessionId && !store.sessions[sessionId]) {
+        return { success: false, error: 'Session not found' };
+      }
+
       // Find or create default session
       let session = sessionId ? store.sessions[sessionId] : Object.values(store.sessions).find(s => s.status === 'active');
+
+      // #4730: terminal_close only flips status to "closed". Executing anyway
+      // ran the command and then wrote status back to "active", so a closed
+      // session kept accepting commands. Reject anything that is not active
+      // before the process is spawned and before that status write. When no
+      // sessionId was given, the lookup above already selected an active
+      // session (or we create one below).
+      if (session && session.status !== 'active') {
+        return { success: false, error: `Session is not active (${session.status})` };
+      }
 
       if (!session) {
         // Create default session

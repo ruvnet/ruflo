@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.3.8 — 2026-11-04
+- fix: `memory-search` asks `agentdb_context-synthesize` only for a question about how earlier tasks went. It summarizes validated task episodes, not documents (#4691, thanks @sparkling)
+
 ## 0.3.7 — 2026-10-14
 - fix: memory-search, the memory-specialist agent, `/recall` and `/ruflo-memory` no longer tell the model to run `ruvector search --hybrid` / `--graph-rag` (the ruvector CLI takes a database path and a `--vector` JSON array, not a text query); they use `memory search --type hybrid` and `--smart`, say plainly that this plugin has no text-query Graph RAG, and single-quote the query as untrusted shell input (#4153, thanks @rudycelekli for the PR and @ronmikailov for the report)
 

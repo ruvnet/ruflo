@@ -70,7 +70,7 @@ export function groupedTabs(ctx: Ctx, hasHotkey: (view: View) => boolean): Rende
     // The open page names itself whatever the style, as the flat tab bar did: [3: 📌 CLAIMS], [0: 📟 MAIN MENU].
     const accent = isBbs() ? accentOfView(view.id) : null
 
-    if (view.id === open) return ctx.kit.Box({ key: `tab-${view.id}`, children: [ctx.kit.Text({ ...(accent === null ? { bold: true, color: THEME.head } : chip(accent)), wrap: 'truncate-end', children: isBbs() ? `[${prefix}${view.icon} ${nameOf(view).toUpperCase()}]` : `${prefix}${view.icon} ${nameOf(view)}` })] })
+    if (view.id === open) return ctx.kit.Box({ key: `tab-${view.id}`, children: [ctx.kit.Text({ ...(accent === null ? { weight: 'semibold', color: THEME.head } : chip(accent)), wrap: 'truncate-end', children: isBbs() ? `[${prefix}${view.icon} ${nameOf(view).toUpperCase()}]` : `${prefix}${view.icon} ${nameOf(view)}` })] })
 
     return ctx.kit.Button({ key: `tab-${view.id}`, label: ` ${words}${badgeText(view)} `, ...(hasHotkey(view) && view.key !== '' && { hotkey: view.key }), plain: true, dimColor: true, onPress: () => ctx.act.view(view.id) })
   }
@@ -83,7 +83,7 @@ export function groupedTabs(ctx: Ctx, hasHotkey: (view: View) => boolean): Rende
   const isSearchInline = inner - chipCells >= 28
   const chips = NAV_GROUPS.map(group =>
     group.title === shown && found === null && !isMenuIdle
-      ? ctx.kit.Box({ key: `nav-group-${group.title}`, children: [ctx.kit.Text({ ...(isBbs() ? chip(NAV_ACCENT[group.title] ?? THEME.head) : { bold: true, color: THEME.head }), children: `[${icons ? `${group.icon} ` : ''}${group.title}${inner < 72 ? '' : ' ▾'}]` })] })
+      ? ctx.kit.Box({ key: `nav-group-${group.title}`, children: [ctx.kit.Text({ ...(isBbs() ? chip(NAV_ACCENT[group.title] ?? THEME.head) : { weight: 'semibold', color: THEME.head }), children: `[${icons ? `${group.icon} ` : ''}${group.title}${inner < 72 ? '' : ' ▾'}]` })] })
       : ctx.kit.Button({ key: `nav-group-${group.title}`, label: ` ${icons ? `${group.icon} ` : ''}${group.title}${group.title === newGroup ? ' •' : ''} `, plain: true, dimColor: true, onPress: () => ctx.act.navigator.group(group.title) }),
   )
   // On the main menu a picked group's pages are open: a ✕ beside the chips closes them again.

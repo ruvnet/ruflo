@@ -86,8 +86,10 @@ export interface MCPTool<TInput = unknown, TOutput = unknown> {
   version: string;
   /** Execution layer (cli, wasm, hybrid) */
   layer: 'cli' | 'wasm' | 'hybrid';
-  /** Input schema */
-  inputSchema: z.ZodType<TInput, z.ZodTypeDef, unknown>;
+  /** Input schema. zod 3 reads the params as <Output, Def, Input> and zod 4 as
+   *  <Output, Input, Internals>; `any` in the last two keeps it valid under both. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  inputSchema: z.ZodType<TInput, any, any>;
   /** Handler function */
   handler: (input: TInput, context: ToolContext) => Promise<MCPToolResult<TOutput>>;
 }

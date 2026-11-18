@@ -12,6 +12,7 @@ import * as path from 'node:path';
 import {
   __setMemoryBridgeRegistryFactoryForTests,
   _resetRegistryCacheForTest,
+  bridgeHealthCheck,
   getBridgeFailureReason,
   isBridgeAvailable,
 } from '../src/memory/memory-bridge.js';
@@ -24,6 +25,7 @@ function fakeRegistry(initError: string | null, hasRecord = true) {
     getAgentDB: () => (initError ? null : {}),
     get: (name: string) => controllers.get(name),
     set: (name: string, value: unknown) => { controllers.set(name, value); },
+    listControllers: () => [],
   };
   if (hasRecord) reg.getAgentDBInitError = () => initError;
   return reg;
@@ -65,5 +67,28 @@ describe('memory bridge: AgentDB init failure (#4622)', () => {
 
     expect(await isBridgeAvailable(db)).toBe(true);
     expect(getBridgeFailureReason(db)).toBeNull();
+  });
+
+  it('surfaces the AgentDB init cause and a lock hint in health', async () => {
+    const lock = 'Database already open. Cannot acquire lock';
+    __setMemoryBridgeRegistryFactoryForTests(() => fakeRegistry(lock));
+    const db = dbFile();
+
+    const health = await bridgeHealthCheck(db);
+    expect(health).not.toBeNull();
+    expect(health?.available).toBe(false);
+    expect(health?.agentdbInitError).toContain(lock);
+    expect(health?.bridgeFailureReason).toContain(lock);
+    expect(health?.hint).toMatch(/another process/i);
+  });
+
+  it('keeps health available when AgentDB opened', async () => {
+    __setMemoryBridgeRegistryFactoryForTests(() => fakeRegistry(null));
+    const db = dbFile();
+
+    const health = await bridgeHealthCheck(db);
+    expect(health?.available).toBe(true);
+    expect(health?.agentdbInitError).toBeNull();
+    expect(health?.hint).toBeUndefined();
   });
 });

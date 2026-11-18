@@ -782,23 +782,23 @@ describe('Weighted Consensus (Dream Cycle 2026-08-24)', () => {
 
     it('prevents a flat-count rejection when a low-trust majority is weighted down (adversarial-critic follow-up)', async () => {
       // Raft's quorum is an absolute count derived from totalVoters
-      // (Math.floor(totalVoters * threshold)), not a ratio of votes cast, and
+      // (max(floor(totalVoters/2)+1, floor(totalVoters * threshold))), not a ratio of votes cast, and
       // per-voter weight is clamped to [0,1] (never > flat). That means
       // weighting can never make an ACCEPT *easier* than flat counting (a
       // weighted approving sum can never exceed the flat approving count) —
       // but it CAN make a REJECT *harder*, by denying a low-trust disapproving
       // majority enough weighted mass to cross the reject threshold. This
       // test proves that distinct effect with 4 total voters (leader + 3
-      // peers, threshold 0.66 -> quorum=floor(4*0.66)=2): all 3 peers vote
+      // peers, threshold 0.66 -> quorum=max(3, floor(4*0.66)=2)=3): all 3 peers vote
       // reject.
       //
       // Flat: after all 3 reject votes, disapproving count (3) exceeds
-      // totalVoters-quorum (4-2=2), so checkConsensus — which runs
+      // totalVoters-quorum (4-3=1), so checkConsensus — which runs
       // synchronously inside vote() — flips status to 'rejected' almost
       // immediately (well under the configured timeout).
       //
       // Weighted (each peer weight 0.05, leader 0.05): disapproving WEIGHT
-      // (0.15) never exceeds totalVoters-quorum (2), so the reject condition
+      // (0.15) never exceeds totalVoters-quorum (1), so the reject condition
       // never fires; the proposal stays 'pending' and only resolves via
       // awaitConsensus's own timeout/expiry path. Both runs end with
       // approved:false, but the weighted run's elapsed time proves it never

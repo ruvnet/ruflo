@@ -39,7 +39,8 @@ describe('register', () => {
     const w = world(on)
     await $.session.start(START)
 
-    expect(w.env.get('RUFLO_MODS_OWNS')).toBe('route,post-edit')
+    // ADR-512: learning-loop rides on the handshake when the project records turns (session.ts announced).
+    expect(w.env.get('RUFLO_MODS_OWNS')).toBe('route,post-edit,learning-loop')
     expect(w.commands).toEqual(['ruflo-mods'])
     expect(JSON.parse(w.files.get(`${ROOT}/.claude-flow/mods/session.json`) ?? '{}').owned).toEqual(['route', 'post-edit'])
   })
@@ -81,7 +82,7 @@ describe('register', () => {
     await $.session.start(START)
     await $.prompt.submit(prompt('implement the api'))
 
-    expect(w.env.get('RUFLO_MODS_OWNS')).toBe('post-edit')
+    expect(w.env.get('RUFLO_MODS_OWNS')).toBe('post-edit,learning-loop')
     expect(context).toBeUndefined()
   })
 

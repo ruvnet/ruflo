@@ -1,7 +1,8 @@
 {
   "name": "ruflo-mods",
   "description": "ruflo as a Claude Code mod (function hooks, ADR-404): in-process prompt routing, edit learning signals, tighten-only tool checks from ruflo policy, the cost-tracker budget ladder, a mod trust gate for newly installed mods, and the $.ruflo noun other mods compose their status with. Opt-in and removable: the classic hook-handler hooks stay the default and take every event back whenever the mod is not loaded.",
-  "version": "0.14.0",
+  "version": "0.17.2",
+  "repository": "https://github.com/ruvnet/ruflo",
   "author": {
     "name": "ruvnet",
     "url": "https://github.com/ruvnet"
@@ -25,6 +26,13 @@
       "description": "Add the ranked-memory block (.claude-flow/data/ranked-context.json) to each prompt's routing context, as the classic route hook does.",
       "required": false,
       "default": true
+    },
+    "routeJudge": {
+      "type": "boolean",
+      "title": "Model-judge routing",
+      "description": "Route each prompt with one no-tools haiku completion that picks one of 11 agent labels, instead of the keyword table. Adds about a second to each prompt and a small haiku charge on your session credentials. The prompt is sent as data to classify, never as instructions; slash commands and teammate messages are skipped; a timeout, refusal or any other reply keeps the keyword route. Off by default (ADR-530).",
+      "required": false,
+      "default": false
     },
     "statusLine": {
       "type": "boolean",
@@ -72,6 +80,13 @@
       "type": "string",
       "title": "Agent types to never hide",
       "description": "Comma-separated agent type names that agentTrim must keep offered.",
+      "required": false,
+      "default": ""
+    },
+    "agentModels": {
+      "type": "string",
+      "title": "Model per agent type",
+      "description": "Comma-separated type=model pairs, for example Explore=haiku,general-purpose=sonnet. When a subagent of that type is spawned with no model chosen, it runs on this one (haiku, sonnet, opus, inherit, or a full claude- model id). Covers built-in types and other plugins' agents, whose definitions you cannot edit, and workflow agents (Claude Code 2.1.300 or later). A model the call already chose is kept; forks and teammates are left alone. Empty (the default) is off.",
       "required": false,
       "default": ""
     },
@@ -137,6 +152,18 @@
       "description": "Show one line in /ruflo-mods saying whether the optional third-party ruvnet-brain plugin (github.com/stuinfla/ruvnet-brain) is installed and enabled: on, not installed, installed but disabled, or unknown. Reads installed_plugins.json and your settings; detect-only: never calls, installs, blocks or rewrites anything, and ruflo works the same without that plugin. Off by default.",
       "required": false,
       "default": false
+    },
+    "contextDelegation": {
+      "type": "string",
+      "title": "Automatic context delegation",
+      "description": "When the model reads a whole 14-120 KB file for an analysis prompt (one that routes to research or review and asks for no change), hand that read to a no-tools haiku completion that returns cited passages, check every quote against the file, and show the model only those passages with a header saying how to read the rest. The real Read always runs first, so edits still work, and any failure shows the whole file as before. Subagent reads, ranged reads, second reads of a file and change requests are never delegated. \"off\" (default): nothing changes. \"observe\": nothing the model sees changes; record what would have been delegated in .claude-flow/metrics/context-delegation.json. \"enforce\": delegate. Uses your session's own credentials for the haiku call.",
+      "required": false,
+      "default": "off",
+      "options": [
+        "off",
+        "observe",
+        "enforce"
+      ]
     },
     "modTrust": {
       "type": "string",

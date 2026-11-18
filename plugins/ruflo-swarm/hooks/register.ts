@@ -12,6 +12,7 @@ import { CLI_PREFIXES, newState, PANE_ID, persistedOf, restore, storeKeyOf, type
 import { createToastKit } from './toast-policy'
 import { paneModelOf } from './views/model'
 import { paneView } from './views/pane'
+import { hasTextWeight, withTextWeight } from './text-weight'
 
 const REFRESH_DEBOUNCE_MS = 400
 const TICK_MS = 2_000
@@ -73,6 +74,7 @@ export function register(on: On, raw: PluginOptions) {
   const state: State = newState(raw, newActivity())
   const cache: ReadCache = new Map()
   let host: Host | null = null
+  let textWeight = false
 
   const persist = () => {
     void host?.storeSet(storeKeyOf(state.cwd), persistedOf(state)).catch(() => undefined)
@@ -221,6 +223,8 @@ export function register(on: On, raw: PluginOptions) {
 
   on('session.start', async ($, e, next) => {
     host = hostOf($, e.cwd)
+    // Text `weight` (2.1.299) where the engine takes it, `bold` before (text-weight.ts).
+    textWeight = hasTextWeight(await (async () => $.session.version())().catch(() => undefined))
     state.cwd = e.cwd
 
     for (const timer of state.timers.values()) {
@@ -285,7 +289,7 @@ export function register(on: On, raw: PluginOptions) {
       return next(e)
     }
 
-    const table = $.ui.resolve(e)
+    const table = withTextWeight($.ui.resolve(e), textWeight)
     const columns = Math.max(20, Math.floor(Number(e.props.bodyColumns) || 0) - 1)
     const rows = Math.max(0, Math.floor(Number(e.props.scroll?.bodyRows) || 0))
     const nowMs = Date.now()

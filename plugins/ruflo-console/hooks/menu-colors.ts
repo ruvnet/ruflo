@@ -8,7 +8,7 @@
  * ink on an explicit background: if the host did not draw that background, the ink would be near-black on a dark terminal and the text
  * would be gone. Inverse cannot vanish, and where it is not honoured the chip falls back to text in the colour itself.
  */
-export const chip = (ground: string) => ({ color: ground, inverse: true, bold: true }) as const
+export const chip = (ground: string) => ({ color: ground, inverse: true, weight: 'semibold' }) as const
 
 /** The muted colour of a badge that is only information, and the loud one for a badge that needs a person. */
 export const MUTED = '#8a8a8a'

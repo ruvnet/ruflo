@@ -7,6 +7,7 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { confirm, input, select } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
+import { localCliContext } from '../mcp-tools/path-containment.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { stringify as stringifyYaml } from 'yaml';
@@ -264,9 +265,9 @@ const saveCommand: Command = {
       }>('session_save', {
         name: sessionName,
         description,
-        includeMemory: ctx.flags['include-memory'] !== false,
-        includeAgents: ctx.flags['include-agents'] !== false,
-        includeTasks: ctx.flags['include-tasks'] !== false
+        includeMemory: ctx.flags.includeMemory !== false && ctx.flags['include-memory'] !== false,
+        includeAgents: ctx.flags.includeAgents !== false && ctx.flags['include-agents'] !== false,
+        includeTasks: ctx.flags.includeTasks !== false && ctx.flags['include-tasks'] !== false
       });
 
       const failure = toolError(result);
@@ -410,9 +411,12 @@ const restoreCommand: Command = {
 
     try {
       // Determine what to restore
-      const restoreMemory = !ctx.flags['agents-only'] && !ctx.flags['tasks-only'];
-      const restoreAgents = !ctx.flags['memory-only'] && !ctx.flags['tasks-only'];
-      const restoreTasks = !ctx.flags['memory-only'] && !ctx.flags['agents-only'];
+      const memoryOnly = ctx.flags.memoryOnly === true || ctx.flags['memory-only'] === true;
+      const agentsOnly = ctx.flags.agentsOnly === true || ctx.flags['agents-only'] === true;
+      const tasksOnly = ctx.flags.tasksOnly === true || ctx.flags['tasks-only'] === true;
+      const restoreMemory = !agentsOnly && !tasksOnly;
+      const restoreAgents = !memoryOnly && !tasksOnly;
+      const restoreTasks = !memoryOnly && !agentsOnly;
 
       const result = await callMCPTool<{
         sessionId: string;
@@ -667,7 +671,7 @@ const exportCommand: Command = {
         };
       }>('session_export', {
         sessionId,
-        includeMemory: ctx.flags['include-memory'] !== false
+        includeMemory: ctx.flags.includeMemory !== false && ctx.flags['include-memory'] !== false
       });
 
       const failure = toolError(result);
@@ -806,7 +810,7 @@ const importCommand: Command = {
         inputPath: absolutePath,
         name: sessionName,
         activate
-      });
+      }, localCliContext());
 
       const failure = toolError(result);
       if (failure) {

@@ -25,10 +25,7 @@ Use a graph-traversal approach — each research step expands the frontier of kn
    ```
 4. **Prune** — Stop expanding paths with similarity < 0.3 (diminishing returns)
 5. **Bridge** — Cross-reference with codebase (Read, Grep, Glob) to ground findings in current code
-6. **Synthesize** — Merge graph findings into a coherent research summary:
-   ```
-   mcp__plugin_ruflo-core_ruflo__agentdb_context-synthesize({ query: "TOPIC", maxEntries: 10 })
-   ```
+6. **Synthesize** — Write the research summary yourself from the graph findings and the records `memory_search` / `memory_retrieve` returned. Use `agentdb_context-synthesize` only for past task outcomes: it summarizes validated task episodes (task, reward, success) and answers `no-eligible-episodes` for documents and graph entities, which is correct, not a gap in the research.
 
 ### Research Workflow
 
@@ -61,7 +58,7 @@ Use a graph-traversal approach — each research step expands the frontier of kn
 - `mcp__plugin_ruflo-core_ruflo__agentdb_graph-query` / `agentdb_graph-pathfinder` — follow dependency/impact chains (k-hop, personalized PageRank)
 - `mcp__plugin_ruflo-core_ruflo__agentdb_causal-edge` — record a dependency/impact edge between two entries (write-only; read edges back with graph-query)
 - `mcp__plugin_ruflo-core_ruflo__agentdb_pattern-search` — HNSW similarity search across patterns
-- `mcp__plugin_ruflo-core_ruflo__agentdb_context-synthesize` — merge multi-source findings
+- `mcp__plugin_ruflo-core_ruflo__agentdb_context-synthesize` — summarize validated task episodes (past task outcomes); not for documents or graph findings
 - `mcp__plugin_ruflo-core_ruflo__agentdb_hierarchical-store` — persist new knowledge nodes
 
 **Codebase Exploration:**

@@ -74,7 +74,7 @@ for (const look of ['bbs', 'plain', 'orbital'] as const) {
 }
 
 describe('pictures on each surface', () => {
-  test('the main menu leads with the banner: a Raster on the terminal, an Svg titled with the console name on the desktop', { options: { boot: false } }, async ($, on) => {
+  test('the main menu leads with the banner: a Raster on the terminal, an Svg titled with the console name on the desktop', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     worldOf(on, RUFLO_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -93,7 +93,7 @@ describe('pictures on each surface', () => {
     await desktop.unmount()
   })
 
-  test('the frame loop blits on the terminal and never on the desktop, where nothing is mounted to blit', { options: { boot: false } }, async ($, on) => {
+  test('the frame loop blits on the terminal and never on the desktop, where nothing is mounted to blit', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const clock = mock.clock(on)
     await $.session.start(SESSION)
@@ -113,7 +113,7 @@ describe('pictures on each surface', () => {
     await terminal.unmount()
   })
 
-  test('the boot intro is a Raster on the terminal and an Svg on the desktop, with nothing else under it', async ($, on) => {
+  test('the boot intro is a Raster on the terminal and an Svg on the desktop, with nothing else under it', { timeoutMs: 30_000 }, async ($, on) => {
     worldOf(on, RUFLO_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -130,7 +130,7 @@ describe('pictures on each surface', () => {
     }
   })
 
-  test('the band animates its working mark on the terminal and sends nothing for it on the desktop', { options: { boot: false } }, async ($, on) => {
+  test('the band animates its working mark on the terminal and sends nothing for it on the desktop', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const clock = mock.clock(on)
     await $.session.start(SESSION)

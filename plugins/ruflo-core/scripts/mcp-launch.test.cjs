@@ -285,3 +285,127 @@ test('runInProcess runs the CLI in the project dir with CLAUDE_FLOW_CWD set befo
     for (const d of [dir, project]) fs.rmSync(d, { recursive: true, force: true });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Stale / partial local build. isRunnableCli() only checks bin/cli.js and
+// dist/src/index.js, so a dist/ that predates src/ passes the guard and then
+// throws when cli.js imports a file the old build lacks. The launcher must say
+// what happened and, unless the person pinned a CLI, fall back to npx.
+// ---------------------------------------------------------------------------
+const {
+  isMissingModuleError, describeUnloadableCli, recoverFromLoadFailure,
+} = require(LAUNCHER);
+
+function captureStderr(fn) {
+  const real = process.stderr.write;
+  let out = '';
+  process.stderr.write = (chunk) => { out += String(chunk); return true; };
+  try { fn(); } finally { process.stderr.write = real; }
+  return out;
+}
+
+function missingModuleError() {
+  return Object.assign(new Error("Cannot find module '/x/dist/src/mcp-tools/policy-enforcer.js'"), {
+    code: 'ERR_MODULE_NOT_FOUND',
+  });
+}
+
+test('isMissingModuleError recognises ESM and CJS missing-module codes only', () => {
+  assert.equal(isMissingModuleError(missingModuleError()), true);
+  assert.equal(isMissingModuleError(Object.assign(new Error('x'), { code: 'MODULE_NOT_FOUND' })), true);
+  assert.equal(isMissingModuleError(new SyntaxError('boom')), false);
+  assert.equal(isMissingModuleError(null), false);
+});
+
+test('describeUnloadableCli names the ruflo checkout and the rebuild command for the in-repo CLI', () => {
+  const bin = path.join(os.tmpdir(), 'ruflo', 'v3', '@claude-flow', 'cli', 'bin', 'cli.js');
+  const text = describeUnloadableCli(bin, missingModuleError(), true);
+  assert.match(text, /inside a ruflo checkout/);
+  assert.match(text, /pnpm install && pnpm run build/);
+  assert.match(text, /outside the ruflo repo/);
+  assert.match(text, /Falling back to `npx -y @claude-flow\/cli@latest mcp start`/);
+  assert.doesNotMatch(describeUnloadableCli(bin, missingModuleError(), false), /Falling back/);
+});
+
+test('describeUnloadableCli does not blame a ruflo checkout for an ordinary install', () => {
+  const bin = path.join(os.tmpdir(), 'proj', 'node_modules', '@claude-flow', 'cli', 'bin', 'cli.js');
+  const text = describeUnloadableCli(bin, missingModuleError(), true);
+  assert.doesNotMatch(text, /ruflo checkout/);
+  assert.match(text, /reinstall or rebuild/);
+});
+
+test('recoverFromLoadFailure falls back to the npx launch spec on a missing module', () => {
+  let spec = null;
+  let exited = null;
+  const project = os.tmpdir();
+  const err = captureStderr(() => {
+    recoverFromLoadFailure('/r/v3/@claude-flow/cli/bin/cli.js', missingModuleError(), project, {}, {
+      run: (s) => { spec = s; },
+      exit: (c) => { exited = c; },
+    });
+  });
+  assert.equal(exited, null);
+  assert.deepEqual(spec.args, ['-y', '@claude-flow/cli@latest', ...MCP_ARGS]);
+  assert.equal(spec.cwd, project);
+  assert.match(err, /could not load/);
+});
+
+test('recoverFromLoadFailure fails closed for a pinned override, SKIP_NPX, and non-module errors', () => {
+  const cases = [
+    [missingModuleError(), { RUFLO_MCP_CLI_OVERRIDE: '/pinned/cli.js' }],
+    [missingModuleError(), { RUFLO_MCP_SKIP_NPX: '1' }],
+    [new SyntaxError('unexpected token'), {}],
+  ];
+  for (const [error, env] of cases) {
+    let spec = null;
+    let exited = null;
+    captureStderr(() => {
+      recoverFromLoadFailure('/r/cli.js', error, os.tmpdir(), env, {
+        run: (s) => { spec = s; },
+        exit: (c) => { exited = c; },
+      });
+    });
+    assert.equal(spec, null, JSON.stringify(env));
+    assert.equal(exited, 1, JSON.stringify(env));
+  }
+});
+
+test('end-to-end: a stale in-repo build prints the rebuild hint and a pinned override still exits 1', () => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-stale-'));
+  try {
+    // dist/src/index.js exists (passes isRunnableCli) but cli.js imports a file the build lacks.
+    const root = path.join(repo, 'v3', '@claude-flow', 'cli');
+    const bin = makeCliInstall(root);
+    // Like the real cli.js: an ESM package that awaits the import at top level.
+    fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}\n');
+    fs.writeFileSync(bin, "await import('../dist/src/mcp-tools/policy-enforcer.js');\n");
+    const base = { ...process.env, CLAUDE_PROJECT_DIR: repo, PATH: '' };
+    delete base.CLAUDE_FLOW_CWD;
+    delete base.RUFLO_MCP_CLI_OVERRIDE;
+
+    // Pinned override: fail closed, no fallback, message still explains it.
+    let pinned;
+    try {
+      execFileSync(process.execPath, [LAUNCHER], {
+        cwd: repo, env: { ...base, RUFLO_MCP_CLI_OVERRIDE: bin }, encoding: 'utf8', stdio: 'pipe',
+      });
+    } catch (e) { pinned = e; }
+    assert.ok(pinned, 'launcher should exit non-zero');
+    assert.equal(pinned.status, 1);
+    assert.match(String(pinned.stderr), /inside a ruflo checkout/);
+    assert.match(String(pinned.stderr), /Not falling back to @latest/);
+
+    // SKIP_NPX: the missing-module path must also refuse the @latest fallback.
+    let skipped;
+    try {
+      execFileSync(process.execPath, [LAUNCHER], {
+        cwd: repo, env: { ...base, RUFLO_MCP_SKIP_NPX: '1' }, encoding: 'utf8', stdio: 'pipe',
+      });
+    } catch (e) { skipped = e; }
+    assert.ok(skipped);
+    assert.equal(skipped.status, 1);
+    assert.match(String(skipped.stderr), /pnpm install && pnpm run build/);
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});

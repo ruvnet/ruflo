@@ -11,6 +11,8 @@ import { wasmSubcommands } from './agent-wasm.js';
 import { agentPublishCommand } from './agntcy/publish.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getProjectRoot } from '../services/project-root.js';
+import { noteFirstAgentRun } from '../funnel/activation.js';
 
 /**
  * Update swarm-activity.json metrics after agent count changes.
@@ -18,7 +20,7 @@ import * as path from 'path';
  */
 function updateSwarmActivityMetrics(agentCountDelta: number): void {
   try {
-    const metricsDir = path.join(process.cwd(), '.claude-flow', 'metrics');
+    const metricsDir = path.join(getProjectRoot(), '.claude-flow', 'metrics');
     const activityPath = path.join(metricsDir, 'swarm-activity.json');
 
     let data: Record<string, unknown> = {
@@ -195,6 +197,7 @@ const spawnCommand: Command = {
         output.printJson(result);
       }
 
+      noteFirstAgentRun('cli'); // activation funnel (opt-in; no-op without telemetry consent)
       return { success: true, data: result };
     } catch (error) {
       if (error instanceof MCPClientError) {

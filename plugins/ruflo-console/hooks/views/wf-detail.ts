@@ -173,7 +173,7 @@ function breadcrumb(env: SlotEnv, m: Model): RenderElement {
     item: m.drill.sub === 'log' ? `: line ${m.drill.follow ? m.lines.length : m.drill.logSel + 1}` : `: call ${m.drill.callSel + 1}`,
   }
 
-  return crumbRow(ctx, crumbs(m.drill).map(crumb => ({ key: `wf-crumb-${crumb.level}`, label: `${LEVEL_NAME[crumb.level]}${names[crumb.level]}`, isHere: crumb.isHere, onPress: () => commit(env, toLevel(m.drill, crumb.level)) })), 'wf-crumbs', { here: label => ctx.kit.Text({ bold: true, color: THEME.head, wrap: 'truncate-end', children: label }) })
+  return crumbRow(ctx, crumbs(m.drill).map(crumb => ({ key: `wf-crumb-${crumb.level}`, label: `${LEVEL_NAME[crumb.level]}${names[crumb.level]}`, isHere: crumb.isHere, onPress: () => commit(env, toLevel(m.drill, crumb.level)) })), 'wf-crumbs', { here: label => ctx.kit.Text({ weight: 'semibold', color: THEME.head, wrap: 'truncate-end', children: label }) })
 }
 
 function list(env: SlotEnv, m: Model): RenderElement[] {
@@ -188,16 +188,16 @@ function list(env: SlotEnv, m: Model): RenderElement[] {
   if (m.drill.level === 'runs') {
     const w = win(env.runs, env.ui.run)
 
-    for (const [i, run] of w.shown.entries()) rows.push(text(ctx, `${w.from + i === env.ui.run ? '▸' : ' '} ${clip(run.name, 30)}  ${run.state} · ${run.total} agents · ${run.kind === 'workflow' ? (run.totalTokens === null ? 'tokens n/a' : `${fmtTokens(run.totalTokens, run.isTokensPartial)} tok`) : 'ruflo swarm'}`, w.from + i === env.ui.run ? { bold: true } : {}))
+    for (const [i, run] of w.shown.entries()) rows.push(text(ctx, `${w.from + i === env.ui.run ? '▸' : ' '} ${clip(run.name, 30)}  ${run.state} · ${run.total} agents · ${run.kind === 'workflow' ? (run.totalTokens === null ? 'tokens n/a' : `${fmtTokens(run.totalTokens, run.isTokensPartial)} tok`) : 'ruflo swarm'}`, w.from + i === env.ui.run ? { weight: 'semibold' } : {}))
     if (env.runs.length > 8) rows.push(text(ctx, `${env.runs.length} runs: m w move`, { dimColor: true }))
   } else if (m.drill.level === 'phases' && env.run !== null) {
     const w = win(env.run.phases, env.ui.phase)
 
-    for (const [i, phase] of w.shown.entries()) rows.push(text(ctx, `${w.from + i === env.ui.phase ? '▸' : ' '} ${clip(`${w.from + i + 1} ${phase.title}`, 30)}  ${phase.done}/${phase.total} done${phase.running > 0 ? ` · ${phase.running} running` : ''}${phase.failed > 0 ? ` · ${phase.failed} failed` : ''}`, w.from + i === env.ui.phase ? { bold: true } : {}))
+    for (const [i, phase] of w.shown.entries()) rows.push(text(ctx, `${w.from + i === env.ui.phase ? '▸' : ' '} ${clip(`${w.from + i + 1} ${phase.title}`, 30)}  ${phase.done}/${phase.total} done${phase.running > 0 ? ` · ${phase.running} running` : ''}${phase.failed > 0 ? ` · ${phase.failed} failed` : ''}`, w.from + i === env.ui.phase ? { weight: 'semibold' } : {}))
   } else if (m.drill.level === 'agents' && env.phase !== null) {
     const w = win(env.phase.agents, env.ui.agent)
 
-    for (const [i, agent] of w.shown.entries()) rows.push(text(ctx, `${w.from + i === env.ui.agent ? '▸' : ' '} ${clip(agent.label, 30)}  ${agent.state} · ${agent.toolCalls === undefined ? 'calls n/a' : `${agent.toolCalls} calls`} · ${fmtElapsed(agent.elapsedMs)}`, w.from + i === env.ui.agent ? { bold: true } : {}))
+    for (const [i, agent] of w.shown.entries()) rows.push(text(ctx, `${w.from + i === env.ui.agent ? '▸' : ' '} ${clip(agent.label, 30)}  ${agent.state} · ${agent.toolCalls === undefined ? 'calls n/a' : `${agent.toolCalls} calls`} · ${fmtElapsed(agent.elapsedMs)}`, w.from + i === env.ui.agent ? { weight: 'semibold' } : {}))
     if (env.phase.agents.length === 0) rows.push(text(ctx, 'No agent has started in this phase yet.', { dimColor: true }))
   }
 

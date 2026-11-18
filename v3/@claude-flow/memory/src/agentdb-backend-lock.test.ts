@@ -40,13 +40,13 @@ describe('AgentDBBackend with real sql.js agentdb and a lock file', () => {
     await b.initialize();
     const raw = (b as any).getAgentDB().database;
     expect(raw.constructor.name).toBe('SqlJsDatabase'); // proves the locked sql.js path is exercised
-    raw.exec('CREATE TABLE memory_entries(content TEXT)');
-    raw.exec("INSERT INTO memory_entries VALUES('survives stale lock')");
+    raw.exec('CREATE TABLE lock_probe(content TEXT)');
+    raw.exec("INSERT INTO lock_probe VALUES('survives stale lock')");
     await b.shutdown();
     expect(fs.existsSync(lockFile)).toBe(false);
     const db = new Database(dbFile, { readonly: true });
     try {
-      const rows = db.prepare('SELECT content FROM memory_entries').all() as Array<{ content: string }>;
+      const rows = db.prepare('SELECT content FROM lock_probe').all() as Array<{ content: string }>;
       expect(rows.map((r) => r.content)).toContain('survives stale lock');
     } finally { db.close(); }
   });

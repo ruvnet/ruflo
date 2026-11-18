@@ -161,7 +161,7 @@ export class SlidingWindowRateLimiter implements RateLimiter {
    * Reset rate limit for a key
    */
   reset(key?: string): void {
-    if (key) {
+    if (key !== undefined) {
       this.requests.delete(key);
     } else {
       this.requests.clear();
@@ -317,7 +317,7 @@ export class TokenBucketRateLimiter implements RateLimiter {
    * Reset bucket for a key
    */
   reset(key?: string): void {
-    if (key) {
+    if (key !== undefined) {
       this.buckets.delete(key);
     } else {
       this.buckets.clear();

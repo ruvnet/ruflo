@@ -10,6 +10,7 @@ import { probeLine, probeState, type ProbeState } from './probe'
 import { loopLine, loopSegment, loopState, type LoopState } from './loop/status'
 import { snapshotLine, snapshotState, type SnapshotState } from './compact-snapshot/snapshot'
 import type { RouteResult } from './route/route-task'
+import { createDelegateState, type ContextDelegateState } from './context-delegate/stats'
 
 /**
  * What the mod knows during one process, shared by its features. In memory
@@ -39,6 +40,8 @@ export type ModState = {
   toolHints: { enabled: boolean; described: Set<string> }
   /** `agent.offer` trim (ADR-451): whether it is on, the types it hid, and the latest prompt (lower case). */
   agentTrim: { enabled: boolean; hidden: Set<string>; prompt: string; ledger?: Promise<Record<string, number>> }
+  /** Spawns given a model by `agentModels`, and how many types it names (0: off). */
+  agentModels: { routed: number; types: number }
   /** `session.receive`/`session.send` screen (ADR-451): whether it is on, deliveries consumed, sends refused. */
   delivery: { enabled: boolean; consumed: number; blocked: number }
   /** The ruRE offer (ADR-498): whether it is on, whether the session has a ruRE tool, files waiting for the turn's end, files already offered, and how many were. */
@@ -55,6 +58,8 @@ export type ModState = {
   rollup: RollupState
   /** The verified-outcome learning loop (#4581, ADR-502): off unless the learningLoop option is on. */
   loop: LoopState
+  /** Automatic context delegation (ADR-522): off unless the contextDelegation option is observe or enforce. */
+  contextDelegate: ContextDelegateState
   /** Other mods' status segments, by id (`$.ruflo.segment`). */
   segments: Map<string, string>
   /**
@@ -81,6 +86,7 @@ export function createState(): ModState {
     budget: { level: 'OK' },
     toolHints: { enabled: false, described: new Set() },
     agentTrim: { enabled: false, hidden: new Set(), prompt: '' },
+    agentModels: { routed: 0, types: 0 },
     delivery: { enabled: false, consumed: 0, blocked: 0 },
     compact: { enabled: false, carried: 0 },
     snapshot: snapshotState(),
@@ -89,6 +95,7 @@ export function createState(): ModState {
     grounding: groundingState(),
     rollup: rollupState(),
     loop: loopState(),
+    contextDelegate: createDelegateState(),
     segments: new Map(),
     draw: () => undefined,
     say: async () => undefined,
@@ -180,6 +187,7 @@ export function report(s: ModState): string {
     `  budget:      ${budget}`,
     `  tool hints:  ${s.toolHints.enabled ? `${s.toolHints.described.size} tool(s) described` : 'off (set the toolHints option)'}`,
     `  agent trim:  ${s.agentTrim.enabled ? `${s.agentTrim.hidden.size} type(s) hidden` : 'off (set the agentTrim option)'}`,
+    `  agent models: ${s.agentModels.types > 0 ? `${s.agentModels.types} type(s), ${s.agentModels.routed} spawn(s) given a model` : 'off (set the agentModels option)'}`,
     `  delivery:    ${s.delivery.enabled ? `${s.delivery.consumed} dropped, ${s.delivery.blocked} refused` : 'off (set the deliveryScreen option)'}`,
     `  compact:     ${s.compact.enabled ? `${s.compact.carried} compaction(s) carried a block` : 'off (set the compactCarry option)'}`,
     `  snapshot:    ${snapshotLine(s.snapshot)}`,

@@ -200,6 +200,29 @@ function filterDangerousKeys(obj: Record<string, unknown>): Record<string, unkno
   return filtered;
 }
 
+// Scope names index store.scopes directly, so they must never resolve to
+// Object.prototype (`__proto__`) or to inherited built-ins (`toString`).
+function validateScope(scope: unknown): { valid: boolean; error?: string } {
+  const v = validateIdentifier(scope, 'scope');
+  if (!v.valid) return v;
+  if (DANGEROUS_KEYS.has(scope as string)) return { valid: false, error: 'scope uses a reserved name' };
+  return { valid: true };
+}
+
+function readScope(store: ConfigStore, scope: string): Record<string, unknown> | undefined {
+  if (!Object.hasOwn(store.scopes, scope)) return undefined;
+  const values = store.scopes[scope];
+  return isRecord(values) ? values : undefined;
+}
+
+function ensureScope(store: ConfigStore, scope: string, reset = false): Record<string, unknown> {
+  const existing = reset ? undefined : readScope(store, scope);
+  if (existing) return existing;
+  const created: Record<string, unknown> = {};
+  store.scopes[scope] = created;
+  return created;
+}
+
 function setNestedValue(obj: Record<string, unknown>, key: string, value: unknown): void {
   const MAX_NESTING_DEPTH = 10;
   const parts = key.split('.');
@@ -240,7 +263,7 @@ export const configTools: MCPTool[] = [
       const vKey = validateText(input.key, 'key', 256);
       if (!vKey.valid) return { success: false, error: vKey.error };
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
 
@@ -251,8 +274,9 @@ export const configTools: MCPTool[] = [
       let value: unknown;
 
       // Check scope first, then default values
-      if (scope !== 'default' && store.scopes[scope]) {
-        value = store.scopes[scope][key];
+      const scopeValues = scope !== 'default' ? readScope(store, scope) : undefined;
+      if (scopeValues && Object.hasOwn(scopeValues, key)) {
+        value = scopeValues[key];
       }
       if (value === undefined) {
         value = readDefaultValue(store, key);
@@ -288,7 +312,7 @@ export const configTools: MCPTool[] = [
       const vKey = validateText(input.key, 'key', 256);
       if (!vKey.valid) return { success: false, error: vKey.error };
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
 
@@ -302,10 +326,10 @@ export const configTools: MCPTool[] = [
       if (scope === 'default') {
         writeDefaultValue(store, key, value);
       } else {
-        if (!store.scopes[scope]) {
-          store.scopes[scope] = {};
+        if (DANGEROUS_KEYS.has(key)) {
+          return { success: false, error: 'key uses a reserved name' };
         }
-        store.scopes[scope][key] = value;
+        ensureScope(store, scope)[key] = value;
       }
 
       saveConfigStore(store);
@@ -335,7 +359,7 @@ export const configTools: MCPTool[] = [
     handler: async (input) => {
       // Validate user-provided input (#1425)
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
       if (input.prefix) {
@@ -410,7 +434,7 @@ export const configTools: MCPTool[] = [
     handler: async (input) => {
       // Validate user-provided input (#1425)
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
       if (input.key) {
@@ -430,17 +454,20 @@ export const configTools: MCPTool[] = [
           if (deleteDefaultValue(store, key)) {
             resetKeys.push(key);
           }
-        } else if (store.scopes[scope] && key in store.scopes[scope]) {
-          delete store.scopes[scope][key];
-          resetKeys.push(key);
+        } else {
+          const scopeValues = readScope(store, scope);
+          if (scopeValues && Object.hasOwn(scopeValues, key)) {
+            delete scopeValues[key];
+            resetKeys.push(key);
+          }
         }
       } else {
         // Reset all keys in scope
         if (scope === 'default') {
           resetKeys = Object.keys(store.values);
           replaceDefaultValues(store, { ...DEFAULT_CONFIG });
-        } else if (store.scopes[scope]) {
-          resetKeys = Object.keys(store.scopes[scope]);
+        } else if (readScope(store, scope)) {
+          resetKeys = Object.keys(readScope(store, scope)!);
           delete store.scopes[scope];
         }
       }
@@ -470,7 +497,7 @@ export const configTools: MCPTool[] = [
     handler: async (input) => {
       // Validate user-provided input (#1425)
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
 
@@ -486,8 +513,9 @@ export const configTools: MCPTool[] = [
 
       Object.assign(exportData, store.values);
 
-      if (scope !== 'default' && store.scopes[scope]) {
-        Object.assign(exportData, store.scopes[scope]);
+      const scopeValues = scope !== 'default' ? readScope(store, scope) : undefined;
+      if (scopeValues) {
+        Object.assign(exportData, scopeValues);
       }
 
       return {
@@ -515,7 +543,7 @@ export const configTools: MCPTool[] = [
     handler: async (input) => {
       // Validate user-provided input (#1425)
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
 
@@ -533,10 +561,7 @@ export const configTools: MCPTool[] = [
           replaceDefaultValues(store, { ...DEFAULT_CONFIG, ...config });
         }
       } else {
-        if (!store.scopes[scope] || !merge) {
-          store.scopes[scope] = {};
-        }
-        Object.assign(store.scopes[scope], config);
+        Object.assign(ensureScope(store, scope, !merge), config);
       }
 
       saveConfigStore(store);

@@ -33,7 +33,7 @@ export function iconRow(ctx: Ctx): RenderElement {
         const entry = press[icon.id]
 
         return entry.isCurrent
-          ? ctx.kit.Box({ key, flexShrink: 0, children: [ctx.kit.Text({ bold: true, color: THEME.head, children: label })] })
+          ? ctx.kit.Box({ key, flexShrink: 0, children: [ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: label })] })
           : ctx.kit.Button({ key, label, plain: true, dimColor: true, onPress: entry.run })
       }),
       ctx.kit.Text({ children: ' '.repeat(ICON_MARGIN) }),

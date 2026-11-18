@@ -44,7 +44,7 @@ function configRows(ctx: Ctx): RenderElement[] {
         return row(
           ctx,
           [
-            ctx.kit.Text({ bold: true, color: THEME.head, children: ` ${item.title.padEnd(16)}` }),
+            ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: ` ${item.title.padEnd(16)}` }),
             ctx.kit.Text({ color: value === 'true' ? THEME.ok : value === 'false' ? THEME.bad : THEME.info, children: ` ${value === undefined ? 'n/a (open Settings to read it)' : value === 'true' ? 'on' : 'off'} ` }),
             ctx.kit.Button({ key: `learn-cfg-on-${item.key}`, label: ' ● on ', plain: true, onPress: () => ctx.act.settings.core(item.key, 'true') }),
             ctx.kit.Button({ key: `learn-cfg-off-${item.key}`, label: ' ○ off ', plain: true, onPress: () => ctx.act.settings.core(item.key, 'false') }),

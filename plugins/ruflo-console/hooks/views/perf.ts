@@ -16,7 +16,7 @@ function seriesRow(ctx: Ctx, key: string, name: string, values: readonly number[
     ctx,
     [
       ctx.kit.Text({ color: THEME.info, children: ` ${name.padEnd(12)} ` }),
-      ctx.kit.Text({ bold: true, color: THEME.ok, children: sparkline(shown, width) }),
+      ctx.kit.Text({ weight: 'semibold', color: THEME.ok, children: sparkline(shown, width) }),
       ctx.kit.Text({ dimColor: true, wrap: 'truncate-end', children: ` now ${fmt(shown[shown.length - 1] ?? 0)} · min ${fmt(Math.min(...shown))} · max ${fmt(Math.max(...shown))} · ${shown.length} samples` }),
     ],
     key,

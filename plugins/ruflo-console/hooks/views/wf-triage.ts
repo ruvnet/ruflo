@@ -81,7 +81,7 @@ export function triageRows(env: SlotEnv): RenderElement[] {
   const triage = triageRun(run, results)
   const failed = failedOf(triage)
   const empty = triage.items.filter(item => item.triage.kind === 'empty')
-  const rows: RenderElement[] = [text(ctx, triageStrip(triage.counts), failed.length > 0 ? { color: THEME.bad, bold: true } : empty.length > 0 ? { color: THEME.warn } : { color: THEME.ok })]
+  const rows: RenderElement[] = [text(ctx, triageStrip(triage.counts), failed.length > 0 ? { color: THEME.bad, weight: 'semibold' } : empty.length > 0 ? { color: THEME.warn } : { color: THEME.ok })]
 
   for (const item of [...failed, ...empty].slice(0, 8)) rows.push(itemRow(ctx, item))
 
@@ -141,7 +141,7 @@ export function costRows(env: SlotEnv): RenderElement[] {
     const mine = cost.phases.get(entry.title)
     const here = entry.title === phase?.title
 
-    rows.push(text(ctx, `${here ? '▸' : ' '} ${clip(entry.title, 24).padEnd(24)} ${fmtCosted(mine).padEnd(14)} ${mine === undefined || isUnread(mine) ? 'n/a' : `${fmtTokens(billedTokens(mine), mine.isFloor)} tok`}`, here ? { bold: true } : { dimColor: true }))
+    rows.push(text(ctx, `${here ? '▸' : ' '} ${clip(entry.title, 24).padEnd(24)} ${fmtCosted(mine).padEnd(14)} ${mine === undefined || isUnread(mine) ? 'n/a' : `${fmtTokens(billedTokens(mine), mine.isFloor)} tok`}`, here ? { weight: 'semibold' } : { dimColor: true }))
   }
 
   if (run.phases.length > 10) rows.push(text(ctx, `+${run.phases.length - 10} more phases`, { dimColor: true }))

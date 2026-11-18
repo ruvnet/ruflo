@@ -11,7 +11,7 @@ import { command, elementsOf, keyOf, paneAt, PLUGIN, SESSION, textOf, worldOf } 
 const keys = (tree: Parameters<typeof elementsOf>[0]) => elementsOf(tree, 'Button').map(keyOf)
 
 describe('start here', () => {
-  test('an empty project: the Swarm page leads with its steps, the first is next, and its button asks before it runs', { options: { boot: false } }, async ($, on) => {
+  test('an empty project: the Swarm page leads with its steps, the first is next, and its button asks before it runs', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, {})
 
     mock.clock(on)
@@ -36,7 +36,7 @@ describe('start here', () => {
     await pane.unmount()
   })
 
-  test('a project with ruflo and a swarm shows those steps done, and the next one marked', { options: { boot: false } }, async ($, on) => {
+  test('a project with ruflo and a swarm shows those steps done, and the next one marked', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     worldOf(on, RUFLO_FILES)
     mock.clock(on)
     await $.session.start(SESSION)

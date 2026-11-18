@@ -18,12 +18,19 @@ export const TRUST_TRANSITION_THRESHOLDS: Record<string, TrustTransitionThreshol
   '3->4': { upgradeScore: 0.95, downgradeScore: 0.8, minInteractions: 5000 },
 };
 
+// 'admin-change' gates trust-change/topology-change — control-plane operations
+// that mutate a peer's trust level or the mesh topology itself, as opposed to
+// the data-plane operations (send/receive/query-redacted) available from
+// ATTESTED. Granted from TRUSTED, matching this table's existing floor for
+// other sensitive capabilities (share-context, collaborative-task); this is
+// the hardcoded floor a SecurityPolicy.minTrustLevelForAdmin override cannot
+// loosen below, same defense-in-depth shape as remote-spawn/PRIVILEGED.
 export const CAPABILITY_GATES: Record<TrustLevel, readonly string[]> = {
   [TrustLevel.UNTRUSTED]: ['discovery'],
   [TrustLevel.VERIFIED]: ['discovery', 'status', 'ping'],
   [TrustLevel.ATTESTED]: ['discovery', 'status', 'ping', 'send', 'receive', 'query-redacted'],
-  [TrustLevel.TRUSTED]: ['discovery', 'status', 'ping', 'send', 'receive', 'query-redacted', 'share-context', 'collaborative-task'],
-  [TrustLevel.PRIVILEGED]: ['discovery', 'status', 'ping', 'send', 'receive', 'query-redacted', 'share-context', 'collaborative-task', 'full-memory', 'remote-spawn'],
+  [TrustLevel.TRUSTED]: ['discovery', 'status', 'ping', 'send', 'receive', 'query-redacted', 'share-context', 'collaborative-task', 'admin-change'],
+  [TrustLevel.PRIVILEGED]: ['discovery', 'status', 'ping', 'send', 'receive', 'query-redacted', 'share-context', 'collaborative-task', 'full-memory', 'remote-spawn', 'admin-change'],
 };
 
 export function isOperationAllowed(trustLevel: TrustLevel, operation: string): boolean {

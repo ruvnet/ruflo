@@ -201,6 +201,23 @@ export class SessionManager extends EventEmitter {
     return this.closeSession(sessionId);
   }
 
+  /**
+   * When at capacity, close the least recently active session other than
+   * `keepId` so one more can be created. Returns the closed session's id, or
+   * undefined when there was room or nothing else to close (#4674).
+   */
+  reserveCapacity(keepId?: string): string | undefined {
+    if (this.sessions.size < this.config.maxSessions) return undefined;
+    let oldest: MCPSession | undefined;
+    for (const session of this.sessions.values()) {
+      if (session.id === keepId) continue;
+      if (!oldest || session.lastActivityAt < oldest.lastActivityAt) oldest = session;
+    }
+    if (!oldest) return undefined;
+    this.closeSession(oldest.id, 'Evicted to make room for a new session');
+    return oldest.id;
+  }
+
   getSessionMetrics(): SessionMetrics {
     let authenticated = 0;
     let active = 0;

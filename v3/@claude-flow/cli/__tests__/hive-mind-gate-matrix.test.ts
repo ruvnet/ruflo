@@ -30,6 +30,9 @@ vi.mock('node:crypto', async () => {
 });
 
 import { hiveMindTools, getHiveTokenForCli } from '../src/mcp-tools/hive-mind-tools.js';
+import { agentTools } from '../src/mcp-tools/agent-tools.js';
+
+vi.mock('../src/ruvector/graph-backend.js', () => ({ addNode: vi.fn() }));
 
 const SECRET = 'operator-secret-0123456789abcdef';
 const posix = process.platform !== 'win32';
@@ -78,13 +81,20 @@ describe('hive-mind gate matrix (ADR-476)', () => {
   let prevCwd: string | undefined;
   const hiveDir = () => join(dir, '.claude-flow', 'hive-mind');
 
-  beforeEach(() => {
+  beforeEach(async () => {
     dir = mkdtempSync(join(tmpdir(), 'hive-gate-'));
     prevCwd = process.env.CLAUDE_FLOW_CWD;
     process.env.CLAUDE_FLOW_CWD = dir;
     delete process.env.RUFLO_HIVE_BOOTSTRAP_SECRET;
     delete process.env.RUFLO_HIVE_REQUIRE_AUTH;
     cryptoSpy.calls.length = 0;
+    // #4727: keep the matrix about authorization, with real registered IDs.
+    for (const agentId of ['w-join', 'w1']) {
+      const agent = await agentTools.find(t => t.name === 'agent_spawn')!.handler({
+        agentId, agentType: 'worker', model: 'sonnet',
+      }) as any;
+      expect(agent.success).toBe(true);
+    }
   });
   afterEach(() => {
     delete process.env.RUFLO_HIVE_BOOTSTRAP_SECRET;

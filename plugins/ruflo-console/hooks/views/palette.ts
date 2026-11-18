@@ -83,7 +83,7 @@ export function paletteView(ctx: Ctx): RenderElement {
       row(
         ctx,
         [
-          text(ctx, isFirst ? ' ▶' : '  ', { bold: true, color: THEME.ok }),
+          text(ctx, isFirst ? ' ▶' : '  ', { weight: 'semibold', color: THEME.ok }),
           ctx.kit.Button({ key: `pal-${entry.id}`, label: ` ${clip(entry.label, lead - 1)}`.padEnd(lead, '.'), plain: true, ...(isFirst && { variant: 'primary' as const }), onPress: () => ctx.act.paletteRun(entry.id) }),
           tagChip(ctx, tag.text, tag.color),
           ...(isGrouped || ctx.columns < 80 ? [] : [text(ctx, `  ${entry.group}`, { dimColor: true })]),

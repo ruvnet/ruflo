@@ -5,14 +5,16 @@
  * Includes model routing integration for intelligent model selection.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { readRecordStore } from './record-store.js';
+import { nullPrototypeRecords, readRecordStore } from './record-store.js';
+import { type StoreUpdate, saved, unchanged, updateJsonStore } from './locked-json-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText, validateAgentSpawn } from './validate-input.js';
 import { executeAgentTask } from './agent-execute-core.js';
 import { AGENT_HEALTH_WINDOW, summarizeAgentExecutions, type AgentExecutionSample } from './agent-health-metrics.js';
-import { pheromoneAgentEligibility } from './swarm-tools.js';
+import { pheromoneAgentEligibility, type loadSwarmStore } from './swarm-tools.js';
+import { noteFirstAgentRun } from '../funnel/activation.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -26,6 +28,37 @@ const HIVE_AGENT_FILE = 'agents.json';
 
 // Model types matching Claude Agent SDK
 type ClaudeModel = 'haiku' | 'sonnet' | 'opus' | 'opus-4.7' | 'inherit';
+
+/** Model aliases that resolve to a tier label rather than an exact model id. */
+const MODEL_ALIASES: readonly ClaudeModel[] = ['haiku', 'sonnet', 'opus', 'opus-4.7', 'inherit'];
+
+/**
+ * #3215 — agent_spawn's `model` accepts an alias or an exact provider model id
+ * (`claude-opus-5-5`, `gpt-6-astra`, `openrouter/anthropic/claude-sonnet-5.5`,
+ * `qwen3.6:27b`). One pattern is shared by the input schema and the handler so
+ * the two cannot drift. It is anchored, starts with an alphanumeric (so a value
+ * cannot read as a CLI flag), and allows only `._:/@+-` besides alphanumerics:
+ * no whitespace and no shell metacharacters. The character class has no
+ * escapes, so it compiles the same under ajv's `u` flag and under the plain
+ * `new RegExp(pattern)` that @claude-flow/mcp's schema validator uses.
+ */
+export const MODEL_ID_PATTERN = '^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$';
+export const MODEL_ID_MAX_LENGTH = 256;
+const MODEL_ID_RE = new RegExp(MODEL_ID_PATTERN);
+
+/** Returns an error message for an invalid model value, or null when it is valid. */
+export function modelIdError(value: unknown, label = 'model'): string | null {
+  if (typeof value !== 'string' || value.length === 0) {
+    return `${label} must be a non-empty string`;
+  }
+  if (value.length > MODEL_ID_MAX_LENGTH) {
+    return `${label} exceeds ${MODEL_ID_MAX_LENGTH} characters`;
+  }
+  if (!MODEL_ID_RE.test(value)) {
+    return `${label} contains invalid characters (must start with a letter or digit; allowed: letters, digits, . _ : / @ + -)`;
+  }
+  return null;
+}
 
 interface AgentRecord {
   agentId: string;
@@ -71,20 +104,20 @@ function getAgentPath(): string {
   return join(getAgentDir(), AGENT_FILE);
 }
 
-function ensureAgentDir(): void {
-  const dir = getAgentDir();
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-}
-
 function loadAgentStore(): AgentStore {
   return readRecordStore(getAgentPath(), 'agents', () => ({ agents: {}, version: '3.0.0' }));
 }
 
-function saveAgentStore(store: AgentStore): void {
-  ensureAgentDir();
-  writeFileSync(getAgentPath(), JSON.stringify(store, null, 2), 'utf-8');
+/** Live canonical registry members, excluding stale or duplicate swarm IDs. */
+export function getLiveAgentIds(agentIds: string[]): string[] {
+  const { agents } = loadAgentStore();
+  return [...new Set(agentIds)].filter(id => agents[id] && agents[id].status !== 'terminated');
+}
+
+/** Every agent-store write goes through here, under the agents lock.
+ * agent-execute-core.ts and task-tools.ts write the same file and take the same lock. */
+function updateAgentStore<R>(mutate: (store: AgentStore) => StoreUpdate<R>): Promise<R> {
+  return updateJsonStore(getAgentPath(), loadAgentStore, mutate, 'agents');
 }
 
 // #1916: read hive-mind-spawned workers from `.claude-flow/agents.json`.
@@ -98,13 +131,13 @@ function loadHiveAgents(): Record<string, AgentRecord> {
     if (existsSync(path)) {
       const data = JSON.parse(readFileSync(path, 'utf-8'));
       if (data && typeof data.agents === 'object' && data.agents) {
-        return data.agents as Record<string, AgentRecord>;
+        return nullPrototypeRecords(data.agents as Record<string, AgentRecord>);
       }
     }
   } catch {
     // Ignore — hive store is optional/best-effort.
   }
-  return {};
+  return nullPrototypeRecords<Record<string, AgentRecord>>(undefined);
 }
 
 /**
@@ -113,7 +146,41 @@ function loadHiveAgents(): Record<string, AgentRecord> {
  * wins (it carries model-routing + lastResult that the hive store omits).
  */
 function loadAllAgents(): Record<string, AgentRecord> {
-  return { ...loadHiveAgents(), ...loadAgentStore().agents };
+  return Object.assign(nullPrototypeRecords<Record<string, AgentRecord>>(undefined), loadHiveAgents(), loadAgentStore().agents);
+}
+
+export const AGENT_STATUSES = ['idle', 'busy', 'terminated'] as const;
+type AgentLifecycleStatus = (typeof AGENT_STATUSES)[number];
+
+// Spellings callers write for the three stored states. v2 `agent/list` used
+// "active" for a working agent; hive liveness folds running/working into busy.
+const AGENT_STATUS_ALIASES: Readonly<Record<string, AgentLifecycleStatus>> = {
+  active: 'busy', running: 'busy', working: 'busy',
+  ready: 'idle', waiting: 'idle',
+  stopped: 'terminated', inactive: 'terminated', offline: 'terminated',
+};
+
+/** Canonical lifecycle status (trimmed, any case, known aliases), or null. */
+export function agentStatusOf(value: unknown): AgentLifecycleStatus | null {
+  if (typeof value !== 'string') return null;
+  const key = value.trim().toLowerCase();
+  if ((AGENT_STATUSES as readonly string[]).includes(key)) return key as AgentLifecycleStatus;
+  return Object.hasOwn(AGENT_STATUS_ALIASES, key) ? AGENT_STATUS_ALIASES[key] : null;
+}
+
+/**
+ * Statuses `agent_list` should keep. `null` means no status filter:
+ * omitted, empty, whitespace, or `all` (any case, including inside a comma list).
+ * The caller still hides terminated agents unless includeTerminated is set.
+ */
+export function agentListStatusFilter(status: unknown): string[] | null {
+  if (typeof status !== 'string' || status.trim() === '') return null;
+  const canonical = status.split(',').map(part => part.trim()).filter(Boolean).map(part => {
+    if (part.toLowerCase() === 'all') return 'all';
+    return agentStatusOf(part) ?? part.toLowerCase();
+  });
+  if (canonical.length === 0 || canonical.includes('all')) return null;
+  return canonical;
 }
 
 // Default model mappings for agent types (can be overridden)
@@ -188,7 +255,7 @@ async function determineAgentModel(
   // 1. Explicit model in config
   if (config.model) {
     const explicitModel = config.model as string;
-    if (['haiku', 'sonnet', 'opus', 'opus-4.7', 'inherit'].includes(explicitModel)) {
+    if ((MODEL_ALIASES as readonly string[]).includes(explicitModel)) {
       return { model: explicitModel as ClaudeModel, routedBy: 'explicit' };
     }
     // #2962 — a non-alias model string (e.g. an Ollama tag like
@@ -299,8 +366,10 @@ export const agentTools: MCPTool[] = [
         domain: { type: 'string', description: 'Agent domain' },
         model: {
           type: 'string',
-          enum: ['haiku', 'sonnet', 'opus', 'opus-4.7', 'inherit'],
-          description: 'Claude model alias (haiku=fast/cheap, sonnet=balanced, opus=current Opus 4.8, opus-4.7=prior Opus pin)'
+          minLength: 1,
+          maxLength: MODEL_ID_MAX_LENGTH,
+          pattern: MODEL_ID_PATTERN,
+          description: 'Model alias or exact model id. Aliases: haiku=fast/cheap, sonnet=balanced, opus=current Opus 4.8, opus-4.7=prior Opus pin, inherit=the default model. Any other value is passed through unchanged as an exact model id (e.g. claude-opus-5-5, gpt-6-astra, openrouter/anthropic/claude-sonnet-5.5) and reported back as modelId. Letters, digits and . _ : / @ + - only, starting with a letter or digit.'
         },
         task: { type: 'string', description: 'Task description for intelligent model routing' },
         memoryBase: { type: 'string', description: 'Opt-in: base .rvf memory file to fork a per-agent Copy-On-Write branch from (agenticow). When set, the agent gets an isolated ~162-byte COW branch instead of a full copy — promote on success, discard on terminate. Requires the optional `agenticow` dep; degrades to a no-op when absent or when CLAUDE_FLOW_NO_COW_MEMORY=1.' },
@@ -343,9 +412,19 @@ export const agentTools: MCPTool[] = [
       }
       const config = (input.config as Record<string, unknown>) || {};
 
-      // Add explicit model to config if provided
-      if (input.model) {
+      // #3215 — validate an explicit model before it is stored or routed. The
+      // top-level field is checked even when empty (the schema rejects ''; null
+      // is treated as absent), and config.model is checked too: `agent spawn -m`
+      // sends the model there, where the input schema never sees it. A falsy
+      // config.model keeps its old meaning (no explicit model), matching
+      // determineAgentModel's check.
+      if (input.model !== undefined && input.model !== null) {
+        const err = modelIdError(input.model);
+        if (err) return { success: false, error: `Input validation failed: ${err}` };
         config.model = input.model;
+      } else if (config.model) {
+        const err = modelIdError(config.model, 'config.model');
+        if (err) return { success: false, error: `Input validation failed: ${err}` };
       }
 
       // Get task from either top-level or config (CLI passes it in config.task)
@@ -388,20 +467,16 @@ export const agentTools: MCPTool[] = [
         ...(routingResult.openrouterModel ? { openrouterModel: routingResult.openrouterModel } : {}),
       };
 
-      const store = loadAgentStore();
-      store.agents[agentId] = agent;
-      saveAgentStore(store);
-
-      // #2085 — also push to the swarm store's agents array so that
-      // swarm_status reports the new agent. Without this, agent_spawn
-      // and swarm_status read/write separate stores and agents added
-      // post-init never show up in swarm_status.agents — confirmed for
-      // all topologies (hierarchical, mesh, etc.).
+      // #2085 — the agent is also pushed to the swarm store's agents array so
+      // that swarm_status reports it. Resolve that swarm first: #4572 — an
+      // active swarm already holding maxAgents live agents refuses the spawn.
+      // Resolved before the agents lock, so the lock covers only sync work.
+      let swarmTools: typeof import('./swarm-tools.js') | undefined;
+      let swarmStore: ReturnType<typeof loadSwarmStore> | undefined;
+      let targetSwarmId = (input.swarmId as string) || '';
       try {
-        const { loadSwarmStore: _loadSwarmStore, saveSwarmStore: _saveSwarmStore } =
-          await import('./swarm-tools.js');
-        const swarmStore = _loadSwarmStore();
-        let targetSwarmId = (input.swarmId as string) || '';
+        swarmTools = await import('./swarm-tools.js');
+        swarmStore = swarmTools.loadSwarmStore();
         if (!targetSwarmId) {
           // Default to the most-recently-created swarm.
           const all = Object.values(swarmStore.swarms);
@@ -410,16 +485,42 @@ export const agentTools: MCPTool[] = [
           )[0];
           targetSwarmId = latest?.swarmId || '';
         }
-        if (targetSwarmId && swarmStore.swarms[targetSwarmId]) {
-          const swarm = swarmStore.swarms[targetSwarmId];
+      } catch { /* swarm store unavailable — agent still registered globally */ }
+      const swarm = targetSwarmId ? swarmStore?.swarms[targetSwarmId] : undefined;
+      const members = Array.isArray(swarm?.agents) ? swarm.agents : [];
+
+      const refused = await updateAgentStore((store) => {
+        if (swarm && swarm.status !== 'terminated' && !members.includes(agentId)) {
+          // Terminated agents stay listed in swarm.agents; they no longer hold a slot.
+          const live = members.filter(
+            (id) => store.agents[id] && store.agents[id].status !== 'terminated',
+          ).length;
+          if (live >= swarm.maxAgents) {
+            return unchanged({
+              success: false,
+              error: `Swarm ${swarm.swarmId} is full: ${live}/${swarm.maxAgents} agents. Terminate an agent (agent_terminate) or init a swarm with a larger maxAgents.`,
+              swarmId: swarm.swarmId,
+              agentCount: live,
+              maxAgents: swarm.maxAgents,
+            });
+          }
+        }
+
+        store.agents[agentId] = agent;
+        return saved(undefined);
+      });
+      if (refused) return refused;
+
+      if (swarm && swarmTools && swarmStore) {
+        try {
           if (!Array.isArray(swarm.agents)) swarm.agents = [];
           // Idempotent — don't duplicate if agent_spawn is retried.
           if (!swarm.agents.includes(agentId)) {
             swarm.agents.push(agentId);
-            _saveSwarmStore(swarmStore);
+            swarmTools.saveSwarmStore(swarmStore);
           }
-        }
-      } catch { /* swarm store unavailable — agent still registered globally */ }
+        } catch { /* swarm store unwritable — agent still registered globally */ }
+      }
 
       // Record agent in graph database (ADR-087, best-effort)
       try {
@@ -444,13 +545,13 @@ export const agentTools: MCPTool[] = [
             memoryBranch = br.branchPath;
             agent.memoryBranch = br.branchPath;
             agent.memoryBase = br.basePath;
-            const latest = loadAgentStore();
-            const current = latest.agents[agentId];
-            if (current && current.status !== 'terminated') {
+            await updateAgentStore((latest) => {
+              const current = latest.agents[agentId];
+              if (!current || current.status === 'terminated') return unchanged(undefined);
               current.memoryBranch = br.branchPath;
               current.memoryBase = br.basePath;
-              saveAgentStore(latest);
-            }
+              return saved(undefined);
+            });
           }
           // else: degraded (agenticow missing / kill-switched) — agent stands
           // without an isolated branch; callers see no memoryBranch field.
@@ -458,6 +559,7 @@ export const agentTools: MCPTool[] = [
       }
 
       // Include deterministic codemod routing info if applicable
+      noteFirstAgentRun('cli'); // activation funnel (opt-in; no-op without telemetry consent)
       const response: Record<string, unknown> = {
         success: true,
         agentId,
@@ -560,14 +662,15 @@ export const agentTools: MCPTool[] = [
       const v = validateIdentifier(input.agentId, 'agentId');
       if (!v.valid) return { success: false, error: `Input validation failed: ${v.error}` };
 
-      const store = loadAgentStore();
       const agentId = input.agentId as string;
+      const rec = await updateAgentStore((store) => {
+        const found = store.agents[agentId];
+        if (!found) return unchanged(undefined);
+        found.status = 'terminated';
+        return saved(found);
+      });
 
-      if (store.agents[agentId]) {
-        const rec = store.agents[agentId];
-        rec.status = 'terminated';
-        saveAgentStore(store);
-
+      if (rec) {
         // ACOW — resolve the agent's COW memory branch on teardown: promote
         // (merge into base) when asked, else discard. Non-fatal — a failure
         // here never blocks termination. Discard needs no agenticow (pure fs),
@@ -645,16 +748,22 @@ export const agentTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        status: { type: 'string', description: 'Filter by status' },
+        status: { type: 'string', description: 'Filter by status (idle, busy, terminated; case-insensitive, aliases such as active/running/stopped). "all" or empty applies no status filter. Comma-separated values match any of them.' },
         domain: { type: 'string', description: 'Filter by domain' },
         agentType: { type: 'string', description: 'Filter by agent type' },
         includeTerminated: { type: 'boolean', description: 'Include terminated agents' },
       },
     },
     handler: async (input) => {
-      if (input.status) {
-        const v = validateIdentifier(input.status, 'status');
-        if (!v.valid) return { agents: [], total: 0, error: `Input validation failed: ${v.error}` };
+      // Validate each status token. Commas separate values (`active,idle`);
+      // the whole string is not one identifier.
+      if (typeof input.status === 'string' && input.status.trim() !== '') {
+        for (const part of input.status.split(',')) {
+          const token = part.trim();
+          if (!token || token.toLowerCase() === 'all') continue;
+          const v = validateIdentifier(token, 'status');
+          if (!v.valid) return { agents: [], total: 0, error: `Input validation failed: ${v.error}` };
+        }
       }
       if (input.domain) {
         const v = validateIdentifier(input.domain, 'domain');
@@ -667,9 +776,14 @@ export const agentTools: MCPTool[] = [
 
       let agents = Object.values(loadAllAgents()); // #1916: includes hive-mind-spawned workers
 
-      // Filter by status
-      if (input.status) {
-        agents = agents.filter(a => a.status === input.status);
+      // Filter by status. `all` and empty mean no status filter (#4732),
+      // matching task_list: comma-separated, case-insensitive, known aliases.
+      const statuses = agentListStatusFilter(input.status);
+      if (statuses) {
+        agents = agents.filter(a => {
+          const stored = agentStatusOf(a.status) ?? String(a.status).trim().toLowerCase();
+          return statuses.includes(stored);
+        });
       } else if (!input.includeTerminated) {
         agents = agents.filter(a => a.status !== 'terminated');
       }
@@ -724,112 +838,112 @@ export const agentTools: MCPTool[] = [
         if (!v.valid) return { action: input.action, error: `Input validation failed: ${v.error}` };
       }
 
-      const store = loadAgentStore();
-      const agents = Object.values(store.agents).filter(a => a.status !== 'terminated');
-      const action = (input.action as string) || 'status';  // Default to status
+      // Every action decides from the same locked read it changes.
+      return updateAgentStore((store): StoreUpdate<Record<string, unknown>> => {
+        const agents = Object.values(store.agents).filter(a => a.status !== 'terminated');
+        const action = (input.action as string) || 'status';  // Default to status
 
-      if (action === 'status') {
-        const byType: Record<string, number> = {};
-        const byStatus: Record<string, number> = {};
-        for (const agent of agents) {
-          byType[agent.agentType] = (byType[agent.agentType] || 0) + 1;
-          byStatus[agent.status] = (byStatus[agent.status] || 0) + 1;
-        }
-        const idleAgents = agents.filter(a => a.status === 'idle').length;
-        const busyAgents = agents.filter(a => a.status === 'busy').length;
-        const utilization = agents.length > 0 ? busyAgents / agents.length : 0;
-        return {
-          action,
-          // CLI expected fields
-          poolId: 'agent-pool-default',
-          currentSize: agents.length,
-          minSize: (input.min as number) || 0,
-          maxSize: (input.max as number) || 100,
-          autoScale: (input.autoScale as boolean) ?? false,
-          utilization,
-          agents: agents.map(a => ({
-            id: a.agentId,
-            type: a.agentType,
-            status: a.status,
-          })),
-          // Additional fields
-          id: 'agent-pool-default',
-          size: agents.length,
-          totalAgents: agents.length,
-          byType,
-          byStatus,
-          avgHealth: agents.length > 0 ? agents.reduce((sum, a) => sum + a.health, 0) / agents.length : 0,
-        };
-      }
-
-      // #4555: fill was advertised in the enum but had no branch. It is scale
-      // without the shrink step: grow agentType's pool to targetSize, never terminate.
-      if (action === 'scale' || action === 'fill') {
-        const targetSize = input.targetSize === undefined ? 5 : input.targetSize;
-        if (typeof targetSize !== 'number' || !Number.isSafeInteger(targetSize) || targetSize < 0) {
-          return { action, error: 'targetSize must be a non-negative safe integer' };
-        }
-        const agentType = (input.agentType as string) || 'worker';
-        const currentSize = agents.filter(a => a.agentType === agentType).length;
-        const delta = targetSize - currentSize;
-        const added: string[] = [];
-        const removed: string[] = [];
-
-        if (delta > 0) {
-          for (let i = 0; i < delta; i++) {
-            const agentId = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-            store.agents[agentId] = {
-              agentId,
-              agentType,
-              status: 'idle',
-              health: 1.0,
-              taskCount: 0,
-              config: {},
-              createdAt: new Date().toISOString(),
-            };
-            added.push(agentId);
+        if (action === 'status') {
+          const byType: Record<string, number> = {};
+          const byStatus: Record<string, number> = {};
+          for (const agent of agents) {
+            byType[agent.agentType] = (byType[agent.agentType] || 0) + 1;
+            byStatus[agent.status] = (byStatus[agent.status] || 0) + 1;
           }
-        } else if (delta < 0 && action === 'scale') {
-          const toRemove = agents.filter(a => a.agentType === agentType && a.status === 'idle').slice(0, -delta);
-          for (const agent of toRemove) {
-            store.agents[agent.agentId].status = 'terminated';
-            removed.push(agent.agentId);
-          }
+          const idleAgents = agents.filter(a => a.status === 'idle').length;
+          const busyAgents = agents.filter(a => a.status === 'busy').length;
+          const utilization = agents.length > 0 ? busyAgents / agents.length : 0;
+          return unchanged({
+            action,
+            // CLI expected fields
+            poolId: 'agent-pool-default',
+            currentSize: agents.length,
+            minSize: (input.min as number) || 0,
+            maxSize: (input.max as number) || 100,
+            autoScale: (input.autoScale as boolean) ?? false,
+            utilization,
+            agents: agents.map(a => ({
+              id: a.agentId,
+              type: a.agentType,
+              status: a.status,
+            })),
+            // Additional fields
+            id: 'agent-pool-default',
+            size: agents.length,
+            totalAgents: agents.length,
+            byType,
+            byStatus,
+            avgHealth: agents.length > 0 ? agents.reduce((sum, a) => sum + a.health, 0) / agents.length : 0,
+          });
         }
 
-        saveAgentStore(store);
-        return {
-          action,
-          agentType,
-          previousSize: currentSize,
-          targetSize,
-          newSize: currentSize + added.length - removed.length,
-          added,
-          removed,
-        };
-      }
+        // #4555: fill was advertised in the enum but had no branch. It is scale
+        // without the shrink step: grow agentType's pool to targetSize, never terminate.
+        if (action === 'scale' || action === 'fill') {
+          const targetSize = input.targetSize === undefined ? 5 : input.targetSize;
+          if (typeof targetSize !== 'number' || !Number.isSafeInteger(targetSize) || targetSize < 0) {
+            return unchanged({ action, error: 'targetSize must be a non-negative safe integer' });
+          }
+          const agentType = (input.agentType as string) || 'worker';
+          const currentSize = agents.filter(a => a.agentType === agentType).length;
+          const delta = targetSize - currentSize;
+          const added: string[] = [];
+          const removed: string[] = [];
 
-      if (action === 'drain') {
-        const agentType = input.agentType as string;
-        let drained = 0;
-        for (const agent of agents) {
-          if (!agentType || agent.agentType === agentType) {
-            if (agent.status === 'idle') {
+          if (delta > 0) {
+            for (let i = 0; i < delta; i++) {
+              const agentId = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+              store.agents[agentId] = {
+                agentId,
+                agentType,
+                status: 'idle',
+                health: 1.0,
+                taskCount: 0,
+                config: {},
+                createdAt: new Date().toISOString(),
+              };
+              added.push(agentId);
+            }
+          } else if (delta < 0 && action === 'scale') {
+            const toRemove = agents.filter(a => a.agentType === agentType && a.status === 'idle').slice(0, -delta);
+            for (const agent of toRemove) {
               store.agents[agent.agentId].status = 'terminated';
-              drained++;
+              removed.push(agent.agentId);
             }
           }
-        }
-        saveAgentStore(store);
-        return {
-          action,
-          agentType: agentType || 'all',
-          drained,
-          remaining: agents.length - drained,
-        };
-      }
 
-      return { action, error: 'Unknown action' };
+          return saved({
+            action,
+            agentType,
+            previousSize: currentSize,
+            targetSize,
+            newSize: currentSize + added.length - removed.length,
+            added,
+            removed,
+          });
+        }
+
+        if (action === 'drain') {
+          const agentType = input.agentType as string;
+          let drained = 0;
+          for (const agent of agents) {
+            if (!agentType || agent.agentType === agentType) {
+              if (agent.status === 'idle') {
+                store.agents[agent.agentId].status = 'terminated';
+                drained++;
+              }
+            }
+          }
+          return saved({
+            action,
+            agentType: agentType || 'all',
+            drained,
+            remaining: agents.length - drained,
+          });
+        }
+
+        return unchanged({ action, error: 'Unknown action' });
+      });
     },
   },
   {
@@ -956,37 +1070,38 @@ export const agentTools: MCPTool[] = [
         if (!vs.valid) return { success: false, agentId: input.agentId, error: `Input validation failed: ${vs.error}` };
       }
 
-      const store = loadAgentStore();
       const agentId = input.agentId as string;
-      const agent = store.agents[agentId];
 
-      if (agent) {
-        if (input.status) agent.status = input.status as AgentRecord['status'];
-        if (typeof input.health === 'number') agent.health = input.health as number;
-        if (typeof input.taskCount === 'number') agent.taskCount = input.taskCount as number;
-        if (input.config) {
-          agent.config = { ...agent.config, ...(input.config as Record<string, unknown>) };
+      return updateAgentStore<Record<string, unknown>>((store) => {
+        const agent = store.agents[agentId];
+
+        if (agent) {
+          if (input.status) agent.status = input.status as AgentRecord['status'];
+          if (typeof input.health === 'number') agent.health = input.health as number;
+          if (typeof input.taskCount === 'number') agent.taskCount = input.taskCount as number;
+          if (input.config) {
+            agent.config = { ...agent.config, ...(input.config as Record<string, unknown>) };
+          }
+
+          return saved({
+            success: true,
+            agentId,
+            updated: true,
+            agent: {
+              agentId: agent.agentId,
+              status: agent.status,
+              health: agent.health,
+              taskCount: agent.taskCount,
+            },
+          });
         }
-        saveAgentStore(store);
 
-        return {
-          success: true,
+        return unchanged({
+          success: false,
           agentId,
-          updated: true,
-          agent: {
-            agentId: agent.agentId,
-            status: agent.status,
-            health: agent.health,
-            taskCount: agent.taskCount,
-          },
-        };
-      }
-
-      return {
-        success: false,
-        agentId,
-        error: 'Agent not found',
-      };
+          error: 'Agent not found',
+        });
+      });
     },
   },
   {

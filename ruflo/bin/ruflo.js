@@ -29,6 +29,14 @@ const cliBase = pkgDir
   ? join(pkgDir, 'node_modules', '@claude-flow', 'cli')
   : resolve(__dirname, '../../v3/@claude-flow/cli');
 
+if (!pkgDir && !existsSync(join(cliBase, 'bin', 'cli.js'))) {
+  console.error(
+    `ruflo installation is incomplete: @claude-flow/cli could not be found from ${resolve(__dirname, '..')}. ` +
+    'Stop running Ruflo MCP servers and their hosts, then reinstall with npm install -g ruflo@latest.'
+  );
+  process.exit(1);
+}
+
 // The exact dependency pin prevents mismatches in normal installs. Existing
 // partial upgrades can still resolve a different CLI (#3306); make that
 // visible on stderr without taking an otherwise working command offline.

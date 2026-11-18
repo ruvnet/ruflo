@@ -2,6 +2,15 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.2.15 — 2026-11-06
+- feat: the MCP launcher sets `RUFLO_LAUNCH_SURFACE=plugin`, so the CLI's existing 6h-cached funnel fetch can count people who use ruflo only as a plugin. Every funnel opt-out still stops the request; it takes effect with the next CLI release
+
+## 0.2.14 — 2026-11-04
+- fix: the `researcher` agent writes its research summary from graph findings and `memory_search` / `memory_retrieve` records, and uses `agentdb_context-synthesize` only for past task outcomes. That tool summarizes validated task episodes and answers `no-eligible-episodes` for documents and graph entities, which is correct and not a gap in the research (#4691, thanks @sparkling)
+
+## 0.2.13 — 2026-10-30
+- fix: the MCP launcher no longer exits with a bare "Cannot find module" when the local CLI it picked has a stale or partial `dist/` (typical when Claude Code is started inside a ruflo checkout whose `v3/@claude-flow/cli` was not rebuilt after `git pull`). It now says so, including the rebuild command (`cd v3/@claude-flow/cli && pnpm install && pnpm run build`) and the option of starting outside the repo, then falls back to `npx -y @claude-flow/cli@latest mcp start` so the server still comes up. A pinned `RUFLO_MCP_CLI_OVERRIDE`, `RUFLO_MCP_SKIP_NPX=1`, and errors other than a missing module still fail closed. Tested with a stale-build fixture and against a real stale checkout with the npx fallback disabled; the live npx fallback itself was not run.
+
 ## 0.2.12 — 2026-10-29
 - chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
 

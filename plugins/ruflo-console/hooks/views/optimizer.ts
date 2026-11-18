@@ -19,7 +19,7 @@ function findingRows(ctx: Ctx, finding: Finding): RenderElement[] {
   const now = before === undefined ? null : metricNow(ctx.state, finding.id, ctx.nowMs, ctx.state.loadedAtMs)
 
   return [
-    row(ctx, [ctx.kit.Text({ bold: true, color: COLOR[finding.level](), children: ` ${GLYPH[finding.level]} ${clip(finding.title, Math.max(20, ctx.columns - 34))} ` }), ctx.kit.Text({ dimColor: true, children: `· ${finding.area} · ${finding.metric}` })], `opt-head-${finding.id}`),
+    row(ctx, [ctx.kit.Text({ weight: 'semibold', color: COLOR[finding.level](), children: ` ${GLYPH[finding.level]} ${clip(finding.title, Math.max(20, ctx.columns - 34))} ` }), ctx.kit.Text({ dimColor: true, children: `· ${finding.area} · ${finding.metric}` })], `opt-head-${finding.id}`),
     text(ctx, `   ${clip(finding.why, Math.max(20, ctx.columns - 6))}`, { dimColor: true }),
     // The standalone terminal has no buttons, so a row of fixes (or "no button for this one") would say something false there.
     ...(ctx.state.isStandalone ? [] : [row(
@@ -43,7 +43,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
 
   if (result === null) return []
 
-  const rows: RenderElement[] = [text(ctx, ` ${result.ok ? '✓' : '✗'} ${result.label}`, { bold: true, color: result.ok ? THEME.ok : THEME.bad })]
+  const rows: RenderElement[] = [text(ctx, ` ${result.ok ? '✓' : '✗'} ${result.label}`, { weight: 'semibold', color: result.ok ? THEME.ok : THEME.bad })]
 
   if (result.note !== undefined) rows.push(text(ctx, ` ${result.note}`, { color: THEME.warn }))
   for (const line of result.lines.slice(0, 14)) rows.push(text(ctx, `   ${line}`, line.startsWith('⚠') ? { color: THEME.warn } : {}))

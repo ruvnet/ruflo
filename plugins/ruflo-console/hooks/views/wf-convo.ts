@@ -68,7 +68,7 @@ function threadRows(ctx: Ctx, target: Target, convoOf: ReturnType<typeof liveOf>
   for (const msg of thread.msgs.slice(-SHOWN)) {
     const color = msg.who === 'you' ? THEME.info : STATE_COLOR[msg.state]
 
-    rows.push(text(ctx, `${clock(msg.atMs)} ${msg.who === 'you' ? 'you' : `@${target.id}`}${msg.who === 'you' ? '' : ` [${msg.state}]`}`, { bold: true, ...(color === undefined ? {} : { color }) }))
+    rows.push(text(ctx, `${clock(msg.atMs)} ${msg.who === 'you' ? 'you' : `@${target.id}`}${msg.who === 'you' ? '' : ` [${msg.state}]`}`, { weight: 'semibold', ...(color === undefined ? {} : { color }) }))
 
     for (const line of wrap(msg.text, Math.max(20, ctx.columns - 6), LINES)) rows.push(text(ctx, `  ${line}`))
   }
@@ -83,9 +83,9 @@ function compareRows(ctx: Ctx, targets: readonly Target[], convoOf: ReturnType<t
   const cells = compareOf(convoOf.convo, targets)
   const side = ctx.columns >= 100 && cells.length > 1
   const width = side ? Math.max(24, Math.floor((ctx.columns - 2) / cells.length) - 2) : Math.max(24, ctx.columns - 4)
-  const blocks = cells.map(cell => ctx.kit.Box({ flexDirection: 'column', ...(side && { width }), key: `wf-cmp-${cell.target}`, children: [text(ctx, clip(`@${cell.target} [${cell.state}]`, width), { bold: true }), text(ctx, clip(`${cell.tokens} · ${cell.usd}`, width), { dimColor: true }), ...wrap(cleanText(cell.text), width, LINES).map(line => text(ctx, clip(line, width)))] }))
+  const blocks = cells.map(cell => ctx.kit.Box({ flexDirection: 'column', ...(side && { width }), key: `wf-cmp-${cell.target}`, children: [text(ctx, clip(`@${cell.target} [${cell.state}]`, width), { weight: 'semibold' }), text(ctx, clip(`${cell.tokens} · ${cell.usd}`, width), { dimColor: true }), ...wrap(cleanText(cell.text), width, LINES).map(line => text(ctx, clip(line, width)))] }))
 
-  return [text(ctx, 'Answers side by side', { bold: true }), side ? row(ctx, blocks, 'wf-compare') : col(ctx, blocks, 'wf-compare')]
+  return [text(ctx, 'Answers side by side', { weight: 'semibold' }), side ? row(ctx, blocks, 'wf-compare') : col(ctx, blocks, 'wf-compare')]
 }
 
 /** The whole board body; exported so another page can draw the Conversation too. */

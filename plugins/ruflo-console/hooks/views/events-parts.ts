@@ -29,7 +29,7 @@ function runs(ctx: Ctx, value: string, query: Query, room: number): RenderElemen
 
   for (const [from, to] of marks) {
     if (from > at) out.push(ctx.kit.Text({ children: shown.slice(at, from) }))
-    out.push(ctx.kit.Text({ bold: true, color: THEME.head, children: shown.slice(from, to) }))
+    out.push(ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: shown.slice(from, to) }))
     at = to
   }
 
@@ -60,7 +60,7 @@ export function eventRow(ctx: Ctx, entry: Row, query: Query, isFocused: boolean,
   )
 }
 
-const line = (ctx: Ctx, value: string, props: { dimColor?: boolean; bold?: boolean; color?: string } = {}): RenderElement => text(ctx, `   ${value}`, props)
+const line = (ctx: Ctx, value: string, props: { dimColor?: boolean; weight?: 'regular' | 'medium' | 'semibold' | 'bold'; color?: string } = {}): RenderElement => text(ctx, `   ${value}`, props)
 
 /** The opened event: words, facts, the entity's state now, buttons, and the five events either side (from the unfiltered shown list so the neighbours are what really surrounded it). */
 export function detailRows(ctx: Ctx, entry: Row, around: readonly ConsoleEvent[], nowMs: number): RenderElement[] {
@@ -68,7 +68,7 @@ export function detailRows(ctx: Ctx, entry: Row, around: readonly ConsoleEvent[]
   const ref = refOf(event)
   const entity = entityOf(ctx.state, ref)
   const act = ctx.act.events
-  const out: RenderElement[] = [line(ctx, event.text, { bold: true }), line(ctx, `${levelOfEvent(event)} · ${event.kind} · ${isoOf(event.atMs)} · source ${event.src ?? 'observed'}${event.agentId === undefined ? '' : ` · agent ${clip(event.agentId, 24)}`}${ref === undefined ? '' : ` · ref ${clip(ref, 30)}`}`, { dimColor: true })]
+  const out: RenderElement[] = [line(ctx, event.text, { weight: 'semibold' }), line(ctx, `${levelOfEvent(event)} · ${event.kind} · ${isoOf(event.atMs)} · source ${event.src ?? 'observed'}${event.agentId === undefined ? '' : ` · agent ${clip(event.agentId, 24)}`}${ref === undefined ? '' : ` · ref ${clip(ref, 30)}`}`, { dimColor: true })]
 
   if (entity !== null) out.push(line(ctx, `now: ${entity.text}`, { color: THEME.info }))
   else if (ref !== undefined) out.push(line(ctx, 'now: nothing in the last read for this ref', { dimColor: true }))
@@ -95,7 +95,7 @@ export function detailRows(ctx: Ctx, entry: Row, around: readonly ConsoleEvent[]
 
   if (near.before.length + near.after.length > 0) {
     out.push(line(ctx, 'around it (5 before, 5 after):', { dimColor: true }))
-    for (const item of [...near.before, event, ...near.after]) out.push(line(ctx, `${item === event ? '▸' : ' '} ${isoOf(item.atMs).slice(11, 19)} ${item.kind.padEnd(9)} ${item.text}`, item === event ? { bold: true } : { dimColor: true }))
+    for (const item of [...near.before, event, ...near.after]) out.push(line(ctx, `${item === event ? '▸' : ' '} ${isoOf(item.atMs).slice(11, 19)} ${item.kind.padEnd(9)} ${item.text}`, item === event ? { weight: 'semibold' } : { dimColor: true }))
   }
 
   return out

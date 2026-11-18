@@ -6,7 +6,13 @@
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { WorkerDaemon, getDaemon, startDaemon, stopDaemon, type WorkerType, type DaemonConfig, parseEnabledWorkers } from '../services/worker-daemon.js';
-import { resolveDaemonProjectRoot } from '../services/daemon-autostart.js';
+import {
+  AUTOSTART_ENV,
+  clearDaemonStopMarker,
+  isDaemonStopMarked,
+  resolveDaemonProjectRoot,
+  writeDaemonStopMarker,
+} from '../services/daemon-autostart.js';
 import { spawn, execFile, fork } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve, isAbsolute } from 'path';
@@ -76,6 +82,18 @@ const startCommand: Command = {
     const projectRoot = resolveWorkspaceFlag(ctx.flags.workspace)
       ?? resolveDaemonProjectRoot(process.cwd());
     const isDaemonProcess = process.env.CLAUDE_FLOW_DAEMON === '1';
+
+    // #4654: an explicit start re-enables auto-start after `daemon stop`. The
+    // start that auto-start spawned must not clear it, and must re-check it:
+    // a `daemon stop` may have landed after the hook checked, and starting
+    // anyway would bring back the daemon the user just stopped.
+    if (!isDaemonProcess) {
+      if (process.env[AUTOSTART_ENV] === '1') {
+        if (isDaemonStopMarked(projectRoot)) return { success: true };
+      } else {
+        clearDaemonStopMarker(projectRoot);
+      }
+    }
 
     // Parse resource threshold overrides from CLI flags
     const config: Partial<DaemonConfig> = {};
@@ -673,6 +691,10 @@ const stopCommand: Command = {
     // Git worktrees. Only processes positively identified as ruflo daemons
     // (via their self-identifying argv) are touched; each receives SIGTERM
     // so its own shutdown path reaps in-flight Claude process groups.
+    // #4654: record the opt-out first, so a hook firing mid-stop cannot
+    // auto-start a fresh daemon. Cleared only by an explicit `daemon start`.
+    writeDaemonStopMarker(projectRoot);
+
     if (ctx.flags.all as boolean) {
       return stopAllDaemons(quiet);
     }
@@ -744,6 +766,8 @@ async function stopAllDaemons(quiet: boolean): Promise<CommandResult> {
       } else {
         process.kill(d.pid, 'SIGTERM');
       }
+      // #4654: keep each stopped workspace stopped until an explicit start.
+      if (d.workspace) writeDaemonStopMarker(d.workspace);
       stopped++;
       if (!quiet) {
         output.printInfo(`Stopping daemon PID ${d.pid}${d.workspace ? ` (${d.workspace})` : ''}`);
@@ -1271,7 +1295,7 @@ const statusCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const verbose = ctx.flags.verbose as boolean;
-    const showModes = ctx.flags['show-modes'] as boolean;
+    const showModes = ctx.flags.showModes as boolean;
     // #2356: global view across every workspace, not just cwd.
     if (ctx.flags.all as boolean) {
       return renderAllDaemonsStatus();

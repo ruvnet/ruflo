@@ -93,7 +93,7 @@ function line(ctx: Ctx, read: WtRead, entry: WtRow, check: ProcCheck | null, now
 
   return row(ctx, [
     text(ctx, ` ${why === null ? '✔' : entry.isMain ? '■' : entry.isCurrent ? '▸' : '·'} `, { ...(tone !== undefined && { color: tone }) }),
-    text(ctx, name, { bold: why === null }),
+    text(ctx, name, { weight: (why === null) ? 'semibold' : 'regular' }),
     ...(ctx.columns >= 90 ? [text(ctx, `${branch} `, { dimColor: true })] : []),
     text(ctx, `${counts} · ${dirty} · ${age}${inUse !== null && inUse > 0 ? ` · ${inUse} live` : ''} · ${made}  `, { dimColor: true }),
     text(ctx, verdict, { ...(tone !== undefined && { color: tone }), dimColor: tone === undefined }),

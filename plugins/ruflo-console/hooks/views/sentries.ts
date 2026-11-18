@@ -25,8 +25,8 @@ export function sentryRows(ctx: Ctx): RenderElement[] {
     row(
       ctx,
       [
-        ctx.kit.Text({ bold: true, color: preset.sentry === 'fix' ? THEME.warn : THEME.ok, children: preset.sentry === 'fix' ? ' fix   ' : ' watch ' }),
-        ctx.kit.Text({ bold: true, color: THEME.head, children: ` ${preset.title.replace('Sentry: ', '')} `.padEnd(lead, '.') }),
+        ctx.kit.Text({ weight: 'semibold', color: preset.sentry === 'fix' ? THEME.warn : THEME.ok, children: preset.sentry === 'fix' ? ' fix   ' : ' watch ' }),
+        ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: ` ${preset.title.replace('Sentry: ', '')} `.padEnd(lead, '.') }),
         ctx.kit.Text({ color: THEME.info, wrap: 'truncate-end', children: clip(` ${whenOf(preset.interval)} · ${preset.about}`, Math.max(8, ctx.columns - lead - 26)) }),
         ctx.kit.Button({
           key: `sentry-start-${preset.id}`,

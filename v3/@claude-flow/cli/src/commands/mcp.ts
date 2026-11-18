@@ -308,6 +308,20 @@ const startCommand: Command = {
       // Start the server
       const status = await manager.start();
 
+      // Plugin-user visibility (ADR-309 operational telemetry): plugin-only
+      // users never run `init`, so no SessionStart hook ever refreshes the
+      // funnel cache for them. When the ruflo-core plugin launched us, make
+      // the same 6h-cached /v1/messages fetch, honouring every opt-out. Off
+      // the start path, never awaited, and silent: stdout is the MCP channel.
+      if (transport === 'stdio') {
+        void (async () => {
+          try {
+            const { launchSurface, resolveFunnelEnabled, refreshRemoteMessages } = await import('../funnel/index.js');
+            if (launchSurface() && resolveFunnelEnabled().enabled) await refreshRemoteMessages();
+          } catch { /* best-effort */ }
+        })();
+      }
+
       // #2234 — exit cleanly if Claude Code (our parent) exits and we get
       // reparented to launchd/init (ppid === 1). Otherwise the node stdio
       // server lingers as an orphan, accumulating ~50 MB per restart, and an

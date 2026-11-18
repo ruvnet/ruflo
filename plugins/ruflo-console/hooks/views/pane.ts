@@ -116,8 +116,8 @@ function tabs(ctx: Ctx): RenderElement {
 
     // Even this narrow, the BBS look keeps its colours: the page is a solid chip in its group's accent, with the way to help beside it.
     return isBbs()
-      ? row(ctx, [ctx.kit.Text({ ...chip(accentOfView(ctx.state.view === 'agent' ? ctx.state.back : ctx.state.view) ?? '#05d9e8'), bold: true, children: ` ${where} ` }), ctx.kit.Text({ dimColor: true, children: ' /ruflo help' })])
-      : text(ctx, `${where} · /ruflo help`, { bold: true, color: THEME.head })
+      ? row(ctx, [ctx.kit.Text({ ...chip(accentOfView(ctx.state.view === 'agent' ? ctx.state.back : ctx.state.view) ?? '#05d9e8'), weight: 'semibold', children: ` ${where} ` }), ctx.kit.Text({ dimColor: true, children: ' /ruflo help' })])
+      : text(ctx, `${where} · /ruflo help`, { weight: 'semibold', color: THEME.head })
   }
 
   // Two rows: the nine data views (1-9), then the management views and the two boards (g q e m, w x.ruv.io, i terminal). Each tab is its emoji; the
@@ -138,7 +138,7 @@ function tabs(ctx: Ctx): RenderElement {
     const prefix = view.key === '' ? '' : `${view.key}: `
     const current = isBbs() ? `[${prefix}${view.icon} ${view.label.toUpperCase()}]` : `${prefix}${view.icon} ${view.label}`
 
-    if (isCurrent) return ctx.kit.Box({ key: `tab-${view.id}`, children: [ctx.kit.Text({ bold: true, color: THEME.head, wrap: 'truncate-end', children: current })] })
+    if (isCurrent) return ctx.kit.Box({ key: `tab-${view.id}`, children: [ctx.kit.Text({ weight: 'semibold', color: THEME.head, wrap: 'truncate-end', children: current })] })
 
     return ctx.kit.Button({ key: `tab-${view.id}`, label: words, ...(view.key !== '' && { hotkey: view.key }), plain: true, dimColor: true, onPress: () => ctx.act.view(view.id) })
   }
@@ -156,7 +156,7 @@ function tabs(ctx: Ctx): RenderElement {
   const titleRow = row(
     ctx,
     [
-      ctx.kit.Text({ bold: true, color: THEME.head, children: isBbs() ? '░▒▓ NAV ░▒▓ ' : 'NAV ' }),
+      ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: isBbs() ? '░▒▓ NAV ░▒▓ ' : 'NAV ' }),
       ctx.kit.Text({ dimColor: true, children: ' style ' }),
       ...NAV_STYLES.map(option =>
         ctx.kit.Button({ key: `nav-style-${option}`, label: ` ${option === style ? '●' : '○'} ${option} `, plain: true, ...(option === style ? { variant: 'primary' as const } : { dimColor: true }), onPress: () => ctx.act.nav(option) }),
@@ -186,14 +186,14 @@ function blurb(ctx: Ctx): RenderElement | null {
   if (isBbs()) {
     // A sysop prompt: >> 🐝 SWARM :: what it is for
     return row(ctx, [
-      ctx.kit.Text({ bold: true, color: THEME.ok, children: '>> ' }),
-      ctx.kit.Text({ bold: true, color: THEME.head, children: `${view.icon} ${name.toUpperCase()}` }),
+      ctx.kit.Text({ weight: 'semibold', color: THEME.ok, children: '>> ' }),
+      ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: `${view.icon} ${name.toUpperCase()}` }),
       ctx.kit.Text({ color: THEME.info, wrap: 'truncate-end', children: clip(` :: ${about}`, Math.max(4, ctx.columns - name.length - 6)) }),
     ], 'about')
   }
 
   return row(ctx, [
-    ctx.kit.Text({ bold: true, color: THEME.head, children: `${view.icon} ${name}` }),
+    ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: `${view.icon} ${name}` }),
     ctx.kit.Text({ dimColor: true, italic: true, wrap: 'truncate-end', children: clip(` — ${about}`, Math.max(4, ctx.columns - name.length - 2)) }),
   ], 'about')
 }
@@ -204,7 +204,7 @@ function footer(ctx: Ctx, isPlaced = false): RenderElement {
   const parts: RenderElement[] = []
 
   // Something is waiting for a yes or no: said here, where the keys are, wherever the confirm itself sits.
-  if (state.pending !== null && (state.pending.view === undefined || state.pending.view === state.view)) parts.push(text(ctx, `⚠ confirm needed: ${clip(askedBy(state.pending) + state.pending.label, Math.max(20, ctx.columns - 40))} — y yes · n cancel${isPlaced ? ' (under what you clicked)' : ''}`, { bold: true, color: THEME.warn }))
+  if (state.pending !== null && (state.pending.view === undefined || state.pending.view === state.view)) parts.push(text(ctx, `⚠ confirm needed: ${clip(askedBy(state.pending) + state.pending.label, Math.max(20, ctx.columns - 40))} — y yes · n cancel${isPlaced ? ' (under what you clicked)' : ''}`, { weight: 'semibold', color: THEME.warn }))
 
   if (outcome !== null && nowMs - outcome.atMs < 90_000) {
     parts.push(
@@ -245,9 +245,9 @@ function footer(ctx: Ctx, isPlaced = false): RenderElement {
   const status =
     isBbs() && state.snapshot !== null
       ? [
-          ctx.kit.Text({ bold: true, color: THEME.ok, children: '[LINK OK]' }),
+          ctx.kit.Text({ weight: 'semibold', color: THEME.ok, children: '[LINK OK]' }),
           ...(syncRoom === 0 ? [] : [ctx.kit.Text({ dimColor: true, children: clip(` ▸ sync ${ago(state.snapshot.readAtMs, nowMs).replace(' ago', '')} · `, syncRoom) })]),
-          ctx.kit.Text({ bold: state.pane.isFocused, color: state.pane.isFocused ? THEME.ok : THEME.warn, children: `${focusLabel} ` }),
+          ctx.kit.Text({ weight: state.pane.isFocused ? 'semibold' : 'regular', color: state.pane.isFocused ? THEME.ok : THEME.warn, children: `${focusLabel} ` }),
         ]
       : [text(ctx, `${clip(`${read} · ${keys}`, statusRoom)} `, { dimColor: true })]
 
@@ -281,9 +281,9 @@ function wildcat(ctx: Ctx): { strip: RenderElement[]; art: RenderElement[] } {
   return {
     strip: [
       row(ctx, [
-        ctx.kit.Text({ bold: true, color: THEME.head, children: 'RUFLO ' }),
+        ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: 'RUFLO ' }),
         ctx.kit.Text({ color: THEME.info, children: 'x.ruv.io ' }),
-        ctx.kit.Text({ bold: true, color: THEME.ok, children: clip('AGENTS WELCOME.', Math.max(4, ctx.columns - 16)) }),
+        ctx.kit.Text({ weight: 'semibold', color: THEME.ok, children: clip('AGENTS WELCOME.', Math.max(4, ctx.columns - 16)) }),
       ], 'welcome'),
       // Each network is a link to the view that shows it.
       // (A row that wraps, so a narrow pane breaks it onto a second line rather than squeezing the names together.)
@@ -334,7 +334,7 @@ export function paneView(base: Ctx): RenderElement {
 
     const intro = drawArt(ctx, boot, 'boot', 'RUFLO AGENT SWARM CONSOLE · loading…')
 
-    return col(ctx, [intro ?? text(ctx, 'RUFLO AGENT SWARM CONSOLE · loading…', { bold: true, color: THEME.head })], 'boot')
+    return col(ctx, [intro ?? text(ctx, 'RUFLO AGENT SWARM CONSOLE · loading…', { weight: 'semibold', color: THEME.head })], 'boot')
   }
   // A section of a page is a bordered card (views/card.ts): the body is drawn narrower by the border and padding, through a kit that groups its rows.
   const cardsOn = hasCards(base.columns, isCompactPane(base.state))
@@ -380,7 +380,7 @@ export function paneView(base: Ctx): RenderElement {
   const header = ctx.pictures.get('header')
   const isCompact = isCompactPane(ctx.state)
   // A surface that draws no Raster (the desktop draws the same picture as an Svg) gets the Orbital banner's words where the picture is not drawn.
-  const fallbackBrand = isOrbital() && ctx.kit.Raster === undefined ? [text(ctx, 'RUFLO / AGENT SWARM CONSOLE', { bold: true, color: THEME.head, wrap: 'truncate-end' })] : []
+  const fallbackBrand = isOrbital() && ctx.kit.Raster === undefined ? [text(ctx, 'RUFLO / AGENT SWARM CONSOLE', { weight: 'semibold', color: THEME.head, wrap: 'truncate-end' })] : []
   // The logo banner leads the main menu in every layout, compact too (the other pages lead with their own title art there).
   const banner = (!isCompact || ctx.state.view === 'menu') && header !== undefined ? drawArt(ctx, header, 'header', 'RUFLO / AGENT SWARM CONSOLE') : null
   const title = banner !== null ? [banner] : ctx.state.view === 'menu' ? fallbackBrand : []

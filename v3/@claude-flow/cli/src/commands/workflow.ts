@@ -7,6 +7,7 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
+import { localCliContext } from '../mcp-tools/path-containment.js';
 
 // Workflow templates
 const WORKFLOW_TEMPLATES = [
@@ -113,7 +114,7 @@ const runCommand: Command = {
       const result = await callMCPTool<{
         workflowId: string;
         template: string;
-        status: 'running' | 'completed' | 'failed' | 'validated';
+        status: 'ready' | 'running' | 'completed' | 'failed' | 'validated';
         stages: Array<{
           name: string;
           status: string;
@@ -148,7 +149,7 @@ const runCommand: Command = {
       if (dryRun) {
         spinner.succeed('Workflow validated successfully');
       } else {
-        spinner.succeed('Workflow started');
+        spinner.succeed('Workflow created');
       }
 
       if (ctx.flags.format === 'json') {
@@ -183,6 +184,8 @@ const runCommand: Command = {
 
       if (!dryRun) {
         output.writeln();
+        // #4609: workflow_run only creates the workflow; workflow_execute runs it.
+        output.printInfo(`Start it: claude-flow mcp exec -t workflow_execute -p '{"workflowId":"${result.workflowId}"}'`);
         output.printInfo(`Track progress: claude-flow workflow status ${result.workflowId}`);
       }
 
@@ -248,7 +251,7 @@ const validateCommand: Command = {
       }>('workflow_validate', {
         file,
         strict,
-      });
+      }, localCliContext());
 
       if (ctx.flags.format === 'json') {
         output.printJson(result);

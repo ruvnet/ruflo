@@ -18,7 +18,7 @@ const PER_ENTRY = 6
 
 type Shown = { name: string; entry: ChangeEntry }
 
-const colorOf = (kind: ChangeKind): { color?: string; bold?: boolean; dimColor?: boolean } => (kind === 'breaking' ? { color: THEME.bad, bold: true } : kind === 'feat' ? { color: THEME.ok } : kind === 'fix' ? { color: THEME.info } : { dimColor: true })
+const colorOf = (kind: ChangeKind): { color?: string; weight?: 'regular' | 'medium' | 'semibold' | 'bold'; dimColor?: boolean } => (kind === 'breaking' ? { color: THEME.bad, weight: 'semibold' } : kind === 'feat' ? { color: THEME.ok } : kind === 'fix' ? { color: THEME.info } : { dimColor: true })
 
 const newest = (a: Shown, b: Shown): number => (a.entry.date === b.entry.date ? compareVersions(b.entry.version, a.entry.version) || a.name.localeCompare(b.name) : a.entry.date < b.entry.date ? 1 : -1)
 
@@ -28,7 +28,7 @@ function entryRows(ctx: Ctx, name: string, entry: ChangeEntry): RenderElement[] 
   const rest = entry.changes.length - shown.length + entry.more
 
   return [
-    text(ctx, ` ${name} ${entry.version} · ${entry.date}`, { bold: true, color: THEME.head }),
+    text(ctx, ` ${name} ${entry.version} · ${entry.date}`, { weight: 'semibold', color: THEME.head }),
     ...shown.map(change => text(ctx, `   ${MARK[change.kind].padEnd(10)} ${change.text}`, colorOf(change.kind))),
     ...(rest > 0 ? [text(ctx, `   … ${rest} more in the full notes`, { dimColor: true })] : []),
   ]
@@ -76,7 +76,7 @@ export function whatsnewView(ctx: Ctx): RenderElement {
 
   if (pins.length > 0) {
     const pinRows = pins.flatMap(pin => [
-      row(ctx, [text(ctx, ` ‼ ${pin.name} ${pin.version}`, { bold: true, color: THEME.bad }), text(ctx, ' '), button(ctx, `whatsnew-dismiss-${pin.name}-${pin.version}`, '✕ dismiss', () => ctx.act.whatsnew.dismiss(pin.key))], `whatsnew-pin-${pin.key}`),
+      row(ctx, [text(ctx, ` ‼ ${pin.name} ${pin.version}`, { weight: 'semibold', color: THEME.bad }), text(ctx, ' '), button(ctx, `whatsnew-dismiss-${pin.name}-${pin.version}`, '✕ dismiss', () => ctx.act.whatsnew.dismiss(pin.key))], `whatsnew-pin-${pin.key}`),
       ...(pin.texts.length === 0 ? [text(ctx, '   breaking changes: see the full notes', { dimColor: true })] : pin.texts.slice(0, PER_ENTRY).map(words => text(ctx, `   ${words}`, { color: THEME.bad }))),
     ])
 
@@ -90,7 +90,7 @@ export function whatsnewView(ctx: Ctx): RenderElement {
     parts.push(...section(ctx, 'new', 'Since you last looked', fresh.length === 0 ? 'nothing new' : `${fresh.length} update${fresh.length === 1 ? '' : 's'}`, fresh.length === 0 ? [text(ctx, ' nothing has changed since you last opened this page', { dimColor: true })] : fresh.slice(0, MAX_NEW).flatMap(item => entryRows(ctx, item.name, item.entry))))
     parts.push(text(ctx, ` ${'─'.repeat(6)} you last looked here ${'─'.repeat(6)}`, { dimColor: true }))
     parts.push(...section(ctx, 'earlier', 'Earlier', `${Math.min(earlier.length, MAX_EARLIER)} shown`, earlier.slice(0, MAX_EARLIER).flatMap(item => entryRows(ctx, item.name, item.entry)), true))
-    parts.push(...section(ctx, 'notes', 'Full notes', 'files and addresses, as text', ok.slice(0, 60).flatMap(log => [text(ctx, ` ${log.name} ${log.version}${log.result.truncated ? ' (long: the page shows the newest entries)' : ''}`, { bold: true }), text(ctx, `   ${log.path === null ? 'bundled with the plugin' : `${tidy(log.path, 140)}/CHANGELOG.md`}`, { dimColor: true }), text(ctx, `   ${NOTES_URL(log.name)}`, { dimColor: true })]), false))
+    parts.push(...section(ctx, 'notes', 'Full notes', 'files and addresses, as text', ok.slice(0, 60).flatMap(log => [text(ctx, ` ${log.name} ${log.version}${log.result.truncated ? ' (long: the page shows the newest entries)' : ''}`, { weight: 'semibold' }), text(ctx, `   ${log.path === null ? 'bundled with the plugin' : `${tidy(log.path, 140)}/CHANGELOG.md`}`, { dimColor: true }), text(ctx, `   ${NOTES_URL(log.name)}`, { dimColor: true })]), false))
   }
 
   if (missing.length > 0) parts.push(...section(ctx, 'missing', 'Without notes', `${missing.length} plugin${missing.length === 1 ? '' : 's'}`, missing.slice(0, 30).map(log => text(ctx, ` ${log.name} ${log.version}: ${reasonOf(log)}`, { dimColor: true })), false))

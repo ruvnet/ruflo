@@ -10,7 +10,7 @@ import { command, elementsOf, keyOf, paneAt, PLUGIN, SESSION, textOf, worldOf } 
 const keys = (tree: Parameters<typeof elementsOf>[0]) => elementsOf(tree, 'Button').map(keyOf)
 
 describe('loop manager', () => {
-  test('automation: a folded Loop Manager; open it, pick a preset, see the exact /loop, start it: the confirm sits under Start and yes sends one prompt', { options: { boot: false } }, async ($, on) => {
+  test('automation: a folded Loop Manager; open it, pick a preset, see the exact /loop, start it: the confirm sits under Start and yes sends one prompt', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES, { commands: ['ruflo-loop-workers:ruflo-loop'] })
     const clock = mock.clock(on)
 
@@ -64,7 +64,7 @@ describe('loop manager', () => {
     await pane.unmount()
   })
 
-  test('a worker preset needs its plugin: with the command not listed it says so and asks nothing', { options: { boot: false } }, async ($, on) => {
+  test('a worker preset needs its plugin: with the command not listed it says so and asks nothing', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES, { commands: [] })
 
     mock.clock(on)

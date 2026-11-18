@@ -229,6 +229,10 @@ function generateHooksConfig(config: HooksConfig, scope: HelperScope): object {
             type: 'command',
             command: hookHandlerCmd('pre-bash', scope),
             timeout: config.timeout,
+            // Claude Code 2.1.295+: if the safety gate can't start, times out or
+            // exits with an unexpected code, block the command instead of letting
+            // it run. Older versions ignore the key.
+            onFailure: 'block',
           },
         ],
       },

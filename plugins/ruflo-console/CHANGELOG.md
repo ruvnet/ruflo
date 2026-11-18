@@ -2,6 +2,36 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.50.2 — 2026-11-17
+- fix: the POSIX append script (`dd … >> "$1"`) now passes `conv=notrunc`. uutils dd, the default coreutils on Ubuntu 26.04, truncates its stdout to its own offset after writing (`lseek` then `ftruncate`), so concurrent appenders lost whole batches; with the flag, eight writers keep all 2400 lines. Linux still runs the GNU argv; this script is the macOS/BSD path, and `conv=notrunc` is POSIX dd (#4978)
+
+## 0.50.1 — 2026-11-09
+- chore: the command catalog (`catalog/command-catalog.json`) is regenerated from the CLI's `catalog.generated.json`. It picks up the three init commands renamed so they no longer collide with plugin commands (`/memory-neural`, `/stream-chain-run`, `/swarm-orchestrate`, #2640) and the mod registrations and plugins added since the last regeneration
+
+## 0.50.0 — 2026-11-09
+- feat: the AIDefence screen of mission text (goal, question, instruction, loop task) tells a secret from personal data: a key, token or password is now its own `secret` status, found by the local secret screen, so it blocks guidance even when AIDefence is not installed. A new `piiGuard` option (default on, so nothing changes unless you turn it off) decides whether personal data blocks guidance; off, the finding is reported in the screen's detail and the text goes through. Secrets and injections always block (#4861)
+
+## 0.49.13 — 2026-11-06
+- chore: the Vector Lab pin follows ruflo-ruvector to `ruvector@0.3.13` (`hooks/data/vector.ts`). The readers were checked against 0.3.13's output for `hooks stats`, `hooks route`, `rvf examples` and `identity show`: same shapes as 0.3.12. As before, the page runs `npx --offline`, so the pin must be in the npx cache (re-register the ruvector MCP server at 0.3.13)
+
+## 0.49.12 — 2026-11-06
+- chore: the vector page runs ruvector@0.3.12 (from 0.3.3), the version the CLI and ruflo-ruvector now pin. Every read command on the page (`rvf examples`, `hooks stats/learning-stats/route/recall/rag-context/remember`, `edge join`, `identity show`, `decompile <file> --json`) was run against 0.3.12 and prints what its reader expects.
+- fix: the page runs `npx --offline`, so a machine whose npx cache holds only the old pin got a bare `npm error code ENOTCACHED`. The result now starts with the fix: run `npx -y ruvector@0.3.12 --version` once (or re-register the ruvector MCP server with `/vector-setup`).
+
+## 0.49.11 — 2026-11-04
+- feat: `console_state` and `console_run` are registered with `isDeferred: false` (Claude Code 2.1.293), so their schemas are in the prompt from the start: every console turn calls them. `console_open` and `console_set` stay behind tool search. Older hosts drop the field.
+- chore: every `Text` says `weight` instead of the deprecated `bold` (2.1.299); `bold: true` became `weight: "semibold"`, the weight the host already reads it as. An engine before 2.1.299 refuses a tree with a Text prop it does not know, so there (and wherever `$.session.version()` gives nothing) the kit turns the weight back into `bold` (hooks/text-weight.ts). The standalone renderer (tui/ansi.ts) draws a semibold or bold weight bold.
+
+## 0.49.10 — 2026-11-04
+- fix: the band above the prompt stays on its rows in a narrow pane. Widths were counted as string length, which under-counts emoji such as 🎯 and 💻, so a row that looked like it fit overflowed and the host wrapped it onto extra lines. Rows are now measured in terminal columns.
+- fix: a band part that does not fit is left out whole, and a dim "+N" says how many were left out, instead of the last part being cut mid-word. Only a row's first part may be clipped.
+- fix: when a row is too long, the parts that save the most are shortened one at a time (the working agent loses its task text, a terminal run loses "answering"), so a wide band keeps every other part's full words. Before, one long part switched the whole row to its short forms.
+- fix: the "open console" button takes only its own width, and below 64 columns it reads "open". Below 40 columns the ◆ mark stands for ruflo without the word, so the most urgent part (approvals, alerts) is shown instead of cut.
+
+## 0.49.9 — 2026-11-04
+- fix: Mission Control now offers to create a mission for a new goal when the active mission has one cancelled task and every other task done. 0.49.6 counted a mission as over only when the whole mission was cancelled or every task was done, so a mission with 14 tasks completed and 1 cancelled (for example a research step dropped on purpose) was never over: the NEXT STEP box still showed "Create the mission and its tasks" as done, with the old mission's id and no create button. A mission is now over when every task is done or cancelled (a mission with no tasks still is not). A task that is pending, running or failed keeps it open, a finished mission's own goal is still not offered a second time, and nothing is created unasked.
+- fix: a cancelled mission no longer puts "The mission is cancelled. Do not start new work." in Claude's prompt. The active mission stays active until another is created, so after a cancel every new goal's guidance reached Claude with that stop line, before the create step could make the new mission, and Claude refused to plan it. The mission context section is now left out for a cancelled mission, as it already was for a finished one.
+
 ## 0.49.8 — 2026-10-31
 - chore: the plugin map gives the two new external marketplace plugins a home section, `agentdb` under Memory and `agentic-flow` under Learning, so their commands launch from the console (ADR-518).
 

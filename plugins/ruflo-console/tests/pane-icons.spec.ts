@@ -139,7 +139,7 @@ describe('the icon row', () => {
     const cells = (el: El | undefined): number => (el?.kind === 'Button' ? String(el.props.label).length : String(flat(el)[1]?.props.children).length)
     const lit = (tree: El, name: string): El | undefined => flat(key(tree, name)).find(node => node.kind === 'Text')
 
-    expect(lit(onMenu, 'pane-icon-menu')?.props).toMatchObject({ bold: true, color: expect.stringMatching(/^#|^[a-z]/) })
+    expect(lit(onMenu, 'pane-icon-menu')?.props).toMatchObject({ weight: 'semibold', color: expect.stringMatching(/^#|^[a-z]/) })
     expect(key(onMenu, 'pane-icon-help')?.kind).toBe('Button')
     expect(lit(onSettings, 'pane-icon-settings')).toBeDefined()
     expect(lit(onHelp, 'pane-icon-help')).toBeDefined()

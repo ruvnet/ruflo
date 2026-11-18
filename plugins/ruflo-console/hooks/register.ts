@@ -27,6 +27,7 @@ import { createToaster, type Digest, type ToastLevel, type ToastPrefs } from './
 import { picturesOf } from './views/frames'
 import { withClearing } from './views/clearing'
 import { NARROW, paneView } from './views/pane'
+import { hasTextWeight, withTextWeight } from './text-weight'
 
 const RUFLO_TOOL = /^mcp__(claude-flow|ruflo|plugin_ruflo[\w-]*)__/
 
@@ -178,12 +179,15 @@ export const register: Register = (on, raw: PluginOptions) => {
   const state = newState(raw)
   let host: Host | null = null
   let control: Controller | null = null
+  let textWeight = false
 
   // Claude's console tools (ADR-444): answered only for their own names, and only when the person's setting lets them exist.
   serveModelTools(on, () => (control === null ? null : { state, control }))
 
   on('session.start', async ($, e, next) => {
     control?.stop()
+    // Text `weight` (2.1.299) where the engine takes it, `bold` before (text-weight.ts); unknown until this answers.
+    textWeight = hasTextWeight(await (async () => $.session.version())().catch(() => undefined))
     host = hostOf($, e.cwd, { prefs: () => state.toastPrefs, record: digest => recordToast(state, digest) })
     // Which write the host takes (GNU dd/install on Linux, the constant sh scripts on macOS/BSD, the host's file API on Windows). Started
     // before the controller (whose timers write) exists; every write awaits it (writeFlavorReady), so none is built with a guessed flavor.
@@ -299,7 +303,7 @@ export const register: Register = (on, raw: PluginOptions) => {
     }
 
     const started = Date.now()
-    const table = kitForSurface($.ui.resolve(e) as unknown as Kit, e.surface)
+    const table = kitForSurface(withTextWeight($.ui.resolve(e) as unknown as Kit, textWeight), e.surface)
     const columns = Math.max(20, Math.floor(Number(e.props.bodyColumns) || 0) - 1)
     const isNarrow = columns < NARROW
     const kit: Kit = isNarrow ? { Box: table.Box, Text: table.Text, Button: table.Button, ...(table.Input !== undefined && { Input: table.Input }) } : table
@@ -349,7 +353,7 @@ export const register: Register = (on, raw: PluginOptions) => {
       return next(e)
     }
 
-    const table = kitForSurface($.ui.resolve(e) as unknown as Kit, e.surface)
+    const table = kitForSurface(withTextWeight($.ui.resolve(e) as unknown as Kit, textWeight), e.surface)
     const bound = control
 
     state.barDrawnAtMs = Date.now()
@@ -379,7 +383,7 @@ export const register: Register = (on, raw: PluginOptions) => {
 
     if (owner === null) return next(e)
 
-    const table = $.ui.resolve(e) as unknown as Kit
+    const table = withTextWeight($.ui.resolve(e) as unknown as Kit, textWeight)
     const own = await next(e)
 
     return table.Box({ key: `owner-${e.props.tool_use_id}`, flexDirection: 'column', children: [own, table.Text({ dimColor: true, children: `  ${ownerLine(owner)}` })] })

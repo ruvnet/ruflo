@@ -54,7 +54,7 @@ function paramRow(ctx: Ctx, template: Template, param: Param, current: string | 
   if (param.kind === 'int') {
     const n = Number(current)
 
-    return [row(ctx, [text(ctx, ` ${param.label.padEnd(14)}`, { dimColor: true }), button(ctx, `${key}-less`, ' − ', () => setValue(state, host, template, param.id, Math.max(param.min, n - 1))), text(ctx, ` ${n} `, { bold: true }), button(ctx, `${key}-more`, ' + ', () => setValue(state, host, template, param.id, Math.min(param.max, n + 1))), text(ctx, ` (${param.min} to ${param.max})`, { dimColor: true })], key)]
+    return [row(ctx, [text(ctx, ` ${param.label.padEnd(14)}`, { dimColor: true }), button(ctx, `${key}-less`, ' − ', () => setValue(state, host, template, param.id, Math.max(param.min, n - 1))), text(ctx, ` ${n} `, { weight: 'semibold' }), button(ctx, `${key}-more`, ' + ', () => setValue(state, host, template, param.id, Math.min(param.max, n + 1))), text(ctx, ` (${param.min} to ${param.max})`, { dimColor: true })], key)]
   }
 
   if (param.kind === 'choice') return flow(ctx, param.choices.map(choice => ({ key: `${key}-${choice}`, label: `${choice === current ? '●' : '○'} ${choice}`, onPress: () => setValue(state, host, template, param.id, choice) })), key, ` ${param.label.padEnd(14)}`)
@@ -76,7 +76,7 @@ export function boardRows(env: SlotEnv): RenderElement[] {
     ...flow(ctx, TEMPLATES.map(entry => ({ key: `wft-pick-${entry.id}`, label: `${entry.id === template.id ? '●' : '○'} ${entry.title}`, onPress: () => (draftOf(ctx.state).selected = entry.id, hosts.get(ctx.state)?.invalidate()) })), 'wft-pick', ' template '),
     ctx.kit.Text({ dimColor: true, wrap: 'wrap', children: ` ${template.summary}` }),
     ...template.params.flatMap(param => paramRow(ctx, template, param, raw[param.id] ?? param.fallback)),
-    text(ctx, ` dry run: ${plan.agents} agents in ${plan.phases} phases (${plan.rows.map(entry => `${clip(entry.title, 14)} ${entry.agents}`).join(' · ')}), at most ${plan.widest} at once`, { bold: true, ...(plan.isOverCap ? { color: THEME.bad } : {}) }),
+    text(ctx, ` dry run: ${plan.agents} agents in ${plan.phases} phases (${plan.rows.map(entry => `${clip(entry.title, 14)} ${entry.agents}`).join(' · ')}), at most ${plan.widest} at once`, { weight: 'semibold', ...(plan.isOverCap ? { color: THEME.bad } : {}) }),
     text(ctx, ' counts only: tokens, time and cost are not estimated, nothing has measured them for this template', { dimColor: true }),
     ...(plan.isOverCap ? [text(ctx, ` over the ${AGENTS_MAX}-agent ceiling: lower a count before launching`, { color: THEME.bad })] : []),
     ...(missing.length > 0 ? [text(ctx, ` needs: ${missing.join(', ')}`, { color: THEME.warn })] : []),

@@ -24,7 +24,10 @@ export function clean(raw: unknown): string {
 export type Depth = 'none' | '256' | 'truecolor'
 
 type Node = { type: string; props: Record<string, unknown> }
-type Style = { color?: unknown; backgroundColor?: unknown; bold?: unknown; dimColor?: unknown; italic?: unknown; inverse?: unknown }
+type Style = { color?: unknown; backgroundColor?: unknown; bold?: unknown; weight?: unknown; dimColor?: unknown; italic?: unknown; inverse?: unknown }
+
+/** Bold in a terminal: a `semibold` or `bold` weight (Claude Code 2.1.299), or the deprecated `bold: true` an older tree carries. */
+const isBold = (style: Style) => style.bold === true || style.weight === 'semibold' || style.weight === 'bold'
 
 /** Theme names the views use (hooks/views/common.ts PLAIN), as the 256-colour numbers Claude Code's own theme is closest to. */
 const NAMED: Record<string, number> = { claude: 173, success: 71, error: 167, warning: 214, suggestion: 147 }
@@ -53,7 +56,7 @@ function colorCode(value: unknown, ground: 38 | 48, depth: Depth): string | null
 function sgr(style: Style, depth: Depth): string {
   if (depth === 'none') return ''
 
-  const codes = [style.bold === true ? '1' : '', style.dimColor === true ? '2' : '', style.italic === true ? '3' : '', style.inverse === true ? '7' : '', colorCode(style.color, 38, depth) ?? '', colorCode(style.backgroundColor, 48, depth) ?? ''].filter(code => code !== '')
+  const codes = [isBold(style) ? '1' : '', style.dimColor === true ? '2' : '', style.italic === true ? '3' : '', style.inverse === true ? '7' : '', colorCode(style.color, 38, depth) ?? '', colorCode(style.backgroundColor, 48, depth) ?? ''].filter(code => code !== '')
 
   return codes.length === 0 ? '' : `\u001b[${codes.join(';')}m`
 }

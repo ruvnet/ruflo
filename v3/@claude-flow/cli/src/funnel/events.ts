@@ -44,8 +44,11 @@ const EVENT_NAMES: readonly FunnelEventName[] = [
   'training_share_disabled',
   'advisor_tip_enabled',
   'advisor_tip_disabled',
+  'init_completed',
+  'first_agent_run',
+  'session_active',
 ];
-const SURFACES: readonly FunnelSurface[] = ['statusline', 'init', 'credit_exhaustion'];
+const SURFACES: readonly FunnelSurface[] = ['statusline', 'init', 'credit_exhaustion', 'cli'];
 
 interface FunnelIdRecord {
   id: string;

@@ -334,7 +334,9 @@ export async function validateAgentSpawn(input: Record<string, unknown>): Promis
     } catch (zodErr: any) {
       if (zodErr.issues) {
         for (const issue of zodErr.issues) {
-          if (issue.code === 'invalid_enum_value') continue;
+          // zod 3 reports an enum miss as 'invalid_enum_value', zod 4 as
+          // 'invalid_value' (@claude-flow/security >= 3.0.7 is on zod 4).
+          if (issue.code === 'invalid_enum_value' || issue.code === 'invalid_value') continue;
           errors.push(`${issue.path.join('.')}: ${issue.message}`);
         }
       }

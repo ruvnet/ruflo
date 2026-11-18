@@ -10,6 +10,7 @@ import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
 import { storeCommand } from './transfer-store.js';
+import { contextPlanCommand } from './context-plan.js';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -727,7 +728,7 @@ const routeCommand: Command = {
       if (result.routing) {
         output.writeln();
         output.writeln(output.bold('Routing Method'));
-        const methodDisplay = result.routing.method.startsWith('semantic')
+        const methodDisplay = result.routing.method.startsWith('semantic') || result.routing.method === 'centroid'
           ? output.success(`${result.routing.method} (${result.routing.backend || 'semantic'})`)
           : 'keyword';
         output.printList([
@@ -3054,8 +3055,8 @@ const workerDetectCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const prompt = ctx.flags['prompt'] as string;
-    const autoDispatch = ctx.flags['auto-dispatch'] as boolean;
-    const minConfidence = parseFloat(ctx.flags['min-confidence'] as string || '0.5');
+    const autoDispatch = (ctx.flags.autoDispatch ?? ctx.flags['auto-dispatch']) as boolean | undefined;
+    const minConfidence = parseFloat(String(ctx.flags.minConfidence ?? ctx.flags['min-confidence'] ?? 0.5) || '0.5');
 
     if (!prompt) {
       output.printError('--prompt is required');
@@ -3081,6 +3082,8 @@ const workerDetectCommand: Command = {
           priority: string;
         }>;
         autoDispatched?: boolean;
+        autoDispatchStatus?: string;
+        note?: string;
         workerIds?: string[];
       }>('hooks_worker-detect', {
         prompt,
@@ -3117,7 +3120,11 @@ const workerDetectCommand: Command = {
 
       if (result.autoDispatched && result.workerIds) {
         output.writeln();
-        output.writeln(output.success('Workers auto-dispatched:'));
+        if (result.autoDispatchStatus === 'synthetic-completed') {
+          output.printWarning(result.note ?? 'No executor ran. Worker records are synthetic placeholders.');
+        } else {
+          output.writeln(output.success('Workers auto-dispatched:'));
+        }
         result.workerIds.forEach(id => {
           output.writeln(`  - ${id}`);
         });
@@ -3735,8 +3742,8 @@ const coverageGapsCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const threshold = ctx.flags.threshold as number ?? 80;
-    const groupByAgent = ctx.flags['group-by-agent'] !== false;
-    const criticalOnly = ctx.flags['critical-only'] as boolean || false;
+    const groupByAgent = (ctx.flags.groupByAgent ?? ctx.flags['group-by-agent']) !== false;
+    const criticalOnly = (ctx.flags.criticalOnly ?? ctx.flags['critical-only']) === true;
 
     const spinner = output.createSpinner({ text: 'Analyzing project coverage gaps...' });
     spinner.start();
@@ -4454,7 +4461,9 @@ const statuslineCommand: Command = {
       const securityCompact = security.findings > 0
         ? `Findings:${security.findings}`
         : `Security:${security.status}`;
-      const line = `DDD:${progress.domainsCompleted}/${progress.totalDomains} ${securityCompact} Swarm:${swarm.activeAgents}/${swarm.maxAgents} Ctx:${system.contextPct}% Int:${system.intelligencePct}%`;
+      // #1047: this tier is derived from memory pattern-count thresholds, not
+      // Domain-Driven-Design domain completion — label it for what it is.
+      const line = `Learning:${progress.domainsCompleted}/${progress.totalDomains} ${securityCompact} Swarm:${swarm.activeAgents}/${swarm.maxAgents} Ctx:${system.contextPct}% Int:${system.intelligencePct}%`;
       output.writeln(line);
       return { success: true, data: statusData };
     }
@@ -4628,7 +4637,10 @@ const statuslineCommand: Command = {
       perfIndicator = `${c.brightYellow}📚 ${patternsK} patterns${c.reset}`;
     }
 
-    const line1 = `${c.brightCyan}🏗️  DDD Domains${c.reset}    ${progressBar(progress.domainsCompleted, progress.totalDomains)}  ` +
+    // #1047: renamed from "DDD Domains" — this tier comes from memory
+    // pattern-count thresholds (see getV3Progress above), not actual
+    // Domain-Driven-Design domain completion. "Learning Tier" says what it is.
+    const line1 = `${c.brightCyan}🏗️  Learning Tier${c.reset}    ${progressBar(progress.domainsCompleted, progress.totalDomains)}  ` +
       `${domainsColor}${progress.domainsCompleted}${c.reset}/${c.brightWhite}${progress.totalDomains}${c.reset}    ` +
       perfIndicator;
 
@@ -4645,10 +4657,19 @@ const statuslineCommand: Command = {
       `${c.brightCyan}💾 ${system.memoryMB}MB${c.reset}    ` +
       `${c.brightPurple}🧠 ${String(system.intelligencePct).padStart(3)}%${c.reset}`;
 
-    const dddColor = progress.dddProgress >= 50 ? c.brightGreen : progress.dddProgress > 0 ? c.yellow : c.red;
+    // #1047: "DDD ●XX%" previously showed a fake architecture-progress
+    // percentage that was really just the memory pattern count run through
+    // getV3Progress's bucket thresholds — it has no connection to actual DDD
+    // domain completion. Show the real number it was derived from instead,
+    // per the issue's own recommendation ("Memory entries: 290" instead of
+    // "DDD ●80%").
+    const memoryColor = progress.patternsLearned >= 50 ? c.brightGreen : progress.patternsLearned > 0 ? c.yellow : c.red;
+    const patternsDisplay = progress.patternsLearned >= 1000
+      ? `${(progress.patternsLearned / 1000).toFixed(1)}k`
+      : String(progress.patternsLearned);
     const line3 = `${c.brightPurple}🔧 Architecture${c.reset}    ` +
       `${c.cyan}ADRs${c.reset} ${c.dim}●0/0${c.reset}  ${c.dim}│${c.reset}  ` +
-      `${c.cyan}DDD${c.reset} ${dddColor}●${String(progress.dddProgress).padStart(3)}%${c.reset}  ${c.dim}│${c.reset}  ` +
+      `${c.cyan}Memory${c.reset} ${memoryColor}●${patternsDisplay}${c.reset}  ${c.dim}│${c.reset}  ` +
       `${c.cyan}Security${c.reset} ${securityColor}●${security.status}${c.reset}`;
 
     const vectorColor = agentdbStats.vectorCount > 0 ? c.brightGreen : c.dim;
@@ -4906,7 +4927,7 @@ const modelRouteCommand: Command = {
     { name: 'task', short: 't', type: 'string', description: 'Task description to route', required: true },
     { name: 'context', short: 'c', type: 'string', description: 'Additional context' },
     { name: 'prefer-cost', type: 'boolean', description: 'Prefer lower cost models' },
-    { name: 'prefer-quality', type: 'boolean', description: 'Prefer higher quality models' },
+    { name: 'prefer-speed', type: 'boolean', description: 'Prefer faster models when possible' },
   ],
   examples: [
     { command: 'claude-flow hooks model-route -t "fix typo"', description: 'Route simple task (likely haiku)' },
@@ -4932,8 +4953,8 @@ const modelRouteCommand: Command = {
       }>('hooks_model-route', {
         task,
         context: ctx.flags.context,
-        preferCost: ctx.flags['prefer-cost'],
-        preferQuality: ctx.flags['prefer-quality'],
+        preferCost: ctx.flags.preferCost,
+        preferSpeed: ctx.flags.preferSpeed,
       });
 
       if (ctx.flags.format === 'json') {
@@ -5431,8 +5452,22 @@ const refreshFunnelCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     try {
-      const { refreshRemoteMessages } = await import('../funnel/index.js');
-      const result = await refreshRemoteMessages();
+      const { refreshRemoteMessages, resolveFunnelEnabled, hasConsent, flushEvents } = await import('../funnel/index.js');
+      // `ruflo funnel disable` (and every other opt-out source) must stop the
+      // network call, not only the promo row (ADR-309 operational telemetry).
+      const decision = resolveFunnelEnabled();
+      const result: Record<string, unknown> = decision.enabled
+        ? await refreshRemoteMessages()
+        : { refreshed: false, skipped: 'funnel-disabled', decidedBy: decision.decidedBy };
+      // Opt-in event telemetry (ADR-305/309): only with an explicit, current
+      // telemetry consent receipt; flushEvents re-checks consent itself.
+      if (decision.enabled && hasConsent('telemetry')) {
+        const { rufloPackageVersion } = await import('../mcp-protocol.js');
+        // Activation funnel: one "active today" marker per day (7-day retention).
+        const { recordSessionActive } = await import('../funnel/activation.js');
+        recordSessionActive(rufloPackageVersion());
+        result.events = await flushEvents({ release: rufloPackageVersion() });
+      }
       if (!ctx.flags.quiet) {
         output.writeln(JSON.stringify(result));
       }
@@ -5567,6 +5602,7 @@ export const hooksCommand: Command = {
     coverageGapsCommand,
     // Token optimization
     tokenOptimizeCommand,
+    contextPlanCommand,
     // Model routing (tiny-dancer integration)
     modelRouteCommand,
     modelOutcomeCommand,

@@ -145,9 +145,9 @@ function editor(ctx: Ctx): RenderElement[] {
     flow(ctx, TOOL_CLASSES.map(cls => button(ctx, `ap-c-${cls}`, `${have.includes(cls) ? '●' : '○'} ${cls}`, set({ kind: 'class', cls }))), 'ap-classes'),
   ]
 
-  for (const key of ['hourUsd', 'dayUsd', 'totalUsd'] as const) rows.push(row(ctx, [text(ctx, ` ${key.replace('Usd', '').padEnd(8)}   `, { dimColor: true }), button(ctx, `ap-s-${key}-less`, ' − ', set({ kind: 'spend', key, by: -1 })), text(ctx, ` ${money(spend[key])} `, { bold: true }), button(ctx, `ap-s-${key}-more`, ' + ', set({ kind: 'spend', key, by: 1 }))], `ap-spend-${key}`))
+  for (const key of ['hourUsd', 'dayUsd', 'totalUsd'] as const) rows.push(row(ctx, [text(ctx, ` ${key.replace('Usd', '').padEnd(8)}   `, { dimColor: true }), button(ctx, `ap-s-${key}-less`, ' − ', set({ kind: 'spend', key, by: -1 })), text(ctx, ` ${money(spend[key])} `, { weight: 'semibold' }), button(ctx, `ap-s-${key}-more`, ' + ', set({ kind: 'spend', key, by: 1 }))], `ap-spend-${key}`))
 
-  rows.push(row(ctx, [text(ctx, ' at once    ', { dimColor: true }), button(ctx, 'ap-n-less', ' − ', set({ kind: 'concurrency', by: -1 })), text(ctx, ` ${String(d.value.concurrency)} `, { bold: true }), button(ctx, 'ap-n-more', ' + ', set({ kind: 'concurrency', by: 1 })), text(ctx, '   duration ', { dimColor: true }), button(ctx, 'ap-d-less', ' − ', set({ kind: 'days', by: -1 })), text(ctx, ` ${spanText(Number(d.value.maxDurationMs))} `, { bold: true }), button(ctx, 'ap-d-more', ' + ', set({ kind: 'days', by: 1 }))], 'ap-conc'))
+  rows.push(row(ctx, [text(ctx, ' at once    ', { dimColor: true }), button(ctx, 'ap-n-less', ' − ', set({ kind: 'concurrency', by: -1 })), text(ctx, ` ${String(d.value.concurrency)} `, { weight: 'semibold' }), button(ctx, 'ap-n-more', ' + ', set({ kind: 'concurrency', by: 1 })), text(ctx, '   duration ', { dimColor: true }), button(ctx, 'ap-d-less', ' − ', set({ kind: 'days', by: -1 })), text(ctx, ` ${spanText(Number(d.value.maxDurationMs))} `, { weight: 'semibold' }), button(ctx, 'ap-d-more', ' + ', set({ kind: 'days', by: 1 }))], 'ap-conc'))
   rows.push(flow(ctx, [button(ctx, 'ap-anatole', `${d.value.acceptWithoutAnatole === true ? '●' : '○'} accept running without Anatole`, set({ kind: 'anatole' })), button(ctx, 'ap-load', 'load draft file', () => void loadDraftFile(ctx.state))], 'ap-draft-row'))
   rows.push(text(ctx, ` ${DRAFT_FILE} can load all the lists in one go`, { dimColor: true }))
   rows.push(text(ctx, checked.ok ? ` draft is valid · hash ${hashOf(checked.envelope).slice(0, 12)}${d.fromFile === null ? '' : ' · from file'} · ${(d.value.paths as string[]).join(', ')}` : ` draft is not valid: ${cleanText(checked.errors.slice(0, 2).join('; '))}`, { color: checked.ok ? undefined : THEME.bad }))
@@ -182,7 +182,7 @@ export function boardRows(env: SlotEnv): RenderElement[] {
   const sum = summarize(s, nowMs)
   const e = store.sealed !== null && store.sealed.hash === s.envHash ? store.sealed.envelope : null
   const band = bandText(s, nowMs, store.spend?.totalUsd ?? null, e)
-  const rows: RenderElement[] = [text(ctx, ` ${band === '' ? 'autopilot is off' : band}${store.killed ? ' · KILL flag present' : ''}`, { color: COLOR[sum.phase], bold: true })]
+  const rows: RenderElement[] = [text(ctx, ` ${band === '' ? 'autopilot is off' : band}${store.killed ? ' · KILL flag present' : ''}`, { color: COLOR[sum.phase], weight: 'semibold' })]
 
   rows.push(text(ctx, ` ${sum.phase}${sum.reason === null ? '' : `: ${cleanText(sum.reason)}`} · ${store.status} · ${sum.running} running · ${sum.done} done (${sum.unverified} unverified) · ${sum.failed} failed${store.readAtMs > 0 ? ` · read ${ago(store.readAtMs, nowMs)}` : ''}`, { dimColor: true }))
   if (store.error !== null) rows.push(text(ctx, ` ${cleanText(store.error)}`, { color: THEME.warn }))

@@ -63,8 +63,8 @@ function entryRow(ctx: Ctx, entry: VecEntry, lead: number): RenderElement {
   return row(
     ctx,
     [
-      isNa ? ctx.kit.Text({ bold: true, color: THEME.info, dimColor: true, children: ` ${' -- '}` }) : tagChip(ctx, tag.text, tag.color()),
-      ctx.kit.Text({ bold: true, color: entry.cost === 'deletes' || entry.cost === 'publish' || entry.cost === 'spends' ? THEME.warn : THEME.head, dimColor: isNa, children: ` ${entry.name} `.padEnd(lead, '.') }),
+      isNa ? ctx.kit.Text({ weight: 'semibold', color: THEME.info, dimColor: true, children: ` ${' -- '}` }) : tagChip(ctx, tag.text, tag.color()),
+      ctx.kit.Text({ weight: 'semibold', color: entry.cost === 'deletes' || entry.cost === 'publish' || entry.cost === 'spends' ? THEME.warn : THEME.head, dimColor: isNa, children: ` ${entry.name} `.padEnd(lead, '.') }),
       ctx.kit.Text({ color: THEME.info, dimColor: isNa || isBlocked, wrap: 'truncate-end', children: clip(` ${isNa ? (entry.na ?? '') : entry.about}`, Math.max(4, ctx.columns - lead - 16)) }),
       isNa
         ? ctx.kit.Text({ dimColor: true, children: action })
@@ -110,7 +110,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
     return [frameResult(ctx, rows, running !== null ? 'run' : 'idle')]
   }
 
-  rows.push(text(ctx, ` ${result.label}`, { bold: true, color: result.ok ? THEME.ok : THEME.bad }))
+  rows.push(text(ctx, ` ${result.label}`, { weight: 'semibold', color: result.ok ? THEME.ok : THEME.bad }))
   if (result.note !== undefined) rows.push(text(ctx, ` ${result.note}`, { color: THEME.warn }))
 
   const top = Math.max(0, Math.min(state.select.item, result.lines.length - VEC_ROWS))

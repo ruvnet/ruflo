@@ -1,4 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
+import { configuredProxyHops, deriveClientIp } from './client-ip.mjs';
 export const MAX_BODY = 256 * 1024;
 const buckets = new Map(); // ip -> {tokens, ts}
 const MAX_BUCKETS = 10_000, IDLE_MS = 10 * 60_000;
@@ -8,7 +9,10 @@ function pruneBuckets(now) {
   for (const [ip, b] of buckets) if (now - b.ts > IDLE_MS) buckets.delete(ip);
   if (buckets.size >= MAX_BUCKETS) { const drop = buckets.size - MAX_BUCKETS + 100; let i = 0; for (const ip of buckets.keys()) { if (i++ >= drop) break; buckets.delete(ip); } }
 }
-export function clientIp(req) { return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown'; }
+// Per-IP limits key on the same trusted-chain address as registration; the
+// leftmost X-Forwarded-For entry is caller-controlled and must not be used.
+const PROXY_HOPS = configuredProxyHops();
+export function clientIp(req, hops = PROXY_HOPS) { return deriveClientIp(req, hops).ip ?? 'unknown'; }
 // Token bucket: `rate` req/min per IP.
 export function rateLimited(req, rate = 60) {
   const ip = clientIp(req), now = Date.now(); pruneBuckets(now); const b = buckets.get(ip) || { tokens: rate, ts: now };

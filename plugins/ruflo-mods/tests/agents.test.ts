@@ -1,5 +1,6 @@
 import { describe, expect, test, tier } from 'claude-code/testing'
 
+import { modelFor, readAgentModels } from '../hooks/agents/models'
 import { isKept, readUsage, USED_WINDOW_MS } from '../hooks/agents/trim'
 import { consumer, run } from './fixtures/consumer'
 import { START, world } from './fixtures/world'
@@ -86,3 +87,59 @@ function memory(on: Parameters<typeof world>[0]) {
   })
   return store
 }
+
+describe('agentModels: a model per agent type for spawns that chose none', () => {
+  test('parses type=model pairs and drops malformed ones', () => {
+    const m = readAgentModels('Explore=haiku, general-purpose = sonnet, bad type=opus, x=gpt-4, y=claude-sonnet-5-5,=haiku')
+    expect([...m.entries()]).toEqual([['explore', 'haiku'], ['general-purpose', 'sonnet'], ['y', 'claude-sonnet-5-5']])
+    expect(readAgentModels({ Explore: 'haiku', n: 3 }).get('explore')).toBe('haiku')
+    expect(readAgentModels(undefined).size).toBe(0)
+    expect(readAgentModels(['Explore=haiku']).size).toBe(0)
+  })
+
+  test('fills only a missing model; forks, teammates and chosen models are kept', () => {
+    const m = readAgentModels('Explore=haiku')
+    expect(modelFor({ subagentType: 'Explore' }, m)).toBe('haiku')
+    expect(modelFor({ subagentType: 'explore', model: '' }, m)).toBe('haiku')
+    expect(modelFor({ subagentType: 'Explore', model: 'opus' }, m)).toBeUndefined()
+    expect(modelFor({ subagentType: 'Explore', fork: true }, m)).toBeUndefined()
+    expect(modelFor({ subagentType: 'Explore', isTeammate: true }, m)).toBeUndefined()
+    expect(modelFor({ subagentType: 'coder' }, m)).toBeUndefined()
+    expect(modelFor({ subagentType: 'Explore' }, readAgentModels(''))).toBeUndefined()
+  })
+
+  test('on spawn the engine sees the mapped model, and /ruflo-mods counts it', { options: { agentModels: 'Explore=haiku' }, plugins: [consumer] }, async ($, on) => {
+    world(on)
+    memory(on)
+    const seen: (string | undefined)[] = []
+    on('agent.spawn', ($, e) => {
+      seen.push(e.model)
+      return { deny: 'test: no real spawn' }
+    })
+    on('command.run', () => ({ text: 'core' }))
+    await $.session.start(START)
+
+    await $.agent.spawn({ tool_use_id: 't1', prompt: 'p', description: 'd', subagentType: 'Explore' } as never).catch(() => undefined)
+    await $.agent.spawn({ tool_use_id: 't2', prompt: 'p', description: 'd', subagentType: 'Explore', model: 'opus' } as never).catch(() => undefined)
+    await $.agent.spawn({ tool_use_id: 't3', prompt: 'p', description: 'd', subagentType: 'coder' } as never).catch(() => undefined)
+
+    expect(seen).toEqual(['haiku', 'opus', undefined])
+    expect((await $.command.run(run('ruflo-mods'))).text).toContain('agent models: 1 type(s), 1 spawn(s) given a model')
+  })
+
+  test('off by default: the spawn passes through', { plugins: [consumer] }, async ($, on) => {
+    world(on)
+    memory(on)
+    const seen: (string | undefined)[] = []
+    on('agent.spawn', ($, e) => {
+      seen.push(e.model)
+      return { deny: 'test: no real spawn' }
+    })
+    on('command.run', () => ({ text: 'core' }))
+    await $.session.start(START)
+
+    await $.agent.spawn({ tool_use_id: 't1', prompt: 'p', description: 'd', subagentType: 'Explore' } as never).catch(() => undefined)
+    expect(seen).toEqual([undefined])
+    expect((await $.command.run(run('ruflo-mods'))).text).toContain('agent models: off')
+  })
+})

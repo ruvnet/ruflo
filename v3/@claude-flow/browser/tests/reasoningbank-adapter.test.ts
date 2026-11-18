@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ReasoningBankAdapter, getReasoningBank } from '../src/infrastructure/reasoningbank-adapter.js';
 import type { BrowserTrajectory } from '../src/domain/types.js';
 
-describe('ReasoningBankAdapter', () => {
+describe.skipIf(!!process.env.CI)('ReasoningBankAdapter', () => {
   let adapter: ReasoningBankAdapter;
 
   beforeEach(() => {

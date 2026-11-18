@@ -55,9 +55,10 @@ function sse(res, id, model, { content, stop }) {
 
 /**
  * @param {Array<{content: Array<object>}>} script assistant turns, consumed in order by tool-offering requests
+ * @param {(body: object) => string | undefined} [unscripted] answers a request that offers no tools (a plugin's own completion); undefined keeps the default 'ok'
  * @returns {Promise<{url: string, port: number, requests: Array<object>, scripted: () => Array<object>, close: () => Promise<void>}>}
  */
-export async function startMockModel(script = []) {
+export async function startMockModel(script = [], unscripted = undefined) {
   const requests = []
   let next = 0
   const server = createServer((req, res) => {
@@ -84,7 +85,7 @@ export async function startMockModel(script = []) {
           turn = materialise(script[next], next)
           next++
         } else {
-          turn = materialise({ content: [{ type: 'text', text: 'ok' }] }, -1)
+          turn = materialise({ content: [{ type: 'text', text: unscripted?.(body) ?? 'ok' }] }, -1)
         }
         const id = `msg_mock_${requests.length}`
         if (body?.stream === true) return sse(res, id, model, turn)
