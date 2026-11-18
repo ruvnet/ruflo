@@ -57,10 +57,10 @@ describe('memory.db lock ownership (#4738)', () => {
     expect(fs.readdirSync(root)).toEqual([]);
   });
 
-  it('does not steal an aged lock from an independent live caller', async () => {
+  it('does not steal an aged lock from an independent live caller inside the lease', async () => {
     let release!: () => void;
     const held = withMemoryDbLock(dbPath, () => new Promise<void>((resolve) => { release = resolve; }));
-    ageLock(lockFile, 360_000);
+    ageLock(lockFile, 60_000);
     let entered = false;
     const contender = withMemoryDbLock(dbPath, () => { entered = true; });
     try {
@@ -147,18 +147,48 @@ describe('memory.db lock ownership (#4738)', () => {
     expect(fs.readdirSync(root)).toEqual([]);
   });
 
-  it('preserves an expired reclaim guard with a verifiably live owner', async () => {
+  it('preserves a reclaim guard with a verifiably live owner inside the lease', async () => {
     const owner = JSON.stringify(await currentOwner());
     fs.writeFileSync(lockFile, 'old owner');
     fs.writeFileSync(`${lockFile}.reclaim`, owner);
     ageLock(lockFile, 360_000);
-    ageLock(`${lockFile}.reclaim`, 360_000);
+    ageLock(`${lockFile}.reclaim`, 60_000);
     vi.useFakeTimers();
     const result = withMemoryDbLock(dbPath, () => 'unsafe').catch((error) => error);
     await vi.advanceTimersByTimeAsync(15_100);
     expect(await result).toBeInstanceOf(Error);
     expect(fs.readFileSync(`${lockFile}.reclaim`, 'utf8')).toBe(owner);
     expect(fs.readFileSync(lockFile, 'utf8')).toBe('old owner');
+  });
+
+  it('recovers a lock past the lease even when its PID answers as alive (PID reuse)', async () => {
+    // The recorded pid is this test process, so it probes as live, but nothing
+    // has renewed the lock for six minutes: the original owner is gone.
+    const owner = JSON.stringify(await currentOwner());
+    fs.writeFileSync(lockFile, owner);
+    ageLock(lockFile, 360_000);
+    await expectRecovery();
+    expect(fs.readdirSync(root)).toEqual([]);
+  });
+
+  it('recovers a reclaim guard past the lease even when its PID answers as alive', async () => {
+    const owner = JSON.stringify(await currentOwner());
+    fs.writeFileSync(lockFile, 'old owner');
+    fs.writeFileSync(`${lockFile}.reclaim`, owner);
+    ageLock(lockFile, 360_000);
+    ageLock(`${lockFile}.reclaim`, 360_000);
+    await expectRecovery();
+    expect(fs.readdirSync(root)).toEqual([]);
+  });
+
+  it('removes a crashed reclaimer guard before the lease once its owner is provably dead', async () => {
+    const dead = JSON.stringify({ ...await currentOwner(), pid: 999999999 });
+    fs.writeFileSync(lockFile, 'old owner');
+    fs.writeFileSync(`${lockFile}.reclaim`, dead);
+    ageLock(lockFile, 360_000);
+    ageLock(`${lockFile}.reclaim`, 30_000);
+    await expectRecovery();
+    expect(fs.readdirSync(root)).toEqual([]);
   });
 
   it('cleans an expired guard left after a reclaimer already removed the main lock', async () => {
@@ -205,7 +235,8 @@ describe('memory.db lock ownership (#4738)', () => {
     fs.writeFileSync(fresh, '');
     fs.writeFileSync(live, JSON.stringify(liveOwner));
     fs.writeFileSync(unrelated, '');
-    for (const file of [orphan, live, unrelated]) ageLock(file, 360_000);
+    for (const file of [orphan, unrelated]) ageLock(file, 360_000);
+    ageLock(live, 60_000);
     await withMemoryDbLock(dbPath, () => {});
     expect(fs.existsSync(orphan)).toBe(false);
     expect(fs.existsSync(fresh)).toBe(true);
@@ -219,7 +250,7 @@ describe('memory.db lock ownership (#4738)', () => {
     vi.useFakeTimers();
     const owner = JSON.stringify({ ...JSON.parse(content), pid: 12345 });
     fs.writeFileSync(lockFile, owner);
-    ageLock(lockFile, 360_000);
+    ageLock(lockFile, 60_000);
     vi.spyOn(process, 'kill').mockImplementation(() => {
       throw Object.assign(new Error('permission denied'), { code: 'EPERM' });
     });
@@ -230,12 +261,12 @@ describe('memory.db lock ownership (#4738)', () => {
     expect(fs.readFileSync(lockFile, 'utf8')).toBe(owner);
   });
 
-  it('preserves an expired guard when its scoped owner cannot be probed due to permissions', async () => {
+  it('preserves a guard inside the lease when its scoped owner cannot be probed due to permissions', async () => {
     const owner = JSON.stringify({ ...await currentOwner(), pid: 12345 });
     fs.writeFileSync(lockFile, 'expired owner');
     fs.writeFileSync(`${lockFile}.reclaim`, owner);
     ageLock(lockFile, 360_000);
-    ageLock(`${lockFile}.reclaim`, 360_000);
+    ageLock(`${lockFile}.reclaim`, 60_000);
     vi.spyOn(process, 'kill').mockImplementation(() => {
       throw Object.assign(new Error('permission denied'), { code: 'EPERM' });
     });

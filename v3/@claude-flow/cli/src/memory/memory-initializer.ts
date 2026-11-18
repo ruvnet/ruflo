@@ -4226,11 +4226,15 @@ function memoryDbLockOwnerState(content: string): 'live' | 'dead' | 'unknown' {
 function memoryDbLockCanBeReclaimed(snapshot: MemoryDbLockSnapshot): boolean {
   const age = Date.now() - snapshot.mtimeMs;
   if (age <= MEMORY_DB_LOCK_STALE_MS) return false;
-  const state = memoryDbLockOwnerState(snapshot.content);
-  // Heartbeats form a five-minute lease when the PID cannot be scoped to
-  // this host/boot/namespace (including legacy and interrupted owner writes).
-  // A verifiably live owner is protected even if its event loop is blocked.
-  return state === 'dead' || (state === 'unknown' && age > MEMORY_DB_LOCK_UNVERIFIABLE_STALE_MS);
+  // A live owner renews every few seconds, so five minutes without renewal
+  // means the owner is gone even when its PID still answers: the PID may have
+  // been reused by an unrelated process, or (on macOS/Windows, which have no
+  // boot id) the lock may predate a reboot. The same lease covers owners whose
+  // PID cannot be scoped to this host/boot/namespace.
+  if (age > MEMORY_DB_LOCK_UNVERIFIABLE_STALE_MS) return true;
+  // Inside the lease, only a verifiably dead owner may be taken over. A live
+  // owner whose event loop is briefly blocked keeps its lock.
+  return memoryDbLockOwnerState(snapshot.content) === 'dead';
 }
 
 function sameMemoryDbLock(a: MemoryDbLockSnapshot | undefined, b: MemoryDbLockSnapshot): boolean {
@@ -4239,8 +4243,9 @@ function sameMemoryDbLock(a: MemoryDbLockSnapshot | undefined, b: MemoryDbLockSn
 
 function removeExpiredMemoryDbLockFile(file: string): void {
   const snapshot = readMemoryDbLock(file);
-  if (!snapshot || Date.now() - snapshot.mtimeMs <= MEMORY_DB_LOCK_UNVERIFIABLE_STALE_MS
-    || !memoryDbLockCanBeReclaimed(snapshot)) return;
+  // Same rule as the main lock: a provably dead owner's guard or candidate is
+  // removable once the short stale window passes, not only after the lease.
+  if (!snapshot || !memoryDbLockCanBeReclaimed(snapshot)) return;
   try {
     if (sameMemoryDbLock(readMemoryDbLock(file), snapshot)) fs.unlinkSync(file);
   } catch { /* already removed or replaced */ }
