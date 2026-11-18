@@ -29,7 +29,7 @@ const initSwarmSchema = z.object({
     loadBalancing: z.boolean().optional(),
     autoScaling: z.boolean().optional(),
   }).optional().describe('Swarm configuration'),
-  metadata: z.record(z.unknown()).optional().describe('Additional metadata'),
+  metadata: z.record(z.string(), z.unknown()).optional().describe('Additional metadata'),
 });
 
 const swarmStatusSchema = z.object({

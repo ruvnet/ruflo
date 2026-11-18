@@ -44,7 +44,7 @@ const dispatchWorkerSchema = z.object({
     .describe('Worker priority'),
   timeout: z.number().optional()
     .describe('Timeout in milliseconds'),
-  metadata: z.record(z.unknown()).optional()
+  metadata: z.record(z.string(), z.unknown()).optional()
     .describe('Additional metadata'),
 });
 
