@@ -56,9 +56,9 @@ See issue and PR for the full receipt.
 
 ```
 Session commit:   edf7ddb3fefa15bca87986225b5a5ef7d4d059e5
-Candidate commit: PENDING
-Gist SHA-256 (pre-witness): PENDING
-Witness stamp:    PENDING
+Candidate commit: 7466cb8cc358bd91be56f10e7ff73c3f97d8a93a
+Gist SHA-256 (pre-witness): b0776589b040ffd5d7ac8a5df306c1196fdf3b05690170a91257dccf94a979fb
+Witness stamp:    8e6a4d8e961e20331a1540bb8c82cd354e3e7ca15d2805396b1de0e9774656ed
 ```
 Verifier: fetch this file from the branch, replace the Witness block's three dynamic values (Candidate commit, Gist SHA-256, Witness stamp) with the literal text `PENDING`, SHA-256 the result, concatenate with the Session commit above, SHA-256 again — must equal the Witness stamp.
 
