@@ -437,6 +437,18 @@ export interface CacheConfig {
 
   /** Enable write-through caching */
   writeThrough: boolean;
+
+  /**
+   * Blend factor (0-1) for frequency-aware eviction. 0 (default) preserves
+   * pure-LRU tail eviction exactly. Above 0, eviction scores a bounded
+   * window of least-recently-used entries by recency + normalized
+   * accessCount, so a high-frequency entry can survive an eviction pure
+   * recency would otherwise apply to it.
+   */
+  frequencyWeight?: number;
+
+  /** Window size (entries scanned from the tail) for frequency-aware eviction. Default 32. Only consulted when frequencyWeight > 0. */
+  evictionScanWindow?: number;
 }
 
 /**

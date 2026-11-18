@@ -1,0 +1,227 @@
+{
+  "baselineEval": {
+    "candidate": {
+      "frequencyWeight": 0,
+      "evictionScanWindow": 32
+    },
+    "quality": 0.5,
+    "successRate": 1,
+    "latency": 1,
+    "costEfficiency": 1,
+    "reproducibility": 1,
+    "safety": 1,
+    "fitness": 0.825,
+    "meanRetentionDelta": 0,
+    "meanOpsRatio": 1.0189885574485578
+  },
+  "lineage": [
+    {
+      "candidate": {
+        "frequencyWeight": 0.25,
+        "evictionScanWindow": 32
+      },
+      "quality": 0.5,
+      "successRate": 1,
+      "latency": 0.8459947209361269,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 1,
+      "fitness": 0.8018992081404189,
+      "meanRetentionDelta": 0,
+      "meanOpsRatio": 0.8459947209361269,
+      "generation": 1
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 0.5,
+        "evictionScanWindow": 32
+      },
+      "quality": 0.5138888888888888,
+      "successRate": 1,
+      "latency": 0.9679645154304543,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 1,
+      "fitness": 0.8250557884256792,
+      "meanRetentionDelta": 0.027777777777777773,
+      "meanOpsRatio": 0.9679645154304543,
+      "generation": 1
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 0.75,
+        "evictionScanWindow": 32
+      },
+      "quality": 0.5625,
+      "successRate": 1,
+      "latency": 0.99520369062745,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 1,
+      "fitness": 0.8461555535941174,
+      "meanRetentionDelta": 0.125,
+      "meanOpsRatio": 0.99520369062745,
+      "generation": 1
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 1,
+        "evictionScanWindow": 32
+      },
+      "quality": 0.5625,
+      "successRate": 0.8333333333333334,
+      "latency": 0.9839787268849135,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 0.8333333333333334,
+      "fitness": 0.7944718090327371,
+      "meanRetentionDelta": 0.12499999999999999,
+      "meanOpsRatio": 0.9839787268849135,
+      "generation": 1
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 0.75,
+        "evictionScanWindow": 8
+      },
+      "quality": 0.5763888888888888,
+      "successRate": 1,
+      "latency": 0.9542000513428158,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 1,
+      "fitness": 0.8448661188125334,
+      "meanRetentionDelta": 0.15277777777777776,
+      "meanOpsRatio": 0.9542000513428158,
+      "generation": 2
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 0.75,
+        "evictionScanWindow": 16
+      },
+      "quality": 0.5625,
+      "successRate": 1,
+      "latency": 0.9660947630936612,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 1,
+      "fitness": 0.8417892144640491,
+      "meanRetentionDelta": 0.125,
+      "meanOpsRatio": 0.9660947630936612,
+      "generation": 2
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 0.75,
+        "evictionScanWindow": 32
+      },
+      "quality": 0.5625,
+      "successRate": 1,
+      "latency": 0.9692733165184113,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 1,
+      "fitness": 0.8422659974777617,
+      "meanRetentionDelta": 0.125,
+      "meanOpsRatio": 0.9692733165184113,
+      "generation": 2
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 0.75,
+        "evictionScanWindow": 64
+      },
+      "quality": 0.5625,
+      "successRate": 1,
+      "latency": 0.994950328239898,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 1,
+      "fitness": 0.8461175492359846,
+      "meanRetentionDelta": 0.125,
+      "meanOpsRatio": 0.994950328239898,
+      "generation": 2
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 0.55,
+        "evictionScanWindow": 32
+      },
+      "quality": 0.5138888888888888,
+      "successRate": 1,
+      "latency": 0.9281190352575156,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 1,
+      "fitness": 0.8190789663997383,
+      "meanRetentionDelta": 0.027777777777777773,
+      "meanOpsRatio": 0.9281190352575156,
+      "generation": 3
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 0.65,
+        "evictionScanWindow": 32
+      },
+      "quality": 0.5347222222222222,
+      "successRate": 1,
+      "latency": 0.9476806019421461,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 1,
+      "fitness": 0.8293048680690996,
+      "meanRetentionDelta": 0.06944444444444443,
+      "meanOpsRatio": 0.9476806019421461,
+      "generation": 3
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 0.85,
+        "evictionScanWindow": 32
+      },
+      "quality": 0.5972222222222222,
+      "successRate": 1,
+      "latency": 0.9480068455034522,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 1,
+      "fitness": 0.8512288046032955,
+      "meanRetentionDelta": 0.19444444444444442,
+      "meanOpsRatio": 0.9480068455034522,
+      "generation": 3
+    },
+    {
+      "candidate": {
+        "frequencyWeight": 0.95,
+        "evictionScanWindow": 32
+      },
+      "quality": 0.5625,
+      "successRate": 0.8333333333333334,
+      "latency": 0.9584037476969183,
+      "costEfficiency": 1,
+      "reproducibility": 1,
+      "safety": 0.8333333333333334,
+      "fitness": 0.7906355621545377,
+      "meanRetentionDelta": 0.12499999999999999,
+      "meanOpsRatio": 0.9584037476969183,
+      "generation": 3
+    }
+  ],
+  "finalWinner": {
+    "candidate": {
+      "frequencyWeight": 0.85,
+      "evictionScanWindow": 32
+    },
+    "quality": 0.5972222222222222,
+    "successRate": 1,
+    "latency": 0.9480068455034522,
+    "costEfficiency": 1,
+    "reproducibility": 1,
+    "safety": 1,
+    "fitness": 0.8512288046032955,
+    "meanRetentionDelta": 0.19444444444444442,
+    "meanOpsRatio": 0.9480068455034522,
+    "generation": 3
+  }
+}
