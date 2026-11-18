@@ -38,12 +38,19 @@ export interface HttpTransportConfig {
   /** Accept a non-loopback bind with no token (the operator's own risk). */
   allowUnauthenticated?: boolean;
   maxRequestSize?: string;
+  /** Largest WebSocket frame accepted on /ws, in bytes (default 10 MiB). */
+  maxMessageSize?: number;
+  /** Most legacy SSE streams open at once on GET /mcp (default 100). */
+  maxSseClients?: number;
   requestTimeout?: number;
   rateLimit?: {
     windowMs?: number;
     limit?: number;
   };
 }
+
+const DEFAULT_MAX_WS_PAYLOAD = 10 * 1024 * 1024;
+const DEFAULT_MAX_SSE_CLIENTS = 100;
 
 export class HttpTransport extends EventEmitter implements ITransport {
   public readonly type: TransportType = 'http';
@@ -90,9 +97,14 @@ export class HttpTransport extends EventEmitter implements ITransport {
     this.wss = new WebSocketServer({
       server: this.server,
       path: '/ws',
+      maxPayload: positiveOr(this.config.maxMessageSize, DEFAULT_MAX_WS_PAYLOAD),
+      // Authenticate before the upgrade. Browsers cannot set Authorization on a
+      // WebSocket, so /ws also takes `?token=`, like the standalone WebSocket transport.
       // CORS does not apply to upgrades, so a token-less server checks Host and Origin itself.
       verifyClient: (info: { req: IncomingMessage }) =>
-        this.config.auth?.enabled === true || refuseOpenRequest(info.req, this.config.host, this.config.corsOrigins) === undefined,
+        this.config.auth?.enabled === true
+          ? this.validateUpgradeAuth(info.req)
+          : refuseOpenRequest(info.req, this.config.host, this.config.corsOrigins) === undefined,
     });
 
     this.setupWebSocketHandlers();
@@ -328,6 +340,14 @@ export class HttpTransport extends EventEmitter implements ITransport {
         return;
       }
 
+      const maxSse = positiveOr(this.config.maxSseClients, DEFAULT_MAX_SSE_CLIENTS);
+      if (this.sseClients.size >= maxSse) {
+        this.logger.warn('SSE stream refused: client limit reached', { limit: maxSse });
+        res.status(503).setHeader('Retry-After', '5');
+        res.json({ jsonrpc: '2.0', id: null, error: { code: -32000, message: 'Too many open streams' } });
+        return;
+      }
+
       const sessionId = randomUUID();
       res.status(200);
       res.setHeader('Content-Type', 'text/event-stream');
@@ -384,35 +404,7 @@ export class HttpTransport extends EventEmitter implements ITransport {
 
     // SECURITY: Handle WebSocket authentication via upgrade request
     this.wss.on('connection', (ws, req) => {
-      // Validate authentication if enabled
-      if (this.config.auth?.enabled) {
-        const url = new URL(req.url || '', `http://${req.headers.host}`);
-        const token = url.searchParams.get('token') || req.headers['authorization']?.replace(/^Bearer\s+/i, '');
-
-        if (!token) {
-          this.logger.warn('WebSocket connection rejected: no authentication token');
-          ws.close(4001, 'Authentication required');
-          return;
-        }
-
-        // SECURITY: Timing-safe token validation
-        let valid = false;
-        if (this.config.auth.tokens?.length) {
-          for (const validToken of this.config.auth.tokens) {
-            if (this.timingSafeCompare(token, validToken)) {
-              valid = true;
-              break;
-            }
-          }
-        }
-
-        if (!valid) {
-          this.logger.warn('WebSocket connection rejected: invalid token');
-          ws.close(4003, 'Invalid token');
-          return;
-        }
-      }
-
+      // The token was already checked in verifyClient, before the upgrade.
       this.activeConnections.add(ws);
       this.logger.info('WebSocket client connected', {
         total: this.activeConnections.size,
@@ -604,23 +596,39 @@ export class HttpTransport extends EventEmitter implements ITransport {
     });
   }
 
-  private validateAuth(req: Request): { valid: boolean } {
-    const given = bearerToken(req.headers.authorization);
+  private validateAuth(req: Pick<IncomingMessage, 'headers'>): { valid: boolean } {
+    return { valid: this.matchesConfiguredToken(bearerToken(req.headers.authorization)) };
+  }
+
+  /** /ws upgrade: token from `Authorization: Bearer`, else from `?token=`. */
+  private validateUpgradeAuth(req: IncomingMessage): boolean {
+    const fromQuery = new URL(req.url ?? '', 'http://localhost').searchParams.get('token') ?? undefined;
+    return this.matchesConfiguredToken(bearerToken(req.headers.authorization) ?? fromQuery);
+  }
+
+  private matchesConfiguredToken(given: string | undefined): boolean {
     if (!given) {
-      return { valid: false };
+      return false;
     }
 
     // Fail closed: auth enabled with no configured token accepts nothing.
     const tokens = this.config.auth?.tokens ?? [];
     let valid = false;
     for (const validToken of tokens) {
+      // An unset entry (e.g. `tokens: [process.env.X]` with X unset) matches nothing.
+      if (typeof validToken !== 'string' || validToken.length === 0) continue;
       // No early exit, so timing does not depend on which token matched.
       if (this.timingSafeCompare(given, validToken)) {
         valid = true;
       }
     }
-    return { valid };
+    return valid;
   }
+}
+
+/** A configured limit when it is a positive number, else the default. */
+function positiveOr(value: number | undefined, fallback: number): number {
+  return typeof value === 'number' && value > 0 ? value : fallback;
 }
 
 export function createHttpTransport(
