@@ -1,7 +1,7 @@
 import type { EngineInterface, On } from 'claude-code'
 
 import type { RufloSnapshot } from '../types'
-import { redraw, setSegment, sortedSegments, type ModState } from './state'
+import { projectWrite, redraw, setSegment, sortedSegments, type ModState } from './state'
 import { bindToasts } from './toast'
 
 /** The snapshot `$.ruflo.snapshot()` answers: copies, never live state. */
@@ -47,7 +47,7 @@ export function registerNoun(on: On, state: ModState) {
       show: (line, options) => beneath.ui.toast(line, options),
       after: (ms, fn) => beneath.clock.after(ms, fn),
       read: path => beneath.fs.read(`${state.root}/${path}`),
-      write: (path, text) => beneath.fs.write(`${state.root}/${path}`, text),
+      write: (path, text) => projectWrite({ stat: p => beneath.fs.stat(p), write: (p, t) => beneath.fs.write(p, t) }, state)(`${state.root}/${path}`, text),
       exists: path => beneath.fs.exists(`${state.root}/${path}`),
     })
 

@@ -1,8 +1,7 @@
 import type { On } from 'claude-code'
 
 import { openIdLines } from '../compact/block'
-import { writeWithoutLinks } from '../files'
-import { under, type ModState } from '../state'
+import { projectWrite, under, type ModState } from '../state'
 import { reloadBlock } from './reload'
 import { buildSnapshot, MAX_SNAPSHOTS, pickSlot, slotPath } from './snapshot'
 
@@ -45,7 +44,7 @@ export function registerCompactSnapshot(on: On, state: ModState) {
       writing = Promise.all(stats)
         .then(async mtimes => {
           const path = slotPath(pickSlot(mtimes))
-          await writeWithoutLinks({ stat: p => $.fs.stat(p), write: (p, text) => $.fs.write(p, text) }, state.root, under(state, path), snap.text)
+          await projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state)(under(state, path), snap.text)
           return path
         })
         .catch((error: unknown) => {

@@ -8,8 +8,7 @@ import { HANDSHAKE_MARKER, ownedEvents } from './ownership'
 import type { ModOptions } from './options'
 import { ATTENTION_MAX_BYTES, ATTENTION_STATUS, attentionLine } from './attention'
 import { MAX_BYTES, PROTECTOR_STATUS, protectorLine } from './protector'
-import { redraw, report, under, type ModState } from './state'
-import { writeWithoutLinks } from './files'
+import { projectWrite, redraw, report, under, type ModState } from './state'
 import { runSelfCheck } from './selfcheck'
 import { bindToasts } from './toast'
 
@@ -105,7 +104,7 @@ export function registerSession(on: On, state: ModState, options: ModOptions, gu
       show: (line, options) => $.ui.toast(line, options),
       after: (ms, fn) => $.clock.after(ms, fn),
       read: path => $.fs.read(`${state.root}/${path}`),
-      write: (path, text) => $.fs.write(`${state.root}/${path}`, text),
+      write: (path, text) => projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state)(under(state, path), text),
       exists: path => $.fs.exists(`${state.root}/${path}`),
     })
     // A user-scoped install loads in every project. Existing Ruflo state is
@@ -130,7 +129,7 @@ export function registerSession(on: On, state: ModState, options: ModOptions, gu
     if (project) {
       const heartbeat = { startedAt: new Date().toISOString(), owned: [...state.owned], statusLine: state.statusLine, ...(state.probe.enabled ? { engine: state.probe.version ?? null, events: [...state.probe.registered].sort() } : {}) }
       // The heartbeat never follows a link out of the project (#4746); a refusal is dropped like any failed write, after a debug log.
-      await writeWithoutLinks({ stat: path => $.fs.stat(path), write: (path, text) => $.fs.write(path, text) }, state.root, under(state, HEARTBEAT_PATH), `${JSON.stringify(heartbeat, null, 2)}\n`).catch((error: unknown) => {
+      await projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state)(under(state, HEARTBEAT_PATH), `${JSON.stringify(heartbeat, null, 2)}\n`).catch((error: unknown) => {
         try {
           $.ui.log(`ruflo mods: heartbeat not written (${String((error as Error)?.message ?? error)})`, { to: 'debug' })
         } catch {

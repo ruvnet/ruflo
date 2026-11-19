@@ -2,7 +2,7 @@ import type { On } from 'claude-code'
 
 import { cachedFile, isMissing } from '../files'
 import { routeTask } from '../route/route-task'
-import { redraw, under, type ModState } from '../state'
+import { projectWrite, redraw, under, type ModState } from '../state'
 import { lessonBlock, parseLessons, pick } from './lessons'
 import { appendLines, line, LESSONS_PATH, MAX_PENDING, outcomeOf, start, step, VERIFIED_PATH } from './record'
 import { rememberLessons, rememberOutcome } from './status'
@@ -89,12 +89,12 @@ export function registerLoop(on: On, state: ModState) {
       if (loop.pending.length > MAX_PENDING) loop.dropped += loop.pending.splice(0, loop.pending.length - MAX_PENDING).length
       redraw(state)
     }
-    await flush(path => $.fs.read(path), (path, text) => $.fs.write(path, text))
+    await flush(path => $.fs.read(path), projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state))
     return result
   })
 
   on('session.end', { reason: ANY }, async ($, e, next) => {
-    await flush(path => $.fs.read(path), (path, text) => $.fs.write(path, text))
+    await flush(path => $.fs.read(path), projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state))
     return next(e)
   })
 

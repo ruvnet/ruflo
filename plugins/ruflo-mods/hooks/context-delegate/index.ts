@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 
 import { routeTask } from '../route/route-task'
-import { under, type ModState } from '../state'
+import { projectWrite, under, type ModState } from '../state'
 import { decide, LIMITS, MAX_QUESTION_CHARS, WORKER_MODEL } from './plan'
 import { METRICS_PATH, metricsJson, record } from './stats'
 import { renderExtract, sha256, verifyReply, WORKER_SYSTEM, workerPrompt } from './verify'
@@ -55,7 +55,7 @@ export function registerContextDelegate(on: On, state: ModState, mode: 'observe'
     if (plan.route === 'direct') return result
 
     const at = new Date().toISOString()
-    const flush = () => $.fs.write(under(state, METRICS_PATH), metricsJson(s)).catch(() => undefined)
+    const flush = () => projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state)(under(state, METRICS_PATH), metricsJson(s)).catch(() => undefined)
     if (s.mode === 'observe') {
       record(s, { at, path, outcome: 'would-delegate', reason: plan.reason, bytesRead: bytes, bytesShown: bytes })
       await flush()

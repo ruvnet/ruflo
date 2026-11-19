@@ -42,6 +42,12 @@ export interface World {
   failStat?: (path: string) => Error | undefined;
   failWrite?: (path: string) => Error | undefined;
   failLog?: boolean;
+  /**
+   * `fs.stat` as the live engine answers it (plugins/ruflo-console/tests/mods-section.spec.ts): a link reports its
+   * target's kind plus `isLink: true`, so a symlinked `.claude-flow` reads as a dir. Default (unset) keeps `lstat`
+   * semantics, where a link to a dir reads as `other`.
+   */
+  liveLinkStat?: boolean;
   /** What `$.tool.list()` returns (default: none). `mcp` marks an MCP server's tool. */
   tools?: { name: string; description: string; mcp: boolean }[];
   /** What `$.session.messages()` returns (default: none). */
@@ -72,6 +78,10 @@ function engineOf(world: World) {
           return { kind: 'file', size: Buffer.byteLength(f.text), mtimeMs: f.mtimeMs, isLink: false };
         }
         const s = lstatSync(path);
+        if (world.liveLinkStat && s.isSymbolicLink()) {
+          const t = statSync(path);
+          return { kind: t.isFile() ? 'file' : t.isDirectory() ? 'dir' : 'other', size: t.size, mtimeMs: t.mtimeMs, isLink: true };
+        }
         return { kind: s.isFile() ? 'file' : s.isDirectory() ? 'dir' : 'other', size: s.size, mtimeMs: s.mtimeMs, isLink: s.isSymbolicLink() };
       },
       async read(path: string) {
