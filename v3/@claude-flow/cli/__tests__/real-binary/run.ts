@@ -50,6 +50,8 @@ export interface RunOptions {
   pluginDir?: string | null;
   /** Files to create in the project before the run, relative path → content. `.claude-flow/` always exists. */
   files?: Record<string, string>;
+  /** Files to create in the run's HOME, relative path → content. */
+  homeFiles?: Record<string, string>;
   /** Tools the run may use without a permission prompt. */
   allowedTools?: string[];
   /** Kill the run after this long. */
@@ -125,10 +127,12 @@ export async function runClaude(opts: RunOptions): Promise<RunResult> {
   const tmp = join(root, 'tmp');
   const bin = join(root, 'bin');
   for (const dir of [project, join(project, '.claude-flow'), home, tmp, bin]) mkdirSync(dir, { recursive: true });
-  for (const [rel, content] of Object.entries(opts.files ?? {})) {
-    const path = join(project, rel);
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, content);
+  for (const [base, files] of [[project, opts.files], [home, opts.homeFiles]] as const) {
+    for (const [rel, content] of Object.entries(files ?? {})) {
+      const path = join(base, rel);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, content);
+    }
   }
   const shadowLog = join(tmp, 'shadowed.log');
   for (const name of opts.shadow ?? []) {

@@ -133,7 +133,7 @@ interface SONAStats {
 const trajectoryBeginSchema = z.object({
   sessionId: z.string().optional()
     .describe('Session identifier'),
-  context: z.record(z.unknown()).optional()
+  context: z.record(z.string(), z.unknown()).optional()
     .describe('Initial context for the trajectory'),
 });
 
@@ -146,14 +146,14 @@ const trajectoryStepSchema = z.object({
     .describe('Observation from action'),
   reward: z.number().optional()
     .describe('Reward signal (-1 to 1)'),
-  metadata: z.record(z.unknown()).optional()
+  metadata: z.record(z.string(), z.unknown()).optional()
     .describe('Additional step metadata'),
 });
 
 const trajectoryContextSchema = z.object({
   trajectoryId: z.string()
     .describe('Trajectory ID'),
-  context: z.record(z.unknown())
+  context: z.record(z.string(), z.unknown())
     .describe('Context to add'),
 });
 

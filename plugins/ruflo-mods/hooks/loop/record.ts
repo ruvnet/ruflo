@@ -13,6 +13,8 @@ import type { Verifier, VerifierKind } from './verifier'
 
 export const VERIFIED_PATH = '.claude-flow/data/verified-trajectories.jsonl'
 export const LESSONS_PATH = '.claude-flow/data/learned-lessons.json'
+/** Under the home directory, never a project: the id the CLI stamps on the lessons files it writes on this machine (#4747). */
+export const ORIGIN_PATH = '.claude-flow/learning-loop-origin'
 
 /** Lines the file keeps (oldest dropped); the CLI ledger remembers 2000 ids, so it always covers them. */
 export const MAX_LINES = 500

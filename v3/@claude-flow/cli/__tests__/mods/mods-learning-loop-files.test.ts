@@ -160,6 +160,7 @@ describe('end to end: the files a passing fix edited reach the next prompt', () 
     dir = mkdtempSync(join(tmpdir(), 'vo-e2e-511-'));
     mkdirSync(join(dir, '.claude-flow', 'data'), { recursive: true });
     const world = realWorld(dir);
+    world.env.set('HOME', join(dir, 'home'));
     const boot = async () => {
       const mod = loadMod(register, world, { learningLoop: true });
       await mod.create();
@@ -179,7 +180,7 @@ describe('end to end: the files a passing fix edited reach the next prompt', () 
       await mod.dispatch('turn.complete', { answer: 'done', durationMs: 5, isAborted: false, turnId: `u${i}` }, () => ({ text: 'done' }));
     }
     const sona = new SONAOptimizer({ persistencePath: relative(process.cwd(), join(dir, '.swarm', 'sona-patterns.json')) });
-    const result = await ingestVerifiedOutcomes({ root: dir, sona: sona as unknown as SonaLike, force: true });
+    const result = await ingestVerifiedOutcomes({ root: dir, sona: sona as unknown as SonaLike, force: true, home: join(dir, 'home') });
     expect(result.lessons).toBe(1);
     const written = JSON.parse(readFileSync(join(dir, '.claude-flow/data/learned-lessons.json'), 'utf8'));
     expect(written.lessons[0].files).toEqual(['src/money.js', 'src/locale.js', 'src/rounding.js']);

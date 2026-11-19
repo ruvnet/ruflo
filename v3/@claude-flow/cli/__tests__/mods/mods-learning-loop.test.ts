@@ -6,7 +6,7 @@
  * record the mod writes is the one the CLI ingest accepts; only verified records train SONA; lessons reach a prompt
  * only at or above the 0.6 gate, cited, at most three, and a hostile lessons file adds nothing.
  */
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -15,7 +15,7 @@ import { register } from '../../../../../plugins/ruflo-mods/hooks/register';
 import { classify, verdict } from '../../../../../plugins/ruflo-mods/hooks/loop/verifier';
 import { decide, start as open, step } from '../../../../../plugins/ruflo-mods/hooks/loop/record';
 import { lessonBlock, parseLessons, pick } from '../../../../../plugins/ruflo-mods/hooks/loop/lessons';
-import { buildLessons, ingestVerifiedOutcomes, learningLoopHealth, lessonId, parseRecord, type SonaLike } from '../../src/memory/verified-outcomes.js';
+import { buildLessons, ingestVerifiedOutcomes, learningLoopHealth, lessonId, lessonsOrigin, parseRecord, type SonaLike } from '../../src/memory/verified-outcomes.js';
 import { SONAOptimizer } from '../../src/memory/sona-optimizer.js';
 import { loadMod, memoryWorld, realWorld, type World } from './harness';
 
@@ -230,9 +230,17 @@ describe('lessons (pure + in the prompt)', () => {
     expect(pick(parseLessons(file(many)), 'unrelated words')).toEqual([]);
   });
 
+  const ORIGIN = '0123456789abcdef0123456789abcdef';
+  /** A world whose home holds this machine's origin id, as the CLI ingest leaves it. */
+  const home = (world: World, origin: string | null = ORIGIN) => {
+    world.env.set('HOME', '/home/me');
+    if (origin !== null) mem(world).set('/home/me/.claude-flow/learning-loop-origin', { text: `${origin}\n`, mtimeMs: 1 });
+    return world;
+  };
+
   it('adds the block to a matching prompt and nothing to others', async () => {
-    const world = memoryWorld();
-    mem(world).set(LESSONS, { text: file([L, { ...L, id: 'L-00000000dd', kind: 'caution', keywords: ['migrate', 'schema'], confidence: 0.3, successes: 0, failures: 3, evidence: 'cargo test' }]), mtimeMs: 1 });
+    const world = home(memoryWorld());
+    mem(world).set(LESSONS, { text: file([L, { ...L, id: 'L-00000000dd', kind: 'caution', keywords: ['migrate', 'schema'], confidence: 0.3, successes: 0, failures: 3, evidence: 'cargo test' }], { origin: ORIGIN }), mtimeMs: 1 });
     const mod = await boot(world);
     const hit = await ask(mod, 'extend the tokenizer');
     expect(hit.context.join('\n')).toContain('went to coder and passed `npm test`');
@@ -240,6 +248,21 @@ describe('lessons (pure + in the prompt)', () => {
     expect(caution.context.join('\n')).toContain('failed `cargo test` 3 times');
     const miss = await ask(mod, 'write a poem');
     expect((miss.context ?? []).join('\n')).not.toContain('RUFLO_LESSONS');
+  });
+
+  it('#4747: adds nothing from a file this machine did not write, such as one committed to a cloned repository', async () => {
+    const worlds: Array<[string, World]> = [
+      ['no origin in the file', home(memoryWorld())],
+      ['another machine\'s origin', home(memoryWorld())],
+      ['no origin on this machine', home(memoryWorld(), null)],
+      ['no home', memoryWorld()],
+    ];
+    const origins = [undefined, 'fedcba9876543210fedcba9876543210', ORIGIN, ORIGIN];
+    for (const [i, [why, world]] of worlds.entries()) {
+      mem(world).set(LESSONS, { text: file([L], origins[i] ? { origin: origins[i] } : {}), mtimeMs: 1 });
+      const mod = await boot(world);
+      expect(((await ask(mod, 'extend the tokenizer')).context ?? []).join('\n'), why).not.toContain('RUFLO_LESSONS');
+    }
   });
 });
 
@@ -276,6 +299,22 @@ describe('CLI ingest (#4581): only verified records train', () => {
     const lessons = JSON.parse(readFileSync(join(dir, '.claude-flow/data/learned-lessons.json'), 'utf8'));
     expect(lessons.lessons).toEqual([expect.objectContaining({ id: lessonId('coder:k'), kind: 'lesson', evidence: 'npm test' })]);
     expect(learningLoopHealth(dir).status).toBe('pass');
+  });
+
+  it('#4747: stamps the lessons file with an origin id kept under the home directory, the same on every ingest', async () => {
+    seed([rec('vt-1', 'verified-success', { session: 's-a' }), rec('vt-2', 'verified-success', { session: 's-b' })]);
+    const home = join(dir, 'home');
+    await ingestVerifiedOutcomes({ root: dir, sona: fakeSona().sona, force: true, home });
+    const origin = readFileSync(join(home, '.claude-flow', 'learning-loop-origin'), 'utf8');
+    expect(origin).toMatch(/^[a-f0-9]{32}$/);
+    if (process.platform !== 'win32') expect(statSync(join(home, '.claude-flow', 'learning-loop-origin')).mode & 0o777).toBe(0o600);
+    const written = () => JSON.parse(readFileSync(join(dir, '.claude-flow/data/learned-lessons.json'), 'utf8'));
+    expect(written().origin).toBe(origin);
+    expect(parseLessons(JSON.stringify(written())).origin).toBe(origin);
+    await ingestVerifiedOutcomes({ root: dir, sona: fakeSona().sona, force: true, home });
+    expect(written().origin).toBe(origin);
+    expect(lessonsOrigin(home)).toBe(origin);
+    expect(lessonsOrigin(join(dir, 'other-home'))).not.toBe(origin);
   });
 
   it('leaves verified records for later when SONA is unavailable, and the doctor says so', async () => {
@@ -327,6 +366,7 @@ describe('end to end: mod record → CLI ingest with real SONA → lesson in the
     dir = mkdtempSync(join(tmpdir(), 'vo-e2e-4581-'));
     mkdirSync(join(dir, '.claude-flow', 'data'), { recursive: true });
     const world = realWorld(dir);
+    world.env.set('HOME', join(dir, 'home'));
     let mod = await boot(world);
     for (const text of ['implement the tokenizer parser module', 'implement the tokenizer parser module tests', 'implement the tokenizer parser module again']) {
       // ADR-503 §2.4: successes from one session only are held back, so the last pass comes from a second session.
@@ -342,7 +382,7 @@ describe('end to end: mod record → CLI ingest with real SONA → lesson in the
     await end(mod);
 
     const sona = new SONAOptimizer({ persistencePath: relative(process.cwd(), join(dir, '.swarm', 'sona-patterns.json')) });
-    const result = await ingestVerifiedOutcomes({ root: dir, sona: sona as unknown as SonaLike, force: true });
+    const result = await ingestVerifiedOutcomes({ root: dir, sona: sona as unknown as SonaLike, force: true, home: join(dir, 'home') });
     expect(result.ingested).toMatchObject({ verifiedSuccess: 3, unknown: 1 });
     expect(result.lessons).toBe(1);
 
