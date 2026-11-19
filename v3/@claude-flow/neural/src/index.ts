@@ -352,8 +352,10 @@ export class NeuralLearningSystem {
       await this.reasoningBank.judge(trajectory);
       const memory = await this.reasoningBank.distill(trajectory);
 
-      // Extract pattern if successful
-      if (memory) {
+      // Only promote a successful distillation into a reusable Pattern — a
+      // 'pitfall' memory (a failure to avoid) must never become a positive
+      // exemplar Pattern regardless of PatternLearner's own quality gate.
+      if (memory && memory.memoryType === 'success') {
         this.patternLearner.extractPattern(trajectory, memory);
       }
     }

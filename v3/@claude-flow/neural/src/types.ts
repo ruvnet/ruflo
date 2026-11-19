@@ -188,6 +188,13 @@ export interface DistilledMemory {
   /** Source trajectory ID */
   trajectoryId: string;
 
+  /**
+   * Whether this memory distills a successful trajectory to repeat, or a
+   * failed one to avoid. Consumers that assume a positive exemplar (e.g.
+   * "apply this strategy") must branch on this before acting on `strategy`.
+   */
+  memoryType: 'success' | 'pitfall';
+
   /** Extracted strategy pattern */
   strategy: string;
 

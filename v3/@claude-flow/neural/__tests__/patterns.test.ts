@@ -160,17 +160,48 @@ describe('ReasoningBank - Memory Distillation', () => {
 
     expect(memory).toBeDefined();
     expect(memory?.memoryId).toBeDefined();
+    expect(memory?.memoryType).toBe('success');
     expect(memory?.strategy).toBeDefined();
     expect(memory?.keyLearnings).toBeDefined();
     expect(memory?.embedding).toBeInstanceOf(Float32Array);
     expect(memory?.quality).toBeCloseTo(0.8);
   });
 
-  it('should not distill low-quality trajectories', async () => {
+  it('should distill low-quality (failed) trajectories as pitfall memories, not discard them', async () => {
     const trajectory = createTestTrajectory(0.3);
     const memory = await bank.distill(trajectory);
 
+    expect(memory).not.toBeNull();
+    expect(memory?.memoryType).toBe('pitfall');
+    expect(memory?.strategy.startsWith('AVOID: ')).toBe(true);
+    expect(trajectory.verdict?.success).toBe(false);
+  });
+
+  it('should not distill a trajectory with no recorded steps', async () => {
+    const trajectory = createTestTrajectory(0.8, 'code', 0);
+    const memory = await bank.distill(trajectory);
+
     expect(memory).toBeNull();
+  });
+
+  it('should never let a pitfall memory be promoted into a positive-success Pattern', async () => {
+    const failedTrajectory = createTestTrajectory(0.3);
+    const memory = await bank.distill(failedTrajectory);
+    expect(memory?.memoryType).toBe('pitfall');
+
+    // Mirrors the live guard in AdaptiveIntelligence.completeTask() —
+    // a pitfall memory must never reach memoryToPattern/extractPattern.
+    const patternCountBefore = bank.getPatterns().length;
+    expect(patternCountBefore).toBe(0);
+  });
+
+  it('should make a pitfall memory retrievable alongside success memories', async () => {
+    const failedTrajectory = createTestTrajectory(0.3, 'code', 8);
+    const failedMemory = await bank.distill(failedTrajectory);
+    expect(failedMemory).not.toBeNull();
+
+    const results = await bank.retrieve(failedMemory!.embedding, 5);
+    expect(results.some(r => r.memory.memoryId === failedMemory!.memoryId)).toBe(true);
   });
 
   it('should automatically judge before distillation', async () => {
@@ -335,6 +366,25 @@ describe('ReasoningBank - Consolidation', () => {
     const result = await bank.consolidate();
 
     expect(result.contradictionsDetected).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should never deduplicate a success memory against a pitfall memory, even with an identical embedding', async () => {
+    // createTestTrajectory's embedding depends only on domain/steps, not
+    // quality, so these two produce a cosine similarity of 1.0 — the exact
+    // case dedup must NOT collapse now that pitfalls share the memory pool.
+    const successTraj = createTestTrajectory(0.95, 'code', 5);
+    const pitfallTraj = createTestTrajectory(0.2, 'code', 5);
+
+    const successMemory = await bank.distill(successTraj);
+    const pitfallMemory = await bank.distill(pitfallTraj);
+    expect(successMemory?.memoryType).toBe('success');
+    expect(pitfallMemory?.memoryType).toBe('pitfall');
+    expect(bank.getStats().memoryCount).toBe(2);
+
+    const result = await bank.consolidate();
+
+    expect(result.removedDuplicates).toBe(0);
+    expect(bank.getStats().memoryCount).toBe(2);
   });
 
   it('should merge similar patterns', async () => {
