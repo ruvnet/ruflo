@@ -39,6 +39,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
 // ----------------------------------------------------------------------------
 // Lazy module loaders — initialised once per process. The dynamic-import calls
@@ -78,18 +79,29 @@ interface OpenRouterAlts {
   }>>;
 }
 let _altsCache: OpenRouterAlts | null = null;
+// src/ruvector/model-router.ts → <pkg>/assets; dist/src/ruvector/model-router.js → <pkg>/assets.
+function packageAltsPaths(): string[] {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    return [join(here, '..', '..', 'assets'), join(here, '..', '..', '..', 'assets')]
+      .map((dir) => join(dir, 'model-router', 'openrouter-alts.json'));
+  } catch {
+    return []; // no import.meta.url (CJS bundle): fall through to the cwd probes
+  }
+}
 let _altsProbeDone = false;
 function loadOpenRouterAlts(): OpenRouterAlts | null {
   if (_altsProbeDone) return _altsCache;
   _altsProbeDone = true;
   try {
-    // Probe candidate paths: explicit env override, then asset locations
-    // relative to this file (src dev) and the dist build.
+    // Probe candidate paths: explicit env override, then the copy bundled with
+    // this package, then cwd-relative paths for a repo checkout.
     const explicit = process.env.CLAUDE_FLOW_ROUTER_OPENROUTER_ALTS;
     const candidates: string[] = [];
     if (explicit) candidates.push(explicit);
-    // Probe asset dirs without using import.meta.url so this stays compatible
-    // with both CJS and ESM consumers of the compiled .js.
+    // #4957: resolve package-relative, as neural-router.ts does. Probing only
+    // process.cwd() meant an npm install never found the file.
+    candidates.push(...packageAltsPaths());
     candidates.push(join(process.cwd(), 'v3', '@claude-flow', 'cli', 'assets', 'model-router', 'openrouter-alts.json'));
     candidates.push(join(process.cwd(), 'assets', 'model-router', 'openrouter-alts.json'));
     for (const p of candidates) {

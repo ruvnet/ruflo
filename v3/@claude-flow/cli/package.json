@@ -83,6 +83,7 @@
     "assets/model-router/seed-router.krr*.json",
     "assets/model-router/seed-router.calibrator*.json",
     "assets/model-router/seed-rows.json",
+    "assets/model-router/openrouter-alts.json",
     "templates",
     ".claude",
     "plugins",
