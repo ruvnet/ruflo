@@ -11,6 +11,7 @@
     <path d="M31 43V29m0 6q3-7 8-6m5 0v9q0 6 5 6t6-6v-9m8 15V22h6q8 0 8 6t-8 6h-6m20 10V29m0 6q3-7 8-6m5 7q0-7 6-7t6 7q0 8-6 8t-6-8" stroke="#ffd044" stroke-width="2.7"/>
     <g stroke="#49eff8" stroke-width="1.6"><circle cx="318" cy="33.5" r="15"/><path d="M307 31q5-5 11-2t10-1m-21 8q5-5 11-2t10-1m-19 7q4-3 9-1t9-1"/></g>
   </g>
+<clipPath id="typed" clipPathUnits="userSpaceOnUse"><rect class="typing" x="42" y="257" width="158" height="22"/></clipPath>
 </defs>
 <style>
 .scene{opacity:0}.poster{opacity:1}
@@ -18,9 +19,21 @@
 .halo{animation:warm 7s ease-in-out infinite}
 @keyframes warm{0%,100%{opacity:.64}12%{opacity:.9}18%{opacity:.72}45%,80%{opacity:1}}
 .scene{animation:page 35s steps(1,end) var(--phase) infinite}
-.line{animation:log 35s linear calc(var(--phase) + var(--lag)) infinite}
 @keyframes page{0%{opacity:1}20%,100%{opacity:0}}
-@keyframes log{0%{opacity:0;transform:translateY(2px)}1%,20%{opacity:1;transform:translateY(0)}21%,100%{opacity:0}}
+}
+.after{opacity:1}.before{opacity:0}
+@media(prefers-reduced-motion:no-preference){
+.after{animation:reveal 7s linear infinite}.before{animation:pending 7s steps(1,end) infinite}
+.ticket{animation:transfer 7s ease-in-out infinite}
+.typing{animation:type 7s steps(17,end) infinite;transform-origin:42px 272px}
+.bar{animation:grow 7s ease-out infinite;transform-box:fill-box;transform-origin:left}
+.ping{animation:pulse 2.3s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes reveal{0%,45%{opacity:0}51%,100%{opacity:1}}
+@keyframes pending{0%{opacity:1}49%,100%{opacity:0}}
+@keyframes transfer{0%,12%{transform:translateX(0)}54%,100%{transform:translateX(167px)}}
+@keyframes type{0%,12%{transform:scaleX(0)}43%,100%{transform:scaleX(1)}}
+@keyframes grow{0%,36%{transform:scaleX(.12)}65%,100%{transform:scaleX(1)}}
+@keyframes pulse{0%{opacity:.65;transform:scale(.65)}80%,100%{opacity:0;transform:scale(1.9)}}
 }
 </style>
 <rect x="1" y="1" width="358" height="428" rx="12" fill="url(#bg)" stroke="#a34570"/>
@@ -31,47 +44,36 @@
 <path d="M145 10v5m104-5v5M145 53v5m104-5v5" stroke="#191520" stroke-width="6"/>
 <g font-family="Menlo, Consolas, 'Liberation Mono', monospace">
 <text x="130" y="38" fill="#ffebdb" font-size="14">~/workspace</text>
-<g font-family="Arial, sans-serif" font-size="21" font-weight="bold" fill="#fff3e4"><text x="19" y="89">One workspace for your team</text><text x="19" y="114">and its AI agents.</text></g>
-<path d="M1 130h358M1 391h358" stroke="#6d3854"/>
-<text x="20" y="413" fill="#c5b5be" font-size="12" >SIMULATED  /  ruPro tour</text>
+<g font-family="Arial, sans-serif" font-size="21" font-weight="bold" fill="#fff5eb"><text x="19" y="89">Manage Claude, Codex and</text><text x="19" y="114">Copilot across projects.</text></g>
+<path d="M1 131h358" stroke="#443847"/><path d="M1 391h358" stroke="#443847"/><text x="18" y="414" fill="#bfbdcc" font-size="12">SIMULATED</text>
 <g class="scene poster" style="--phase:-35s">
-<text x="20" y="162" fill="#76e8f1" font-size="12" letter-spacing=".6">PROJECT DIRECTORY</text><text x="340" y="162" fill="#f2a3c8" font-size="12" text-anchor="end">01 / 05</text>
-<text x="19" y="199" fill="#fff5eb" font-size="24" font-family="Arial, sans-serif" font-weight="bold">Pick up the work</text>
-<g class="line" style="--lag:0.20s"><text x="21" y="237" fill="#ffd276" font-size="14" >Checkout API</text><text x="135" y="237" fill="#f3eff9" font-size="15" >R42 · needs a fix</text><path d="M20 248h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:0.75s"><text x="21" y="272" fill="#ffd276" font-size="14" >Web app</text><text x="135" y="272" fill="#f3eff9" font-size="15" >Codex running</text><path d="M20 283h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:1.30s"><text x="21" y="307" fill="#ffd276" font-size="14" >Billing</text><text x="135" y="307" fill="#f3eff9" font-size="15" >In review</text><path d="M20 318h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:1.8s"><path d="M20 338v40" stroke="#56dce7" stroke-width="2"/><text x="30" y="351" fill="#e8ddec" font-size="14" >A checkout request timed out.</text><text x="30" y="374" fill="#e8ddec" font-size="14" >Open its project to see who is on it.</text></g>
-<text x="340" y="413" fill="#8be9ed" font-size="13" text-anchor="end">Projects</text></g>
+<text x="19" y="157" fill="#80eaf1" font-size="13" font-weight="bold">PROJECTS  /  R42</text><text x="292" y="157" fill="#ffadd0" font-size="13">01/05</text>
+<text x="18" y="192" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fff5eb">Spot the failing project</text>
+<rect x="17" y="211" width="326" height="83" rx="7" fill="#2b2028" stroke="#9a674a"/><text x="30" y="235" fill="#ffd276" font-size="13" font-weight="bold">CHECKOUT API</text><text x="30" y="264" fill="#fff5eb" font-size="20" font-weight="bold">Checkout timed out</text><text x="30" y="284" fill="#bfbdcc" font-size="14">Claude is tracing request R42.</text><circle class="ping" cx="319" cy="232" r="7" fill="none" stroke="#ffd276"/><circle cx="319" cy="232" r="3" fill="#ffd276"/><text x="23" y="322" fill="#fff5eb" font-size="15">Web app</text><text x="181" y="322" fill="#80eaf1" font-size="15">Codex running</text><path d="M22 334h315" stroke="#443847"/><text x="23" y="360" fill="#fff5eb" font-size="15">Billing</text><text x="181" y="360" fill="#ffd276" font-size="15">Owner review</text>
+<rect x="209" y="407" width="21" height="4" rx="2" fill="#80eaf1"/><rect x="236" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="263" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="290" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="317" y="407" width="21" height="4" rx="2" fill="#544358"/>
+</g>
 <g class="scene" style="--phase:-28s">
-<text x="20" y="162" fill="#76e8f1" font-size="12" letter-spacing=".6">CHECKOUT API  /  R42</text><text x="340" y="162" fill="#f2a3c8" font-size="12" text-anchor="end">02 / 05</text>
-<text x="19" y="199" fill="#fff5eb" font-size="24" font-family="Arial, sans-serif" font-weight="bold">Hand off the diagnosis</text>
-<g class="line" style="--lag:0.20s"><text x="21" y="237" fill="#ffd276" font-size="14" >Claude</text><text x="135" y="237" fill="#f3eff9" font-size="15" >Traced the timeout</text><path d="M20 248h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:0.75s"><text x="21" y="272" fill="#ffd276" font-size="14" >Codex</text><text x="135" y="272" fill="#f3eff9" font-size="15" >Adds one retry</text><path d="M20 283h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:1.30s"><text x="21" y="307" fill="#ffd276" font-size="14" >Copilot</text><text x="135" y="307" fill="#f3eff9" font-size="15" >Available</text><path d="M20 318h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:1.8s"><path d="M20 338v40" stroke="#56dce7" stroke-width="2"/><text x="30" y="351" fill="#e8ddec" font-size="14" >Claude found a transient failure.</text><text x="30" y="374" fill="#e8ddec" font-size="14" >Codex works from the same brief.</text></g>
-<text x="340" y="413" fill="#8be9ed" font-size="13" text-anchor="end">Agents</text></g>
+<text x="19" y="157" fill="#80eaf1" font-size="13" font-weight="bold">AGENTS  /  R42</text><text x="292" y="157" fill="#ffadd0" font-size="13">02/05</text>
+<text x="18" y="192" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fff5eb">Pass the trace to Codex</text>
+<rect x="17" y="214" width="152" height="72" rx="7" fill="#181924" stroke="#494153"/><rect x="190" y="214" width="153" height="72" rx="7" fill="#181924" stroke="#494153"/><text x="29" y="240" fill="#ffd276" font-size="18" font-weight="bold">Claude</text><text x="29" y="265" fill="#bfbdcc" font-size="14">Trace timeout</text><text x="203" y="240" fill="#80eaf1" font-size="18" font-weight="bold">Codex</text><text x="203" y="265" fill="#bfbdcc" font-size="14">Patch retry.ts</text><path d="M50 304H296m-6-5 6 5-6 5" fill="none" stroke="#4796a0"/><g class="ticket"><rect x="26" y="290" width="51" height="26" rx="7" fill="#12414a" stroke="#56dce7"/><text x="37" y="308" fill="#80eaf1" font-size="14" font-weight="bold">R42</text></g><text x="21" y="343" fill="#fff5eb" font-size="14">Claude attached the failing trace.</text><g class="after"><text x="21" y="368" fill="#80eaf1" font-size="14">Codex picked up the same brief.</text></g>
+<rect x="209" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="236" y="407" width="21" height="4" rx="2" fill="#80eaf1"/><rect x="263" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="290" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="317" y="407" width="21" height="4" rx="2" fill="#544358"/>
+</g>
 <g class="scene" style="--phase:-21s">
-<text x="20" y="162" fill="#76e8f1" font-size="12" letter-spacing=".6">CHECKOUT API  /  TERMINAL</text><text x="340" y="162" fill="#f2a3c8" font-size="12" text-anchor="end">03 / 05</text>
-<text x="19" y="199" fill="#fff5eb" font-size="24" font-family="Arial, sans-serif" font-weight="bold">Run it in the project</text>
-<g class="line" style="--lag:0.20s"><text x="21" y="237" fill="#ffd276" font-size="14" >shell</text><text x="135" y="237" fill="#f3eff9" font-size="15" >npx ruflo@latest init</text><path d="M20 248h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:0.75s"><text x="21" y="272" fill="#ffd276" font-size="14" >Claude Code</text><text x="135" y="272" fill="#f3eff9" font-size="15" >/ruflo</text><path d="M20 283h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:1.30s"><text x="21" y="307" fill="#ffd276" font-size="14" >shell</text><text x="135" y="307" fill="#f3eff9" font-size="15" >npm test -- retry</text><path d="M20 318h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:1.8s"><path d="M20 338v40" stroke="#56dce7" stroke-width="2"/><text x="30" y="351" fill="#e8ddec" font-size="14" >The retry returns HTTP 200.</text><text x="30" y="374" fill="#e8ddec" font-size="14" >12 checks pass. The log is ready.</text></g>
-<text x="340" y="413" fill="#8be9ed" font-size="13" text-anchor="end">Terminal</text></g>
+<text x="19" y="157" fill="#80eaf1" font-size="13" font-weight="bold">TERMINAL  /  R42</text><text x="292" y="157" fill="#ffadd0" font-size="13">03/05</text>
+<text x="18" y="192" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fff5eb">Watch the retry recover</text>
+<rect x="16" y="210" width="328" height="164" rx="7" fill="#10151c" stroke="#494153"/><text x="28" y="232" fill="#bfbdcc" font-size="14">shell  $ npx ruflo@latest init</text><text x="28" y="252" fill="#ffd276" font-size="14">Claude Code › /ruflo</text><text x="27" y="276" fill="#80eaf1" font-size="15">$</text><g clip-path="url(#typed)"><text x="42" y="276" fill="#fff5eb" font-size="15" font-weight="bold">npm test -- retry</text></g><path d="M28 290h302" stroke="#443847"/><g class="after"><text x="28" y="313" fill="#ffd276" font-size="15">try 1  ETIMEDOUT</text><text x="28" y="338" fill="#80eaf1" font-size="15">try 2  HTTP 200</text><text x="28" y="361" fill="#97edbe" font-size="15" font-weight="bold">PASS   12 of 12 checks</text></g>
+<rect x="209" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="236" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="263" y="407" width="21" height="4" rx="2" fill="#80eaf1"/><rect x="290" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="317" y="407" width="21" height="4" rx="2" fill="#544358"/>
+</g>
 <g class="scene" style="--phase:-14s">
-<text x="20" y="162" fill="#76e8f1" font-size="12" letter-spacing=".6">CHECKOUT API  /  REVIEW</text><text x="340" y="162" fill="#f2a3c8" font-size="12" text-anchor="end">04 / 05</text>
-<text x="19" y="199" fill="#fff5eb" font-size="24" font-family="Arial, sans-serif" font-weight="bold">Decide with evidence</text>
-<g class="line" style="--lag:0.20s"><text x="21" y="237" fill="#ffd276" font-size="14" >Patch</text><text x="135" y="237" fill="#f3eff9" font-size="15" >retry.ts · +1 retry</text><path d="M20 248h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:0.75s"><text x="21" y="272" fill="#ffd276" font-size="14" >Test log</text><text x="135" y="272" fill="#f3eff9" font-size="15" >12 passed, 0 failed</text><path d="M20 283h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:1.30s"><text x="21" y="307" fill="#ffd276" font-size="14" >Claude Code</text><text x="135" y="307" fill="#f3eff9" font-size="15" >/ruflo room</text><path d="M20 318h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:1.8s"><path d="M20 338v40" stroke="#56dce7" stroke-width="2"/><text x="30" y="351" fill="#e8ddec" font-size="14" >The owner checks the diff and log,</text><text x="30" y="374" fill="#e8ddec" font-size="14" >then approves the change.</text></g>
-<text x="340" y="413" fill="#8be9ed" font-size="13" text-anchor="end">Review</text></g>
+<text x="19" y="157" fill="#80eaf1" font-size="13" font-weight="bold">REVIEW  /  R42</text><text x="292" y="157" fill="#ffadd0" font-size="13">04/05</text>
+<text x="18" y="192" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fff5eb">Inspect the fix</text>
+<rect x="16" y="209" width="328" height="92" rx="7" fill="#181924" stroke="#494153"/><text x="28" y="231" fill="#bfbdcc" font-size="13">PATCH   retry.ts</text><text x="28" y="258" fill="#ffadd0" font-size="15">− const attempts = 1;</text><text x="28" y="283" fill="#97edbe" font-size="15">+ const attempts = 2;</text><text x="22" y="327" fill="#80eaf1" font-size="15" font-weight="bold">/ruflo room</text><text x="22" y="349" fill="#bfbdcc" font-size="14">Evidence: patch + 12 tests</text><g class="before"><text x="22" y="374" fill="#ffd276" font-size="15" font-weight="bold">Awaiting owner review</text></g><g class="after"><text x="22" y="374" fill="#97edbe" font-size="15" font-weight="bold">✓ Approved by project owner</text></g>
+<rect x="209" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="236" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="263" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="290" y="407" width="21" height="4" rx="2" fill="#80eaf1"/><rect x="317" y="407" width="21" height="4" rx="2" fill="#544358"/>
+</g>
 <g class="scene" style="--phase:-7s">
-<text x="20" y="162" fill="#76e8f1" font-size="12" letter-spacing=".6">TEAM DASHBOARD</text><text x="340" y="162" fill="#f2a3c8" font-size="12" text-anchor="end">05 / 05</text>
-<text x="19" y="199" fill="#fff5eb" font-size="24" font-family="Arial, sans-serif" font-weight="bold">See where work stands</text>
-<g class="line" style="--lag:0.20s"><text x="21" y="237" fill="#ffd276" font-size="14" >Checkout API</text><text x="135" y="237" fill="#f3eff9" font-size="15" >1 fix approved</text><path d="M20 248h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:0.75s"><text x="21" y="272" fill="#ffd276" font-size="14" >Web app</text><text x="135" y="272" fill="#f3eff9" font-size="15" >1 agent running</text><path d="M20 283h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:1.30s"><text x="21" y="307" fill="#ffd276" font-size="14" >Billing</text><text x="135" y="307" fill="#f3eff9" font-size="15" >1 review pending</text><path d="M20 318h320" stroke="#342c40"/></g>
-<g class="line" style="--lag:1.8s"><path d="M20 338v40" stroke="#56dce7" stroke-width="2"/><text x="30" y="351" fill="#e8ddec" font-size="14" >Checkout is done. Billing is next.</text><text x="30" y="374" fill="#e8ddec" font-size="14" >The team can see who needs a review.</text></g>
-<text x="340" y="413" fill="#8be9ed" font-size="13" text-anchor="end">Dashboard</text></g>
+<text x="19" y="157" fill="#80eaf1" font-size="13" font-weight="bold">DASHBOARD  /  R42</text><text x="292" y="157" fill="#ffadd0" font-size="13">05/05</text>
+<text x="18" y="192" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fff5eb">See what needs attention</text>
+<rect x="17" y="208" width="326" height="76" rx="7" fill="#181924" stroke="#494153"/><text x="29" y="233" fill="#bfbdcc" font-size="13">CHECKOUT API  /  R42</text><g class="before"><text x="29" y="263" fill="#ffd276" font-size="20" font-weight="bold">In review</text></g><g class="after"><text x="29" y="263" fill="#97edbe" font-size="20" font-weight="bold">Approved</text></g><g transform="translate(196 251)"><rect width="130" height="8" rx="4" fill="#383143"/><rect class="bar" width="130" height="8" rx="4" fill="#97edbe"/></g><text x="20" y="317" fill="#fff5eb" font-size="15">Web app</text><text x="174" y="317" fill="#80eaf1" font-size="15">Agent running</text><path d="M20 330h319" stroke="#443847"/><text x="20" y="355" fill="#fff5eb" font-size="15">Billing</text><text x="174" y="355" fill="#ffd276" font-size="15">Review next</text><g class="after"><text x="20" y="377" fill="#bfbdcc" font-size="14">1 decision recorded for Checkout.</text></g>
+<rect x="209" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="236" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="263" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="290" y="407" width="21" height="4" rx="2" fill="#544358"/><rect x="317" y="407" width="21" height="4" rx="2" fill="#80eaf1"/>
+</g>
 </g></svg>
