@@ -1,62 +1,151 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="408" viewBox="0 0 360 408" role="img" aria-labelledby="title desc">
-  <title id="title">ruPro terminal · retry policy</title>
-  <desc id="desc">Simulated session R42. Claude plans a retry, Codex implements backoff, twelve tests pass, and the owner approves the patch.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="404" viewBox="0 0 360 404" role="img" aria-labelledby="title desc">
+  <title id="title">ruPro terminal session R42</title>
+  <desc id="desc">A simulated retry policy change moves from agent planning to a passing test, owner review, and a recorded decision.</desc>
+  <defs>
+    <linearGradient id="shell" x2=".88" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#201c30"/><stop offset=".45" stop-color="#10121a"/><stop offset="1" stop-color="#111019"/></linearGradient>
+    <linearGradient id="rim"><stop stop-color="#9674b7"/><stop offset=".54" stop-color="#514361"/><stop offset="1" stop-color="#507780"/></linearGradient>
+    <linearGradient id="command"><stop stop-color="#31273e"/><stop offset="1" stop-color="#1a1826"/></linearGradient>
+  </defs>
   <style>
-    .scene { opacity: 0 }
-    .still { opacity: 1 }
-    @media (prefers-reduced-motion: no-preference) {
-      .scene { animation: scene 24s steps(1,end) var(--offset) infinite }
-      .line { animation: scene 24s steps(1,end) calc(var(--offset) + var(--lag)) infinite }
-      .cursor { animation: blink 1.2s steps(1,end) infinite }
-      @keyframes scene { 0% { opacity: 1 } 25%,100% { opacity: 0 } }
-      @keyframes blink { 0%,100% { opacity: 1 } 65% { opacity: 0 } }
+    .scene {opacity:0} .still {opacity:1}
+    .meta {font-size:12px;fill:#c0adc9;letter-spacing:0.8px}
+    .cmd {font-size:20px;font-weight:bold;fill:#f8f4ff}
+    @media (prefers-reduced-motion:no-preference) {
+      .scene {animation:scene 24s steps(1,end) var(--phase) infinite}
+      .line {animation:print 24s linear calc(var(--phase) + var(--lag)) infinite}
+      .cursor {animation:blink 1.2s steps(1,end) infinite}
+      @keyframes scene {0%{opacity:1}25%,100%{opacity:0}}
+      @keyframes print {0%{opacity:0;transform:translateY(3px)}1%,25%{opacity:1;transform:translateY(0)}26%,100%{opacity:0}}
+      @keyframes blink {0%,100%{opacity:1}65%{opacity:0}}
     }
   </style>
-  <rect x="1" y="1" width="358" height="406" rx="12" fill="#101018" stroke="#655477"/>
-  <path d="M2 43h356M20 145h320M20 292h320" stroke="#373043"/>
+  <rect x="1" y="1" width="358" height="402" rx="15" fill="url(#shell)" stroke="url(#rim)" stroke-width="1.5"/>
   <g font-family="ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace">
-  <path d="m17 17 6 5-6 5m10 0h7" stroke="#c5a6fe" stroke-width="2" fill="none"/>
-  <text x="45" y="27" fill="#f0eafa" font-size="15" font-weight="bold">ruPro / tty01</text>
-  <text x="341" y="27" text-anchor="end" fill="#c4aedf" font-size="12">EARLY ACCESS</text>
-  <g class="scene " style="--offset:-24s">
-    <text x="20" y="84" fill="#cab2fa" font-size="13">01/04  /  AGENTS</text>
-    <text x="20" y="129" fill="#f4efff" font-weight="bold" font-size="22"><tspan fill="#90dfe8">$</tspan> tail -f agents.log</text>
-    <g class="line" style="--lag:0.3s"><path d="M20 156v16" stroke="#cbb3ff" stroke-width="2"/><text x="29" y="169" font-size="13" fill="#cbb3ff">CLAUDE</text><text x="98" y="169" font-size="16" fill="#e7e4ec">Trace request timeout.</text></g>
-    <g class="line" style="--lag:0.8500000000000001s"><path d="M20 192v16" stroke="#8fdce6" stroke-width="2"/><text x="29" y="205" font-size="13" fill="#8fdce6">PLAN</text><text x="98" y="205" font-size="16" fill="#e7e4ec">Limit retries to three.</text></g>
-    <g class="line" style="--lag:1.4000000000000001s"><path d="M20 228v16" stroke="#cbb3ff" stroke-width="2"/><text x="29" y="241" font-size="13" fill="#cbb3ff">CODEX</text><text x="98" y="241" font-size="16" fill="#e7e4ec">Implement backoff.</text></g>
-    <g class="line" style="--lag:1.9500000000000002s"><path d="M20 264v16" stroke="#8ee2b2" stroke-width="2"/><text x="29" y="277" font-size="13" fill="#8ee2b2">READY</text><text x="98" y="277" font-size="16" fill="#e7e4ec">Patch ready for tests.</text></g>
-    <path d="M20 362h76" stroke="#ba9af8" stroke-width="3"/>
+    <rect x="17" y="16" width="34" height="32" rx="8" fill="#30263e" stroke="#79618b"/>
+    <path d="m25 26 6 5-6 5m9 0h8" fill="none" stroke="#dfc3ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="62" y="39" fill="#f4edfc" font-size="23" font-family="Arial, sans-serif" font-weight="bold">ruPro</text>
+    <text x="134" y="37" fill="#bcaacb" font-size="14">/ tty01</text>
+    <circle cx="258" cy="31" r="3" fill="#95dabe"/><text x="269" y="35" fill="#bed0cc" font-size="12">SIMULATED</text>
+    <path d="M1 61h358M16 309h328M1 353h358" stroke="#393343"/>
+    <path d="M21 180v114" stroke="#40384b"/>
+    <g fill="#aba0b7" text-anchor="middle" font-size="13"><text x="42" y="383">Agents</text><text x="129" y="383">Terminal</text><text x="215" y="383">Review</text><text x="300" y="383">Analytics</text></g>
+  <g class="scene" style="--phase:-24s">
+    <text x="21" y="91" class="meta">R42  /  RETRY POLICY</text>
+    <text x="339" y="91" text-anchor="end" class="meta">01 / 04</text>
+    <rect x="16" y="107" width="328" height="50" rx="7" fill="url(#command)" stroke="#4c405f"/>
+    <path d="m29 126 7 6-7 6" fill="none" stroke="#c6a0ff" stroke-width="2.5"/>
+    <text x="47" y="139" class="cmd">tail -f agents.log</text>
+    <g class="line" style="--lag:0.35s">
+      <circle cx="21" cy="180" r="3" fill="#ccaaff"/>
+      <text x="34" y="185" fill="#ccaaff" font-size="13" font-weight="bold">CLAUDE</text>
+      <text x="96" y="185" fill="#eeeaf4" font-size="16">Trace request timeout</text>
+    </g>
+    <g class="line" style="--lag:0.90s">
+      <circle cx="21" cy="218" r="3" fill="#92dbe0"/>
+      <text x="34" y="223" fill="#92dbe0" font-size="13" font-weight="bold">PLAN</text>
+      <text x="96" y="223" fill="#eeeaf4" font-size="16">Cap retries at three</text>
+    </g>
+    <g class="line" style="--lag:1.45s">
+      <circle cx="21" cy="256" r="3" fill="#ccaaff"/>
+      <text x="34" y="261" fill="#ccaaff" font-size="13" font-weight="bold">CODEX</text>
+      <text x="96" y="261" fill="#eeeaf4" font-size="16">Implement backoff</text>
+    </g>
+    <g class="line" style="--lag:2.00s">
+      <circle cx="21" cy="294" r="3" fill="#9cddbc"/>
+      <text x="34" y="299" fill="#9cddbc" font-size="13" font-weight="bold">READY</text>
+      <text x="96" y="299" fill="#eeeaf4" font-size="16">Patch ready to test</text>
+    </g>
+    <rect x="4" y="364" width="76" height="28" rx="7" fill="#332944"/>
+    <text x="42" y="383" text-anchor="middle" fill="#ebdcff" font-size="13" font-weight="bold">Agents</text>
   </g>
-  <g class="scene still" style="--offset:-18s">
-    <text x="20" y="84" fill="#cab2fa" font-size="13">02/04  /  TERMINAL</text>
-    <text x="20" y="129" fill="#f4efff" font-weight="bold" font-size="22"><tspan fill="#90dfe8">$</tspan> npm test</text>
-    <g class="line" style="--lag:0.3s"><path d="M20 156v16" stroke="#efc38d" stroke-width="2"/><text x="29" y="169" font-size="13" fill="#efc38d">WARN</text><text x="98" y="169" font-size="16" fill="#e7e4ec">attempt 1/3  timeout</text></g>
-    <g class="line" style="--lag:0.8500000000000001s"><path d="M20 192v16" stroke="#8fdce6" stroke-width="2"/><text x="29" y="205" font-size="13" fill="#8fdce6">RETRY</text><text x="98" y="205" font-size="16" fill="#e7e4ec">attempt 2/3  backoff</text></g>
-    <g class="line" style="--lag:1.4000000000000001s"><path d="M20 228v16" stroke="#8ee2b2" stroke-width="2"/><text x="29" y="241" font-size="13" fill="#8ee2b2">PASS</text><text x="98" y="241" font-size="16" fill="#e7e4ec">request recovered</text></g>
-    <g class="line" style="--lag:1.9500000000000002s"><path d="M20 264v16" stroke="#8ee2b2" stroke-width="2"/><text x="29" y="277" font-size="13" fill="#8ee2b2">EXIT 0</text><text x="98" y="277" font-size="16" fill="#e7e4ec">12/12 checks passed</text></g>
-    <path d="M100 362h76" stroke="#ba9af8" stroke-width="3"/>
+  <g class="scene still" style="--phase:-18s">
+    <text x="21" y="91" class="meta">R42  /  RETRY POLICY</text>
+    <text x="339" y="91" text-anchor="end" class="meta">02 / 04</text>
+    <rect x="16" y="107" width="328" height="50" rx="7" fill="url(#command)" stroke="#4c405f"/>
+    <path d="m29 126 7 6-7 6" fill="none" stroke="#c6a0ff" stroke-width="2.5"/>
+    <text x="47" y="139" class="cmd">npm test</text>
+    <g class="line" style="--lag:0.35s">
+      <circle cx="21" cy="180" r="3" fill="#efc595"/>
+      <text x="34" y="185" fill="#efc595" font-size="13" font-weight="bold">WARN</text>
+      <text x="96" y="185" fill="#eeeaf4" font-size="16">Attempt 1 timed out</text>
+    </g>
+    <g class="line" style="--lag:0.90s">
+      <circle cx="21" cy="218" r="3" fill="#92dbe0"/>
+      <text x="34" y="223" fill="#92dbe0" font-size="13" font-weight="bold">RETRY</text>
+      <text x="96" y="223" fill="#eeeaf4" font-size="16">Attempt 2 after backoff</text>
+    </g>
+    <g class="line" style="--lag:1.45s">
+      <circle cx="21" cy="256" r="3" fill="#9cddbc"/>
+      <text x="34" y="261" fill="#9cddbc" font-size="13" font-weight="bold">PASS</text>
+      <text x="96" y="261" fill="#eeeaf4" font-size="16">Request recovered</text>
+    </g>
+    <g class="line" style="--lag:2.00s">
+      <circle cx="21" cy="294" r="3" fill="#9cddbc"/>
+      <text x="34" y="299" fill="#9cddbc" font-size="13" font-weight="bold">EXIT 0</text>
+      <text x="96" y="299" fill="#eeeaf4" font-size="16">12 of 12 checks passed</text>
+    </g>
+    <rect x="91" y="364" width="76" height="28" rx="7" fill="#332944"/>
+    <text x="129" y="383" text-anchor="middle" fill="#ebdcff" font-size="13" font-weight="bold">Terminal</text>
   </g>
-  <g class="scene " style="--offset:-12s">
-    <text x="20" y="84" fill="#cab2fa" font-size="13">03/04  /  REVIEW</text>
-    <text x="20" y="129" fill="#f4efff" font-weight="bold" font-size="22"><tspan fill="#90dfe8">$</tspan> git diff -- retry.ts</text>
-    <g class="line" style="--lag:0.3s"><path d="M20 156v16" stroke="#8fdce6" stroke-width="2"/><text x="29" y="169" font-size="13" fill="#8fdce6">PATCH</text><text x="98" y="169" font-size="16" fill="#e7e4ec">retry.ts</text></g>
-    <g class="line" style="--lag:0.8500000000000001s"><path d="M20 192v16" stroke="#efc38d" stroke-width="2"/><text x="29" y="205" font-size="13" fill="#efc38d">−</text><text x="98" y="205" font-size="16" fill="#e7e4ec">maxAttempts = 1</text></g>
-    <g class="line" style="--lag:1.4000000000000001s"><path d="M20 228v16" stroke="#8ee2b2" stroke-width="2"/><text x="29" y="241" font-size="13" fill="#8ee2b2">+</text><text x="98" y="241" font-size="16" fill="#e7e4ec">maxAttempts = 3</text></g>
-    <g class="line" style="--lag:1.9500000000000002s"><path d="M20 264v16" stroke="#cbb3ff" stroke-width="2"/><text x="29" y="277" font-size="13" fill="#cbb3ff">REVIEW</text><text x="98" y="277" font-size="16" fill="#e7e4ec">Owner approved R42.</text></g>
-    <path d="M180 362h76" stroke="#ba9af8" stroke-width="3"/>
+  <g class="scene" style="--phase:-12s">
+    <text x="21" y="91" class="meta">R42  /  RETRY POLICY</text>
+    <text x="339" y="91" text-anchor="end" class="meta">03 / 04</text>
+    <rect x="16" y="107" width="328" height="50" rx="7" fill="url(#command)" stroke="#4c405f"/>
+    <path d="m29 126 7 6-7 6" fill="none" stroke="#c6a0ff" stroke-width="2.5"/>
+    <text x="47" y="139" class="cmd">git diff -- retry.ts</text>
+    <g class="line" style="--lag:0.35s">
+      <circle cx="21" cy="180" r="3" fill="#92dbe0"/>
+      <text x="34" y="185" fill="#92dbe0" font-size="13" font-weight="bold">FILE</text>
+      <text x="96" y="185" fill="#eeeaf4" font-size="16">retry.ts</text>
+    </g>
+    <g class="line" style="--lag:0.90s">
+      <circle cx="21" cy="218" r="3" fill="#efc595"/>
+      <text x="34" y="223" fill="#efc595" font-size="13" font-weight="bold">−</text>
+      <text x="96" y="223" fill="#eeeaf4" font-size="16">maxAttempts = 1</text>
+    </g>
+    <g class="line" style="--lag:1.45s">
+      <circle cx="21" cy="256" r="3" fill="#9cddbc"/>
+      <text x="34" y="261" fill="#9cddbc" font-size="13" font-weight="bold">+</text>
+      <text x="96" y="261" fill="#eeeaf4" font-size="16">maxAttempts = 3</text>
+    </g>
+    <g class="line" style="--lag:2.00s">
+      <circle cx="21" cy="294" r="3" fill="#ccaaff"/>
+      <text x="34" y="299" fill="#ccaaff" font-size="13" font-weight="bold">OWNER</text>
+      <text x="96" y="299" fill="#eeeaf4" font-size="16">Patch approved</text>
+    </g>
+    <rect x="177" y="364" width="76" height="28" rx="7" fill="#332944"/>
+    <text x="215" y="383" text-anchor="middle" fill="#ebdcff" font-size="13" font-weight="bold">Review</text>
   </g>
-  <g class="scene " style="--offset:-6s">
-    <text x="20" y="84" fill="#cab2fa" font-size="13">04/04  /  ANALYTICS</text>
-    <text x="20" y="129" fill="#f4efff" font-weight="bold" font-size="22"><tspan fill="#90dfe8">$</tspan> cat run-summary.log</text>
-    <g class="line" style="--lag:0.3s"><path d="M20 156v16" stroke="#cbb3ff" stroke-width="2"/><text x="29" y="169" font-size="13" fill="#cbb3ff">FIXES</text><text x="98" y="169" font-size="16" fill="#e7e4ec">1 approved</text></g>
-    <g class="line" style="--lag:0.8500000000000001s"><path d="M20 192v16" stroke="#8ee2b2" stroke-width="2"/><text x="29" y="205" font-size="13" fill="#8ee2b2">CHECKS</text><text x="98" y="205" font-size="16" fill="#e7e4ec">12 passed / 0 failed</text></g>
-    <g class="line" style="--lag:1.4000000000000001s"><path d="M20 228v16" stroke="#8fdce6" stroke-width="2"/><text x="29" y="241" font-size="13" fill="#8fdce6">PROOF</text><text x="98" y="241" font-size="16" fill="#e7e4ec">Test log attached.</text></g>
-    <g class="line" style="--lag:1.9500000000000002s"><path d="M20 264v16" stroke="#8ee2b2" stroke-width="2"/><text x="29" y="277" font-size="13" fill="#8ee2b2">SAVED</text><text x="98" y="277" font-size="16" fill="#e7e4ec">Decision filed in R42.</text></g>
-    <path d="M260 362h76" stroke="#ba9af8" stroke-width="3"/>
+  <g class="scene" style="--phase:-6s">
+    <text x="21" y="91" class="meta">R42  /  RETRY POLICY</text>
+    <text x="339" y="91" text-anchor="end" class="meta">04 / 04</text>
+    <rect x="16" y="107" width="328" height="50" rx="7" fill="url(#command)" stroke="#4c405f"/>
+    <path d="m29 126 7 6-7 6" fill="none" stroke="#c6a0ff" stroke-width="2.5"/>
+    <text x="47" y="139" class="cmd">cat run-summary.log</text>
+    <g class="line" style="--lag:0.35s">
+      <circle cx="21" cy="180" r="3" fill="#ccaaff"/>
+      <text x="34" y="185" fill="#ccaaff" font-size="13" font-weight="bold">FIXES</text>
+      <text x="96" y="185" fill="#eeeaf4" font-size="16">1 patch approved</text>
+    </g>
+    <g class="line" style="--lag:0.90s">
+      <circle cx="21" cy="218" r="3" fill="#9cddbc"/>
+      <text x="34" y="223" fill="#9cddbc" font-size="13" font-weight="bold">CHECKS</text>
+      <text x="96" y="223" fill="#eeeaf4" font-size="16">12 passed, 0 failed</text>
+    </g>
+    <g class="line" style="--lag:1.45s">
+      <circle cx="21" cy="256" r="3" fill="#92dbe0"/>
+      <text x="34" y="261" fill="#92dbe0" font-size="13" font-weight="bold">PROOF</text>
+      <text x="96" y="261" fill="#eeeaf4" font-size="16">Test log attached</text>
+    </g>
+    <g class="line" style="--lag:2.00s">
+      <circle cx="21" cy="294" r="3" fill="#9cddbc"/>
+      <text x="34" y="299" fill="#9cddbc" font-size="13" font-weight="bold">SAVED</text>
+      <text x="96" y="299" fill="#eeeaf4" font-size="16">Decision filed in R42</text>
+    </g>
+    <rect x="262" y="364" width="76" height="28" rx="7" fill="#332944"/>
+    <text x="300" y="383" text-anchor="middle" fill="#ebdcff" font-size="13" font-weight="bold">Analytics</text>
   </g>
-  <text x="20" y="322" fill="#94dbe3" font-size="15">~/workspace/r42 <tspan fill="#ceb0ff">$</tspan></text>
-  <rect class="cursor" x="180" y="309" width="9" height="16" fill="#c4a7fa"/>
-  <text x="20" y="387" fill="#c4b9d2" font-size="12">R42 / retry policy</text>
-  <text x="340" y="387" text-anchor="end" fill="#b6acbf" font-size="12">SIMULATED</text>
+    <text x="20" y="336" fill="#9cdce1" font-size="15">~/workspace/r42</text><text x="172" y="336" fill="#d6b5ff" font-size="16">$</text>
+    <rect class="cursor" x="190" y="323" width="8" height="15" fill="#d6b5ff"/>
   </g>
 </svg>
