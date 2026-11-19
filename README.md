@@ -467,7 +467,6 @@ Benchmark internals (for reproduction): [`sota-workload-spec.md`](https://github
 
 | Guide section | Topics |
 | --- | --- |
-
 | [Quick Start](docs/USERGUIDE.md#quick-start) | Installation, prerequisites, install profiles |
 | [Core Features](docs/USERGUIDE.md#-core-features) | MCP tools, agents, memory, neural learning |
 | [Intelligence & Learning](docs/USERGUIDE.md#-intelligence--learning) | Hooks, workers, SONA, model routing |
