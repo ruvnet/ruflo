@@ -3018,13 +3018,10 @@ export const hooksSessionRestore: MCPTool = {
     // Re-run the same advisory settings.json risk scan `ruflo init`/`--upgrade`
     // already runs (settings-risk-scanner.ts) for an explicit `ruflo hooks
     // session-restore` call or an MCP client calling `hooks_session-restore`
-    // directly — previously only `init`/`--upgrade` ever called it. SCOPE,
-    // disclosed: this does NOT cover the automatic SessionStart hook Claude
-    // Code itself fires for every real session (settings-generator.ts wires
-    // that to `hook-handler.cjs session-restore` -> `session.cjs`, a separate,
-    // signed/parity-checked helper template this scan is not wired into —
-    // extending there is a larger, separate-night change). Advisory only: no
-    // enforcement, no change to which hooks actually run.
+    // directly — previously only `init`/`--upgrade` ever called it. The
+    // automatic SessionStart path (`hook-handler.cjs session-restore`) has its
+    // own CJS port of this scan (#4053). Advisory only: no enforcement, no
+    // change to which hooks actually run.
     let settingsRaw: string | undefined;
     try {
       const settingsPath = join(getProjectCwd(), '.claude', 'settings.json');
@@ -3044,12 +3041,10 @@ export const hooksSessionRestore: MCPTool = {
           );
         }
         // else: valid JSON but not a settings object (null/array/scalar) — not this scan's concern.
-      } catch (err) {
-        if (err instanceof SyntaxError) {
-          // Malformed JSON — not this scan's concern, never block on it.
-        } else {
-          throw err; // a real bug in the scanner itself should surface, not be swallowed
-        }
+      } catch {
+        // Malformed JSON or a scanner fault: this scan is advisory, so it must
+        // never abort the session restore itself (same rule #4053 applied to
+        // the automatic SessionStart path in hook-handler.cjs).
       }
     }
 
