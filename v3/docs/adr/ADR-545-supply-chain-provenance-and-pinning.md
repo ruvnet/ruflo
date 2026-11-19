@@ -42,7 +42,13 @@ The current state, measured on 2026-11-19:
 
 ### 3. RuVector
 
-The same change goes to ruvnet/ruvector's publish workflows (`--provenance`, `id-token: write`, matching `repository` fields) in a PR in that repository. Packages that are published only from a laptop there need a CI path before they can be attested.
+The same change goes to ruvnet/RuVector's publish workflows in [RuVector#1516](https://github.com/ruvnet/RuVector/pull/1516), recorded in that repo as its ADR-362. All 15 npm-publishing workflows that lacked it now get `id-token: write` and `NPM_CONFIG_PROVENANCE=true`. The env var also reaches `napi prepublish` and the generated platform-binary packages.
+
+The inventory taken for that PR, 2026-11-19:
+
+- No current `latest` RuVector version carries provenance. The only attested versions are `@ruvector/core@0.1.38` and `ruvector-core-*@0.1.35`, from `protected-release.yml`; `core@0.1.39` and `ruvector@0.3.27` were published outside CI.
+- About 50 packages have no CI publish path at all, so they cannot be attested until one exists. They include `@ruvector/cli`, `@ruvector/wasm`, `@ruvector/node`, the `@ruvector/rvf*` family, most `*-wasm` packages, `rvlite` and `@cognitum/gate`.
+- The repository URL casing (`ruvector.git` vs `RuVector.git`) is not a blocker. The registry accepted attested publishes under both.
 
 ### 4. Account security: needs the maintainer, not code
 
