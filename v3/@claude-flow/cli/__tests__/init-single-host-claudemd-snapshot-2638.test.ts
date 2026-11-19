@@ -4,6 +4,10 @@
  * Recorded on origin/main before the dual-mode single-source work. Splitting
  * the section generators into shared and Claude-only parts must reproduce
  * these bytes exactly for every template and preset.
+ *
+ * ADR-545: the recorded bytes are the `--channel latest` output (floating
+ * `@latest` refs, as before). The default pinned output must be exactly those
+ * bytes with each ref to ruflo's packages rewritten to the running version.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -18,6 +22,9 @@ import {
   type InitOptions,
 } from '../src/init/types.js';
 import { executeInit } from '../src/init/executor.js';
+import { pinnedVersion, rewriteOurRefs } from '../src/init/pinning.js';
+
+const latest = (o: InitOptions): InitOptions => ({ ...o, channel: 'latest' });
 
 const TEMPLATES: ClaudeMdTemplate[] = ['minimal', 'standard', 'full', 'security', 'performance', 'solo'];
 const PRESETS: Array<[string, InitOptions]> = [
@@ -30,7 +37,9 @@ describe('single-host CLAUDE.md is unchanged (#2638)', () => {
   for (const [preset, options] of PRESETS) {
     for (const template of TEMPLATES) {
       it(`generateClaudeMd(${preset}, ${template})`, () => {
-        expect(generateClaudeMd(options, template)).toMatchSnapshot();
+        const floating = generateClaudeMd(latest(options), template);
+        expect(floating).toMatchSnapshot();
+        expect(generateClaudeMd(options, template)).toBe(rewriteOurRefs(floating, pinnedVersion()!).text);
       });
     }
   }
@@ -59,6 +68,7 @@ describe('single-host CLAUDE.md is unchanged (#2638)', () => {
         options.targetDir = dir;
         options.skipGlobalClaudeMd = true;
         options.components = { ...options.components, helpers: false, statusline: false, settings: false };
+        options.channel = 'latest';
         const result = await executeInit(options);
         expect(result.success).toBe(true);
         expect(readFileSync(join(dir, 'CLAUDE.md'), 'utf-8')).toMatchSnapshot();
