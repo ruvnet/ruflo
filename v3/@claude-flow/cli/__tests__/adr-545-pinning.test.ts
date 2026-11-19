@@ -273,7 +273,7 @@ describe('executeInit on both channels', () => {
 
   it('no unsigned helper runs one of our packages untagged', async () => {
     await run();
-    const bare = /\b(?:npx|bunx|npm\s+exec)(?:\s+--?[\w-]+(?:=\S+)?)*\s+(?:@claude-flow\/cli|claude-flow|ruflo)(?=$|[\s"'`;|&)])/m;
+    const bare = /\b(?:npx|bunx|npm\s+exec)(?:\s+--?\w[\w-]*(?:=\S+)?)*\s+(?:@claude-flow\/cli|claude-flow|ruflo)(?=$|[\s"'`;|&)])/m;
     const helpers = generatedFiles().filter((f) => f.startsWith('.claude/helpers/'));
     expect(helpers).toContain('.claude/helpers/post-commit');
     for (const f of helpers) expect(readFileSync(join(dir, f), 'utf-8'), f).not.toMatch(bare);

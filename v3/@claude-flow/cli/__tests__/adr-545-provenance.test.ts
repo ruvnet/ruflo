@@ -55,7 +55,7 @@ function integrityFor(bytes: string): string {
 function attestationFor(pkg: string, version: string, opts: { digestHex: string; repo?: string }) {
   const slsa = structuredClone(realAttestations.attestations.find((a: { predicateType: string }) => a.predicateType === SLSA_PROVENANCE_V1));
   const statement = JSON.parse(Buffer.from(slsa.bundle.dsseEnvelope.payload, 'base64').toString('utf-8'));
-  statement.subject = [{ name: `pkg:npm/${pkg.replace('@', '%40')}@${version}`, digest: { sha512: opts.digestHex } }];
+  statement.subject = [{ name: `pkg:npm/${pkg.replace(/^@/, '%40')}@${version}`, digest: { sha512: opts.digestHex } }];
   statement.predicate.buildDefinition.externalParameters.workflow.repository = opts.repo ?? PROVENANCE_SOURCE_REPO;
   slsa.bundle.dsseEnvelope.payload = Buffer.from(JSON.stringify(statement)).toString('base64');
   return { attestations: [slsa] };

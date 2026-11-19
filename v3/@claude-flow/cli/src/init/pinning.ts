@@ -168,7 +168,7 @@ const OUR_REF_RE = /(?<![\w@/.-])(@claude-flow\/cli|claude-flow|ruflo)@(latest|a
  * flags may sit between the runner and the package, so `--prefix <dir> pkg`
  * (the signed helpers' local-install form) is not matched.
  */
-const BARE_RUN_RE = /(\b(?:npx|bunx|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)(?:\s+--?[\w-]+(?:=\S+)?)*\s+)(@claude-flow\/cli|claude-flow|ruflo)(?=$|[\s"'`;|&)])/g;
+const BARE_RUN_RE = /(\b(?:npx|bunx|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)(?:\s+--?\w[\w-]*(?:=\S+)?)*\s+)(@claude-flow\/cli|claude-flow|ruflo)(?=$|[\s"'`;|&)])/g;
 
 /** A line that runs a package: npx/npm/pnpm/yarn/bunx or `claude mcp add`. */
 const INVOCATION_RE = /\b(?:npx|npm|pnpm|yarn|bunx)\s|\bclaude\s+mcp\s+add\b/;
