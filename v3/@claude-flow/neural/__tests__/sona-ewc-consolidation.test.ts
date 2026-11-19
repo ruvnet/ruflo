@@ -26,27 +26,58 @@
  * delta), not the raw cumulative accumulator, specifically so Fisher/means
  * don't trivially diverge from squaring an ever-growing lifetime-cumulative
  * value; `means` is the accumulator at consolidation (the EWC anchor theta*,
- * so the penalty restarts at zero). That bounds THIS fix's own contribution per cycle — but it does
- * NOT make `ewcState.fisher` bounded over an arbitrarily long session,
- * because of a separate, pre-existing, NOT-fixed-tonight behavior one
- * layer up: `SONAManager.triggerLearning()` re-processes every completed
- * trajectory still held in `this.trajectories` on every call (nothing
- * marks a trajectory "already learned from"; only `pruneTrajectories()`'s
- * 50%-of-capacity threshold ever removes one) — so `BalancedMode.learn()`'s
- * `for (const good of goodTrajectories)` loop, and therefore
- * `gradientAccumulator`'s movement per `triggerLearning()` call, grows with
- * the total historical backlog, not just what's new since the last cycle.
- * Verified directly (outside this test file, via a traced standalone
- * script) that `ewcState.means[0]` grows roughly linearly over 150
+ * so the penalty restarts at zero). That bounds THIS fix's own contribution per cycle — but, as
+ * originally written, it did NOT make `ewcState.fisher` bounded over an
+ * arbitrarily long session, because of a separate, pre-existing behavior
+ * one layer up: `SONAManager.triggerLearning()` re-processed every
+ * completed trajectory still held in `this.trajectories` on every call
+ * (nothing marked a trajectory "already learned from"; only
+ * `pruneTrajectories()`'s 50%-of-capacity threshold ever removed one) — so
+ * `BalancedMode.learn()`'s `for (const good of goodTrajectories)` loop, and
+ * therefore `gradientAccumulator`'s movement per `triggerLearning()` call,
+ * grew with the total historical backlog, not just what was new since the
+ * last cycle. Verified directly (via a traced standalone script) that
+ * `ewcState.means[0]` grew roughly linearly (6.59x, cycle 30→150) over 150
  * synthetic cycles with a stationary periodic input, well past the ~10-30
  * cycles `BalancedMode`'s own `beta=0.9` momentum EMA would need to settle
  * on a bounded periodic orbit if each cycle only processed its own new
- * trajectory. Fixing that backlog-reprocessing behavior is a distinct,
- * larger-blast-radius change (touches trajectory lifecycle, not EWC) and is
- * carried forward as a priority future-night candidate — it should likely
- * be fixed BEFORE `computeEWCPenalty()` is ever wired into a real gradient
- * update (scope disclosure #1), or that wiring would inherit this
- * divergence too.
+ * trajectory.
+ *
+ * **Partially fixed 2026-11-12** (carried forward as "a priority
+ * future-night candidate" above, picked up directly, then independently
+ * re-scoped by that same night's own adversarial critic — do not read this
+ * as fully resolved): `triggerLearning()` now gates on a new
+ * `Trajectory.learnedFrom` marker, excluding already-processed trajectories
+ * from subsequent cycles. See `sona-trigger-learning-idempotency.test.ts`
+ * for the discriminating tests. This closes exactly one driver of the
+ * growth above: a STALLED trajectory backlog (no new completions) no
+ * longer gets re-fed into `learn()` forever — verified flat (0.000065 at
+ * every checkpoint, 150 cycles) under that specific scenario.
+ *
+ * It does NOT bound `ewcState.means`/`gradientAccumulator` in general. Under
+ * continuous, realistic operation — a fresh, genuinely-new (never
+ * previously seen) trajectory completed every cycle, with similar-enough
+ * content that `BalancedMode`'s momentum EMA settles to a roughly steady
+ * nonzero value — `accumulateGradient()`'s `accumulator[i] += lr *
+ * momentum[i]` (this file's sibling `balanced.ts`, never reset except by
+ * `initialize()`/`cleanup()`) still sums a roughly constant increment every
+ * single cycle, forever. Re-ran the EXACT 2026-10-27 "stationary periodic
+ * input" scenario against the 2026-11-12 candidate (one brand-new
+ * trajectory per cycle, identical embedding/quality each time — distinct
+ * from, and a stricter test than, this file's own "zero new trajectories"
+ * probe) and got the SAME growth curve originally attributed to the
+ * pre-fix baseline: means[0] = 0.000065 / 0.013917 / 0.091778 at cycles
+ * 1/30/150 (6.59x, cycle30→150) and 0.189414/0.384688 at cycles 300/600
+ * (2.03x) — linear, not plateauing. Confirmed independently twice (the
+ * 2026-11-12 session's own re-check plus a separate adversarial-critic
+ * subagent, byte-identical numbers both times). This is a distinct,
+ * deeper, NOT-fixed-tonight bug (the never-reset accumulator itself, not
+ * which trajectories feed it) and is carried forward as the new priority
+ * future-night candidate, ahead of ever wiring `computeEWCPenalty()` into a
+ * real gradient update (scope disclosure #1 above, still open) — that
+ * wiring would otherwise inherit an EWC anchor (`means`) that drifts
+ * further from reality every single cycle even under correct, intended
+ * operation.
  */
 
 import { describe, it, expect } from 'vitest';
