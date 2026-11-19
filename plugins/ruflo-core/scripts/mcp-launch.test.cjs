@@ -14,7 +14,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { resolveLocalCliBin, buildLaunchSpec, MCP_ARGS } = require(
+const { resolveLocalCliBin, buildLaunchSpec, runInProcess, MCP_ARGS } = require(
   path.join(__dirname, 'mcp-launch.cjs')
 );
 const NO_GLOBAL_PATH = { PATH: '' };
@@ -160,4 +160,252 @@ test('RUFLO_MCP_SKIP_NPX=1 refuses an unpinned fallback', () => {
     () => buildLaunchSpec(null, { RUFLO_MCP_SKIP_NPX: '1' }),
     /RUFLO_MCP_SKIP_NPX=1 forbids/,
   );
+});
+
+// ---------------------------------------------------------------------------
+// Project-directory resolution (split-brain fix).
+//
+// Claude Code starts one MCP server per session. Before this fix the launcher
+// spawned `mcp start` with its own process.cwd() and never consulted the
+// session's project directory, so MCP state (.claude-flow/hive-mind,
+// memory, swarm) could land in a different folder than the CLI's.
+// ---------------------------------------------------------------------------
+const { execFileSync } = require('child_process');
+const LAUNCHER = path.join(__dirname, 'mcp-launch.cjs');
+
+function samePath(a, b) {
+  const norm = (p) => {
+    const r = fs.realpathSync.native(p);
+    return process.platform === 'win32' ? r.toLowerCase() : r;
+  };
+  return norm(a) === norm(b);
+}
+
+function makeEchoCli(root) {
+  // A "built" CLI fixture that reports where it was started.
+  const bin = makeCliInstall(root);
+  fs.writeFileSync(
+    bin,
+    'process.stdout.write(JSON.stringify({ cwd: process.cwd(), flowCwd: process.env.CLAUDE_FLOW_CWD || null, args: process.argv.slice(2) }));\n',
+  );
+  return bin;
+}
+
+test('end-to-end: the MCP server is started in CLAUDE_PROJECT_DIR, not the launcher cwd', () => {
+  const sessionCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-session-'));
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-project-'));
+  const cliRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-cli-'));
+  try {
+    const bin = makeEchoCli(cliRoot);
+    const env = { ...process.env, RUFLO_MCP_CLI_OVERRIDE: bin, CLAUDE_PROJECT_DIR: project };
+    delete env.CLAUDE_FLOW_CWD;
+    const out = JSON.parse(execFileSync(process.execPath, [LAUNCHER], { cwd: sessionCwd, env, encoding: 'utf8' }));
+    assert.deepEqual(out.args, MCP_ARGS);
+    assert.ok(samePath(out.cwd, project), `server cwd ${out.cwd} should be project ${project}`);
+    assert.ok(out.flowCwd && samePath(out.flowCwd, project), `CLAUDE_FLOW_CWD ${out.flowCwd} should be project ${project}`);
+  } finally {
+    for (const d of [sessionCwd, project, cliRoot]) fs.rmSync(d, { recursive: true, force: true });
+  }
+});
+
+test('end-to-end: without CLAUDE_PROJECT_DIR the launcher cwd is kept (backwards compatible)', () => {
+  const sessionCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-session-'));
+  const cliRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-cli-'));
+  try {
+    const bin = makeEchoCli(cliRoot);
+    const env = { ...process.env, RUFLO_MCP_CLI_OVERRIDE: bin };
+    delete env.CLAUDE_PROJECT_DIR;
+    delete env.CLAUDE_FLOW_CWD;
+    const out = JSON.parse(execFileSync(process.execPath, [LAUNCHER], { cwd: sessionCwd, env, encoding: 'utf8' }));
+    assert.ok(samePath(out.cwd, sessionCwd));
+  } finally {
+    for (const d of [sessionCwd, cliRoot]) fs.rmSync(d, { recursive: true, force: true });
+  }
+});
+
+test('resolveProjectDir: CLAUDE_PROJECT_DIR > CLAUDE_FLOW_CWD > cwd; home, root and missing dirs are not projects', () => {
+  const { resolveProjectDir } = require(LAUNCHER);
+  assert.equal(typeof resolveProjectDir, 'function');
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-cwd-'));
+  const a = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-a-'));
+  const b = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-b-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-home-'));
+  try {
+    assert.equal(resolveProjectDir({ CLAUDE_PROJECT_DIR: a, CLAUDE_FLOW_CWD: b }, cwd, home), path.resolve(a));
+    assert.equal(resolveProjectDir({ CLAUDE_FLOW_CWD: b }, cwd, home), path.resolve(b));
+    assert.equal(resolveProjectDir({}, cwd, home), path.resolve(cwd));
+    // A project dir equal to the home directory is "no project" (Windows: HOME
+    // is usually unset, so this must work off the supplied home/USERPROFILE).
+    assert.equal(resolveProjectDir({ CLAUDE_PROJECT_DIR: home, CLAUDE_FLOW_CWD: b }, cwd, home), path.resolve(b));
+    const homeVariant = process.platform === 'win32' ? home.toUpperCase() + path.sep : home + path.sep;
+    assert.equal(resolveProjectDir({ CLAUDE_PROJECT_DIR: homeVariant }, cwd, home), path.resolve(cwd));
+    assert.equal(resolveProjectDir({ CLAUDE_PROJECT_DIR: path.parse(cwd).root }, cwd, home), path.resolve(cwd));
+    assert.equal(resolveProjectDir({ CLAUDE_PROJECT_DIR: path.join(a, 'does-not-exist') }, cwd, home), path.resolve(cwd));
+  } finally {
+    for (const d of [cwd, a, b, home]) fs.rmSync(d, { recursive: true, force: true });
+  }
+});
+
+test('runInProcess loads the resolved bin in-process with the argv the child used to get', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-inproc-'));
+  const bin = path.join(dir, 'cli.js');
+  fs.writeFileSync(bin, 'globalThis.__mcpLaunchArgv = process.argv.slice();\n');
+  const savedArgv = process.argv;
+  try {
+    await runInProcess(bin);
+    assert.deepEqual(globalThis.__mcpLaunchArgv, [process.execPath, bin, ...MCP_ARGS]);
+  } finally {
+    process.argv = savedArgv;
+    delete globalThis.__mcpLaunchArgv;
+  }
+});
+
+test('runInProcess runs the CLI in the project dir with CLAUDE_FLOW_CWD set before import', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-inproc-proj-'));
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-project-'));
+  const bin = path.join(dir, 'cli.js');
+  fs.writeFileSync(
+    bin,
+    'globalThis.__mcpLaunchSeen = { cwd: process.cwd(), flowCwd: process.env.CLAUDE_FLOW_CWD };\n',
+  );
+  const savedArgv = process.argv;
+  const savedCwd = process.cwd();
+  const hadFlowCwd = Object.prototype.hasOwnProperty.call(process.env, 'CLAUDE_FLOW_CWD');
+  const savedFlowCwd = process.env.CLAUDE_FLOW_CWD;
+  try {
+    await runInProcess(bin, project);
+    assert.ok(samePath(globalThis.__mcpLaunchSeen.cwd, project), `cwd ${globalThis.__mcpLaunchSeen.cwd} should be ${project}`);
+    assert.equal(globalThis.__mcpLaunchSeen.flowCwd, project);
+  } finally {
+    process.chdir(savedCwd);
+    process.argv = savedArgv;
+    if (hadFlowCwd) process.env.CLAUDE_FLOW_CWD = savedFlowCwd;
+    else delete process.env.CLAUDE_FLOW_CWD;
+    delete globalThis.__mcpLaunchSeen;
+    for (const d of [dir, project]) fs.rmSync(d, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Stale / partial local build. isRunnableCli() only checks bin/cli.js and
+// dist/src/index.js, so a dist/ that predates src/ passes the guard and then
+// throws when cli.js imports a file the old build lacks. The launcher must say
+// what happened and, unless the person pinned a CLI, fall back to npx.
+// ---------------------------------------------------------------------------
+const {
+  isMissingModuleError, describeUnloadableCli, recoverFromLoadFailure,
+} = require(LAUNCHER);
+
+function captureStderr(fn) {
+  const real = process.stderr.write;
+  let out = '';
+  process.stderr.write = (chunk) => { out += String(chunk); return true; };
+  try { fn(); } finally { process.stderr.write = real; }
+  return out;
+}
+
+function missingModuleError() {
+  return Object.assign(new Error("Cannot find module '/x/dist/src/mcp-tools/policy-enforcer.js'"), {
+    code: 'ERR_MODULE_NOT_FOUND',
+  });
+}
+
+test('isMissingModuleError recognises ESM and CJS missing-module codes only', () => {
+  assert.equal(isMissingModuleError(missingModuleError()), true);
+  assert.equal(isMissingModuleError(Object.assign(new Error('x'), { code: 'MODULE_NOT_FOUND' })), true);
+  assert.equal(isMissingModuleError(new SyntaxError('boom')), false);
+  assert.equal(isMissingModuleError(null), false);
+});
+
+test('describeUnloadableCli names the ruflo checkout and the rebuild command for the in-repo CLI', () => {
+  const bin = path.join(os.tmpdir(), 'ruflo', 'v3', '@claude-flow', 'cli', 'bin', 'cli.js');
+  const text = describeUnloadableCli(bin, missingModuleError(), true);
+  assert.match(text, /inside a ruflo checkout/);
+  assert.match(text, /pnpm install && pnpm run build/);
+  assert.match(text, /outside the ruflo repo/);
+  assert.match(text, /Falling back to `npx -y @claude-flow\/cli@latest mcp start`/);
+  assert.doesNotMatch(describeUnloadableCli(bin, missingModuleError(), false), /Falling back/);
+});
+
+test('describeUnloadableCli does not blame a ruflo checkout for an ordinary install', () => {
+  const bin = path.join(os.tmpdir(), 'proj', 'node_modules', '@claude-flow', 'cli', 'bin', 'cli.js');
+  const text = describeUnloadableCli(bin, missingModuleError(), true);
+  assert.doesNotMatch(text, /ruflo checkout/);
+  assert.match(text, /reinstall or rebuild/);
+});
+
+test('recoverFromLoadFailure falls back to the npx launch spec on a missing module', () => {
+  let spec = null;
+  let exited = null;
+  const project = os.tmpdir();
+  const err = captureStderr(() => {
+    recoverFromLoadFailure('/r/v3/@claude-flow/cli/bin/cli.js', missingModuleError(), project, {}, {
+      run: (s) => { spec = s; },
+      exit: (c) => { exited = c; },
+    });
+  });
+  assert.equal(exited, null);
+  assert.deepEqual(spec.args, ['-y', '@claude-flow/cli@latest', ...MCP_ARGS]);
+  assert.equal(spec.cwd, project);
+  assert.match(err, /could not load/);
+});
+
+test('recoverFromLoadFailure fails closed for a pinned override, SKIP_NPX, and non-module errors', () => {
+  const cases = [
+    [missingModuleError(), { RUFLO_MCP_CLI_OVERRIDE: '/pinned/cli.js' }],
+    [missingModuleError(), { RUFLO_MCP_SKIP_NPX: '1' }],
+    [new SyntaxError('unexpected token'), {}],
+  ];
+  for (const [error, env] of cases) {
+    let spec = null;
+    let exited = null;
+    captureStderr(() => {
+      recoverFromLoadFailure('/r/cli.js', error, os.tmpdir(), env, {
+        run: (s) => { spec = s; },
+        exit: (c) => { exited = c; },
+      });
+    });
+    assert.equal(spec, null, JSON.stringify(env));
+    assert.equal(exited, 1, JSON.stringify(env));
+  }
+});
+
+test('end-to-end: a stale in-repo build prints the rebuild hint and a pinned override still exits 1', () => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-launch-stale-'));
+  try {
+    // dist/src/index.js exists (passes isRunnableCli) but cli.js imports a file the build lacks.
+    const root = path.join(repo, 'v3', '@claude-flow', 'cli');
+    const bin = makeCliInstall(root);
+    // Like the real cli.js: an ESM package that awaits the import at top level.
+    fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}\n');
+    fs.writeFileSync(bin, "await import('../dist/src/mcp-tools/policy-enforcer.js');\n");
+    const base = { ...process.env, CLAUDE_PROJECT_DIR: repo, PATH: '' };
+    delete base.CLAUDE_FLOW_CWD;
+    delete base.RUFLO_MCP_CLI_OVERRIDE;
+
+    // Pinned override: fail closed, no fallback, message still explains it.
+    let pinned;
+    try {
+      execFileSync(process.execPath, [LAUNCHER], {
+        cwd: repo, env: { ...base, RUFLO_MCP_CLI_OVERRIDE: bin }, encoding: 'utf8', stdio: 'pipe',
+      });
+    } catch (e) { pinned = e; }
+    assert.ok(pinned, 'launcher should exit non-zero');
+    assert.equal(pinned.status, 1);
+    assert.match(String(pinned.stderr), /inside a ruflo checkout/);
+    assert.match(String(pinned.stderr), /Not falling back to @latest/);
+
+    // SKIP_NPX: the missing-module path must also refuse the @latest fallback.
+    let skipped;
+    try {
+      execFileSync(process.execPath, [LAUNCHER], {
+        cwd: repo, env: { ...base, RUFLO_MCP_SKIP_NPX: '1' }, encoding: 'utf8', stdio: 'pipe',
+      });
+    } catch (e) { skipped = e; }
+    assert.ok(skipped);
+    assert.equal(skipped.status, 1);
+    assert.match(String(skipped.stderr), /pnpm install && pnpm run build/);
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
 });

@@ -7,7 +7,7 @@ import type {
 } from '@claude-flow/shared/src/plugin-interface.js';
 
 import * as ed from '@noble/ed25519';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
@@ -55,12 +55,14 @@ type LoadedTransport = AgentTransport & {
 import {
   DEFAULT_ENVELOPE_SIGNATURE_MODE,
   JCS_SIGNATURE_PROTOCOL,
+  acceptedSignatureVersionsFor,
   canonicalizeEnvelopeForVerify,
   dispatchInbound,
   selectEnvelopeSignatureVersion,
   type EnvelopeSignatureMode,
 } from './application/inbound-dispatcher.js';
 import { createMcpTools } from './mcp-tools.js';
+import { InboundEnvelopeGuard } from './application/inbound-envelope-guard.js';
 import { createCliCommands } from './cli-commands.js';
 import { FEDERATION_PLUGIN_VERSION } from './version.js';
 // A2A (Agent2Agent, Linux Foundation) Agent Card adapter — cards only.
@@ -92,6 +94,7 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
     const config = context.config;
 
     const nodeId = (config['nodeId'] as string) ?? `node-${Date.now().toString(36)}`;
+    const envelopeGuard = new InboundEnvelopeGuard(nodeId);
     const endpoint = (config['endpoint'] as string) ?? 'ws://localhost:9100';
     const complianceMode = (config['complianceMode'] as ComplianceMode) ?? 'none';
     const staticPeers = (config['staticPeers'] as string[]) ?? [];
@@ -158,6 +161,12 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
       version: FEDERATION_PLUGIN_VERSION,
     };
 
+    // Operator-pinned peer keys: nodeId -> Ed25519 public key (hex). The only thing that can make a peer VERIFIED/ATTESTED.
+    const trustedPeerKeys = (config['trustedPeerKeys'] ?? {}) as Record<string, unknown>;
+    const pinnedKeyFor = (peerNodeId: string): string | undefined => {
+      const key = Object.hasOwn(trustedPeerKeys, peerNodeId) ? trustedPeerKeys[peerNodeId] : undefined;
+      return typeof key === 'string' && key.length > 0 ? key : undefined;
+    };
     const generateId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
     // ADR-095 G2: real signing + verification using @noble/ed25519. The
@@ -196,6 +205,7 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
     const discovery = new DiscoveryService(
       {
         signManifest: async (manifest) => signBytes(canonicalize(manifest as unknown as Record<string, unknown>)),
+        pinnedKeyFor,
         verifyManifest: async (manifest) => {
           const peerPub = (manifest as { publicKey?: string }).publicKey;
           const sig = (manifest as { signature?: string }).signature;
@@ -210,9 +220,10 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
     );
 
     const handshake = new HandshakeService({
+      pinnedKeyFor,
       generateSessionId: generateId,
       generateSessionToken: () => `token-${generateId()}`,
-      generateNonce: () => `nonce-${Math.random().toString(36).slice(2)}`,
+      generateNonce: () => `nonce-${randomBytes(16).toString('hex')}`,
       signChallenge: async (nonce) => signBytes(nonce),
       verifySignature: async (nonce, signature, peerPublicKey) =>
         verifyBytes(nonce, signature, peerPublicKey),
@@ -332,7 +343,7 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
 
     const routing = new RoutingService({
       generateEnvelopeId: generateId,
-      generateNonce: () => `nonce-${Math.random().toString(36).slice(2)}`,
+      generateNonce: () => `nonce-${randomBytes(16).toString('hex')}`,
       signEnvelope: (payload, token) => `hmac-${token.slice(0, 6)}-${payload.length}`,
       verifyEnvelope: () => true,
       scanPii: (text, trustLevel) => {
@@ -431,7 +442,12 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
     // need to free a port.
     const listenPort = config['port'] as number | undefined;
     if (transport && typeof listenPort === 'number' && transport.listen) {
-      const listenHost = (config['host'] as string | undefined) ?? '0.0.0.0';
+      // Loopback unless the operator names an interface: the listener is plaintext.
+      // An empty host would bind every interface, so it counts as unset.
+      const listenHost = (config['host'] as string | undefined) || '127.0.0.1';
+      if (listenHost !== '127.0.0.1' && listenHost !== 'localhost' && listenHost !== '::1') {
+        context.logger.warn(`Federation listener on ${listenHost} is plaintext WebSocket; keep it on a private network (tailnet, WireGuard) or behind TLS`);
+      }
       try {
         await transport.listen(listenPort, listenHost);
         context.logger.info(`Federation listening on ${listenHost}:${listenPort}`);
@@ -465,8 +481,8 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
           eventBus: context.eventBus,
           logger: context.logger,
           verifyEnvelope,
-          acceptedSignatureVersions:
-            signatureMode === 'require-jcs' ? ['jcs-v1'] : ['legacy-v1', 'jcs-v1'],
+          envelopeGuard,
+          acceptedSignatureVersions: acceptedSignatureVersionsFor(signatureMode),
           authorizationMode,
           authorizeInbound: ({ messageType, peer, messageSizeBytes, sourceNodeId }) =>
             policyEngine.evaluateMessage(

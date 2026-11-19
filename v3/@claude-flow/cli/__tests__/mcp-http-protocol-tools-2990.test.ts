@@ -69,6 +69,7 @@ async function startHttpCli(port: number, tools: string): Promise<void> {
   child = spawn('node', [CLI, 'mcp', 'start', '-t', 'http', '--port', String(port)], {
     env: {
       ...process.env,
+      RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP: '1',
       CLAUDE_FLOW_MCP_TOOLS: tools,
       RUFLO_DAEMON_AUTOSTART: '0',
       TEMP: TEST_TMP,

@@ -218,7 +218,7 @@ export class FederationCoordinator {
       metadata: { endpoint },
     });
 
-    return this.establishSession(node, manifest !== undefined);
+    return this.establishSession(node, manifest !== undefined && this.discovery.isPinned(manifest));
   }
 
   async leavePeer(nodeId: string): Promise<void> {

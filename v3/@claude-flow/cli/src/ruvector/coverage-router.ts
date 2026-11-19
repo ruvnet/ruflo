@@ -82,8 +82,7 @@ const DEFAULT_CONFIG: CoverageRouterConfig = {
 
 export class CoverageRouter {
   private config: CoverageRouterConfig;
-  private ruvectorEngine: unknown = null;
-  private useNative = false;
+  private readonly useNative = false;
   private coverageHistory: CoverageReport[] = [];
 
   constructor(config: Partial<CoverageRouterConfig> = {}) {
@@ -91,14 +90,10 @@ export class CoverageRouter {
   }
 
   async initialize(): Promise<void> {
-    try {
-      // @ruvector/coverage is optional - gracefully fallback if not installed
-      const ruvector = await import('@ruvector/coverage' as string).catch(() => null);
-      if (ruvector) {
-        this.ruvectorEngine = (ruvector as any).createCoverageRouter?.(this.config);
-        this.useNative = !!this.ruvectorEngine;
-      }
-    } catch { this.useNative = false; }
+    // Pure-JS analysis. This used to try `import('@ruvector/coverage')`, a package that
+    // has never been published (npm 404), so it always fell through to here.
+    // ruvector@0.3's parseIstanbulCoverage is a plain-JS parser equivalent to the parsers
+    // below.
   }
 
   parseCoverage(data: unknown, format: 'lcov' | 'istanbul' | 'cobertura' | 'json' = 'json'): CoverageReport {

@@ -1,6 +1,6 @@
 import type { RenderElement } from 'claude-code'
 
-import { AGENT_TARGETS, agentsOf } from '../data/skills'
+import { AGENT_TARGETS, agentsOf, PINNED_SKILLS } from '../data/skills'
 import { ago, button, clip, row, rule, text, THEME, type Ctx } from './common'
 
 /** Preview lines in view at once. */
@@ -46,12 +46,12 @@ export function previewRows(ctx: Ctx): RenderElement[] {
 
   rows.push(rule(ctx, 'Preview', previewing !== null ? `reading ${clip(previewing, 40)}…` : preview === null ? '' : `${preview.kind === 'installed' ? 'local read' : 'add --list · nothing installed'} · ${ago(preview.atMs, nowMs)}`))
 
-  if (using !== null) rows.push(text(ctx, ` ▸ fetching ${using} for the AI terminal (npx -y skills use)…`, { color: THEME.warn }))
+  if (using !== null) rows.push(text(ctx, ` ▸ fetching ${using} for the AI terminal (npx -y skills@${PINNED_SKILLS} use)…`, { color: THEME.warn }))
   if (preview === null) return rows
 
   rows.push(
     row(ctx, [
-      text(ctx, ` ${clip(preview.title, Math.max(10, ctx.columns - 12))} `, { bold: true, color: preview.ok ? THEME.ok : THEME.warn }),
+      text(ctx, ` ${clip(preview.title, Math.max(10, ctx.columns - 12))} `, { weight: 'semibold', color: preview.ok ? THEME.ok : THEME.warn }),
       plainButton(ctx, 'sk-preview-close', ' ▸ close', () => ctx.act.skills.closePreview()),
     ]),
   )
@@ -88,7 +88,7 @@ export function projectRows(ctx: Ctx): RenderElement[] {
   )
 
   if (scan.local.length === 0) rows.push(text(ctx, ` no skills under .claude/skills or .agents/skills · ${scan.agentFiles} agent files read`, { dimColor: true }))
-  else rows.push(text(ctx, ` skills your ruflo agents use · ${scan.local.length} local · ${scan.agentFiles} agent files read`, { bold: true }))
+  else rows.push(text(ctx, ` skills your ruflo agents use · ${scan.local.length} local · ${scan.agentFiles} agent files read`, { weight: 'semibold' }))
 
   for (const skill of scan.local.slice(0, 8)) {
     rows.push(text(ctx, `   ${skill.name} (${skill.where}) ← ${skill.refs.length > 0 ? skill.refs.join(', ') : 'no agent names it'}`, skill.refs.length > 0 ? { color: THEME.ok } : { dimColor: true }))

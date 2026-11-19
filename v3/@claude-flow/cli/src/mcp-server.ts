@@ -20,13 +20,22 @@
 import { EventEmitter } from 'events';
 import { spawn, ChildProcess, execFileSync } from 'child_process';
 import { createServer, Server, request as httpRequestFn } from 'http';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { trackRequest } from './mcp-tools/request-tracker.js';
+import {
+  defaultServerIdentity,
+  finalizeResponse,
+  protocolPreflight,
+  resourceNotFoundCode,
+  sortToolsDeterministically,
+  traceContextFields,
+  type ProtocolContext,
+} from './mcp-protocol.js';
 import {
   isPolicyEnforcementEnabled,
   loadMcpPolicy,
@@ -57,6 +66,11 @@ export interface MCPServerOptions {
   daemonize?: boolean;
   timeout?: number;
   requestTimeoutMs?: number;
+  rateLimitPerIp?: number;
+  rateLimitWindowMs?: number;
+  rateLimitPerSession?: number;
+  rateLimitGlobalRps?: number;
+  rateLimitGlobalBurst?: number;
   /**
    * Bearer token every HTTP request must present (`Authorization: Bearer <token>`).
    * http transport only. Prefer RUFLO_MCP_HTTP_TOKEN / a token file over this
@@ -180,6 +194,18 @@ function processStartToken(pid: number): string | undefined {
   }
 }
 
+type RateLimitOption =
+  | 'rateLimitPerIp'
+  | 'rateLimitWindowMs'
+  | 'rateLimitPerSession'
+  | 'rateLimitGlobalRps'
+  | 'rateLimitGlobalBurst';
+
+function definedFields<T extends Record<string, number | undefined>>(fields: T): Partial<T> | undefined {
+  const entries = Object.entries(fields).filter(([, value]) => value !== undefined);
+  return entries.length === 0 ? undefined : Object.fromEntries(entries) as Partial<T>;
+}
+
 /**
  * Hosts treated as same-machine-only for MCP HTTP tool-call authorization
  * purposes (see startHttpServer's non-loopback authorization gate below).
@@ -217,6 +243,49 @@ export function shouldRefuseUnauthenticatedHttp(
   authenticated = false,
 ): boolean {
   return !isLoopbackHost(host) && !authenticated && !isUnauthenticatedHttpAllowed(env);
+}
+
+/** The limits @claude-flow/mcp applies when a rate limit option is unset. */
+const DEFAULT_RATE_LIMITS = {
+  rateLimitPerIp: 120,
+  rateLimitPerSession: 50,
+  rateLimitGlobalRps: 100,
+  rateLimitGlobalBurst: 200,
+} as const;
+const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
+
+/**
+ * Rate limit options that are looser than the @claude-flow/mcp defaults. A
+ * shorter window counts as looser.
+ */
+function raisedRateLimits(options: Pick<MCPServerOptions, RateLimitOption>): RateLimitOption[] {
+  const raised = (Object.keys(DEFAULT_RATE_LIMITS) as (keyof typeof DEFAULT_RATE_LIMITS)[])
+    .filter((name) => (options[name] ?? 0) > DEFAULT_RATE_LIMITS[name]) as RateLimitOption[];
+  if ((options.rateLimitWindowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS) < DEFAULT_RATE_LIMIT_WINDOW_MS) {
+    raised.push('rateLimitWindowMs');
+  }
+  return raised;
+}
+
+/**
+ * The bearer token a token-less `mcp start -t http|websocket` falls back to, so that a loopback
+ * server is never open to every local process. Kept in `~/.claude-flow/mcp-http-token` (mode 0600)
+ * so clients can read it; created on first use. Exported for tests.
+ */
+export function ensureDefaultMcpToken(homeDir: string = os.homedir()): { token: string; file: string } {
+  const dir = path.join(homeDir, '.claude-flow');
+  const file = path.join(dir, 'mcp-http-token');
+  try {
+    const existing = fs.readFileSync(file, 'utf8').trim();
+    if (AUTH_TOKEN_PATTERN.test(existing)) return { token: existing, file };
+  } catch {
+    // none yet
+  }
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const token = randomBytes(32).toString('hex');
+  fs.writeFileSync(file, token + '\n', { mode: 0o600 });
+  fs.chmodSync(file, 0o600);
+  return { token, file };
 }
 
 /** Printable ASCII without space (RFC 6750 token-ish), 16-512 chars. */
@@ -260,9 +329,11 @@ export function resolveMcpHttpAuthToken(
 }
 
 /**
- * Default configuration
+ * Default configuration. Rate limits are left unset so @claude-flow/mcp
+ * applies its own defaults.
  */
-type ResolvedMCPServerOptions = Required<Omit<MCPServerOptions, 'authToken'>> & { authToken?: string };
+type ResolvedMCPServerOptions = Required<Omit<MCPServerOptions, RateLimitOption | 'authToken'>> &
+  Pick<MCPServerOptions, RateLimitOption | 'authToken'>;
 
 const DEFAULT_OPTIONS: ResolvedMCPServerOptions = {
   transport: 'stdio',
@@ -339,6 +410,12 @@ export function assessMcpSchemaOverhead(
       : 'normal',
   };
 }
+
+/** Capabilities every ruflo stdio server advertises (initialize and server/discover). */
+const MCP_STDIO_CAPABILITIES = {
+  tools: { listChanged: true },
+  resources: {},
+};
 
 /**
  * MCP Server Manager
@@ -727,7 +804,7 @@ export class MCPServerManager extends EventEmitter {
     // Import the tool registry
     const { listMCPTools, callMCPTool, hasTool } = await import('./mcp-client.js');
 
-    const VERSION = '3.0.0';
+    const VERSION = defaultServerIdentity().version;
     const sessionId = `mcp-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
     // Log to stderr to not corrupt stdout
@@ -786,10 +863,7 @@ export class MCPServerManager extends EventEmitter {
         serverInfo: {
           name: 'ruflo',
           version: VERSION,
-          capabilities: {
-            tools: { listChanged: true },
-            resources: { subscribe: true, listChanged: true },
-          },
+          capabilities: MCP_STDIO_CAPABILITIES,
         },
       },
     });
@@ -867,9 +941,7 @@ export class MCPServerManager extends EventEmitter {
   private async handleMCPMessage(
     message: { jsonrpc: string; id?: string | number; method?: string; params?: unknown },
     sessionId: string
-  ): Promise<{ jsonrpc: string; id?: string | number; result?: unknown; error?: { code: number; message: string } } | null> {
-    const { listMCPTools, callMCPTool, hasTool } = await import('./mcp-client.js');
-
+  ): Promise<{ jsonrpc: string; id?: string | number | null; result?: unknown; error?: { code: number; message: string } } | null> {
     if (!message.method) {
       return {
         jsonrpc: '2.0',
@@ -877,27 +949,26 @@ export class MCPServerManager extends EventEmitter {
         error: { code: -32600, message: 'Invalid Request: missing method' },
       };
     }
+    // ADR-524: one decision point for which MCP revision this message speaks.
+    const preflight = protocolPreflight(message, MCP_STDIO_CAPABILITIES);
+    if (preflight.response) return preflight.response;
+    const response = await this.dispatchMCPMessage(message as typeof message & { method: string }, sessionId, preflight.context);
+    return finalizeResponse(response as Parameters<typeof finalizeResponse>[0], message.method, preflight.context);
+  }
+
+  private async dispatchMCPMessage(
+    message: { jsonrpc: string; id?: string | number; method: string; params?: unknown },
+    sessionId: string,
+    protocol: ProtocolContext
+  ): Promise<{ jsonrpc: '2.0'; id?: string | number; result?: Record<string, unknown>; error?: { code: number; message: string } } | null> {
+    const { listMCPTools, callMCPTool, hasTool } = await import('./mcp-client.js');
 
     const params = (message.params || {}) as Record<string, unknown>;
 
     try {
       switch (message.method) {
-        case 'initialize':
-          return {
-            jsonrpc: '2.0',
-            id: message.id,
-            result: {
-              protocolVersion: '2024-11-05',
-              serverInfo: { name: 'ruflo', version: '3.0.0' },
-              capabilities: {
-                tools: { listChanged: true },
-                resources: { subscribe: true, listChanged: true },
-              },
-            },
-          };
-
         case 'tools/list':
-          const tools = filterAdvertisedMcpTools(listMCPTools(), this.options.tools);
+          const tools = sortToolsDeterministically(filterAdvertisedMcpTools(listMCPTools(), this.options.tools));
           return {
             jsonrpc: '2.0',
             id: message.id,
@@ -935,7 +1006,7 @@ export class MCPServerManager extends EventEmitter {
           }
 
           try {
-            const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio' });
+            const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio', ...traceContextFields(protocol) });
             const isError = hasToolError(result);
             trackRequest(toolName, !isError);
             return {
@@ -954,6 +1025,17 @@ export class MCPServerManager extends EventEmitter {
               },
             };
           }
+
+        // The server advertises `resources` (so clients such as Codex offer list_mcp_resources), and a declared capability must
+        // be served: it exposes no resources, so the answers are empty, and a read is the spec's "resource not found" (ADR-490).
+        case 'resources/list':
+          return { jsonrpc: '2.0', id: message.id, result: { resources: [] } };
+
+        case 'resources/templates/list':
+          return { jsonrpc: '2.0', id: message.id, result: { resourceTemplates: [] } };
+
+        case 'resources/read':
+          return { jsonrpc: '2.0', id: message.id, error: { code: resourceNotFoundCode(protocol), message: 'Resource not found' } };
 
         case 'notifications/initialized':
           // Client notification - no response needed
@@ -999,11 +1081,6 @@ export class MCPServerManager extends EventEmitter {
     // Authorization gate first, before any import or bind: a refused start must
     // not depend on (or touch) anything else.
     const authToken = this.options.authToken || undefined;
-    if (authToken && this.options.transport !== 'http') {
-      // The standalone websocket transport has no working token check, so a
-      // token there would be a false promise of protection.
-      throw new Error('An MCP HTTP auth token is only supported with --transport http');
-    }
     if (shouldRefuseUnauthenticatedHttp(this.options.host, process.env, !!authToken)) {
       // No ToolAuthorizer is wired below: @claude-flow/mcp's tool-call
       // authorization is fully opt-in (requireToolAuthorization/toolAuthorizer),
@@ -1021,6 +1098,17 @@ export class MCPServerManager extends EventEmitter {
           'to require a bearer token, bind to a loopback host (127.0.0.1, ::1, or localhost), or set ' +
           'RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP=1 to acknowledge the risk and proceed ' +
           '(e.g. when a trusted reverse proxy or network boundary already enforces auth).'
+      );
+    }
+    const raised = raisedRateLimits(this.options);
+    if (raised.length > 0 && !isLoopbackHost(this.options.host) && !authToken) {
+      // RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP=1 lets an open server start, but
+      // anyone who can reach it should not also get more than the default
+      // request budget.
+      throw new Error(
+        `Refusing to raise MCP rate limits (${raised.join(', ')}) above the defaults on non-loopback ` +
+          `host "${this.options.host}" without a bearer token. Set RUFLO_MCP_HTTP_TOKEN (or ` +
+          '--auth-token-file), or bind to a loopback host (127.0.0.1, ::1, or localhost).'
       );
     }
     // Dynamically import the MCP server package
@@ -1075,9 +1163,16 @@ export class MCPServerManager extends EventEmitter {
         enableMetrics: true,
         enableCaching: true,
         requestTimeout: this.options.requestTimeoutMs,
+        rateLimit: definedFields({ windowMs: this.options.rateLimitWindowMs, limit: this.options.rateLimitPerIp }),
+        sessionRateLimit: definedFields({
+          requestsPerSecond: this.options.rateLimitGlobalRps,
+          burstSize: this.options.rateLimitGlobalBurst,
+          perSessionLimit: this.options.rateLimitPerSession,
+        }),
         auth: authToken
           ? { enabled: true, method: 'token', tokens: [authToken] }
           : undefined,
+        allowUnauthenticated: isUnauthenticatedHttpAllowed(),
       },
       logger
     );

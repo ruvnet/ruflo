@@ -10,6 +10,7 @@
 import { collect } from './_ledger.mjs';
 import { priceUsage, downshift, lookup } from './_pricebook.mjs';
 import { parseDurationMs } from './_sessions.mjs';
+import { pathToFileURL } from 'node:url';
 
 const arg = (name, fallback) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : fallback; };
 const sum = (rows, pick) => rows.reduce((total, row) => total + pick(row), 0);
@@ -71,7 +72,8 @@ export function advise(rows) {
 
 const fmt = f => (f.saving === null ? 'saving n/a' : `up to ${f.unit === 'usd' ? '$' : ''}${f.saving.toFixed(2)}${f.unit === 'usd' ? '' : ' credits'} over the window`);
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// pathToFileURL, not `file://${argv[1]}`: on Windows import.meta.url is file:///C:/... and argv[1] is C:..., so the string never matched and the script printed nothing.
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const spec = arg('since', '7d');
   const sinceMs = spec === 'all' ? 0 : Date.now() - (parseDurationMs(spec) ?? 7 * 86_400_000);
   const providers = arg('provider', 'all') === 'all' ? undefined : [arg('provider')];

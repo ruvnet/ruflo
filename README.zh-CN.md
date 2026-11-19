@@ -1,11 +1,13 @@
 <div align="center">
 
-[![Ruflo Banner](ruflo/assets/ruflo-small.jpeg)](https://cognitum.one/agentic-engineering)
+<a href="https://cognitum.one/agentic-engineering"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
+
+**面向 Claude Code 与 Codex 的智能体元基座（meta-harness）。**
 
 <!-- Try Ruflo — the 3 badges first-time visitors actually act on -->
 [![npm version (ruflo)](https://img.shields.io/npm/v/ruflo?label=npx%20ruflo&style=for-the-badge&logo=npm&color=cb3837)](https://www.npmjs.com/package/ruflo)
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/claude-flow?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/claude-flow)
+[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/ruflo?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/ruflo)
 
 <!-- Ecosystem strip (collapsed visually with flat-square) -->
 [![🕸️ RuVector Agentic DB](https://img.shields.io/badge/RuVector_Agentic-DB-06b6d4?style=flat-square&logoColor=white&logo=graphql)](https://github.com/ruvnet/ruvector)
@@ -14,11 +16,74 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-D97757?style=flat-square&logoColor=white&logo=anthropic)](https://github.com/ruvnet/claude-flow)
 [![Codex Plugin](https://img.shields.io/badge/Codex-Plugin-412991?style=flat-square&logoColor=white&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0yMi4yODIgOS44MjFhNS45ODUgNS45ODUgMCAwIDAtLjUxNi00LjkxIDYuMDQ2IDYuMDQ2IDAgMCAwLTYuNTEtMi45QTYuMDY1IDYuMDY1IDAgMCAwIDQuOTgxIDQuMThhNS45ODUgNS45ODUgMCAwIDAtMy45OTggMi45IDYuMDQ2IDYuMDQ2IDAgMCAwIC43NDMgNy4wOTcgNS45OCA1Ljk4IDAgMCAwIC41MSA0LjkxMSA2LjA1MSA2LjA1MSAwIDAgMCA2LjUxNSAyLjlBNS45ODUgNS45ODUgMCAwIDAgMTMuMjYgMjRhNi4wNTYgNi4wNTYgMCAwIDAgNS43NzItNC4yMDYgNS45OSA1Ljk5IDAgMCAwIDMuOTk4LTIuOSA2LjA1NiA2LjA1NiAwIDAgMC0uNzQ3LTcuMDczek0xMy4yNiAyMi40M2E0LjQ3NiA0LjQ3NiAwIDAgMS0yLjg3Ni0xLjA0bC4xNDItLjA4IDQuNzc4LTIuNzU4YS43OTUuNzk1IDAgMCAwIC4zOTMtLjY4MXYtNi43MzdsMi4wMiAxLjE2OGEuMDcxLjA3MSAwIDAgMSAuMDM4LjA1MnY1LjU4M2E0LjUwNCA0LjUwNCAwIDAgMS00LjQ5NSA0LjQ5NHpNMy42IDE4LjMwNGE0LjQ3IDQuNDcgMCAwIDEtLjUzNS0zLjAxNGwuMTQyLjA4NSA0Ljc4MyAyLjc1OWEuNzcxLjc3MSAwIDAgMCAuNzgxIDBsNS44NDMtMy4zNjl2Mi4zMzJhLjA4LjA4IDAgMCAxLS4wMzMuMDYyTDkuNzQgMTkuOTVhNC41IDQuNSAwIDAgMS02LjE0LTEuNjQ2ek0yLjM0IDcuODk2YTQuNDg1IDQuNDg1IDAgMCAxIDIuMzY2LTEuOTczVjExLjZhLjc2Ni43NjYgMCAwIDAgLjM4OC42NzdsNS44MTUgMy4zNTQtMi4wMiAxLjE2OGEuMDc2LjA3NiAwIDAgMS0uMDcyIDBsLTQuODMtMi43ODZBNC41MDQgNC41MDQgMCAwIDEgMi4zNCA3Ljg3MnptMTYuNTk3IDMuODU1LTUuODMzLTMuMzg3IDIuMDE2LTEuMTY1YS4wNzYuMDc2IDAgMCAxIC4wNzEgMGw0LjgzIDIuNzkxYTQuNDk0IDQuNDk0IDAgMCAxLS42NzYgOC4xMDR2LTUuNjc3YS43OS43OSAwIDAgMC0uNDA3LS42Njd6bTIuMDEtMy4wMjMtLjE0MS0uMDg1LTQuNzc0LTIuNzgyYS43NzYuNzc2IDAgMCAwLS43ODUgMEw5LjQwOSA5LjIzVjYuODk3YS4wNjYuMDY2IDAgMCAxIC4wMjgtLjA2Mmw0LjgzLTIuNzg3YTQuNDk5IDQuNDk5IDAgMCAxIDYuNjggNC42NnpNOC4zMDcgMTIuODYzbC0yLjAyLTEuMTY0YS4wOC4wOCAwIDAgMS0uMDM4LS4wNTdWNi4wNzRhNC40OTkgNC40OTkgMCAwIDEgNy4zNzYtMy40NTRsLS4xNDIuMDgtNC43NzggMi43NThhLjc5NS43OTUgMCAwIDAtLjM5My42ODJ6bTEuMDk3LTIuMzY2IDIuNjAyLTEuNSAyLjYwNyAxLjV2Mi45OTlsLTIuNTk3IDEuNS0yLjYwNy0xLjVaIi8%2BPC9zdmc%2B)](https://www.npmjs.com/package/@claude-flow/codex)
 
+<a id="start-here"></a>
+
+## <img src="docs/assets/readme/icons/terminal.svg" width="32" height="32" alt=""> 一条命令快速开始
+
+在你的项目文件夹中运行：
+
+```bash
+npx ruflo@latest init
+```
+
+然后在同一文件夹打开 Claude Code 并给它一个真实的任务，例如：
+
+```text
+用 ruflo 蜂群来审查这个代码库：找出风险最高的模块，为它写测试，总结你改了什么。
+```
+
+`init` 会为项目添加 ruflo 的智能体、钩子、记忆和 MCP 服务器。Claude Code 在下次启动时会自动识别它们。Codex 和其他 MCP 客户端也支持：只需指向 `npx -y ruflo@latest mcp start`。
+
+<p align="center"><img src="docs/assets/ruflo-console-tour.gif" width="720" alt="ruflo 控制台演示：概览、蜂群视图和任务"></p>
+
+[第一个实用任务，逐步讲解](docs/ruflo-explained.md) · [用户指南](docs/USERGUIDE.md) · [比较安装路径](#快速开始)
+
+<details>
+<summary><b>其他安装方式</b>（仅 Claude Code 插件、MCP 客户端、终端 UI）</summary>
+
+**仅 Claude Code 插件。** 这种方式安装核心工具、可视控制台和运行时 mod，无需向项目添加文件。需要 Claude Code **2.1.287 或更高版本**。在 Claude Code 中运行：
+
+```text
+/plugin marketplace add ruvnet/ruflo
+/plugin install ruflo-core@ruflo
+/plugin install ruflo-console@ruflo
+/plugin install ruflo-mods@ruflo
+/reload-plugins
+/ruflo
+```
+
+从终端运行（Claude Code 2.1.292 或更高版本）：`claude plugin install ruflo-core@ruflo --marketplace ruvnet/ruflo`。Mod 运行在你的账户权限下，安装前请审查代码。
+
+**Codex 或其他 MCP 客户端，无需项目配置。** 配置 **命令** 为 `npx`，**参数** 为 `["-y", "ruflo@latest", "mcp", "start"]`。要进行交互式项目配置，运行 `npx ruflo@latest init wizard`。
+
+**纯终端。** 控制台也可独立运行，无需 Claude Code：`npx ruflo tui`。加上 `--plain` 为脚本打印单一画面。详见[终端 UI 指南](docs/USERGUIDE.md#terminal-ui-optional)。
+
+<p align="center"><img src="docs/assets/ruflo-tui-compact.svg" width="640" alt="可选的 ruflo 终端 UI 及其界面：经典 BBS 外观、带移动地球的 Orbital 外观、和蜂群图表"></p>
+
+</details>
+
+<div align="center">
+
+### 可选：ruOS Desktop
+
+<a href="https://ruos.cognitum.one"><img src="ruflo/assets/ruos-animated.svg" alt="ruOS — 一个能自己运行的桌面" width="100%"></a>
+
+**通过 MCP 将 ruOS 连接到 ChatGPT 或 Claude：**
+
+```text
+https://ruos.cognitum.one/mcp
+```
+
+<!-- RuVector promo -->
+<a href="https://github.com/ruvnet/ruvector"><img src="docs/assets/readme/ruvector-promo-depth.svg" width="100%" alt="RuVector：给智能体加装记忆。本地向量搜索、持久上下文、图关系、反馈学习。探索 RuVector。"></a>
+
+```bash
+npx ruvector
+```
+
 # Ruflo
 
 [English](README.md) · [简体中文](README.zh-CN.md)
-
-**面向 Claude Code 与 Codex 的智能体元基座（meta-harness）。**
 
 [![RuFlo Explained — build an AI team that plans, remembers, tests, and improves](docs/assets/ruflo-explained/ch14.jpg)](docs/ruflo-explained.md)
 
@@ -39,7 +104,7 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
                           +---- Learning Loop <-------+
 ```
 
-> **第一次用 Ruflo？** 你不需要先学会 314 个 MCP 工具或 26 条 CLI 命令。执行完 `init` 之后，像平常一样使用 Claude Code 即可——钩子系统会自动路由任务、从成功模式中学习，并在后台协调智能体。
+> **第一次用 Ruflo？** 你不需要先学会 406 个 MCP 工具或 61 条 CLI 命令。执行完 `init` 之后，像平常一样使用 Claude Code 即可——钩子系统会自动路由任务、从成功模式中学习，并在后台协调智能体。
 
 <details>
 <summary><strong>📖 背景——名字的由来</strong></summary>
@@ -80,7 +145,7 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
 这会添加斜杠命令与智能体定义。上面安装的 `ruflo-core` 确实会在安装时注册它自己的 MCP 服务器——其工具以 `mcp__plugin_ruflo-core_ruflo__*` 形式调用（例如 `mcp__plugin_ruflo-core_ruflo__memory_store`），而不是 CLI 路线脚手架中使用的裸名 `memory_store`/`swarm_init`/`agent_spawn`。其他插件通常不自带 MCP 服务器。想要带 CLI 路线工具名的完整循环，请使用下方的路径 B。
 
 <details>
-<summary><strong>🔌 全部 35 个插件</strong></summary>
+<summary><strong>🔌 全部 48 个插件</strong></summary>
 
 #### 核心与编排
 
@@ -92,6 +157,14 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
 | [**ruflo-loop-workers**](plugins/ruflo-loop-workers/README.md) | 按定时器调度后台任务 |
 | [**ruflo-workflows**](plugins/ruflo-workflows/README.md) | 可复用的多步骤任务模板 |
 | [**ruflo-federation**](plugins/ruflo-federation/README.md) | 让不同机器上的智能体安全协作 |
+| [**ruflo-console**](plugins/ruflo-console/README.md) | Claude Code 内的驾驶舱，以及所有 ruflo mod 的 `/ruflo` 命令 |
+| [**ruflo-mods**](plugins/ruflo-mods/README.md) | 进程内 Claude Code mod——路由、学习信号与策略检查 |
+| [**ruflo-ai-team**](plugins/ruflo-ai-team/README.md) | 租户隔离的团队，分工协作并返回带证据的结果 |
+| [**ruflo-agntcy**](plugins/ruflo-agntcy/README.md) | AGNTCY/Outshift 传输与按意图限定的工具授权 |
+| [**ruflo-bbs-federation**](plugins/ruflo-bbs-federation/README.md) | AgentBBS 房间，让不同主机上的智能体协调 |
+| [**ruflo-chatgpt-federation**](plugins/ruflo-chatgpt-federation/README.md) | 自带签名密钥的 ChatGPT 联邦发布器 |
+| [**ruflo-x-gateway**](plugins/ruflo-x-gateway/README.md) | 签名的联邦消息、频道与工作认领 |
+| [**ruflo-business-pods**](plugins/ruflo-business-pods/README.md) | 业务领域 pod 模板，以及默认演练的单步运行器 |
 
 #### 记忆与知识
 
@@ -112,6 +185,7 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
 | [**ruflo-daa**](plugins/ruflo-daa/README.md) | 动态智能体行为与认知模式 |
 | [**ruflo-ruvllm**](plugins/ruflo-ruvllm/README.md) | 通过智能路由运行本地 LLM（Ollama 等） |
 | [**ruflo-goals**](plugins/ruflo-goals/README.md) | 将大目标拆解为计划并跟踪进度 |
+| [**ruflo-deepseek-harness**](plugins/ruflo-deepseek-harness/README.md) | 在蜂群中运行和评估 DeepSeek 工作流的智能体、命令与技能 |
 
 #### 代码质量与测试
 
@@ -120,6 +194,7 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
 | [**ruflo-testgen**](plugins/ruflo-testgen/README.md) | 找出缺失的测试并自动生成 |
 | [**ruflo-browser**](plugins/ruflo-browser/README.md) | 使用 Playwright 自动化浏览器测试 |
 | [**ruflo-jujutsu**](plugins/ruflo-jujutsu/README.md) | 分析 git diff、评估风险、推荐审查人 |
+| [**ruflo-rure**](plugins/ruflo-rure/) | 对你有权研究的本地 JS/Electron 应用做静态分析，并给出文件与行号证据 |
 | [**ruflo-docs**](plugins/ruflo-docs/README.md) | 自动生成与维护文档 |
 
 #### 安全与合规
@@ -128,6 +203,7 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
 |--------|-------------|
 | [**ruflo-security-audit**](plugins/ruflo-security-audit/README.md) | 扫描漏洞与 CVE |
 | [**ruflo-aidefence**](plugins/ruflo-aidefence/README.md) | 拦截提示词注入、检测 PII、安全扫描 |
+| [**ruflo-protector**](plugins/ruflo-protector/README.md) | 可选的无人值守智能体看门狗——学习、通知或强制执行 |
 
 #### 架构与方法论
 
@@ -146,6 +222,7 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
 | [**ruflo-migrations**](plugins/ruflo-migrations/README.md) | 安全地管理数据库 schema 变更 |
 | [**ruflo-observability**](plugins/ruflo-observability/README.md) | 一站式结构化日志、追踪与指标 |
 | [**ruflo-cost-tracker**](plugins/ruflo-cost-tracker/README.md) | 跟踪 token 用量、设定预算、获取成本告警 |
+| [**ruflo-ruos**](plugins/ruflo-ruos/README.md) | 在你自己的 ruOS 云桌面上运行蜂群智能体 |
 
 #### 可扩展性
 
@@ -161,6 +238,7 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
 | [**ruflo-iot-cognitum**](plugins/ruflo-iot-cognitum/README.md) | IoT 设备管理——信任评分、异常检测、设备群 |
 | [**ruflo-neural-trader**](plugins/ruflo-neural-trader/README.md) | [`neural-trader`](https://npmjs.com/package/neural-trader)——AI 交易，含 4 个智能体、回测、112+ 工具 |
 | [**ruflo-market-data**](plugins/ruflo-market-data/README.md) | 摄入市场数据、向量化 OHLCV、检测形态 |
+| [**ruflo-music**](plugins/ruflo-music/README.md) | 通过 Cognitum Music 账户作曲、生成音轨并处理分轨 |
 
 </details>
 
@@ -207,7 +285,7 @@ claude mcp add claude-flow -- npx ruflo@latest mcp start
 | 🧠 **自学习** | SONA 神经模式、ReasoningBank、轨迹学习 |
 | 💾 **向量记忆** | 基于 HNSW 索引的 AgentDB——实测在 N=20k 时比暴力检索快约 1.9 倍，N=5k 时快约 3.2–4.7 倍（recall@10 ≈ 0.99）；超过交叉点后 ANN 胜出，小规模 N 下持平或略逊。参见[审计报告](docs/reviews/intelligence-system-audit-2026-05-29.md)与 [`scripts/benchmark-intelligence.mjs`](scripts/benchmark-intelligence.mjs) |
 | ⚡ **后台工作者** | 12 个自动触发的工作者（审计、优化、测试缺口等） |
-| 🧩 **插件市场** | 33 个原生 Claude Code 插件 + 21 个 npm 插件 |
+| 🧩 **插件市场** | 48 个原生 Claude Code 插件 + 14 个仓库内 npm 插件 |
 | 🔌 **多提供商** | Claude、GPT、Gemini、Cohere、Ollama，支持智能路由 |
 | 🛡️ **安全性** | AIDefence、输入校验、CVE 修复、路径穿越防护 |
 | 🌐 **智能体联邦** | 跨安装的智能体协作，零信任安全 |

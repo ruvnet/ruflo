@@ -14,6 +14,7 @@ vi.mock('../src/memory/memory-initializer.js', () => ({
   },
 }));
 const dir = mkdtempSync(join(tmpdir(), 'ruflo-export-native-'));
+process.env.CLAUDE_FLOW_CWD = dir; // MCP export paths are contained to the project
 state.dbPath = join(dir, 'memory.db');
 const db = new Database(state.dbPath);
 afterAll(() => { db.close(); rmSync(dir, { recursive: true, force: true }); });

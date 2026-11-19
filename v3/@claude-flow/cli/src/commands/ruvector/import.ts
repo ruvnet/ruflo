@@ -201,9 +201,10 @@ export const importCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const inputFile = ctx.flags.input as string | undefined;
-    const fromMemory = ctx.flags['from-memory'] as boolean;
+    const fromMemory = (ctx.flags.fromMemory ?? ctx.flags['from-memory']) as boolean;
     const outputFile = ctx.flags.output as string | undefined;
-    const batchSize = (ctx.flags['batch-size'] as number) || 100;
+    const batchSizeFlag = ctx.flags.batchSize ?? ctx.flags['batch-size'] ?? 100;
+    const batchSize = typeof batchSizeFlag === 'string' ? Number(batchSizeFlag) : batchSizeFlag;
     const containerName = (ctx.flags.container as string) || 'ruvector-postgres';
     const verbose = ctx.flags.verbose as boolean;
 
@@ -211,6 +212,12 @@ export const importCommand: Command = {
     output.writeln(output.bold('RuVector PostgreSQL Import'));
     output.writeln(output.dim('=' .repeat(50)));
     output.writeln();
+
+    if (typeof batchSize !== 'number' || !Number.isSafeInteger(batchSize) || batchSize < 1) {
+      const message = '--batch-size must be a positive integer';
+      output.printError(message);
+      return { success: false, message };
+    }
 
     // Validate input
     if (!inputFile && !fromMemory) {
@@ -292,6 +299,7 @@ export const importCommand: Command = {
     sqlStatements.push('BEGIN;');
     sqlStatements.push('');
 
+    const inserts: string[] = [];
     for (const entry of entries) {
       try {
         // Track statistics
@@ -302,9 +310,7 @@ export const importCommand: Command = {
           stats.withEmbeddings++;
         }
 
-        const sql = generateInsertSQL(entry);
-        sqlStatements.push(sql);
-        sqlStatements.push('');
+        inserts.push(generateInsertSQL(entry));
         stats.imported++;
 
         if (verbose) {
@@ -315,6 +321,15 @@ export const importCommand: Command = {
         const errorMessage = error instanceof Error ? error.message : String(error);
         output.printWarning(`Skipped entry "${entry.key}": ${errorMessage}`);
       }
+    }
+
+    // Send each batch as one statement while keeping ordered upserts in the same transaction.
+    for (let offset = 0; offset < inserts.length; offset += batchSize) {
+      const batch = inserts.slice(offset, offset + batchSize).join('\n\n');
+      let tag = 'ruvector_batch';
+      // A value containing the delimiter must stay inside the block.
+      while (batch.includes(`$${tag}$`)) tag += '_';
+      sqlStatements.push(`DO $${tag}$\nBEGIN\n${batch}\nEND;\n$${tag}$;`, '');
     }
 
     sqlStatements.push('COMMIT;');

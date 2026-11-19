@@ -11,6 +11,7 @@
 // answer is utilisation, so it is always shown at several busy fractions.
 
 import { lookup } from './_pricebook.mjs';
+import { pathToFileURL } from 'node:url';
 
 const arg = (name, fallback) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? Number(process.argv[i + 1]) : fallback; };
 const text = name => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : undefined; };
@@ -33,7 +34,8 @@ export function breakEvenBusy(config, apiPerMtok) {
   return denominator > 0 && fixedPerHour / denominator <= 1 ? fixedPerHour / denominator : null;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// pathToFileURL, not `file://${argv[1]}`: on Windows import.meta.url is file:///C:/... and argv[1] is C:..., so the string never matched and the script printed nothing.
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const config = { wattsIdle: arg('watts-idle', 80), wattsActive: arg('watts-active', 350), kwh: arg('kwh', 0.15), hwPrice: arg('hw-price', 3000), lifeYears: arg('life-years', 3), resale: arg('resale', 0.2), tokPerS: arg('tok-per-s', NaN) };
   if (!Number.isFinite(config.tokPerS) || config.tokPerS <= 0) { console.error('usage: local-cost.mjs --tok-per-s <measured generation speed> [options]'); process.exit(2); }
   const busy = arg('busy', 0.25);

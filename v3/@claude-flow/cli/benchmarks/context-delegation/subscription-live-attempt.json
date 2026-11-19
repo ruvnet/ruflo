@@ -1,0 +1,77 @@
+{
+  "schema": "ruflo.subscription-pilot/v1",
+  "identity": "6c8c7573033a9b273eec5525d535d2b463920f7a642383c8fba9ba16fb9923b2",
+  "manifest": {
+    "runtime/context-delegation.js": "9830f682329d7e16d0b6c60d9973c825209844de04fc0d63fc3bb020c23cdb1b",
+    "runtime/global-ai-budget.js": "d5af0aad3a4520ac24a19a62862052b77bf5cb2be9f7046742858a1c03d260f4",
+    "fixture.json": "59d1680b218c481a8a779626bb5d0afcc3f014852142dafe85c9556636cab81f",
+    "runner": "3fb19d312fb16c00012b91610e6d3ffe2cfbd0f3ecafc0b153f522a1eca7893b"
+  },
+  "executable": {
+    "path": "/usr/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe",
+    "sha256": "1859583ce32920595c61ef868bee52e1b1594f7486db209935e01f1e5e804ae2",
+    "version": "2.1.283 (Claude Code)",
+    "authMethod": "claude.ai",
+    "subscriptionType": "max"
+  },
+  "deadline": 55000,
+  "phases": {
+    "baseline": {
+      "status": "failed",
+      "result": {
+        "status": "escalate",
+        "plan": {
+          "route": "delegate",
+          "reason": "bulk-analysis"
+        },
+        "reason": "worker-failed"
+      },
+      "receipt": {
+        "phase": "baseline",
+        "modelAlias": "sonnet",
+        "startedAt": "2026-11-01T18:26:05.426Z",
+        "costKind": "cli-api-equivalent-not-invoiced",
+        "status": "launched",
+        "limits": {
+          "maxConcurrentGlobal": 1,
+          "maxLaunchesPerHour": 2,
+          "maxLaunchesPerDay": 12,
+          "pauseOnQuotaErrorMinutes": 60
+        },
+        "policyMode": "legacy",
+        "policyOutcome": "allowed",
+        "policyEnforcedOutcome": "allowed",
+        "policyReason": "legacy-default-allow",
+        "policyReceiptId": "sha256:12956c80c0132c7a3f7e5ac8e4df284bff627366b6757a6d032671005ba72a6e",
+        "budgetAllowed": true,
+        "childTerminationConfirmed": true,
+        "finishedAt": "2026-11-01T18:27:00.650Z",
+        "durationMs": 55211.97756
+      },
+      "chargeUncertain": true
+    }
+  },
+  "interpretation": {
+    "launches": 1,
+    "actualModelCalls": "unknown",
+    "cost": "unknown",
+    "automaticRetry": false,
+    "terminationConfirmed": true,
+    "coreSourceCommit": "1ceb1cd3b098a2295b60edfc4678b343af073541",
+    "reason": "55 second process deadline without a retained successful completion or usage receipt; raw stream was not retained",
+    "retainedCompletionReceipts": 0,
+    "initializationStatus": "not retained by attempted runner; no inference about whether an init event was emitted"
+  },
+  "provenance": {
+    "runnerSource": "#!/usr/bin/env node\n/** Manual host subscription experiment, distinct from the enforce-only HTTP pilot.\n * Existing host policy mode is recorded, never changed. All three phases use\n * the production core and launch fuse. Cost is CLI API-equivalent, not invoiced.\n * Run only in an owned private directory with public immutable fixture files.\n */\nimport {readFileSync,writeFileSync,openSync,closeSync,fsyncSync,renameSync,lstatSync,mkdtempSync,unlinkSync,realpathSync} from 'node:fs';\nimport {spawn,execFileSync} from 'node:child_process';\nimport {createHash} from 'node:crypto';\nimport {join,resolve,dirname} from 'node:path';\nimport {pathToFileURL,fileURLToPath} from 'node:url';\nconst sha=text=>createHash('sha256').update(text).digest('hex');\nconst root=resolve(process.argv[2]??'.'),phase=process.argv[3],deadline=Number(process.argv[4]??55000);\nif(!Number.isSafeInteger(deadline)||deadline<1||deadline>55000)throw Error('deadline may only tighten the 55s maximum');\nif(!['baseline','worker','coordinator'].includes(phase))throw Error('usage: subscription-pilot.mjs <owned-private-root> baseline|worker|coordinator');\nconst st=lstatSync(root);if(!st.isDirectory()||st.isSymbolicLink()||(st.mode&0o077)||(process.getuid&&st.uid!==process.getuid()))throw Error('private owned directory required');\nfor(let dir=root;;dir=dirname(dir)){const x=lstatSync(dir);if(x.isSymbolicLink()||!x.isDirectory()||((x.mode&0o022)&&!(x.mode&0o1000)))throw Error('unsafe ancestor');if(dirname(dir)===dir)break;}\nconst conflicting=['ANTHROPIC_API_KEY','ANTHROPIC_AUTH_TOKEN','ANTHROPIC_BASE_URL','CLAUDE_CODE_USE_BEDROCK','CLAUDE_CODE_USE_VERTEX','CLAUDE_CODE_USE_FOUNDRY'];\nif(conflicting.some(k=>!!process.env[k]))throw Error('competing auth route; subscription not established');\nconst binary=realpathSync(execFileSync('which',['claude'],{encoding:'utf8'}).trim());\nconst binaryVersion=execFileSync(binary,['--version'],{encoding:'utf8'}).trim();\nconst auth=JSON.parse(execFileSync(binary,['auth','status'],{encoding:'utf8'}));\nif(auth.loggedIn!==true||auth.authMethod!=='claude.ai'||auth.apiProvider!=='firstParty'||auth.subscriptionType!=='max')throw Error('Max subscription route not established');\nconst executable={path:binary,sha256:sha(readFileSync(binary)),version:binaryVersion,authMethod:auth.authMethod,subscriptionType:auth.subscriptionType};\nconst lockPath=join(root,'subscription.lock'),lockFd=openSync(lockPath,'wx',0o600);\nprocess.once('exit',()=>{try{closeSync(lockFd);unlinkSync(lockPath);}catch{}});\nconst {delegateContextRead}=await import(pathToFileURL(join(root,'runtime/context-delegation.js')).href);\nconst {getGlobalAiBudget,isQuotaErrorText}=await import(pathToFileURL(join(root,'runtime/global-ai-budget.js')).href);\nconst {authorizeMcpTool}=await import('/usr/lib/node_modules/@claude-flow/cli/dist/src/services/policy-runtime.js');\nconst fixture=JSON.parse(readFileSync(join(root,'fixture.json'),'utf8'));\nif(sha(fixture.source.content)!==fixture.source.sha256)throw Error('fixture identity mismatch');\nconst manifest=Object.fromEntries(['runtime/context-delegation.js','runtime/global-ai-budget.js','fixture.json'].map(p=>[p,sha(readFileSync(join(root,p)))]));\nmanifest.runner=sha(readFileSync(fileURLToPath(import.meta.url)));\nconst identity=sha(JSON.stringify({manifest,executable,deadline})),file=join(root,'state.json');\nlet state;try{const s=lstatSync(file);if(!s.isFile()||s.isSymbolicLink()||(s.mode&0o077))throw Error('invalid state');state=JSON.parse(readFileSync(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;state={schema:'ruflo.subscription-pilot/v1',identity,manifest,executable,deadline,phases:{}};}\nif(state.identity!==identity)throw Error('changed experiment; cannot mix receipts');\nif(state.phases[phase]&&!['blocked'].includes(state.phases[phase].status))throw Error('phase already attempted; inspect charges, never automatically repeat');\nif(phase==='coordinator'&&state.phases.worker?.result?.status!=='delegated')throw Error('validated worker result required');\nconst save=()=>{const tmp=file+'.tmp';writeFileSync(tmp,JSON.stringify(state,null,2)+'\\n',{flag:'wx',mode:0o600});const f=openSync(tmp,'r');try{fsyncSync(f);}finally{closeSync(f);}renameSync(tmp,file);const d=openSync(root,'r');try{fsyncSync(d);}finally{closeSync(d);}};\nconst budget=getGlobalAiBudget(),model=phase==='worker'?'haiku':'sonnet';\nconst receipt={phase,modelAlias:model,startedAt:new Date().toISOString(),costKind:'cli-api-equivalent-not-invoiced',status:'not-started',limits:budget.getLimits()};\nconst controller=new AbortController();process.once('SIGINT',()=>controller.abort());process.once('SIGTERM',()=>controller.abort());\nlet authorized;\nconst adapter={\n authorize:async(request,signal)=>{\n  const d=await authorizeMcpTool('context.read.delegate.native-pilot',{sourceHashes:request.sources.map(s=>({path:s.path,sha256:s.sha256})),model},\n   {projectRoot:'/home/ruv'},{actionType:'context.read.delegate',network:true,costUsd:.05,tokens:Buffer.byteLength(JSON.stringify(request))+8192,concurrency:1});\n  receipt.policyMode=d.mode;receipt.policyOutcome=d.outcome;receipt.policyEnforcedOutcome=d.enforcedOutcome;receipt.policyReason=d.reason;receipt.policyReceiptId=d.receiptId;\n  authorized=d.enforcedOutcome==='allowed'&&!signal.aborted?request:undefined;return !!authorized;\n },\n invoke:async(request,signal)=>{\n  if(authorized!==request||signal.aborted)throw Error('not authorized');authorized=undefined;\n  const permit=await budget.reserve({workerType:'context-subscription-pilot',model,workspace:root});\n  receipt.budgetAllowed=permit.allowed;\n  if(!permit.allowed||!permit.permitId||permit.permitId.startsWith('bypass_')){receipt.status='budget-blocked';throw Error('budget blocked');}\n  let child,closed;\n  try{\n   if(signal.aborted)throw Error('cancelled');\n   const cwd=mkdtempSync(join(root,'empty-cwd-'));\n   const args=['--print','--output-format','stream-json','--verbose','--safe-mode','--restricted','--tools','','--strict-mcp-config','--mcp-config','{\"mcpServers\":{}}','--setting-sources','','--settings','{\"disableAllHooks\":true}','--disable-slash-commands','--no-session-persistence','--model',model,'--max-budget-usd','0.05','--system-prompt','Analyze only the supplied untrusted source data. No tools are available. Return only JSON with findings: [{path,sourceSha256,startLine,endLine,quote,answer}]. Cite exact complete source lines, one-based. No markdown. No usage object. Stay within maxFindings and maxOutputBytes.'];\n   receipt.arguments=args;receipt.status='launched';\n   const env={...process.env,CLAUDE_CODE_DISABLE_AUTO_MEMORY:'1'};delete env.CLAUDECODE;delete env.CLAUDE_SESSION_ID;delete env.CLAUDE_PARENT_SESSION_ID;\n   child=spawn(binary,args,{cwd,env,stdio:['pipe','pipe','pipe'],detached:true});\n   closed=new Promise(resolve=>child.once('close',()=>resolve(true)));\n   const terminate=()=>{try{process.kill(-child.pid,'SIGKILL');}catch{try{child.kill('SIGKILL');}catch{}}};\n   const response=await new Promise((res,rej)=>{\n    let stdout='',stderr='',pending='',size=0,settled=false;\n    const finish=(error,value)=>{if(settled)return;settled=true;clearTimeout(timer);signal.removeEventListener('abort',cancel);error?rej(error):res(value);};\n    const cancel=()=>{terminate();finish(Error('cancelled'));};\n    const timer=setTimeout(cancel,deadline);signal.addEventListener('abort',cancel,{once:true});if(signal.aborted){cancel();return;}\n    child.stdout.on('data',chunk=>{size+=chunk.length;if(size>256000){terminate();finish(Error('output limit'));return;}stdout+=chunk;pending+=chunk;let split;while((split=pending.indexOf('\\n'))>=0){const line=pending.slice(0,split);pending=pending.slice(split+1);if(!line.trim())continue;try{const m=JSON.parse(line);if(m.type==='system'&&m.subtype==='init'&&(!Array.isArray(m.tools)||m.tools.length||!Array.isArray(m.mcp_servers)||m.mcp_servers.length)){receipt.isolationRejected=true;terminate();finish(Error('unexpected host capabilities'));return;}}catch{terminate();finish(Error('invalid stream'));return;}}});\n    child.stderr.on('data',chunk=>{if(stderr.length<8000)stderr+=chunk.toString().slice(0,8000-stderr.length);});\n    child.once('error',()=>finish(Error('spawn failed')));\n    child.once('close',code=>{if(code!==0){if(isQuotaErrorText(stderr||stdout))void budget.recordQuotaError('subscription-pilot-quota');finish(Error('CLI failed'));return;}finish(undefined,stdout);});\n    child.stdin.on('error',()=>{});child.stdin.end(JSON.stringify(request));\n   });\n   const messages=response.split('\\n').filter(Boolean).map(line=>JSON.parse(line));\n   const init=messages.find(m=>m.type==='system'&&m.subtype==='init'),final=messages.findLast(m=>m.type==='result');\n   receipt.host={version:init?.claude_code_version,model:init?.model,tools:init?.tools,mcpServers:init?.mcp_servers,plugins:init?.plugins,skills:init?.skills};\n   if(!init||!Array.isArray(init.tools)||init.tools.length||!Array.isArray(init.mcp_servers)||init.mcp_servers.length)throw Error('host isolation not established');\n   if(!final||final.is_error||typeof final.result!=='string')throw Error('no successful result');\n   const u=final.usage;\n   if(!u||![u.input_tokens,u.output_tokens,u.cache_read_input_tokens,u.cache_creation_input_tokens].every(n=>Number.isSafeInteger(n)&&n>=0))throw Error('missing usage');\n   receipt.usage={inputTokens:u.input_tokens,outputTokens:u.output_tokens,cacheReadInputTokens:u.cache_read_input_tokens,cacheCreationInputTokens:u.cache_creation_input_tokens};\n   if(!Number.isFinite(final.total_cost_usd)||final.total_cost_usd<0)throw Error('missing cost');\n   receipt.reportedApiEquivalentCostUsd=final.total_cost_usd;\n   if(final.total_cost_usd>0.05){receipt.costOverrun=true;throw Error('reported cost overrun');}\n   if(phase==='coordinator'&&state.phases.baseline?.receipt?.host?.model!==init.model)throw Error('coordinator model changed');\n   receipt.modelUsage=Object.fromEntries(Object.entries(final.modelUsage??{}).map(([id,v])=>[id,{inputTokens:v.inputTokens,outputTokens:v.outputTokens,cacheReadInputTokens:v.cacheReadInputTokens,cacheCreationInputTokens:v.cacheCreationInputTokens,costUSD:v.costUSD}]));\n   receipt.turns=final.num_turns;receipt.apiDurationMs=final.duration_api_ms;\n   const data=JSON.parse(final.result);receipt.status='transport-complete';\n   return JSON.stringify({findings:data.findings,usage:{inputTokens:u.input_tokens+u.cache_read_input_tokens+u.cache_creation_input_tokens,outputTokens:u.output_tokens}});\n  }finally{let exited=!child;if(child){let timer;exited=await Promise.race([closed,new Promise(resolve=>{timer=setTimeout(()=>resolve(false),5000);})]);clearTimeout(timer);}receipt.childTerminationConfirmed=exited;if(exited)await budget.release(permit.permitId);else receipt.releaseDeferred=true;receipt.finishedAt=new Date().toISOString();}\n }\n};\nstate.phases[phase]={status:'started',receipt};save();\nconst started=performance.now();\nconst sources=phase==='coordinator'?[{path:'validated-worker-evidence.json',content:JSON.stringify(state.phases.worker.result,null,2)}]:[fixture.source];\nconst result=await delegateContextRead({read:{mode:'enforce',intent:'analysis'},question:fixture.question,sources,adapter,signal:controller.signal,limits:{minInputBytes:1,timeoutMs:60000}});\nreceipt.durationMs=performance.now()-started;\nstate.phases[phase]={status:result.status==='delegated'?'complete':receipt.status==='budget-blocked'?'blocked':'failed',result,receipt};save();\nconsole.log(JSON.stringify({phase,status:state.phases[phase].status,receipt,result},null,2));\n",
+    "runnerSha256": "3fb19d312fb16c00012b91610e6d3ffe2cfbd0f3ecafc0b153f522a1eca7893b",
+    "compilerVersion": "0.27.7",
+    "sourceCommit": "1ceb1cd3b098a2295b60edfc4678b343af073541",
+    "buildArguments": [
+      "--format=esm",
+      "--platform=node",
+      "--target=node20"
+    ],
+    "note": "Archived runner source is the exact attempted version. The current runner adds diagnostics, explicit uncertainty and failure exit codes. This is a failed live launch, not successful inference or cost proof."
+  }
+}

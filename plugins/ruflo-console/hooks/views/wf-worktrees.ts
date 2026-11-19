@@ -12,6 +12,7 @@
 import type { RenderElement } from 'claude-code'
 
 import type { ActionSpec } from '../actions'
+import { filterGuarded } from '../data/git-filters'
 import { plain } from '../data/parse'
 import { cleanText } from '../data/wf-clean'
 import { checkProcs, failureOf, inUseOf, planRemoval, readSummary, readWorktrees, REMOVE_ARGV, REMOVE_MAX, whyKept, type ProcCheck, type WtIo, type WtRead, type WtRow } from '../data/wf-worktrees'
@@ -92,7 +93,7 @@ function line(ctx: Ctx, read: WtRead, entry: WtRow, check: ProcCheck | null, now
 
   return row(ctx, [
     text(ctx, ` ${why === null ? '✔' : entry.isMain ? '■' : entry.isCurrent ? '▸' : '·'} `, { ...(tone !== undefined && { color: tone }) }),
-    text(ctx, name, { bold: why === null }),
+    text(ctx, name, { weight: (why === null) ? 'semibold' : 'regular' }),
     ...(ctx.columns >= 90 ? [text(ctx, `${branch} `, { dimColor: true })] : []),
     text(ctx, `${counts} · ${dirty} · ${age}${inUse !== null && inUse > 0 ? ` · ${inUse} live` : ''} · ${made}  `, { dimColor: true }),
     text(ctx, verdict, { ...(tone !== undefined && { color: tone }), dimColor: tone === undefined }),
@@ -180,7 +181,15 @@ export function removalSpec(env: SlotEnv): ActionSpec | null {
             continue
           }
 
-          const result = await host.run(REMOVE_ARGV(root, path), 60_000)
+          // git worktree remove runs its own status on the worktree, which can run a filter driver from the repository's config: blank them first
+          const guarded = await filterGuarded(host.run, path, REMOVE_ARGV(root, path))
+
+          if (guarded === null) {
+            skipped.push(`${label}: could not make git safe to run here (a filter driver in the repository's config could not be switched off)`)
+            continue
+          }
+
+          const result = await host.run(guarded, 60_000)
 
           if (result.exitCode === 0) gone.push(label)
           else skipped.push(`${label}: git said ${cleanText(plain(result.stderr || result.stdout, 100)) || `exit ${result.exitCode}`}`)

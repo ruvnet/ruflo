@@ -4,8 +4,10 @@
  * document. Local only: nothing here reaches the network, and the script path comes from `installed_plugins.json`,
  * validated, never from typed text. Read-only: the section stores and starts nothing.
  */
+import { safeInstallPath } from './cost-ledger'
 import type { Probe } from './cli'
-import { jsonObject, msOf, numberOf, recordOf, stringOf } from './parse'
+import { jsonObject, msOf, recordOf, stringOf } from './parse'
+import { measureOf } from './safe'
 
 import type { State } from '../state'
 
@@ -31,12 +33,8 @@ const STATUSES: readonly string[] = ['done', 'truncated', 'failed']
 const MAX_RECORDS = 8
 const MAX_FINDINGS = 500
 
-/** An absolute POSIX path of a plugin's install directory: no `..`, no control characters, no shell-looking text. */
-export const safeInstallPath = (value: unknown): string | undefined => {
-  const path = typeof value === 'string' ? value : ''
-
-  return /^\/[A-Za-z0-9._@+/ -]{1,300}$/.test(path) && !path.split('/').includes('..') ? path : undefined
-}
+/** An absolute path of a plugin's install directory (POSIX, or drive-lettered on Windows): data/cost-ledger.ts holds the one check. */
+export { safeInstallPath }
 
 const countGrades = (findings: readonly unknown[]): Record<Grade, number> => {
   const grades: Record<Grade, number> = { High: 0, Medium: 0, Low: 0 }
@@ -63,8 +61,9 @@ export function parseResearch(stdout: string): ResearchRecord[] | null {
     if (record === null || question === undefined) return []
 
     const findings = (Array.isArray(record.findings) ? record.findings : []).slice(0, MAX_FINDINGS)
-    const spent = numberOf(record.spentUsd)
-    const cap = numberOf(record.capUsd)
+    // Dollars are bounded where they are read: `1e300` would draw "$1e+300" (#3822).
+    const spent = measureOf(record.spentUsd)
+    const cap = measureOf(record.capUsd)
     const status = typeof record.status === 'string' && STATUSES.includes(record.status) ? (record.status as ResearchRecord['status']) : 'unknown'
 
     return [{

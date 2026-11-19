@@ -201,7 +201,7 @@ const providersCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const defaultProviders = [
-      { name: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 1, enabled: true, status: 'Active' },
+      { name: 'anthropic', model: 'claude-sonnet-5-5', priority: 1, enabled: true, status: 'Active' },
       { name: 'openrouter', model: 'claude-3.5-sonnet', priority: 2, enabled: false, status: 'Disabled' },
       { name: 'ollama', model: 'llama3.2', priority: 3, enabled: false, status: 'Disabled' },
       { name: 'gemini', model: 'gemini-2.0-flash', priority: 4, enabled: false, status: 'Disabled' }
@@ -319,7 +319,7 @@ const resetCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     try {
-      const configPath = configManager.reset(ctx.cwd);
+      const configPath = configManager.reset(ctx.cwd, ctx.flags.section as string | undefined);
       output.writeln(`Configuration reset to defaults: ${configPath}`);
       return { success: true };
     } catch (err: unknown) {

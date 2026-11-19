@@ -5,6 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { randomUUID } from 'crypto';
 import type {
   MCPSession,
   SessionState,
@@ -200,6 +201,23 @@ export class SessionManager extends EventEmitter {
     return this.closeSession(sessionId);
   }
 
+  /**
+   * When at capacity, close the least recently active session other than
+   * `keepId` so one more can be created. Returns the closed session's id, or
+   * undefined when there was room or nothing else to close (#4674).
+   */
+  reserveCapacity(keepId?: string): string | undefined {
+    if (this.sessions.size < this.config.maxSessions) return undefined;
+    let oldest: MCPSession | undefined;
+    for (const session of this.sessions.values()) {
+      if (session.id === keepId) continue;
+      if (!oldest || session.lastActivityAt < oldest.lastActivityAt) oldest = session;
+    }
+    if (!oldest) return undefined;
+    this.closeSession(oldest.id, 'Evicted to make room for a new session');
+    return oldest.id;
+  }
+
   getSessionMetrics(): SessionMetrics {
     let authenticated = 0;
     let active = 0;
@@ -313,7 +331,9 @@ export class SessionManager extends EventEmitter {
   }
 
   private generateSessionId(): string {
-    return `session-${++this.sessionCounter}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    // Counter + timestamp + Math.random() was predictable (6 base36 chars),
+    // so use a UUID for the unguessable part.
+    return `session-${++this.sessionCounter}-${randomUUID()}`;
   }
 
   clearAll(): void {

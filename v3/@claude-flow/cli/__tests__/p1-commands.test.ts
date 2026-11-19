@@ -531,7 +531,7 @@ describe('Start Command', () => {
     });
 
     it('should skip MCP server when requested', async () => {
-      ctx.flags = { 'skip-mcp': true, _: [] };
+      ctx.flags = { skipMcp: true, _: [] }; // the parser camelCases --skip-mcp
 
       const result = await startCommand.action!(ctx);
 

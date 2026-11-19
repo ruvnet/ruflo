@@ -1,0 +1,23 @@
+{
+  "kind": "synthetic CPU and contract benchmark",
+  "node": "v24.22.1",
+  "sourceHashes": {
+    "managed-run-collector.ts": "9ea9862916b43766f93cb4886999457858364101cc36abbfdbecab24badc1257",
+    "managed-learning.ts": "beb451f5b58d2afb39749e2730c811c6b3b7dc04aa3e636201eb307834abfcae",
+    "managed-run-store.ts": "e75c5f25d9f0537a9560d8f120fe7915aea287d3f01bf2b430a4394608504c02",
+    "managed-learning-store.ts": "16d044cbd5818f36c9ad4d6539534ca0af8e597e0460933ee725795a43476ea3"
+  },
+  "workers": 1000,
+  "replayedEvents": 6006,
+  "uniqueEvents": 3003,
+  "eventReads": 1,
+  "sessionReads": 1,
+  "inactiveReads": 0,
+  "collectionMs": 51.251221000000015,
+  "workerPageMedianMs": 0.052930000000003474,
+  "signedTrainingRows": 60,
+  "signatureVerificationMs": 15.94511,
+  "recommendationMedianMs": 0.8973909999999705,
+  "syntheticSelected": "candidate",
+  "limitations": "Fixture costs and outcomes are synthetic. No live provider quality, dollar savings, native vector backend or GPU/UI performance is measured. Warm console rendering is separately covered by view tests."
+}

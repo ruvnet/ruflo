@@ -9,11 +9,11 @@ export function splitName(name: string): { server: string; tool: string } | unde
   return at > 5 ? { server: name.slice(5, at), tool: name.slice(at + 2) } : undefined
 }
 
-/** True for the tool calls this plugin guards: what goes into team memory and task or run records (`memory_remember`, `task_create`, `task_update`, `run_create` on the ruflo-ai-team server). */
+/** True for the tool calls this plugin guards: what goes into team memory and team, task or run records (`memory_remember`, `task_create`, `task_update`, `run_create`, `team_create`, `team_update` on the ruflo-ai-team server). */
 export function owns(tool: string, input: unknown): boolean {
   const parts = splitName(tool)
   const name = parts?.tool ?? tool
-  return (parts?.server ?? '').includes('ruflo-ai-team') && ['memory_remember', 'task_create', 'task_update', 'run_create'].includes(name)
+  return (parts?.server ?? '').includes('ruflo-ai-team') && ['memory_remember', 'task_create', 'task_update', 'run_create', 'team_create', 'team_update'].includes(name)
 }
 
 /** The reason a call is refused, or undefined when it may go. Never names or echoes the secret. */

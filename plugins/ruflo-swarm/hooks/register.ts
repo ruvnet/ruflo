@@ -2,7 +2,7 @@ import type { EngineInterface, On, PluginOptions } from 'claude-code'
 
 import { paneActionsOf, type Controller } from './actions/controller'
 import { AUDIT_FLUSH_MS, auditRow, noteAudit, takeFlush } from './audit'
-import { readAdrDigest } from './adr-digest'
+import { framedDigest, readAdrDigest } from './adr-digest'
 import { claimsText, COMMANDS, consensusText, isSwarmSub, spawnNote, statusText, SWARM_SUBS, topologyText, type SwarmSub } from './commands'
 import type { Host, OpenResult } from './host'
 import { isAnimating, LEAD, loopLabel, newActivity, noteCall, noteDone, noteListed, noteResult, noteSpawn, stuckCall } from './model/members'
@@ -12,6 +12,7 @@ import { CLI_PREFIXES, newState, PANE_ID, persistedOf, restore, storeKeyOf, type
 import { createToastKit } from './toast-policy'
 import { paneModelOf } from './views/model'
 import { paneView } from './views/pane'
+import { hasTextWeight, withTextWeight } from './text-weight'
 
 const REFRESH_DEBOUNCE_MS = 400
 const TICK_MS = 2_000
@@ -73,6 +74,7 @@ export function register(on: On, raw: PluginOptions) {
   const state: State = newState(raw, newActivity())
   const cache: ReadCache = new Map()
   let host: Host | null = null
+  let textWeight = false
 
   const persist = () => {
     void host?.storeSet(storeKeyOf(state.cwd), persistedOf(state)).catch(() => undefined)
@@ -221,6 +223,8 @@ export function register(on: On, raw: PluginOptions) {
 
   on('session.start', async ($, e, next) => {
     host = hostOf($, e.cwd)
+    // Text `weight` (2.1.299) where the engine takes it, `bold` before (text-weight.ts).
+    textWeight = hasTextWeight(await (async () => $.session.version())().catch(() => undefined))
     state.cwd = e.cwd
 
     for (const timer of state.timers.values()) {
@@ -285,7 +289,7 @@ export function register(on: On, raw: PluginOptions) {
       return next(e)
     }
 
-    const table = $.ui.resolve(e)
+    const table = withTextWeight($.ui.resolve(e), textWeight)
     const columns = Math.max(20, Math.floor(Number(e.props.bodyColumns) || 0) - 1)
     const rows = Math.max(0, Math.floor(Number(e.props.scroll?.bodyRows) || 0))
     const nowMs = Date.now()
@@ -423,7 +427,7 @@ export function register(on: On, raw: PluginOptions) {
     const note = state.options.injectSpawnContext ? spawnNote(state.snapshot) : null
     // ADR-480: the accepted decisions attached to the console's active mission, as data after the task.
     const adr = state.options.injectAdrs && host !== null ? await readAdrDigest(host.fs, await host.now().catch(() => Date.now())) : null
-    const prompt = `${e.prompt}${note ?? ''}${adr === null ? '' : `\n\n---\n${adr.block}`}`
+    const prompt = `${e.prompt}${note ?? ''}${adr === null ? '' : framedDigest(adr)}`
     const result = await next(prompt === e.prompt ? e : { ...e, prompt })
 
     if (result.deny === undefined && result.agentId !== undefined) {

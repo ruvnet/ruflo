@@ -276,40 +276,59 @@ export class GossipConsensus extends EventEmitter {
     const startTime = Date.now();
     const maxWait = this.config.timeoutMs ?? 30000;
 
-    return new Promise((resolve, reject) => {
-      const checkInterval = setInterval(() => {
-        const proposal = this.proposals.get(proposalId);
-        if (!proposal) {
-          clearInterval(checkInterval);
-          reject(new Error(`Proposal ${proposalId} not found`));
+    const proposal = this.proposals.get(proposalId);
+    if (!proposal) {
+      throw new Error(`Proposal ${proposalId} not found`);
+    }
+
+    if (proposal.status !== 'pending') {
+      return this.createResult(proposal, Date.now() - startTime);
+    }
+
+    // checkConvergence() already emits 'consensus.achieved' when the vote
+    // ratio crosses the configured threshold. Wait for that event plus one
+    // expiry timer instead of polling this.proposals with setInterval.
+    return new Promise(resolve => {
+      const cleanup = (): void => {
+        clearTimeout(timer);
+        this.off('consensus.achieved', onAchieved);
+      };
+
+      const onAchieved = (event: { proposalId: string }): void => {
+        if (event.proposalId !== proposalId) return;
+        cleanup();
+        resolve(this.createResult(this.proposals.get(proposalId) ?? proposal, Date.now() - startTime));
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        const current = this.proposals.get(proposalId) ?? proposal;
+
+        if (current.status !== 'pending') {
+          resolve(this.createResult(current, Date.now() - startTime));
           return;
         }
 
-        if (proposal.status !== 'pending') {
-          clearInterval(checkInterval);
-          resolve(this.createResult(proposal, Date.now() - startTime));
-          return;
-        }
-
-        // Check convergence
-        this.checkConvergence(proposalId);
-
-        if (Date.now() - startTime > maxWait) {
-          clearInterval(checkInterval);
-          // Gossip is eventually consistent, so mark as accepted if threshold met
-          const totalNodes = this.nodes.size + 1;
-          const votes = proposal.votes.size;
-          const threshold = this.config.convergenceThreshold ?? 0.9;
-
-          if (votes / totalNodes >= threshold) {
-            proposal.status = 'accepted';
-          } else {
-            proposal.status = 'expired';
+        // Preserve the old timeout fallback: run convergence once more, then
+        // accept when the participation ratio meets the threshold, otherwise
+        // expire.
+        void this.checkConvergence(proposalId).then(() => {
+          if (current.status === 'pending') {
+            const totalNodes = this.nodes.size + 1;
+            const votes = current.votes.size;
+            const threshold = this.config.convergenceThreshold ?? 0.9;
+            current.status = votes / totalNodes >= threshold ? 'accepted' : 'expired';
           }
+          resolve(this.createResult(current, Date.now() - startTime));
+        }).catch(() => {
+          if (current.status === 'pending') {
+            current.status = 'expired';
+          }
+          resolve(this.createResult(current, Date.now() - startTime));
+        });
+      }, maxWait);
 
-          resolve(this.createResult(proposal, Date.now() - startTime));
-        }
-      }, 50);
+      this.on('consensus.achieved', onAchieved);
     });
   }
 

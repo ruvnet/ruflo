@@ -1,10 +1,11 @@
 import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 import { tolerantPress } from './press-guard'
 import { ANSWER_KEYS } from './views/attention'
-
 import { createController, type Controller } from './controller'
+import { startSessions } from './sessions'
 import { record } from './data/events'
 import { plain } from './data/parse'
+import { homeOf, isAbsolutePath, joinPath } from './data/paths'
 import { dispatch } from './dispatch'
 import { markPicture } from './gfx/pictures'
 import type { Host } from './host'
@@ -13,20 +14,20 @@ import { newState, PANE_ID, restore, restoreSessions, storeKeyOf, termStoreKeyOf
 import { BAR_KEY, barView } from './views/bar'
 import { addNotice, dismissNotices } from './notices'
 import { setBootChecks } from './boot-checks'
+import { startWriteFlavor } from './data/write-flavor'
 import { buildOf, isOurCheckout, setBuild } from './build'
-import { runUpdateCheck } from './update-flow'
 import { announceModelTools, parseControlEnv, serveModelTools } from './model-tools'
 import { loadAiPrefs, setControlCap } from './settings'
-import { hydrateWhatsNew } from './whatsnew'
-import { prefsFromStore, recordToast, saveToastPrefs, TOASTS_KEY } from './toasts'
+import { loadAtStart } from './startup-loads'
+import { recordToast } from './toasts'
 import { contextSection, onPromptSubmit, onTurnComplete } from './mission-claude'
-import { parseMode, RECHECK_EVERY_MS, UPDATES_KEY } from './updates'
 import { selfCheckResults } from './self-check'
-import type { Kit } from './views/common'
+import { kitForSurface, type Kit } from './views/common'
 import { createToaster, type Digest, type ToastLevel, type ToastPrefs } from './toast-policy'
 import { picturesOf } from './views/frames'
 import { withClearing } from './views/clearing'
 import { NARROW, paneView } from './views/pane'
+import { hasTextWeight, withTextWeight } from './text-weight'
 
 const RUFLO_TOOL = /^mcp__(claude-flow|ruflo|plugin_ruflo[\w-]*)__/
 
@@ -38,7 +39,7 @@ const RUFLO_TOOL = /^mcp__(claude-flow|ruflo|plugin_ruflo[\w-]*)__/
 let isResettingScroll = false
 
 function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPrefs; record: (digest: Digest) => void }): Host {
-  const rooted = (path: string) => (path.startsWith('/') ? path : `${cwd.replace(/\/+$/, '')}/${path}`)
+  const rooted = (path: string) => (isAbsolutePath(path) ? path : joinPath(cwd, path))
   const quietly = (fn: () => unknown) => {
     try {
       const result = fn()
@@ -61,7 +62,14 @@ function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPre
   })
 
   return {
-    fs: { read: async path => $.fs.read(rooted(path)), stat: async path => $.fs.stat(rooted(path)), list: async path => $.fs.list(rooted(path)) },
+    fs: {
+      read: async path => $.fs.read(rooted(path)),
+      stat: async path => $.fs.stat(rooted(path)),
+      list: async path => $.fs.list(rooted(path)),
+      // The Windows write flavor (write-via.ts): the host's own file API, since no dd, sh, install, mkdir or cp is on the engine's PATH there.
+      write: async (path, text) => $.fs.write(rooted(path), text),
+      exists: async path => $.fs.exists(rooted(path)),
+    },
         every: (ms, fn) => $.clock.every(ms, fn),
     after: (ms, fn) => $.clock.after(ms, fn),
     storeGet: async key => $.store.get(key),
@@ -107,8 +115,21 @@ function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPre
       return { tools: names.length, servers: [...new Set(names)].sort() }
     },
     settings: async () => $.settings.read(),
-    home: async () => $.env.get('HOME'),
+    home: async () => {
+      const [home, userProfile, homeDrive, homePath] = await Promise.all([
+        $.env.get('HOME'),
+        $.env.get('USERPROFILE'),
+        $.env.get('HOMEDRIVE'),
+        $.env.get('HOMEPATH'),
+      ])
+      const envVars: { [key: string]: string | undefined } = { HOME: home, USERPROFILE: userProfile, HOMEDRIVE: homeDrive, HOMEPATH: homePath }
+
+      return homeOf(k => envVars[k])
+    },
     configDir: async () => $.env.get('CLAUDE_CONFIG_DIR'),
+    // The engine lists the variables a module reads, so $.env.get takes a literal name (`claude plugin validate` refuses a computed one, and the mod then does not load):
+    // the one model key the console's own OpenRouter target names is readable here; any other name is not.
+    env: async name => (name === 'OPENROUTER_API_KEY' ? $.env.get('OPENROUTER_API_KEY') : undefined),
     pluginRoot: $.plugin.root,
     // `$.ruflo` exists only where ruflo-mods is seated; validate refuses feature-detecting a noun, so these are
     // async: a missing noun throws inside the promise and every caller's catch sees a rejection.
@@ -158,13 +179,20 @@ export const register: Register = (on, raw: PluginOptions) => {
   const state = newState(raw)
   let host: Host | null = null
   let control: Controller | null = null
+  let textWeight = false
 
   // Claude's console tools (ADR-444): answered only for their own names, and only when the person's setting lets them exist.
   serveModelTools(on, () => (control === null ? null : { state, control }))
 
   on('session.start', async ($, e, next) => {
     control?.stop()
+    // Text `weight` (2.1.299) where the engine takes it, `bold` before (text-weight.ts); unknown until this answers.
+    textWeight = hasTextWeight(await (async () => $.session.version())().catch(() => undefined))
     host = hostOf($, e.cwd, { prefs: () => state.toastPrefs, record: digest => recordToast(state, digest) })
+    // Which write the host takes (GNU dd/install on Linux, the constant sh scripts on macOS/BSD, the host's file API on Windows). Started
+    // before the controller (whose timers write) exists; every write awaits it (writeFlavorReady), so none is built with a guessed flavor.
+    const detecting = host
+    void startWriteFlavor((argv, timeoutMs) => detecting.run(argv, timeoutMs), undefined, e.cwd)
     state.cwd = e.cwd
     state.nostrKeyVerifiedAtMs = null
     state.isInteractive = e.isInteractive !== false
@@ -177,44 +205,14 @@ export const register: Register = (on, raw: PluginOptions) => {
 
     const built = here
       .run(['git', '-C', root, 'rev-parse', '--show-prefix'], 3_000)
-      .then(prefix => (prefix.exitCode === 0 && isOurCheckout(prefix.stdout) ? here.run(['git', '-C', root, 'describe', '--always', '--dirty', '--abbrev=7'], 3_000) : null))
+      .then(prefix => (prefix.exitCode === 0 && isOurCheckout(prefix.stdout) ? here.run(['git', '-C', root, '--no-optional-locks', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null', 'describe', '--always', '--dirty', '--abbrev=7'], 3_000) : null))
       .then(described => {
         setBuild(described !== null && described.exitCode === 0 ? buildOf(described.stdout) : '')
         here.invalidate()
       })
       .catch(() => undefined)
 
-    // The update mode is the person's, kept in the plugin's store; then, once the build is known (a development checkout is never offered
-    // an update) and the screen has settled, one check for a newer published version. It never throws and never blocks the console.
-    const moded = here.storeGet(UPDATES_KEY).then(
-      value => {
-        state.updates = parseMode(value)
-        here.invalidate()
-      },
-      () => undefined,
-    )
-
-    // The Toasts setting is the person's, kept in the plugin's store and mirrored to a file the other plugins read (ADR-477).
-    const toasted = here.storeGet(TOASTS_KEY).then(
-      value => {
-        state.toastPrefs = prefsFromStore(value)
-        if (state.toastPrefs.mode !== 'all' || state.toastPrefs.muted.length > 0) void saveToastPrefs(state, here)
-      },
-      () => undefined,
-    )
-
-    // What's new (ADR-478): the record of what was looked at, read once; the controller's first disk read then takes the baseline.
-    const looked = hydrateWhatsNew(state, here).catch(() => undefined)
-
-    void toasted
-    void looked
-    void Promise.all([built, moded]).then(() => {
-      if (!state.isInteractive) return
-
-      here.after(2_500, () => void runUpdateCheck(state, here))
-      // A session left open for days re-asks too, quietly (no dialog mid-work); the daily gate keeps the network to once a day.
-      state.timers.set('update-recheck', here.every(RECHECK_EVERY_MS, () => void runUpdateCheck(state, here, { quiet: true })))
-    })
+    loadAtStart(state, here, built)
 
     const bound = host
 
@@ -244,6 +242,7 @@ export const register: Register = (on, raw: PluginOptions) => {
       bound.rufloTools().then(counted => void (state.rufloTools = counted), () => undefined),
     ])
     control.start()
+    startSessions(state, bound)
     await control.refresh()
     control.autoOpen()
 
@@ -304,7 +303,7 @@ export const register: Register = (on, raw: PluginOptions) => {
     }
 
     const started = Date.now()
-    const table = $.ui.resolve(e) as unknown as Kit
+    const table = kitForSurface(withTextWeight($.ui.resolve(e) as unknown as Kit, textWeight), e.surface)
     const columns = Math.max(20, Math.floor(Number(e.props.bodyColumns) || 0) - 1)
     const isNarrow = columns < NARROW
     const kit: Kit = isNarrow ? { Box: table.Box, Text: table.Text, Button: table.Button, ...(table.Input !== undefined && { Input: table.Input }) } : table
@@ -314,15 +313,16 @@ export const register: Register = (on, raw: PluginOptions) => {
     state.pane.isFocused = e.props.isFocused === true
     state.pane.columns = columns
     state.pane.placement = e.props.placement
+    // Height-dependent art must use this render's allocation before its Raster size is recorded.
+    state.pane.rows = Math.max(0, Math.floor(Number(e.props.scroll?.bodyRows) || 0))
     // A reload while the pane stayed up: timers are gone, so resume them from here.
     if (!state.timers.has('watch')) control.resume()
 
-    const pictures = isNarrow ? new Map() : picturesOf(state, columns, Date.now(), Date.now())
+    const pictures = isNarrow ? new Map() : picturesOf(state, columns, Date.now(), Date.now(), kit.Raster === undefined)
 
-    state.mounted = new Map([...pictures].map(([key, grid]) => [key, { columns: grid.columns, rows: grid.rows }]))
+    state.mounted = kit.Raster === undefined ? new Map() : new Map([...pictures].map(([key, grid]) => [key, { columns: grid.columns, rows: grid.rows }]))
+    state.pictured = pictures.size
     control.animate()
-
-    state.pane.rows = Math.max(0, Math.floor(Number(e.props.scroll?.bodyRows) || 0))
 
     const tree = paneView({ kit: withClearing(kit, state, control.actions.clearField, { columns, repaint: () => host?.invalidate() }), state, nowMs: Date.now(), columns, pictures, act: control.actions })
 
@@ -353,7 +353,7 @@ export const register: Register = (on, raw: PluginOptions) => {
       return next(e)
     }
 
-    const table = $.ui.resolve(e) as unknown as Kit
+    const table = kitForSurface(withTextWeight($.ui.resolve(e) as unknown as Kit, textWeight), e.surface)
     const bound = control
 
     state.barDrawnAtMs = Date.now()
@@ -383,7 +383,7 @@ export const register: Register = (on, raw: PluginOptions) => {
 
     if (owner === null) return next(e)
 
-    const table = $.ui.resolve(e) as unknown as Kit
+    const table = withTextWeight($.ui.resolve(e) as unknown as Kit, textWeight)
     const own = await next(e)
 
     return table.Box({ key: `owner-${e.props.tool_use_id}`, flexDirection: 'column', children: [own, table.Text({ dimColor: true, children: `  ${ownerLine(owner)}` })] })

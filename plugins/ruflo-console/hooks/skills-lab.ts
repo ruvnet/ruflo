@@ -9,6 +9,7 @@
 import type { ActionSpec } from './actions'
 import { readBounded, textOf, under, type ReaderFs } from './data/files'
 import { plain } from './data/parse'
+import { hasParentSegment, isAbsolutePath } from './data/paths'
 import { checkLines, checkSkillMd, inferStack, skillRefs } from './data/skill-md'
 import { AGENT_TARGETS, agentsOf, findArgv, listRepoArgv, nameInId, newNameOf, parseRepoList, restoreArgv, skillIdOf, skillNameOf, sortedFound, syncArgv, updateAllArgv, useArgv, usePromptOf, type FoundSkill, type InstalledSkill, type Scope } from './data/skills'
 import type { Host } from './host'
@@ -129,7 +130,7 @@ export function previewFoundSpec(state: State, host: Host, found: FoundSkill): A
 }
 
 /** A path the CLI listed, accepted only when absolute and free of `..` segments. */
-export const isSafeDir = (path: string): boolean => path.startsWith('/') && !path.split('/').includes('..') && !/[\u0000-\u001f]/.test(path)
+export const isSafeDir = (path: string): boolean => isAbsolutePath(path) && !hasParentSegment(path) && !/[\u0000-\u001f]/.test(path)
 
 /** Reads a SKILL.md (bounded), checks it and keeps the result as the preview; never runs it. */
 async function previewFile(state: State, fs: ReaderFs, title: string, path: string, folder: string): Promise<void> {
@@ -320,7 +321,7 @@ export function moreSkillActions(state: State, host: Host, runner: Runner, load:
  */
 export function skillPaletteEntries(state: State): PaletteEntry[] {
   const wired = hosts.get(state)
-  const why = 'the skills view is not wired yet'
+  const why = 'the console is not running in this session: open it first (console_open skills)'
   const spec = (make: (host: Host) => ActionSpec): { kind: 'spec'; spec: ActionSpec | null; why: string } => ({ kind: 'spec', spec: wired === undefined ? null : make(wired.host), why })
   const find = (text: string): ActionSpec | null => {
     const argv = findArgv(text)

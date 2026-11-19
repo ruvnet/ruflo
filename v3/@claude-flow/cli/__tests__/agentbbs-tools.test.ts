@@ -99,6 +99,15 @@ describe('agentbbs MCP tools — structural contract', () => {
     expect(/^[A-Za-z0-9_.\-:/@#]+$/.test('hr/onboarding')).toBe(true);
   });
 
+  it('publish and watch reject a roomId that escapes the .agentbbs dir (..)', async () => {
+    const publish = findTool('federation_bbs_publish');
+    const watch = findTool('federation_bbs_watch');
+    for (const roomId of ['../../../../tmp/x', 'a/../../../tmp/x', '..']) {
+      await expect(publish.handler({ roomId, msgType: 'task-result', payload: {} })).rejects.toThrow(/must not contain \.\./);
+      await expect(watch.handler({ roomId })).rejects.toThrow(/must not contain \.\./);
+    }
+  });
+
   it('publish rejects malformed msgType (validation runs before optional-dep check)', async () => {
     const publish = findTool('federation_bbs_publish');
     await expect(publish.handler({
@@ -266,5 +275,16 @@ describe('agentbbs — dedup + seq optimizations (ADR-164, PeerHello spam fix)',
     appendFileSync(p, JSON.stringify({ envelopeId: 'x1', roomId: 'r', seq: 2, msgType: 'pod-status', payload: {}, timestamp: '2026-09-10T00:10:00.000Z' }) + '\n');
     appendFileSync(p, JSON.stringify({ envelopeId: 'h2', roomId: 'r', seq: 3, msgType: 'PeerHello', payload: {}, timestamp: t2 }) + '\n');
     expect(lastPeerHelloMs(p)).toBe(Date.parse(t2));
+  });
+});
+
+describe('room labels cannot climb out of the BBS directory (#4416 follow-up)', () => {
+  it('refuses a label containing ..', async () => {
+    const { agentbbsTools } = await import('../src/mcp-tools/agentbbs-tools.js');
+    const register = agentbbsTools.find((t) => /register/.test(t.name))!;
+    for (const roomLabel of ['..', '../x', '#a/../../b']) {
+      const result = await register.handler({ roomLabel } as never).catch((e: Error) => ({ error: e.message }));
+      expect(JSON.stringify(result), roomLabel).toContain('must not contain ..');
+    }
   });
 });

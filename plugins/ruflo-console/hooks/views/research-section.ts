@@ -10,7 +10,7 @@ const SHOWN = 5
 export const spendText = (usd: number | null): string => (usd === null ? 'n/a' : `$${usd < 0.1 ? usd.toFixed(3) : usd.toFixed(2)}`)
 
 const recordRows = (ctx: Ctx, record: ResearchRecord): RenderElement[] => [
-  text(ctx, ` ${clip(record.question, Math.min(56, ctx.columns - 4))}`, { bold: true }),
+  text(ctx, ` ${clip(record.question, Math.min(56, ctx.columns - 4))}`, { weight: 'semibold' }),
   text(ctx, `   ${record.status} · ${record.findings} ${record.findings === 1 ? 'finding' : 'findings'} · ${ago(record.atMs, ctx.nowMs)}${record.isScreened ? '' : ' · unscreened'}`, STATUS_COLOR[record.status] === undefined ? { dimColor: true } : { color: STATUS_COLOR[record.status] as string }),
   text(ctx, `   High ${record.grades.High} · Medium ${record.grades.Medium} · Low ${record.grades.Low} · spend ${spendText(record.spentUsd)}`, { dimColor: true }),
 ]

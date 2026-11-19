@@ -52,6 +52,10 @@ for (const { label, path } of TARGETS) {
     violations.push(`${label} (${path}) not found`);
     continue;
   }
+  if (typeof pkg.version !== 'string' || pkg.version.trim().length === 0) {
+    violations.push(`${label} (${path}) must declare a nonempty version string`);
+    continue;
+  }
   versions[label] = pkg.version;
 }
 
@@ -76,7 +80,9 @@ const rufloPkg = readPkg('ruflo/package.json');
 const cliVersion = versions['@claude-flow/cli'];
 if (rufloPkg && cliVersion) {
   const range = rufloPkg.dependencies?.['@claude-flow/cli'];
-  if (range) {
+  if (typeof range !== 'string' || range.length === 0) {
+    violations.push('ruflo must declare its exact @claude-flow/cli dependency');
+  } else {
     if (range !== cliVersion) {
       violations.push(
         `ruflo "@claude-flow/cli": "${range}" must pin cli's actual version ${cliVersion}.\n` +
@@ -85,6 +91,25 @@ if (rufloPkg && cliVersion) {
     } else {
       console.log(`  ruflo dep "@claude-flow/cli": "${range}" matches ${cliVersion} ✓`);
     }
+  }
+}
+
+// The MCP registry entry (ruflo/server.json) must name the same version as
+// the ruflo package it points at, and that package must claim the entry via
+// mcpName: the registry checks both when `mcp-publisher publish` runs.
+const server = readPkg('ruflo/server.json');
+if (server && rufloPkg) {
+  const pkgs = Array.isArray(server.packages) ? server.packages : [];
+  const npmEntry = pkgs.find((p) => p.registryType === 'npm' && p.identifier === 'ruflo');
+  if (server.version !== rufloPkg.version || npmEntry?.version !== rufloPkg.version) {
+    violations.push(
+      `ruflo/server.json version (${server.version}, npm package ${npmEntry?.version}) must equal ruflo ${rufloPkg.version}.\n` +
+      '    Bump both "version" fields in ruflo/server.json with the release.'
+    );
+  } else if (rufloPkg.mcpName !== server.name) {
+    violations.push(`ruflo/package.json mcpName "${rufloPkg.mcpName}" must equal ruflo/server.json name "${server.name}".`);
+  } else {
+    console.log(`  ruflo/server.json ${server.name}@${server.version} matches ✓`);
   }
 }
 

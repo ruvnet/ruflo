@@ -281,27 +281,39 @@ export class ByzantineConsensus extends EventEmitter {
   async awaitConsensus(proposalId: string): Promise<ConsensusResult> {
     const startTime = Date.now();
 
-    return new Promise((resolve, reject) => {
-      const checkInterval = setInterval(() => {
-        const proposal = this.proposals.get(proposalId);
-        if (!proposal) {
-          clearInterval(checkInterval);
-          reject(new Error(`Proposal ${proposalId} not found`));
-          return;
-        }
+    const proposal = this.proposals.get(proposalId);
+    if (!proposal) {
+      throw new Error(`Proposal ${proposalId} not found`);
+    }
 
-        if (proposal.status !== 'pending') {
-          clearInterval(checkInterval);
-          resolve(this.createResult(proposal, Date.now() - startTime));
-          return;
-        }
+    if (proposal.status !== 'pending') {
+      return this.createResult(proposal, Date.now() - startTime);
+    }
 
-        if (Date.now() - startTime > (this.config.timeoutMs ?? 30000)) {
-          clearInterval(checkInterval);
+    // checkConsensus() already emits 'consensus.achieved' on every
+    // accept/reject transition. Wait for that event plus one expiry timer
+    // instead of polling this.proposals with setInterval every 10 ms.
+    return new Promise(resolve => {
+      const cleanup = (): void => {
+        clearTimeout(timer);
+        this.off('consensus.achieved', onAchieved);
+      };
+
+      const onAchieved = (event: { proposalId: string }): void => {
+        if (event.proposalId !== proposalId) return;
+        cleanup();
+        resolve(this.createResult(this.proposals.get(proposalId) ?? proposal, Date.now() - startTime));
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        if (proposal.status === 'pending') {
           proposal.status = 'expired';
-          resolve(this.createResult(proposal, Date.now() - startTime));
         }
-      }, 10);
+        resolve(this.createResult(proposal, Date.now() - startTime));
+      }, this.config.timeoutMs ?? 30000);
+
+      this.on('consensus.achieved', onAchieved);
     });
   }
 

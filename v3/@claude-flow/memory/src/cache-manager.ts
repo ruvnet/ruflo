@@ -22,6 +22,8 @@ import {
 interface LRUNode<T> {
   key: string;
   value: CachedEntry<T>;
+  /** Size charged to currentMemory when stored; refunded verbatim on removal. */
+  size: number;
   prev: LRUNode<T> | null;
   next: LRUNode<T> | null;
 }
@@ -121,8 +123,9 @@ export class CacheManager<T = MemoryEntry> extends EventEmitter {
     const existingNode = this.cache.get(key);
     if (existingNode) {
       // Account for the old value before overwriting it.
-      this.currentMemory += entryMemory - this.estimateSize(existingNode.value.data);
+      this.currentMemory += entryMemory - existingNode.size;
       // Update existing entry
+      existingNode.size = entryMemory;
       existingNode.value.data = data;
       existingNode.value.cachedAt = now;
       existingNode.value.expiresAt = now + entryTtl;
@@ -165,6 +168,7 @@ export class CacheManager<T = MemoryEntry> extends EventEmitter {
     const node: LRUNode<T> = {
       key,
       value: cachedEntry,
+      size: entryMemory,
       prev: null,
       next: null,
     };
@@ -189,7 +193,7 @@ export class CacheManager<T = MemoryEntry> extends EventEmitter {
 
     this.removeNode(node);
     this.cache.delete(key);
-    this.currentMemory -= this.estimateSize(node.value.data);
+    this.currentMemory -= node.size;
 
     this.emit('cache:delete', { key });
     return true;
@@ -400,7 +404,7 @@ export class CacheManager<T = MemoryEntry> extends EventEmitter {
     if (!this.tail) return;
 
     const evictedKey = this.tail.key;
-    const evictedSize = this.estimateSize(this.tail.value.data);
+    const evictedSize = this.tail.size;
 
     this.removeNode(this.tail);
     this.cache.delete(evictedKey);

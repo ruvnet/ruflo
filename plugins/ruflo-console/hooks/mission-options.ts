@@ -1,7 +1,8 @@
 /**
  * Mission options beyond the ruflo-goals skills: (1) an AIDefence screen on what the person types into a mission (the goal and
  * the guide text): `aidefence_is_safe` and `aidefence_has_pii` through `ruflo mcp exec`, local and $0 (it may install the
- * detector once); an unsafe goal blocks guidance and creation, PII blocks guidance (it would go to a model), an unavailable
+ * detector once); an unsafe goal blocks guidance and creation, a secret blocks guidance, PII blocks guidance while the `piiGuard`
+ * option is on (it would go to a model; off, it is only reported), an unavailable
  * detector warns and does not block. (2) A capability catalog: every other ruflo plugin the session offers (ruOS, AIDefence,
  * SPARC, swarm, ADR, security audit, ...) as slash commands run on the goal in the main Claude UI, with the ones that matter
  * for a mission described. Text is data: nothing from a plugin is interpreted.
@@ -13,8 +14,10 @@ import { CLI_PREFIXES, type State } from './state'
 import { GOALS_PLUGIN } from './mission-skills'
 import { jsonAfter } from './data/cli'
 import { mcpReader } from './secure'
+import { hasSecret } from './screen'
 
-export type Screen = { status: 'safe' | 'unsafe' | 'pii' | 'unavailable'; detail: string }
+/** `secret`: a key, token or password (the local screen); `pii`: personal data AIDefence found while the `piiGuard` option is on. */
+export type Screen = { status: 'safe' | 'unsafe' | 'secret' | 'pii' | 'unavailable'; detail: string }
 export type Capability = { slash: string; plugin: string; title: string; about: string }
 export type CapabilityGroup = { plugin: string; label: string; items: Capability[] }
 
@@ -96,8 +99,10 @@ async function piiVerdict(state: State, host: Host, text: string): Promise<strin
 }
 
 /**
- * Screens text the person typed for a mission with AIDefence. Empty text is safe. A tool that answers nothing readable is
- * `unavailable` (the screen warns; it never blocks on a missing detector), and the text is never shown in the result.
+ * Screens text the person typed for a mission with AIDefence, plus the local secret screen. Empty text is safe. A tool that answers
+ * nothing readable is `unavailable` (the screen warns; it never blocks on a missing detector), and the text is never shown in the result.
+ * A secret is `secret` whatever the options say; personal data is `pii` only while the `piiGuard` option is on, else it is reported in the
+ * detail of an otherwise-`safe` result (#4861).
  */
 export async function screenText(state: State, host: Host, raw: string): Promise<Screen> {
   // All of the text is screened (ADR-481): a long text goes through in overlapping pieces that each fit one argv element, never only its head.
@@ -110,14 +115,19 @@ export async function screenText(state: State, host: Host, raw: string): Promise
   const unsafe = answers.find(answer => answer.safe?.startsWith('UNSAFE') === true)
 
   if (unsafe?.safe != null) return { status: 'unsafe', detail: plain(unsafe.safe, 160) }
-  if (answers.some(answer => answer.pii?.startsWith('PII FOUND') === true || answer.safe?.startsWith('PII FOUND') === true)) return { status: 'pii', detail: 'personal or secret data detected' }
+  // Local and needs no detector, so a missing AIDefence never lets a key through.
+  if (hasSecret(text)) return { status: 'secret', detail: 'a key, token or password detected' }
+
+  const pii = answers.some(answer => answer.pii?.startsWith('PII FOUND') === true || answer.safe?.startsWith('PII FOUND') === true)
+
+  if (pii && state.options.piiGuard) return { status: 'pii', detail: 'personal data detected' }
   // Both detectors must answer for every piece: half an answer is not a screen.
   if (answers.some(answer => answer.safe === null || answer.pii === null)) return { status: 'unavailable', detail: 'AIDefence did not fully answer (is @claude-flow/aidefence installed?): the text was not fully screened' }
 
-  return { status: 'safe', detail: 'no threats or PII found' }
+  return { status: 'safe', detail: pii ? 'personal data detected, not blocked (the piiGuard option is off)' : 'no threats or PII found' }
 }
 
-export const blocksGuidance = (screen: Screen | null): boolean => screen !== null && (screen.status === 'unsafe' || screen.status === 'pii')
+export const blocksGuidance = (screen: Screen | null): boolean => screen !== null && (screen.status === 'unsafe' || screen.status === 'secret' || screen.status === 'pii')
 export const blocksCreate = (screen: Screen | null): boolean => screen?.status === 'unsafe'
 
 /** Deep research (ADR-439): what the person chooses, and the one command the console prepares from it. The console never fetches. */

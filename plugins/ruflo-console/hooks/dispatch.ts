@@ -46,6 +46,17 @@ async function open(control: Controller, state: State, label: string): Promise<{
 
 const DUMP_WAIT_MS = 8_000
 
+/** Waits for `work` for at most `ms`; the timer is cleared as soon as either side settles, so a fast probe leaves nothing pending. */
+export async function settleWithin(work: Promise<unknown>, ms: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+
+  try {
+    await Promise.race([work, new Promise(resolve => { timer = setTimeout(resolve, ms) })])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 /** The catalog this plugin ships (read once per session), or the built-in mod list when it is missing or another contract. */
 async function loadCatalog(control: Controller): Promise<Catalog> {
   control.catalog ??= control.host.fs
@@ -66,7 +77,7 @@ async function dumpOf(control: Controller, state: State, view: State['view']): P
 
   try {
     await control.refresh()
-    await Promise.race([control.probe(true), new Promise(resolve => setTimeout(resolve, DUMP_WAIT_MS))])
+    await settleWithin(control.probe(true), DUMP_WAIT_MS)
     // Self-Evolution draws from its own file read, which opening the view starts: a dump waits for it too.
     if (view === 'evolve') await loadEvolve(state, control.host)
     if (view === 'workflows') await refreshWorkflows(state, control.host, true)
@@ -130,6 +141,9 @@ export async function dispatch(control: Controller, state: State, args: string, 
       if (state.pending !== null) {
         const pending = state.pending
 
+        // The answer puts this card in front of the person, so a bare /ruflo yes may answer it (and only it).
+        state.shownCard = pending.id ?? null
+
         return { text: [`Asked: ${pending.label}. Confirm with /ruflo yes (or y in the pane), cancel with /ruflo no.`, ...(pending.shows === undefined ? [] : [`runs: ${pending.shows}`, pending.note ?? ''])].filter(Boolean).join('\n') }
       }
 
@@ -146,9 +160,10 @@ export async function dispatch(control: Controller, state: State, args: string, 
 
       const confirmedAtMs = Date.now()
 
-      await control.runner.confirm()
+      // A typed yes names no card: the runner refuses it while the card is too new or just replaced one (press the card's own Yes then).
+      await control.runner.confirmUnbound(intent.card)
 
-      return { text: xruvAnswer(state, null, confirmedAtMs) ?? labAnswer(state, null, confirmedAtMs) ?? (state.outcome === null ? 'Ran.' : `${state.outcome.ok ? '✓' : '✗'} ${state.outcome.label}: ${state.outcome.detail}${state.outcome.verified === 'yes' ? ' (on disk)' : state.outcome.verified === 'no' ? ' (not on disk yet)' : ''}`) }
+      return { text: xruvAnswer(state, null, confirmedAtMs) ?? labAnswer(state, null, confirmedAtMs) ?? (state.outcome === null ? 'Ran.' : `${state.outcome.queued === true ? '…' : state.outcome.ok ? '✓' : '✗'} ${state.outcome.label}: ${state.outcome.detail}${state.outcome.verified === 'yes' ? ' (on disk)' : state.outcome.verified === 'no' ? ' (not on disk yet)' : ''}`) }
     case 'agent': {
       const who = intent.who.toLowerCase()
       const agent = state.snapshot?.agents.find(entry => entry.id.toLowerCase() === who || entry.name?.toLowerCase() === who) ?? state.snapshot?.agents.find(entry => entry.id.toLowerCase().endsWith(who))

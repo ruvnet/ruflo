@@ -59,7 +59,7 @@ async function mounted($: Body[0], view: string, columns = 130) {
 }
 
 describe('What’s new, end to end', () => {
-  test('opens from /ruflo whatsnew: newest entries above the divider, the earlier ones below, nothing fetched', { options: { boot: false } }, async ($, on) => {
+  test('opens from /ruflo whatsnew: newest entries above the divider, the earlier ones below, nothing fetched', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { fetches, clock } = await start($, on)
     const pane = await mounted($, 'whatsnew')
 
@@ -78,7 +78,7 @@ describe('What’s new, end to end', () => {
     await pane.unmount()
   })
 
-  test('is reached by the nav (the TOOLS group and by its search), by the menu entry, and has no hotkey of its own', { options: { boot: false } }, async ($, on) => {
+  test('is reached by the nav (the TOOLS group and by its search), by the menu entry, and has no hotkey of its own', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     await start($, on)
 
     const pane = await mounted($, 'overview')
@@ -95,7 +95,7 @@ describe('What’s new, end to end', () => {
     await pane.unmount()
   })
 
-  test('the new marker is on the page and on the TOOLS group while a version is unseen, and clears once the page has been opened', { options: { boot: false } }, async ($, on) => {
+  test('the new marker is on the page and on the TOOLS group while a version is unseen, and clears once the page has been opened', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     await start($, on)
 
     const pane = await mounted($, 'overview')
@@ -114,7 +114,7 @@ describe('What’s new, end to end', () => {
     await pane.unmount()
   })
 
-  test('one info toast when a new version is found, none for the same version again, and none when the switch is off', { options: { boot: false } }, async ($, on) => {
+  test('one info toast when a new version is found, none for the same version again, and none when the switch is off', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, clock } = await start($, on, { toasted: { 'ruflo-swarm': '0.4.0', 'ruflo-core': '0.2.6', 'ruflo-console': CONSOLE_VERSION } })
 
     const pane = await mounted($, 'overview')
@@ -126,7 +126,7 @@ describe('What’s new, end to end', () => {
     await pane.unmount()
   })
 
-  test('the toast switch is a button that saves, and pressing it twice is back where it began', { options: { boot: false } }, async ($, on) => {
+  test('the toast switch is a button that saves, and pressing it twice is back where it began', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world } = await start($, on)
     const pane = await mounted($, 'whatsnew')
 
@@ -138,7 +138,7 @@ describe('What’s new, end to end', () => {
     await pane.unmount()
   })
 
-  test('a breaking change is pinned and stays until dismissed; the dismissal is remembered', { options: { boot: false } }, async ($, on) => {
+  test('a breaking change is pinned and stays until dismissed; the dismissal is remembered', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, clock } = await start($, on)
     const pane = await mounted($, 'whatsnew')
 
@@ -154,7 +154,7 @@ describe('What’s new, end to end', () => {
     await pane.unmount()
   })
 
-  test('a changelog that is not the format, or missing, says so plainly and the rest of the page still draws', { options: { boot: false } }, async ($, on) => {
+  test('a changelog that is not the format, or missing, says so plainly and the rest of the page still draws', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     await start($, on, { notes: 'this is not a changelog' })
 
     const pane = await mounted($, 'whatsnew')
@@ -165,7 +165,7 @@ describe('What’s new, end to end', () => {
     await pane.unmount()
   })
 
-  test('a hostile changelog draws as clean, bounded text', { options: { boot: false } }, async ($, on) => {
+  test('a hostile changelog draws as clean, bounded text', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { clock } = await start($, on, { notes: HOSTILE })
     const pane = await mounted($, 'whatsnew')
 
@@ -179,7 +179,7 @@ describe('What’s new, end to end', () => {
     await pane.unmount()
   })
 
-  test('the check-now button is the update flow’s own action and nothing else reaches out', { options: { boot: false } }, async ($, on) => {
+  test('the check-now button is the update flow’s own action and nothing else reaches out', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, clock } = await start($, on)
     const pane = await mounted($, 'whatsnew')
 

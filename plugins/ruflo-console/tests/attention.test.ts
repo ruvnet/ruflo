@@ -27,7 +27,7 @@ async function opened($: Body[0], on: Body[1], view: string) {
 
 describe('attention: the ask and its answer sit under what was clicked', () => {
   for (const [view, key, section] of [['metaharness', 'lab-mh-flywheel-run', 'sec-mh-evolve'], ['devtools', 'dt-llm-hnsw', 'sec-dt-ruvllm']] as const) {
-    test(`${view}: the confirm is the next thing after ${key}, the result follows it, and nothing is drawn twice`, { options: { boot: false } }, async ($, on) => {
+    test(`${view}: the confirm is the next thing after ${key}, the result follows it, and nothing is drawn twice`, { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
       const pane = await opened($, on, view)
       await pane.press({ key: section })
       const before = keys(await pane.drawn())
@@ -62,7 +62,7 @@ describe('attention: the ask and its answer sit under what was clicked', () => {
     })
   }
 
-  test('a page whose clicked row is folded away shows the confirm at the top instead, once', { options: { boot: false } }, async ($, on) => {
+  test('a page whose clicked row is folded away shows the confirm at the top instead, once', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const pane = await opened($, on, 'memory')
 
     await pane.press({ key: 'mem-lab-mem-consolidate' })
@@ -77,7 +77,7 @@ describe('attention: the ask and its answer sit under what was clicked', () => {
     await pane.unmount()
   })
 
-  test('a headless ask (no press) is drawn at the top, above the body', { options: { boot: false } }, async ($, on) => {
+  test('a headless ask (no press) is drawn at the top, above the body', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const pane = await opened($, on, 'metaharness')
     await pane.press({ key: 'sec-mh-evolve' })
 

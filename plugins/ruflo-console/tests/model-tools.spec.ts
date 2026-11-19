@@ -114,6 +114,13 @@ describe('the tools as declared', () => {
     expect(register).toHaveBeenCalledTimes(4)
   })
 
+  it('list only the every-turn pair up front (2.1.293 isDeferred): console_state and console_run; open and set stay deferred', async () => {
+    const register = vi.fn(async (_tool: { name: string; isDeferred: boolean }) => undefined)
+
+    await announceModelTools(register, setup('read').state)
+    expect(register.mock.calls.map(([tool]) => [tool.name, tool.isDeferred])).toEqual([['console_state', false], ['console_open', true], ['console_set', true], ['console_run', false]])
+  })
+
   it('are served for exactly their own names, and refused when the console is not running', async () => {
     const hooked: { matcher: { tool: string }; hook: (...args: unknown[]) => Promise<{ result?: string; deny?: string }> }[] = []
     const on = ((_event: string, matcher: { tool: string }, hook: never) => void hooked.push({ matcher, hook })) as never

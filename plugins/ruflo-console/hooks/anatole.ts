@@ -57,7 +57,36 @@ const NOT_WIRED = 'open the console first'
 
 type Make = { label: string; verb: string; note: string; expect: string; declared?: 'write' | 'delete' | 'install'; read?: boolean }
 
-/** A spec that sends `/protector <verb>`. A read runs at once and its answer fills the Result panel; a change asks first and says its effect. */
+/** The host's refusal of a slash command started while a hook the turn waits on still runs (Claude's console_run, `/ruflo run`). */
+const HELD = /would wait on the turn this hook is holding/
+
+/** How long to wait before each new try after a HELD refusal: about a minute in all, then the refusal stands. */
+export const HELD_RETRY_MS: readonly number[] = [250, 500, 1000, 2000, 4000, 8000, 15000, 30000]
+
+/**
+ * Sends `/protector <verb>`, trying again while the host refuses it as HELD. The caller must not await this inside a hook: the hook that
+ * holds the turn is the reason for the refusal, so it has to return first.
+ */
+export function sendProtector(host: Pick<Host, 'runSlash' | 'after'>, verb: string): Promise<{ text?: string } | void> {
+  return new Promise((resolve, reject) => {
+    const attempt = (tries: number): void => {
+      host.runSlash('protector', verb).then(resolve, (error: unknown) => {
+        const wait = HELD_RETRY_MS[tries]
+
+        if (wait !== undefined && HELD.test(error instanceof Error ? error.message : String(error))) host.after(wait, () => attempt(tries + 1))
+        else reject(error)
+      })
+    }
+
+    attempt(0)
+  })
+}
+
+/**
+ * A spec that sends `/protector <verb>`. A read's answer fills the Result panel; a change asks first and says its effect. The run returns once
+ * the command is sent and never waits for the mod's answer: Claude's console_run runs it inside a tool.call hook, and the host refuses a slash
+ * command while that hook holds the turn. Until the answer arrives the outcome says it is queued.
+ */
 function slashSpec(state: State, make: Make): ActionSpec | null {
   const host = wired.get(state)
 
@@ -76,24 +105,28 @@ function slashSpec(state: State, make: Make): ActionSpec | null {
     run: async () => {
       if (id !== null) state.lab.running = { id, label: make.label, startedAtMs: Date.now() }
 
+      state.outcome = { label: make.label, ok: true, queued: true, verified: 'n/a', detail: `sent /protector ${make.verb}; the mod runs it when the current turn ends${id === null ? ', and the page reads the result from its files' : ', and its answer fills the Result panel'}`, atMs: Date.now() }
       host.invalidate()
 
-      try {
-        const answer = await host.runSlash('protector', make.verb)
-        const text = typeof answer === 'object' && answer !== null && typeof answer.text === 'string' ? answer.text : ''
-        const lines = text === '' ? ['the mod returned no text: its answer is in the conversation; this page reads the files it wrote'] : textLines(text)
+      void sendProtector(host, make.verb)
+        .then(answer => {
+          const text = typeof answer === 'object' && answer !== null && typeof answer.text === 'string' ? answer.text : ''
+          const lines = text === '' ? ['the mod returned no text: its answer is in the conversation; this page reads the files it wrote'] : textLines(text)
 
-        if (id !== null) state.lab.result = { id, label: make.label, ok: true, exitCode: null, note: UNAUTH, lines, atMs: Date.now() }
-        else state.outcome = { label: make.label, ok: true, verified: 'n/a', detail: `sent /protector ${make.verb}; the page reads the result from the mod's files`, atMs: Date.now() }
-      } catch (error) {
-        const why = plain(error instanceof Error ? error.message : String(error), 160) || 'refused'
+          if (id !== null) state.lab.result = { id, label: make.label, ok: true, exitCode: null, note: UNAUTH, lines, atMs: Date.now() }
 
-        if (id !== null) state.lab.result = { id, label: make.label, ok: false, exitCode: null, lines: [`/protector ${make.verb} did not run: ${why}`, 'is the ruflo-protector plugin loaded? /reload-plugins'], atMs: Date.now() }
-        else state.outcome = { label: make.label, ok: false, verified: 'n/a', detail: `/protector ${make.verb} did not run: ${why}`, atMs: Date.now() }
-      } finally {
-        state.lab.running = null
-        host.invalidate()
-      }
+          state.outcome = { label: make.label, ok: true, verified: 'n/a', detail: id === null ? `ran /protector ${make.verb}; the page reads the result from the mod's files` : `ran /protector ${make.verb}; its answer is in the Result panel`, atMs: Date.now() }
+        }, (error: unknown) => {
+          const why = plain(error instanceof Error ? error.message : String(error), 160) || 'refused'
+
+          if (id !== null) state.lab.result = { id, label: make.label, ok: false, exitCode: null, lines: [`/protector ${make.verb} did not run: ${why}`, 'is the ruflo-protector plugin loaded? /reload-plugins'], atMs: Date.now() }
+
+          state.outcome = { label: make.label, ok: false, verified: 'n/a', detail: `/protector ${make.verb} did not run: ${why}`, atMs: Date.now() }
+        })
+        .finally(() => {
+          if (id === null || state.lab.running?.id === id) state.lab.running = null
+          host.invalidate()
+        })
     },
   }
 }

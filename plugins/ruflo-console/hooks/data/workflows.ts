@@ -11,7 +11,8 @@
  * Unknown event types and keys are ignored, a half-written last line is dropped, and a missing source is a missing fact:
  * nothing here is estimated.
  */
-import { agentLabels, ESCAPES, HIDDEN, INVISIBLE, shortId, type AgentRecord, type SwarmInfo } from './parse'
+import type { ManagedSession } from './managed'
+import { ESCAPES, HIDDEN, INVISIBLE, shortId, type AgentRecord } from './parse'
 
 export type AgentState = 'running' | 'done' | 'failed' | 'stale' | 'idle' | 'queued'
 
@@ -36,6 +37,8 @@ export type WfAgent = {
   lastTool?: string
   /** Set for a ruflo agent: what the confirm-gated verbs act on. */
   ruflo?: AgentRecord
+  /** Provider completion is never a correctness badge. */
+  isUnverified?: boolean
 }
 
 export type WfPhase = { title: string; detail?: string; agents: WfAgent[]; done: number; total: number; running: number; failed: number }
@@ -45,7 +48,7 @@ export type RunState = 'running' | 'completed' | 'failed' | 'stalled' | 'finishe
 export type WfRun = {
   id: string
   name: string
-  kind: 'workflow' | 'ruflo-swarm'
+  kind: 'workflow' | 'ruflo-swarm' | 'managed'
   state: RunState
   phases: WfPhase[]
   running: number
@@ -61,6 +64,11 @@ export type WfRun = {
   dir?: string
   /** True where the run record's `workflowProgress` gave the figures (a finished run), false where they were derived from journal and transcripts. */
   hasRecord: boolean
+  /** A ruflo swarm run only (data/wf-swarm.ts): when its record was last written, whether a "running" one has gone stale, how many ids it lists. */
+  updatedMs?: number
+  isStale?: boolean
+  listed?: number
+  managed?: ManagedSession
 }
 
 const asRecord = (value: unknown): Record<string, unknown> | null => (typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null)
@@ -380,7 +388,7 @@ export function buildRun(input: RunInput): WfRun {
 
 const lastEnd = (agents: readonly WfAgent[], fallback: number): number => agents.reduce((latest, agent) => (agent.startedMs !== undefined && agent.elapsedMs !== undefined ? Math.max(latest, agent.startedMs + agent.elapsedMs) : latest), fallback)
 
-function tally(agents: readonly WfAgent[]): Record<AgentState, number> {
+export function tally(agents: readonly WfAgent[]): Record<AgentState, number> {
   const counts: Record<AgentState, number> = { running: 0, done: 0, failed: 0, stale: 0, idle: 0, queued: 0 }
 
   for (const agent of agents) counts[agent.state] += 1
@@ -413,44 +421,6 @@ export function currentPhase(phases: readonly WfPhase[]): number | null {
   return open >= 0 ? open : null
 }
 
-const RUFLO_STATE = (status: string): AgentState => (/error|fail/i.test(status) ? 'failed' : /busy|active|running/i.test(status) ? 'running' : /stop|terminat|offline/i.test(status) ? 'done' : 'idle')
-
-/**
- * The ruflo swarm as one more run: its phases are the agent types (that is the only grouping the store has), a stopped agent
- * counts as done, an idle one as ready. ruflo records no model, tokens or worktree per agent, so those stay n/a.
- */
-export function swarmRun(swarm: SwarmInfo | null, agents: readonly AgentRecord[], nowMs: number): WfRun | null {
-  if (swarm === null && agents.length === 0) return null
-
-  const labels = agentLabels(agents)
-  const rows: WfAgent[] = agents.map(agent => ({
-    id: agent.id,
-    label: labels.get(agent.id) ?? agent.type,
-    phase: agent.type,
-    state: RUFLO_STATE(agent.status),
-    hasWorktree: false,
-    ...(agent.createdAtMs !== undefined && { startedMs: agent.createdAtMs, elapsedMs: Math.max(0, nowMs - agent.createdAtMs) }),
-    ruflo: agent,
-  }))
-  const counts = tally(rows)
-
-  return {
-    id: swarm?.id ?? 'ruflo-swarm',
-    name: `ruflo swarm${swarm === null ? '' : ` · ${swarm.topology}`}`,
-    kind: 'ruflo-swarm',
-    state: counts.running > 0 ? 'active' : counts.failed > 0 ? 'failed' : 'finished',
-    phases: groupPhases(rows, []),
-    running: counts.running,
-    done: counts.done,
-    failed: counts.failed,
-    idle: counts.idle,
-    total: rows.length,
-    totalTokens: null,
-    isTokensPartial: false,
-    hasRecord: false,
-  }
-}
-
 /** 145.4k · 1.2M · 812 */
 export function fmtTokens(tokens: number | undefined, isPartial = false): string {
   if (tokens === undefined) return 'n/a'
@@ -460,11 +430,13 @@ export function fmtTokens(tokens: number | undefined, isPartial = false): string
   return `${isPartial ? '≥' : ''}${text}`
 }
 
-/** 15s · 3m12s · 1h05m */
+/** 15s · 3m12s · 1h05m · 68d06h (a day or more reads in days, as ago() does: never "1638h18m") */
 export function fmtElapsed(ms: number | undefined): string {
   if (ms === undefined) return 'n/a'
 
   const s = Math.round(ms / 1000)
+
+  if (s >= 86_400) return `${Math.floor(s / 86_400)}d${String(Math.floor((s % 86_400) / 3600)).padStart(2, '0')}h`
 
   return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}s` : `${Math.floor(s / 3600)}h${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}m`
 }

@@ -1,8 +1,8 @@
 {
   "name": "@claude-flow/shared",
-  "version": "3.0.2",
+  "version": "3.0.9",
   "type": "module",
-  "description": "Shared module - common types, events, utilities, core interfaces",
+  "description": "Shared types, event bus, config schemas and validators, MCP transport helpers and resilience utilities used by the Ruflo (claude-flow) V3 packages.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -18,6 +18,9 @@
   },
   "files": [
     "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/*.spec.*",
+    "!dist/**/__tests__",
     "README.md"
   ],
   "scripts": {
@@ -25,22 +28,43 @@
     "build": "tsc"
   },
   "dependencies": {
-    "sql.js": "^1.10.3"
+    "@types/ws": "^8.5.10",
+    "cors": "^2.8.5",
+    "express": "^4.22.3 || ^5.1.0",
+    "helmet": "^7.2.0",
+    "sql.js": "^1.10.3",
+    "ws": "^8.21.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.0.0",
     "@types/sql.js": "^1.4.9",
-    "@types/ws": "^8.5.10",
-    "cors": "^2.8.5",
-    "express": "^4.21.0",
-    "helmet": "^7.1.0",
-    "vitest": "^4.1.0",
-    "ws": "^8.16.0",
-    "zod": "^3.22.4"
+    "vitest": "^4.1.0"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "keywords": [
+    "ruflo",
+    "claude-flow",
+    "shared",
+    "types",
+    "event-bus",
+    "config-validation",
+    "zod",
+    "mcp",
+    "resilience",
+    "typescript"
+  ],
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/shared"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
   }
 }

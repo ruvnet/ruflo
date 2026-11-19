@@ -35,3 +35,20 @@ it.each([-1, 1.5, NaN])('rejects invalid target %s without writing', async targe
 it('adds exactly the requested number for a valid scale-up', async () => {
   expect(await scale(3)).toMatchObject({ newSize: 3, added: [expect.any(String)], removed: [] });
 });
+// #4555: 'fill' was in the action enum but returned { error: 'Unknown action' }.
+const fill = (targetSize: number) => agentTools.find(t => t.name === 'agent_pool')!.handler({ action: 'fill', agentType: 'coder', targetSize }) as Promise<any>;
+it('fill grows the pool to the target with idle agents', async () => {
+  const result = await fill(4);
+  expect(result).toMatchObject({ action: 'fill', previousSize: 2, targetSize: 4, newSize: 4, removed: [] });
+  expect(result.added).toHaveLength(2);
+  const agents = JSON.parse(readFileSync(path(), 'utf8')).agents;
+  for (const id of result.added) expect(agents[id]).toMatchObject({ agentType: 'coder', status: 'idle' });
+});
+it('fill never shrinks: a target below the current size terminates nothing', async () => {
+  const before = readFileSync(path(), 'utf8');
+  expect(await fill(0)).toMatchObject({ action: 'fill', previousSize: 2, newSize: 2, added: [], removed: [] });
+  expect(JSON.parse(readFileSync(path(), 'utf8')).agents).toEqual(JSON.parse(before).agents);
+});
+it.each([-1, 1.5])('fill rejects invalid target %s like scale does', async target => {
+  expect(await fill(target)).toMatchObject({ error: expect.any(String) });
+});

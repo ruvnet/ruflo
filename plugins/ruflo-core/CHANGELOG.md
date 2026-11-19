@@ -2,6 +2,37 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.2.15 — 2026-11-06
+- feat: the MCP launcher sets `RUFLO_LAUNCH_SURFACE=plugin`, so the CLI's existing 6h-cached funnel fetch can count people who use ruflo only as a plugin. Every funnel opt-out still stops the request; it takes effect with the next CLI release
+
+## 0.2.14 — 2026-11-04
+- fix: the `researcher` agent writes its research summary from graph findings and `memory_search` / `memory_retrieve` records, and uses `agentdb_context-synthesize` only for past task outcomes. That tool summarizes validated task episodes and answers `no-eligible-episodes` for documents and graph entities, which is correct and not a gap in the research (#4691, thanks @sparkling)
+
+## 0.2.13 — 2026-10-30
+- fix: the MCP launcher no longer exits with a bare "Cannot find module" when the local CLI it picked has a stale or partial `dist/` (typical when Claude Code is started inside a ruflo checkout whose `v3/@claude-flow/cli` was not rebuilt after `git pull`). It now says so, including the rebuild command (`cd v3/@claude-flow/cli && pnpm install && pnpm run build`) and the option of starting outside the repo, then falls back to `npx -y @claude-flow/cli@latest mcp start` so the server still comes up. A pinned `RUFLO_MCP_CLI_OVERRIDE`, `RUFLO_MCP_SKIP_NPX=1`, and errors other than a missing module still fail closed. Tested with a stale-build fixture and against a real stale checkout with the npx fallback disabled; the live npx fallback itself was not run.
+
+## 0.2.12 — 2026-10-29
+- chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
+
+## 0.2.11 — 2026-10-14
+- perf: the MCP launcher runs the resolved local CLI inside its own process instead of spawning a second node (one process, about half the memory, a faster first answer: measured here with a stub CLI as 2 processes to 1, 89 MB to 46 MB, 30 ms to 19 ms spawn-to-initialize); `RUFLO_MCP_SPAWN=1` restores the child process, and the npx fallback still spawns (#3989, thanks @socrates6969). The real-CLI startup numbers in the PR (149 MB to 81 MB, 1.3 s to 0.7 s) were not re-measured.
+
+## 0.2.10 — 2026-10-14
+- fix: the MCP launcher starts the server in the session project (`CLAUDE_PROJECT_DIR`, then `CLAUDE_FLOW_CWD`, then its own working directory; a drive root, the home folder or a missing folder is not a project) and looks for the local CLI from there, so on Windows the CLI and the MCP server keep one `.claude-flow` state, not two (#3987, thanks @socrates6969). It warns on stderr when there is no project. Tested with Windows-style environments only; no Windows machine was available.
+
+## 0.2.9 — 2026-10-14
+- fix: failed Bash commands and failed edits are recorded as failures: PostToolUseFailure is registered and forwarded to post-command / post-edit with `-s false` and the real exit code, so the learning layer no longer sees a 100% success rate (#4127, thanks @rudycelekli for #4170)
+- fix: the hook shim starts the CLI from CLAUDE_PROJECT_DIR, so a session that `cd`ed into a subdirectory no longer gets .claude-flow/ and proven-config files written there (#4176)
+- perf: telemetry hooks no longer block the tool: the CLI is started detached and the shim returns in about 25 ms instead of 0.2 to 4 s per call; at most 4 run at once per project (RUFLO_HOOK_MAX_PARALLEL), Stop is never dropped, RUFLO_HOOK_SYNC=1 restores the synchronous path (#4128)
+
+## 0.2.8 — 2026-10-11
+- fix: the PostToolUse Bash shim stands down when command recording is switched off (`CLAUDE_FLOW_HOOKS_RECORD_COMMANDS=0` or `CLAUDE_FLOW_HOOKS_ENABLED=false`), so no CLI process is started per Bash call (#4056)
+
+## 0.2.7 — 2026-10-11
+- fix: researcher agent calls agentdb_semantic-route, pattern-search, context-synthesize, hierarchical-store/recall and causal-edge with their real parameter names (input, topK, maxEntries, key/value/tier, sourceId/targetId/relation); it now follows edges with agentdb_graph-query and agentdb_graph-pathfinder (causal-edge only records)
+- fix: drop the invalid `--train-neural` flag from `hooks post-task` in the coder and researcher agents
+- fix: README no longer states stale tool and command counts; smoke expectation corrected to 11
+
 ## 0.2.6 — 2026-07-29
 - feat: hand route/post-edit to the ruflo mod via RUFLO_MODS_OWNS (ADR-404)
 - fix: repair CI regressions surfaced by the integrated community fixes

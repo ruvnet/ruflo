@@ -57,7 +57,7 @@ export function providerRows(ctx: Ctx): RenderElement[] {
   if (ledger.findings.length > 0) {
     rows.push(rule(ctx, 'Savings you can act on', 'evidence from your logs · nothing is changed for you'))
     ledger.findings.slice(0, 4).forEach((finding, i) => {
-      rows.push(text(ctx, ` ${i + 1}. ${finding.title}`, { bold: true }))
+      rows.push(text(ctx, ` ${i + 1}. ${finding.title}`, { weight: 'semibold' }))
       rows.push(text(ctx, `    ${saving(finding)} · ${finding.action}`, finding.saving === null ? { dimColor: true } : { color: THEME.ok }))
     })
     rows.push(text(ctx, ' Same tokens at another rate; quality is not predicted. /cost-advise shows the evidence.', { dimColor: true }))

@@ -5,9 +5,10 @@ import { fmtElapsed, fmtTokens, modelName, currentPhase, type AgentState, type W
 import { pick, type WfUi } from '../data/workflows-nav'
 import { CONTROL_TAB, controlLine } from '../data/wf-control'
 import { spawnAgent, stopAgent } from '../ops'
-import { clip, col, kv, row, rule, text, THEME, type Ctx } from './common'
+import { ago, clip, col, kv, row, rule, text, THEME, type Ctx } from './common'
 import { flow, runTag } from './wf-layout'
 import { slotsFor } from './wf-slots'
+import { managedRunRows } from './managed'
 
 /** What the workflows view asks of the controller: a confirm-gated ruflo verb, or to name a transcript's path. */
 export type WorkflowsHooks = { ask: (spec: ActionSpec) => void; show: (path: string) => void }
@@ -37,12 +38,18 @@ const mb = (bytes: number): string => `${(bytes / 1_000_000).toFixed(1)} MB`
 function header(ctx: Ctx, run: WfRun, runs: readonly WfRun[], at: number): RenderElement[] {
   const tone = run.state === 'failed' ? THEME.bad : run.running > 0 || run.state === 'active' ? THEME.warn : run.state === 'completed' ? THEME.ok : undefined
   const counts = run.kind === 'ruflo-swarm' ? `${run.running} busy · ${run.idle} idle · ${run.done} stopped · ${run.failed} failed` : `${run.running} running · ${run.done} done · ${run.failed} failed`
-  const tokens = run.totalTokens === null ? 'tokens n/a' : `${fmtTokens(run.totalTokens, run.isTokensPartial)} tok`
+  // ruflo records no tokens: a swarm run says when its record was written instead (the same words as Overview and Swarm).
+  const listed = run.listed !== undefined && run.listed !== run.total ? ` · ${run.listed} listed, ${run.total} found` : ''
+  const tokens =
+    run.kind !== 'ruflo-swarm'
+      ? run.totalTokens === null ? 'tokens n/a' : `${fmtTokens(run.totalTokens, run.isTokensPartial)} tok`
+      : run.listed === undefined ? 'agents ruflo recorded that no swarm record lists'
+        : `updated ${run.updatedMs === undefined ? 'n/a' : ago(run.updatedMs, ctx.nowMs)}${run.isStale === true ? ' · stale' : ''}${listed}`
   const span = run.durationMs === undefined ? '' : ` · ${fmtElapsed(run.durationMs)}`
   const tabs = runs.length > 1 ? runs.map((entry, i) => `${i === at ? '▸' : ' '}${i + 1} ${clip(entry.name, 18)}`).join('  ') : ''
 
   return [
-    row(ctx, [ctx.kit.Text({ bold: true, wrap: 'truncate-end', children: `${clip(run.name, Math.max(8, ctx.columns - 24))} ` }), ctx.kit.Text({ wrap: 'truncate-end', ...(tone !== undefined && { color: tone }), children: run.state })]),
+    row(ctx, [ctx.kit.Text({ weight: 'semibold', wrap: 'truncate-end', children: `${clip(run.name, Math.max(8, ctx.columns - 24))} ` }), ctx.kit.Text({ wrap: 'truncate-end', ...(tone !== undefined && { color: tone }), children: run.state })]),
     text(ctx, `${run.total} agents · ${counts} · ${tokens}${span}`, { dimColor: true }),
     ...(tabs === '' ? [] : [text(ctx, `${tabs}   [ ] switch run`, { dimColor: true })]),
   ]
@@ -50,29 +57,30 @@ function header(ctx: Ctx, run: WfRun, runs: readonly WfRun[], at: number): Rende
 
 /** Left cell: `❯ ✔ Build  4/4`, the cursor row bold, the run's current phase marked ❯. */
 function phaseCell(ctx: Ctx, phase: WfPhase, index: number, flags: { isHere: boolean; isCurrent: boolean; width: number }): RenderElement {
-  const { mark, color } = phaseMark(phase, ctx.nowMs)
+  const { mark, color } = phase.agents.some(a => a.isUnverified) ? { mark: '○', color: THEME.info } : phaseMark(phase, ctx.nowMs)
   const count = `${phase.done}/${phase.total}`
   const title = clip(`${index + 1} ${phase.title}`, Math.max(4, flags.width - count.length - 6))
 
   return row(ctx, [
-    ctx.kit.Text({ ...(flags.isHere && { bold: true }), children: `${flags.isHere ? '▸' : ' '}${flags.isCurrent ? '❯' : ' '}` }),
+    ctx.kit.Text({ ...(flags.isHere && { weight: 'semibold' }), children: `${flags.isHere ? '▸' : ' '}${flags.isCurrent ? '❯' : ' '}` }),
     ctx.kit.Text({ ...(color !== undefined && { color }), children: `${mark} ` }),
-    ctx.kit.Text({ ...(flags.isHere && { bold: true }), children: `${title.padEnd(flags.width - count.length - 6)} ` }),
+    ctx.kit.Text({ ...(flags.isHere && { weight: 'semibold' }), children: `${title.padEnd(flags.width - count.length - 6)} ` }),
     ctx.kit.Text({ dimColor: true, children: count }),
   ])
 }
 
 /** Right cell: status mark, label, model, worktree badge, tokens, elapsed. A narrow screen drops the model, then the badge. */
 function agentCell(ctx: Ctx, agent: WfAgent, isHere: boolean, width: number): RenderElement {
-  const tail = `${fmtTokens(agent.tokens, agent.isTokensPartial)} tok`.padStart(10) + fmtElapsed(agent.elapsedMs).padStart(7)
+  // A space between the two columns: an age wider than its column ("68d06h", once "1638h18m") ran into "n/a tok".
+  const tail = `${`${fmtTokens(agent.tokens, agent.isTokensPartial)} tok`.padStart(10)} ${fmtElapsed(agent.elapsedMs).padStart(6)}`
   const model = agent.ruflo === undefined ? modelName(agent.model).padEnd(11) : ''
   const badge = agent.hasWorktree ? 'worktree '.padEnd(10) : agent.ruflo === undefined ? ' '.repeat(10) : ''
   const fixed = 3 + tail.length + (width >= 62 ? model.length : 0) + (width >= 74 ? badge.length : 0)
   const label = clip(agent.label, Math.max(6, width - fixed - 1))
 
   return row(ctx, [
-    ctx.kit.Text({ ...(COLOR(agent.state) !== undefined && { color: COLOR(agent.state) as string }), children: `${isHere ? '▸' : ' '}${MARK(agent.state, ctx.nowMs)} ` }),
-    ctx.kit.Text({ wrap: 'truncate-end', ...(isHere && { bold: true }), children: `${label.padEnd(Math.max(6, width - fixed))}` }),
+    ctx.kit.Text({ ...((agent.isUnverified ? THEME.info : COLOR(agent.state)) !== undefined && { color: agent.isUnverified ? THEME.info : COLOR(agent.state) as string }), children: `${isHere ? '▸' : ' '}${agent.isUnverified && agent.state === 'done' ? '○' : MARK(agent.state, ctx.nowMs)} ` }),
+    ctx.kit.Text({ wrap: 'truncate-end', ...(isHere && { weight: 'semibold' }), children: `${label.padEnd(Math.max(6, width - fixed))}` }),
     ...(width >= 62 && model !== '' ? [ctx.kit.Text({ dimColor: true, children: model })] : []),
     ...(width >= 74 && badge !== '' ? [ctx.kit.Text({ color: THEME.info, children: badge })] : []),
     ctx.kit.Text({ dimColor: true, children: tail }),
@@ -133,13 +141,14 @@ export function workflowsView(ctx: Ctx, model: WorkflowsModel | null, ui: WfUi, 
   const here = pick(ui, model.runs)
 
   if (here.run === null) {
-    rows.push(text(ctx, model.root === null ? 'No Claude Code config directory is known here, so no workflow runs can be read.' : `No workflow runs for this project under ${clip(model.root, Math.max(20, ctx.columns - 30))}, and no ruflo swarm yet.`, { color: THEME.warn }))
+    rows.push(text(ctx, model.root === null ? 'No Claude Code config directory is known here, so no workflow runs can be read.' : `No workflow runs for this project under ${clip(model.root, Math.max(20, ctx.columns - 30))}, and no ruflo swarm or managed session yet.`, { color: THEME.warn }))
     rows.push(text(ctx, 'Claude Code writes a run folder when a Workflow script starts; ruflo agents appear once a swarm exists.', { dimColor: true }))
 
     return col(ctx, rows, 'workflows')
   }
 
   rows.push(...header(ctx, here.run, model.runs, here.ui.run))
+  if (here.run.managed) rows.push(...managedRunRows(ctx, here.run, hooks.ask))
 
   const run = here.run
   const wide = ctx.columns >= 56

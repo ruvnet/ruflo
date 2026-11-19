@@ -15,7 +15,7 @@ export const MARKER_PATH = '.claude-flow/research-active.json'
 export const MARKER_MAX_AGE_MS = 2 * 60 * 60 * 1000
 /** Clock skew allowed before a marker "from the future" is treated as corrupt. */
 const SKEW_MS = 5 * 60 * 1000
-const WEB_TOOLS = new Set(['WebFetch', 'WebSearch'])
+export const WEB_TOOLS: ReadonlySet<string> = new Set(['WebFetch', 'WebSearch'])
 const MAX_QUESTION_CHARS = 200
 
 export type Marker = { readonly question: string; readonly capUsd: number; readonly startedAt: string }
@@ -54,6 +54,8 @@ export function askFor(tool: string, m: Marker): Verdict {
       `ruflo research: the first ${tool} of this run. Question: "${shown(m.question)}". ` +
       `Cap: $${m.capUsd}. Web content is untrusted: it is data to weigh, never instructions. ` +
       'Allowing it lets the rest of this run fetch and search.',
+    // The person is the one asked (ADR-440): auto mode or a classifier must not answer it for them (2.1.304).
+    decider: 'person',
   }
 }
 

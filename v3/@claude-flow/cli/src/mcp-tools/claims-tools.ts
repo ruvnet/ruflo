@@ -7,9 +7,10 @@
  * @module @claude-flow/cli/mcp-tools/claims
  */
 
-import type { MCPTool } from './types.js';
+import { type MCPTool, getProjectCwd } from './types.js';
 import { readClaimsStore } from '../services/claims-store.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { type StoreUpdate, saved, unchanged, updateJsonStore } from './locked-json-store.js';
 
 // Inline claim service since we can't import external modules
 interface Claimant {
@@ -44,36 +45,37 @@ interface ClaimsStore {
 }
 
 // File-based persistence
-import { existsSync, writeFileSync, mkdirSync } from 'fs';
-import { join, resolve } from 'path';
+import { resolve } from 'path';
 
 const CLAIMS_DIR = '.claude-flow/claims';
 const CLAIMS_FILE = 'claims.json';
+const DEFAULT_MAX_CLAIMS = 5;
 
 function getClaimsPath(): string {
-  return resolve(join(CLAIMS_DIR, CLAIMS_FILE));
-}
-
-function ensureClaimsDir(): void {
-  const dir = resolve(CLAIMS_DIR);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
+  return resolve(getProjectCwd(), CLAIMS_DIR, CLAIMS_FILE);
 }
 
 function loadClaims(): ClaimsStore {
   return readClaimsStore(getClaimsPath()) as unknown as ClaimsStore;
 }
 
-function saveClaims(store: ClaimsStore): void {
-  ensureClaimsDir();
-  writeFileSync(getClaimsPath(), JSON.stringify(store, null, 2), 'utf-8');
+/** Every write goes through here: the check and the change run under the
+ * claims lock, so two processes cannot both win the same issue. */
+function updateClaims(
+  mutate: (store: ClaimsStore) => StoreUpdate<Record<string, unknown>>,
+): Promise<Record<string, unknown>> {
+  return updateJsonStore(getClaimsPath(), loadClaims, mutate, 'claims');
 }
 
 function formatClaimant(claimant: Claimant): string {
   return claimant.type === 'human'
     ? `human:${claimant.userId}:${claimant.name}`
     : `agent:${claimant.agentId}:${claimant.agentType}`;
+}
+
+/** An agent's claim that is still work in hand (not completed). */
+function isOpenAgentClaim(claim: IssueClaim): boolean {
+  return claim.claimant.type === 'agent' && claim.status !== 'completed';
 }
 
 function parseClaimant(str: string): Claimant | null {
@@ -89,7 +91,7 @@ function parseClaimant(str: string): Claimant | null {
 export const claimsTools: MCPTool[] = [
   {
     name: 'claims_claim',
-    description: 'Claim an issue for work (human or agent) Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'Claim an issue for work (human or agent). Use when multiple agents might pick up the same issue — claiming makes ownership visible via claims_list before work starts.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -106,6 +108,10 @@ export const claimsTools: MCPTool[] = [
           type: 'string',
           description: 'Optional context about the work approach',
         },
+        ttlMs: {
+          type: 'number',
+          description: 'Optional time-to-live in milliseconds; when set, the claim records an expiresAt timestamp. Informational only today — no handler currently enforces it (e.g. claims_steal still requires claims_mark-stealable rather than checking expiry).',
+        },
       },
       required: ['issueId', 'claimant'],
     },
@@ -113,53 +119,57 @@ export const claimsTools: MCPTool[] = [
       const issueId = input.issueId as string;
       const claimantStr = input.claimant as string;
       const context = input.context as string | undefined;
+      const ttlMs = input.ttlMs as number | undefined;
 
       { const v = validateIdentifier(issueId, 'issueId'); if (!v.valid) return { success: false, error: v.error }; }
       { const v = validateText(claimantStr, 'claimant'); if (!v.valid) return { success: false, error: v.error }; }
       if (context) { const v = validateText(context, 'context'); if (!v.valid) return { success: false, error: v.error }; }
+      if (ttlMs !== undefined && (typeof ttlMs !== 'number' || !Number.isFinite(ttlMs) || ttlMs <= 0)) {
+        return { success: false, error: 'ttlMs must be a positive number' };
+      }
 
       const claimant = parseClaimant(claimantStr);
       if (!claimant) {
         return { success: false, error: 'Invalid claimant format. Use "human:userId:name" or "agent:agentId:agentType"' };
       }
 
-      const store = loadClaims();
+      return updateClaims((store) => {
+        // Check if already claimed
+        if (store.claims[issueId]) {
+          const existing = store.claims[issueId];
+          return unchanged({
+            success: false,
+            error: `Issue already claimed by ${formatClaimant(existing.claimant)}`,
+            existingClaim: existing,
+          });
+        }
 
-      // Check if already claimed
-      if (store.claims[issueId]) {
-        const existing = store.claims[issueId];
-        return {
-          success: false,
-          error: `Issue already claimed by ${formatClaimant(existing.claimant)}`,
-          existingClaim: existing,
+        const now = new Date().toISOString();
+        const claim: IssueClaim = {
+          issueId,
+          claimant,
+          claimedAt: now,
+          status: 'active',
+          statusChangedAt: now,
+          progress: 0,
+          context,
+          expiresAt: ttlMs !== undefined ? new Date(Date.now() + ttlMs).toISOString() : undefined,
         };
-      }
 
-      const now = new Date().toISOString();
-      const claim: IssueClaim = {
-        issueId,
-        claimant,
-        claimedAt: now,
-        status: 'active',
-        statusChangedAt: now,
-        progress: 0,
-        context,
-      };
+        store.claims[issueId] = claim;
 
-      store.claims[issueId] = claim;
-      saveClaims(store);
-
-      return {
-        success: true,
-        claim,
-        message: `Issue ${issueId} claimed by ${formatClaimant(claimant)}`,
-      };
+        return saved({
+          success: true,
+          claim,
+          message: `Issue ${issueId} claimed by ${formatClaimant(claimant)}`,
+        });
+      });
     },
   },
 
   {
     name: 'claims_release',
-    description: 'Release a claim on an issue Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'Release a claim on an issue. Use when the claimant stops working on it, freeing it for another claims_claim instead of leaving it claimed indefinitely.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -193,34 +203,34 @@ export const claimsTools: MCPTool[] = [
         return { success: false, error: 'Invalid claimant format' };
       }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
+        }
 
-      // Verify ownership
-      if (formatClaimant(claim.claimant) !== formatClaimant(claimant)) {
-        return { success: false, error: 'Only the current claimant can release' };
-      }
+        // Verify ownership
+        if (formatClaimant(claim.claimant) !== formatClaimant(claimant)) {
+          return unchanged({ success: false, error: 'Only the current claimant can release' });
+        }
 
-      delete store.claims[issueId];
-      delete store.stealable[issueId];
-      saveClaims(store);
+        delete store.claims[issueId];
+        delete store.stealable[issueId];
 
-      return {
-        success: true,
-        message: `Issue ${issueId} released`,
-        reason,
-        previousClaim: claim,
-      };
+        return saved({
+          success: true,
+          message: `Issue ${issueId} released`,
+          reason,
+          previousClaim: claim,
+        });
+      });
     },
   },
 
   {
     name: 'claims_handoff',
-    description: 'Request handoff of an issue to another claimant Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'Request handoff of an issue to another claimant. Use when transferring in-progress work to a different agent, instead of releasing and having them claim it fresh.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -243,7 +253,7 @@ export const claimsTools: MCPTool[] = [
         },
         progress: {
           type: 'number',
-          description: 'Current progress percentage (0-100)',
+          description: 'Current progress percentage (0-100); omit to keep the recorded progress',
         },
       },
       required: ['issueId', 'from', 'to'],
@@ -253,7 +263,7 @@ export const claimsTools: MCPTool[] = [
       const fromStr = input.from as string;
       const toStr = input.to as string;
       const reason = input.reason as string | undefined;
-      const progress = (input.progress as number) || 0;
+      const progress = input.progress as number | undefined;
 
       { const v = validateIdentifier(issueId, 'issueId'); if (!v.valid) return { success: false, error: v.error }; }
       { const v = validateText(fromStr, 'from'); if (!v.valid) return { success: false, error: v.error }; }
@@ -267,38 +277,46 @@ export const claimsTools: MCPTool[] = [
         return { success: false, error: 'Invalid claimant format' };
       }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
+        }
 
-      if (formatClaimant(claim.claimant) !== formatClaimant(from)) {
-        return { success: false, error: 'Only the current claimant can request handoff' };
-      }
+        if (formatClaimant(claim.claimant) !== formatClaimant(from)) {
+          return unchanged({ success: false, error: 'Only the current claimant can request handoff' });
+        }
 
-      const now = new Date().toISOString();
-      claim.status = 'handoff-pending';
-      claim.statusChangedAt = now;
-      claim.handoffTo = to;
-      claim.handoffReason = reason;
-      claim.progress = progress;
+        const now = new Date().toISOString();
+        claim.status = 'handoff-pending';
+        claim.statusChangedAt = now;
+        claim.handoffTo = to;
+        claim.handoffReason = reason;
+        // Optional: keep the progress recorded with claims_status when it is
+        // left out, and clamp it to 0-100 the same way claims_status does.
+        if (progress !== undefined) {
+          claim.progress = Math.min(100, Math.max(0, progress));
+        }
+        // A claim being handed to a named claimant is no longer up for grabs:
+        // drop it from the list claims_stealable and claims_steal read, so it
+        // cannot be stolen while the handoff is pending or after it is accepted.
+        delete store.stealable[issueId];
 
-      store.claims[issueId] = claim;
-      saveClaims(store);
+        store.claims[issueId] = claim;
 
-      return {
-        success: true,
-        claim,
-        message: `Handoff requested from ${formatClaimant(from)} to ${formatClaimant(to)}`,
-      };
+        return saved({
+          success: true,
+          claim,
+          message: `Handoff requested from ${formatClaimant(from)} to ${formatClaimant(to)}`,
+        });
+      });
     },
   },
 
   {
     name: 'claims_accept-handoff',
-    description: 'Accept a pending handoff Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'Accept a pending handoff. Use when the receiving claimant confirms a claims_handoff request, completing the ownership transfer.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -326,45 +344,45 @@ export const claimsTools: MCPTool[] = [
         return { success: false, error: 'Invalid claimant format' };
       }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
+        }
 
-      if (claim.status !== 'handoff-pending') {
-        return { success: false, error: 'No pending handoff for this issue' };
-      }
+        if (claim.status !== 'handoff-pending') {
+          return unchanged({ success: false, error: 'No pending handoff for this issue' });
+        }
 
-      if (!claim.handoffTo || formatClaimant(claim.handoffTo) !== formatClaimant(claimant)) {
-        return { success: false, error: 'You are not the target of this handoff' };
-      }
+        if (!claim.handoffTo || formatClaimant(claim.handoffTo) !== formatClaimant(claimant)) {
+          return unchanged({ success: false, error: 'You are not the target of this handoff' });
+        }
 
-      const previousOwner = claim.claimant;
-      const now = new Date().toISOString();
+        const previousOwner = claim.claimant;
+        const now = new Date().toISOString();
 
-      claim.claimant = claimant;
-      claim.status = 'active';
-      claim.statusChangedAt = now;
-      claim.handoffTo = undefined;
-      claim.handoffReason = undefined;
+        claim.claimant = claimant;
+        claim.status = 'active';
+        claim.statusChangedAt = now;
+        claim.handoffTo = undefined;
+        claim.handoffReason = undefined;
 
-      store.claims[issueId] = claim;
-      saveClaims(store);
+        store.claims[issueId] = claim;
 
-      return {
-        success: true,
-        claim,
-        previousOwner,
-        message: `Handoff accepted. ${formatClaimant(claimant)} now owns issue ${issueId}`,
-      };
+        return saved({
+          success: true,
+          claim,
+          previousOwner,
+          message: `Handoff accepted. ${formatClaimant(claimant)} now owns issue ${issueId}`,
+        });
+      });
     },
   },
 
   {
     name: 'claims_status',
-    description: 'Update claim status Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'Update claim status. Use when progress changes (active, blocked, review-requested, etc.) so claims_list and claims_load reflect current state.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -398,37 +416,41 @@ export const claimsTools: MCPTool[] = [
       { const v = validateIdentifier(issueId, 'issueId'); if (!v.valid) return { success: false, error: v.error }; }
       if (note) { const v = validateText(note, 'note'); if (!v.valid) return { success: false, error: v.error }; }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
+        }
 
-      const now = new Date().toISOString();
-      claim.status = status;
-      claim.statusChangedAt = now;
-      if (status === 'blocked') {
-        claim.blockReason = note;
-      }
-      if (progress !== undefined) {
-        claim.progress = Math.min(100, Math.max(0, progress));
-      }
+        const now = new Date().toISOString();
+        claim.status = status;
+        claim.statusChangedAt = now;
+        if (status === 'blocked') {
+          claim.blockReason = note;
+        }
+        if (progress !== undefined) {
+          claim.progress = Math.min(100, Math.max(0, progress));
+        }
+        // claims_status never sets 'stealable', so a claim it updates is no
+        // longer up for grabs: drop it from the list claims_stealable and
+        // claims_steal read.
+        delete store.stealable[issueId];
 
-      store.claims[issueId] = claim;
-      saveClaims(store);
+        store.claims[issueId] = claim;
 
-      return {
-        success: true,
-        claim,
-        message: `Issue ${issueId} status updated to ${status}`,
-      };
+        return saved({
+          success: true,
+          claim,
+          message: `Issue ${issueId} status updated to ${status}`,
+        });
+      });
     },
   },
 
   {
     name: 'claims_list',
-    description: 'List all claims or filter by criteria Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'List all claims or filter by criteria. Use when checking what is already claimed before starting new work, instead of guessing from issue comments.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -484,7 +506,7 @@ export const claimsTools: MCPTool[] = [
 
   {
     name: 'claims_mark-stealable',
-    description: 'Mark an issue as stealable by other agents Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'Mark an issue as stealable by other agents. Use when a claimant is overloaded or stalled and wants another agent to pick it up via claims_steal.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -519,40 +541,40 @@ export const claimsTools: MCPTool[] = [
       { const v = validateIdentifier(issueId, 'issueId'); if (!v.valid) return { success: false, error: v.error }; }
       if (context) { const v = validateText(context, 'context'); if (!v.valid) return { success: false, error: v.error }; }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
+        }
 
-      const now = new Date().toISOString();
-      claim.status = 'stealable';
-      claim.statusChangedAt = now;
+        const now = new Date().toISOString();
+        claim.status = 'stealable';
+        claim.statusChangedAt = now;
 
-      store.stealable[issueId] = {
-        reason,
-        stealableAt: now,
-        preferredTypes,
-        progress: claim.progress,
-        context,
-      };
+        store.stealable[issueId] = {
+          reason,
+          stealableAt: now,
+          preferredTypes,
+          progress: claim.progress,
+          context,
+        };
 
-      store.claims[issueId] = claim;
-      saveClaims(store);
+        store.claims[issueId] = claim;
 
-      return {
-        success: true,
-        claim,
-        stealableInfo: store.stealable[issueId],
-        message: `Issue ${issueId} marked as stealable (${reason})`,
-      };
+        return saved({
+          success: true,
+          claim,
+          stealableInfo: store.stealable[issueId],
+          message: `Issue ${issueId} marked as stealable (${reason})`,
+        });
+      });
     },
   },
 
   {
     name: 'claims_steal',
-    description: 'Steal a stealable issue Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'Steal a stealable issue. Use when picking up work already marked stealable via claims_mark-stealable, rather than claiming an issue someone else still owns.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -580,53 +602,55 @@ export const claimsTools: MCPTool[] = [
         return { success: false, error: 'Invalid claimant format' };
       }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
-      const stealableInfo = store.stealable[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
+        const stealableInfo = store.stealable[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
-
-      if (!stealableInfo) {
-        return { success: false, error: 'Issue is not stealable' };
-      }
-
-      // Check preferred types
-      if (stealableInfo.preferredTypes && stealableInfo.preferredTypes.length > 0) {
-        if (stealer.type === 'agent' && !stealableInfo.preferredTypes.includes(stealer.agentType!)) {
-          return {
-            success: false,
-            error: `Issue prefers agent types: ${stealableInfo.preferredTypes.join(', ')}`,
-          };
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
         }
-      }
 
-      const previousOwner = claim.claimant;
-      const now = new Date().toISOString();
+        if (!stealableInfo) {
+          return unchanged({ success: false, error: 'Issue is not stealable' });
+        }
 
-      claim.claimant = stealer;
-      claim.status = 'active';
-      claim.statusChangedAt = now;
-      claim.context = stealableInfo.context;
+        // Check preferred types
+        if (stealableInfo.preferredTypes && stealableInfo.preferredTypes.length > 0) {
+          if (stealer.type === 'agent' && !stealableInfo.preferredTypes.includes(stealer.agentType!)) {
+            return unchanged({
+              success: false,
+              error: `Issue prefers agent types: ${stealableInfo.preferredTypes.join(', ')}`,
+            });
+          }
+        }
 
-      delete store.stealable[issueId];
-      store.claims[issueId] = claim;
-      saveClaims(store);
+        const previousOwner = claim.claimant;
+        const now = new Date().toISOString();
 
-      return {
-        success: true,
-        claim,
-        previousOwner,
-        stealableInfo,
-        message: `Issue ${issueId} stolen by ${formatClaimant(stealer)}`,
-      };
+        claim.claimant = stealer;
+        claim.status = 'active';
+        claim.statusChangedAt = now;
+        // The context given to claims_mark-stealable is the handoff note for the
+        // stealer; without one, keep the context recorded with the claim.
+        claim.context = stealableInfo.context ?? claim.context;
+
+        delete store.stealable[issueId];
+        store.claims[issueId] = claim;
+
+        return saved({
+          success: true,
+          claim,
+          previousOwner,
+          stealableInfo,
+          message: `Issue ${issueId} stolen by ${formatClaimant(stealer)}`,
+        });
+      });
     },
   },
 
   {
     name: 'claims_stealable',
-    description: 'List all stealable issues Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'List all stealable issues. Use when looking for available work that has been freed up via claims_mark-stealable.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -665,7 +689,7 @@ export const claimsTools: MCPTool[] = [
 
   {
     name: 'claims_load',
-    description: 'Get agent load information Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'Get agent load information. Use when deciding which agent should take new work by comparing claim counts against claims_rebalance targets.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -688,7 +712,9 @@ export const claimsTools: MCPTool[] = [
       if (agentType) { const v = validateIdentifier(agentType, 'agentType'); if (!v.valid) return { success: false, error: v.error }; }
 
       const store = loadClaims();
-      const claims = Object.values(store.claims);
+      // A completed claim stays in the store but is no longer work in hand,
+      // so it does not count toward an agent's load.
+      const openAgentClaims = Object.values(store.claims).filter(isOpenAgentClaim);
 
       // Group claims by agent
       const agentLoads = new Map<string, {
@@ -698,9 +724,7 @@ export const claimsTools: MCPTool[] = [
         blockedCount: number;
       }>();
 
-      for (const claim of claims) {
-        if (claim.claimant.type !== 'agent') continue;
-
+      for (const claim of openAgentClaims) {
         const key = claim.claimant.agentId!;
         if (!agentLoads.has(key)) {
           agentLoads.set(key, {
@@ -732,8 +756,8 @@ export const claimsTools: MCPTool[] = [
         agentId: l.agentId,
         agentType: l.agentType,
         claimCount: l.claims.length,
-        maxClaims: 5, // Default max
-        utilization: l.claims.length / 5,
+        maxClaims: DEFAULT_MAX_CLAIMS,
+        utilization: l.claims.length / DEFAULT_MAX_CLAIMS,
         blockedCount: l.blockedCount,
         claims: l.claims.map(c => ({
           issueId: c.issueId,
@@ -746,7 +770,7 @@ export const claimsTools: MCPTool[] = [
         success: true,
         loads: result,
         totalAgents: result.length,
-        totalClaims: claims.filter(c => c.claimant.type === 'agent').length,
+        totalClaims: openAgentClaims.length,
         avgUtilization: result.length > 0
           ? result.reduce((sum, l) => sum + l.utilization, 0) / result.length
           : 0,
@@ -756,7 +780,7 @@ export const claimsTools: MCPTool[] = [
 
   {
     name: 'claims_board',
-    description: 'Get a visual board view of all claims Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'Get a visual board view of all claims. Use when scanning overall claim status across issues and agents instead of composing the view from claims_list yourself.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -810,7 +834,7 @@ export const claimsTools: MCPTool[] = [
 
   {
     name: 'claims_rebalance',
-    description: 'Suggest or apply load rebalancing across agents Use when nothing native covers per-agent capability gating — Claude Code agents have file-system access by default. Pair claims_grant + claims_check before letting an agent run privileged ops. For trusted in-session work, no claims call is needed.',
+    description: 'Suggest or apply load rebalancing across agents. Use when some agents are overloaded and others idle, instead of manually reassigning claims one at a time.',
     category: 'claims',
     inputSchema: {
       type: 'object',
@@ -831,83 +855,90 @@ export const claimsTools: MCPTool[] = [
       const dryRun = input.dryRun !== false;
       const targetUtilization = (input.targetUtilization as number) || 0.7;
 
-      const store = loadClaims();
-      const claims = Object.values(store.claims);
+      // The moves are planned from the same locked read they are applied to.
+      return updateClaims((store) => {
+        // Completed claims are not load, as in claims_load.
+        const openAgentClaims = Object.values(store.claims).filter(isOpenAgentClaim);
 
-      // Group by agent
-      const agentLoads = new Map<string, { agentId: string; agentType: string; claims: IssueClaim[] }>();
+        // Group by agent
+        const agentLoads = new Map<string, { agentId: string; agentType: string; claims: IssueClaim[] }>();
 
-      for (const claim of claims) {
-        if (claim.claimant.type !== 'agent') continue;
-
-        const key = claim.claimant.agentId!;
-        if (!agentLoads.has(key)) {
-          agentLoads.set(key, { agentId: key, agentType: claim.claimant.agentType!, claims: [] });
-        }
-        agentLoads.get(key)!.claims.push(claim);
-      }
-
-      const loads = Array.from(agentLoads.values());
-      const maxClaims = 5;
-      const avgLoad = loads.length > 0
-        ? loads.reduce((sum, l) => sum + l.claims.length, 0) / loads.length
-        : 0;
-
-      const overloaded = loads.filter(l => l.claims.length > maxClaims * targetUtilization * 1.5);
-      const underloaded = loads.filter(l => l.claims.length < maxClaims * targetUtilization * 0.5);
-
-      const suggestions: Array<{ issueId: string; from: string; to: string; reason: string }> = [];
-
-      for (const over of overloaded) {
-        // Find low-progress claims to redistribute
-        const movable = over.claims
-          .filter(c => c.progress < 25 && c.status === 'active')
-          .slice(0, over.claims.length - Math.ceil(maxClaims * targetUtilization));
-
-        for (const claim of movable) {
-          const target = underloaded.find(u => u.agentType === over.agentType && u.claims.length < maxClaims);
-          if (target) {
-            suggestions.push({
-              issueId: claim.issueId,
-              from: `agent:${over.agentId}:${over.agentType}`,
-              to: `agent:${target.agentId}:${target.agentType}`,
-              reason: 'Load balancing',
-            });
+        for (const claim of openAgentClaims) {
+          const key = claim.claimant.agentId!;
+          if (!agentLoads.has(key)) {
+            agentLoads.set(key, { agentId: key, agentType: claim.claimant.agentType!, claims: [] });
           }
+          agentLoads.get(key)!.claims.push(claim);
         }
-      }
 
-      // When not a dry run, execute the suggested moves
-      if (!dryRun) {
-        for (const suggestion of suggestions) {
-          const claim = store.claims[suggestion.issueId];
-          if (claim) {
-            const newOwner = parseClaimant(suggestion.to);
-            if (newOwner) {
-              claim.claimant = newOwner;
-              claim.statusChangedAt = new Date().toISOString();
-              store.claims[suggestion.issueId] = claim;
+        const loads = Array.from(agentLoads.values());
+        const maxClaims = DEFAULT_MAX_CLAIMS;
+        const avgLoad = loads.length > 0
+          ? loads.reduce((sum, l) => sum + l.claims.length, 0) / loads.length
+          : 0;
+
+        const overloaded = loads.filter(l => l.claims.length > maxClaims * targetUtilization * 1.5);
+        const underloaded = loads.filter(l => l.claims.length < maxClaims * targetUtilization * 0.5);
+
+        const suggestions: Array<{ issueId: string; from: string; to: string; reason: string }> = [];
+        // Claim counts including moves suggested so far, so one target is not
+        // handed more claims than maxClaims allows.
+        const plannedCount = new Map(loads.map(l => [l.agentId, l.claims.length]));
+
+        for (const over of overloaded) {
+          // Find low-progress claims to redistribute
+          const movable = over.claims
+            .filter(c => c.progress < 25 && c.status === 'active')
+            .slice(0, over.claims.length - Math.ceil(maxClaims * targetUtilization));
+
+          for (const claim of movable) {
+            const target = underloaded.find(u => u.agentType === over.agentType && plannedCount.get(u.agentId)! < maxClaims);
+            if (target) {
+              plannedCount.set(target.agentId, plannedCount.get(target.agentId)! + 1);
+              suggestions.push({
+                issueId: claim.issueId,
+                from: `agent:${over.agentId}:${over.agentType}`,
+                to: `agent:${target.agentId}:${target.agentType}`,
+                reason: 'Load balancing',
+              });
             }
           }
         }
-        saveClaims(store);
-      }
 
-      return {
-        success: true,
-        dryRun,
-        suggestions,
-        metrics: {
-          totalAgents: loads.length,
-          avgLoad,
-          overloadedCount: overloaded.length,
-          underloadedCount: underloaded.length,
-          targetUtilization,
-        },
-        message: dryRun
-          ? `Found ${suggestions.length} rebalancing opportunities (dry run)`
-          : `Applied ${suggestions.length} rebalancing moves`,
-      };
+        // When not a dry run, execute the suggested moves
+        if (!dryRun) {
+          for (const suggestion of suggestions) {
+            const claim = store.claims[suggestion.issueId];
+            if (claim) {
+              const newOwner = parseClaimant(suggestion.to);
+              if (newOwner) {
+                claim.claimant = newOwner;
+                claim.statusChangedAt = new Date().toISOString();
+                store.claims[suggestion.issueId] = claim;
+              }
+            }
+          }
+        }
+
+        return {
+          save: !dryRun,
+          result: {
+            success: true,
+            dryRun,
+            suggestions,
+            metrics: {
+              totalAgents: loads.length,
+              avgLoad,
+              overloadedCount: overloaded.length,
+              underloadedCount: underloaded.length,
+              targetUtilization,
+            },
+            message: dryRun
+              ? `Found ${suggestions.length} rebalancing opportunities (dry run)`
+              : `Applied ${suggestions.length} rebalancing moves`,
+          },
+        };
+      });
     },
   },
 ];

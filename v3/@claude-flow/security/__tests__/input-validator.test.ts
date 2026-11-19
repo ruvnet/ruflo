@@ -297,6 +297,15 @@ describe('InputValidator', () => {
       it('should trim whitespace', () => {
         expect(sanitizeString('  hello  ')).toBe('hello');
       });
+
+      it('should not reassemble a protocol from a nested one', () => {
+        expect(sanitizeString('javajavascript:script:alert(1)')).toBe('alert(1)');
+        expect(sanitizeString('dadata:ta:text/html,x')).toBe('text/html,x');
+      });
+
+      it('should remove vbscript: protocol', () => {
+        expect(sanitizeString('VBScript:msgbox(1)')).toBe('msgbox(1)');
+      });
     });
 
     describe('sanitizeHtml', () => {

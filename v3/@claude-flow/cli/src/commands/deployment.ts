@@ -115,7 +115,7 @@ const deployCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     try {
       const envName = String(ctx.flags['env'] || 'staging');
-      const dryRun = Boolean(ctx.flags['dry-run']);
+      const dryRun = ctx.flags.dryRun === true || ctx.flags['dry-run'] === true;
       const description = ctx.flags['description'] ? String(ctx.flags['description']) : undefined;
 
       let version = ctx.flags['version'] ? String(ctx.flags['version']) : null;

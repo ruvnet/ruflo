@@ -29,7 +29,7 @@ export const register: Register = (on, options) => {
     const result = await next(e)
     s.root = (await $.session.root()) as string | undefined
     try {
-      await $.command.register({ name: 'wf-mod', description: 'Workflows mod: status, scan <text>, lifecycle' })
+      await $.command.register({ name: 'wf-mod', description: 'Workflows mod: status, scan <text>, lifecycle, managed' })
     } catch {
       /* a name taken by another plugin must not stop the mod */
     }

@@ -49,12 +49,107 @@ function ensureConfigDir(): void {
   }
 }
 
+// Plain CLI files and legacy MCP envelopes share the same path. Keep the
+// original plain document so MCP writes remain readable by the CLI.
+const plainDocuments = new WeakMap<ConfigStore, Record<string, unknown>>();
+const STORE_METADATA = new Set(['scopes', 'version', 'updatedAt']);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function flattenValues(document: Record<string, unknown>): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  function visit(value: unknown, key: string): void {
+    if (isRecord(value) && Object.keys(value).length > 0) {
+      for (const [child, entry] of Object.entries(value)) visit(entry, `${key}.${child}`);
+    } else {
+      Object.defineProperty(values, key, { value, enumerable: true, configurable: true, writable: true });
+    }
+  }
+  for (const [key, value] of Object.entries(document)) {
+    if (!STORE_METADATA.has(key)) visit(value, key);
+  }
+  // CLI reads literal dotted keys before traversing nested objects.
+  for (const [key, value] of Object.entries(document)) {
+    if (key.includes('.')) Object.defineProperty(values, key, { value, enumerable: true, configurable: true, writable: true });
+  }
+  return values;
+}
+
+function readDefaultValue(store: ConfigStore, key: string): unknown {
+  const document = plainDocuments.get(store);
+  if (!document) return store.values[key];
+  return Object.hasOwn(document, key) ? document[key] : getNestedValue(document, key);
+}
+
+function writeDefaultValue(store: ConfigStore, key: string, value: unknown): void {
+  const document = plainDocuments.get(store);
+  if (!document) {
+    store.values[key] = value;
+    return;
+  }
+  // Keep existing literal dotted keys; otherwise use the CLI's nested shape.
+  if (Object.hasOwn(document, key)) {
+    // Reuse the same segment validation as nested writes.
+    setNestedValue({}, key, value);
+    document[key] = value;
+  } else {
+    setNestedValue(document, key, value);
+  }
+  store.values = flattenValues(document);
+}
+
+function deleteDefaultValue(store: ConfigStore, key: string): boolean {
+  const document = plainDocuments.get(store);
+  if (!document) return Object.hasOwn(store.values, key) && delete store.values[key];
+  let target = document;
+  let leaf = key;
+  if (!Object.hasOwn(document, key)) {
+    const parts = key.split('.');
+    leaf = parts.pop()!;
+    for (const part of parts) {
+      if (!Object.hasOwn(target, part) || !isRecord(target[part])) return false;
+      target = target[part] as Record<string, unknown>;
+    }
+  }
+  const deleted = Object.hasOwn(target, leaf) && delete target[leaf];
+  store.values = flattenValues(document);
+  return deleted;
+}
+
+function replaceDefaultValues(store: ConfigStore, values: Record<string, unknown>): void {
+  const document = plainDocuments.get(store);
+  if (!document) {
+    store.values = values;
+    return;
+  }
+  for (const key of Object.keys(document)) {
+    if (!STORE_METADATA.has(key)) delete document[key];
+  }
+  for (const [key, value] of Object.entries(values)) writeDefaultValue(store, key, value);
+}
+
 function loadConfigStore(): ConfigStore {
   try {
     const path = getConfigPath();
     if (existsSync(path)) {
       const data = readFileSync(path, 'utf-8');
-      return JSON.parse(data);
+      const document = JSON.parse(data);
+      const isEnvelope = isRecord(document) && isRecord(document.values)
+        && isRecord(document.scopes) && typeof document.version === 'string'
+        && typeof document.updatedAt === 'string';
+      if (isRecord(document) && !isEnvelope) {
+        const store: ConfigStore = {
+          values: flattenValues(document),
+          scopes: isRecord(document.scopes) ? document.scopes as ConfigStore['scopes'] : {},
+          version: typeof document.version === 'string' ? document.version : '3.0.0',
+          updatedAt: typeof document.updatedAt === 'string' ? document.updatedAt : '',
+        };
+        plainDocuments.set(store, document);
+        return store;
+      }
+      return document;
     }
   } catch {
     // Return default store on error
@@ -70,14 +165,21 @@ function loadConfigStore(): ConfigStore {
 function saveConfigStore(store: ConfigStore): void {
   ensureConfigDir();
   store.updatedAt = new Date().toISOString();
-  writeFileSync(getConfigPath(), JSON.stringify(store, null, 2), 'utf-8');
+  const document = plainDocuments.get(store);
+  if (document) {
+    document.updatedAt = store.updatedAt;
+    if (Object.keys(store.scopes).length > 0 || Object.hasOwn(document, 'scopes')) {
+      document.scopes = store.scopes;
+    }
+  }
+  writeFileSync(getConfigPath(), JSON.stringify(document ?? store, null, 2), 'utf-8');
 }
 
 function getNestedValue(obj: Record<string, unknown>, key: string): unknown {
   const parts = key.split('.');
   let current: unknown = obj;
   for (const part of parts) {
-    if (current && typeof current === 'object' && part in (current as Record<string, unknown>)) {
+    if (current && typeof current === 'object' && Object.hasOwn(current, part)) {
       current = (current as Record<string, unknown>)[part];
     } else {
       return undefined;
@@ -98,6 +200,29 @@ function filterDangerousKeys(obj: Record<string, unknown>): Record<string, unkno
   return filtered;
 }
 
+// Scope names index store.scopes directly, so they must never resolve to
+// Object.prototype (`__proto__`) or to inherited built-ins (`toString`).
+function validateScope(scope: unknown): { valid: boolean; error?: string } {
+  const v = validateIdentifier(scope, 'scope');
+  if (!v.valid) return v;
+  if (DANGEROUS_KEYS.has(scope as string)) return { valid: false, error: 'scope uses a reserved name' };
+  return { valid: true };
+}
+
+function readScope(store: ConfigStore, scope: string): Record<string, unknown> | undefined {
+  if (!Object.hasOwn(store.scopes, scope)) return undefined;
+  const values = store.scopes[scope];
+  return isRecord(values) ? values : undefined;
+}
+
+function ensureScope(store: ConfigStore, scope: string, reset = false): Record<string, unknown> {
+  const existing = reset ? undefined : readScope(store, scope);
+  if (existing) return existing;
+  const created: Record<string, unknown> = {};
+  store.scopes[scope] = created;
+  return created;
+}
+
 function setNestedValue(obj: Record<string, unknown>, key: string, value: unknown): void {
   const MAX_NESTING_DEPTH = 10;
   const parts = key.split('.');
@@ -112,7 +237,7 @@ function setNestedValue(obj: Record<string, unknown>, key: string, value: unknow
   let current = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
-    if (!(part in current) || typeof current[part] !== 'object') {
+    if (!Object.hasOwn(current, part) || current[part] === null || typeof current[part] !== 'object') {
       current[part] = {};
     }
     current = current[part] as Record<string, unknown>;
@@ -138,7 +263,7 @@ export const configTools: MCPTool[] = [
       const vKey = validateText(input.key, 'key', 256);
       if (!vKey.valid) return { success: false, error: vKey.error };
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
 
@@ -149,11 +274,12 @@ export const configTools: MCPTool[] = [
       let value: unknown;
 
       // Check scope first, then default values
-      if (scope !== 'default' && store.scopes[scope]) {
-        value = store.scopes[scope][key];
+      const scopeValues = scope !== 'default' ? readScope(store, scope) : undefined;
+      if (scopeValues && Object.hasOwn(scopeValues, key)) {
+        value = scopeValues[key];
       }
       if (value === undefined) {
-        value = store.values[key];
+        value = readDefaultValue(store, key);
       }
       if (value === undefined) {
         value = DEFAULT_CONFIG[key];
@@ -164,7 +290,7 @@ export const configTools: MCPTool[] = [
         value,
         scope,
         exists: value !== undefined,
-        source: value !== undefined ? (store.values[key] !== undefined ? 'stored' : 'default') : 'none',
+        source: value !== undefined ? (readDefaultValue(store, key) !== undefined ? 'stored' : 'default') : 'none',
       };
     },
   },
@@ -186,7 +312,7 @@ export const configTools: MCPTool[] = [
       const vKey = validateText(input.key, 'key', 256);
       if (!vKey.valid) return { success: false, error: vKey.error };
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
 
@@ -195,15 +321,15 @@ export const configTools: MCPTool[] = [
       const value = input.value;
       const scope = (input.scope as string) || 'default';
 
-      const previousValue = store.values[key];
+      const previousValue = readDefaultValue(store, key);
 
       if (scope === 'default') {
-        store.values[key] = value;
+        writeDefaultValue(store, key, value);
       } else {
-        if (!store.scopes[scope]) {
-          store.scopes[scope] = {};
+        if (DANGEROUS_KEYS.has(key)) {
+          return { success: false, error: 'key uses a reserved name' };
         }
-        store.scopes[scope][key] = value;
+        ensureScope(store, scope)[key] = value;
       }
 
       saveConfigStore(store);
@@ -233,7 +359,7 @@ export const configTools: MCPTool[] = [
     handler: async (input) => {
       // Validate user-provided input (#1425)
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
       if (input.prefix) {
@@ -266,10 +392,12 @@ export const configTools: MCPTool[] = [
         merged.set(key, { value, source: 'stored' });
       }
       // Always include keys from every scope so they're discoverable; the
-      // scope filter only narrows which set is used as the *winner*.
+      // scope filter only narrows which set is used as the *winner*. The
+      // default scope has no scope of its own, so stored values win there,
+      // as in config_get and config_export.
       for (const [scopeName, scopeValues] of Object.entries(store.scopes)) {
         for (const [key, value] of Object.entries(scopeValues)) {
-          if (scope === scopeName || scope === 'default') {
+          if (scope === scopeName) {
             merged.set(key, { value, source: `scope:${scopeName}` });
           } else if (!merged.has(key)) {
             // Surface scoped keys that aren't shadowed when listing default scope
@@ -306,7 +434,7 @@ export const configTools: MCPTool[] = [
     handler: async (input) => {
       // Validate user-provided input (#1425)
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
       if (input.key) {
@@ -323,21 +451,23 @@ export const configTools: MCPTool[] = [
       if (key) {
         // Reset specific key
         if (scope === 'default') {
-          if (key in store.values) {
-            delete store.values[key];
+          if (deleteDefaultValue(store, key)) {
             resetKeys.push(key);
           }
-        } else if (store.scopes[scope] && key in store.scopes[scope]) {
-          delete store.scopes[scope][key];
-          resetKeys.push(key);
+        } else {
+          const scopeValues = readScope(store, scope);
+          if (scopeValues && Object.hasOwn(scopeValues, key)) {
+            delete scopeValues[key];
+            resetKeys.push(key);
+          }
         }
       } else {
         // Reset all keys in scope
         if (scope === 'default') {
           resetKeys = Object.keys(store.values);
-          store.values = { ...DEFAULT_CONFIG };
-        } else if (store.scopes[scope]) {
-          resetKeys = Object.keys(store.scopes[scope]);
+          replaceDefaultValues(store, { ...DEFAULT_CONFIG });
+        } else if (readScope(store, scope)) {
+          resetKeys = Object.keys(readScope(store, scope)!);
           delete store.scopes[scope];
         }
       }
@@ -367,7 +497,7 @@ export const configTools: MCPTool[] = [
     handler: async (input) => {
       // Validate user-provided input (#1425)
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
 
@@ -383,8 +513,9 @@ export const configTools: MCPTool[] = [
 
       Object.assign(exportData, store.values);
 
-      if (scope !== 'default' && store.scopes[scope]) {
-        Object.assign(exportData, store.scopes[scope]);
+      const scopeValues = scope !== 'default' ? readScope(store, scope) : undefined;
+      if (scopeValues) {
+        Object.assign(exportData, scopeValues);
       }
 
       return {
@@ -412,7 +543,7 @@ export const configTools: MCPTool[] = [
     handler: async (input) => {
       // Validate user-provided input (#1425)
       if (input.scope) {
-        const v = validateIdentifier(input.scope, 'scope');
+        const v = validateScope(input.scope);
         if (!v.valid) return { success: false, error: v.error };
       }
 
@@ -425,15 +556,12 @@ export const configTools: MCPTool[] = [
 
       if (scope === 'default') {
         if (merge) {
-          Object.assign(store.values, config);
+          for (const [key, value] of Object.entries(config)) writeDefaultValue(store, key, value);
         } else {
-          store.values = { ...DEFAULT_CONFIG, ...config };
+          replaceDefaultValues(store, { ...DEFAULT_CONFIG, ...config });
         }
       } else {
-        if (!store.scopes[scope] || !merge) {
-          store.scopes[scope] = {};
-        }
-        Object.assign(store.scopes[scope], config);
+        Object.assign(ensureScope(store, scope, !merge), config);
       }
 
       saveConfigStore(store);

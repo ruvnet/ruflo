@@ -11,21 +11,29 @@
  * AbortController, response truncation, default User-Agent.
  *
  * Architectural constraints (load-bearing):
- *   - DEFAULT-REFUSES private addresses + loopback (CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1 opt-in)
+ *   - DEFAULT-REFUSES private addresses + loopback (CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1 opt-in):
+ *     IP literals by text here, and every resolved address of a hostname at connect time, on the
+ *     connection itself (http-fetch-pinned.ts), so DNS that points at, or rebinds to, a private
+ *     address is refused too
  *   - DEFAULT-REFUSES Authorization / Cookie / X-Auth-* (CLAUDE_FLOW_HTTP_FETCH_ALLOW_AUTH=1 opt-in)
  *   - hard timeout 30s default, 60s ceiling
  *   - response truncated to 256KB default, 1MB ceiling
- *   - no redirects auto-followed beyond fetch's default; status reported as-is
+ *   - redirects followed manually, max 10, every hop re-validated by the same allowlist
  *
  * @module @claude-flow/cli/mcp-tools/http-fetch
  */
 
 import type { MCPTool } from './types.js';
+import { allowPrivateAddresses, isPrivateOrLoopback, pinnedRequest, PrivateAddressError, type PinnedInit } from './http-fetch-pinned.js';
+
+export { isPrivateOrLoopback } from './http-fetch-pinned.js';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_TIMEOUT_MS = 60_000;
 const DEFAULT_MAX_RESPONSE_BYTES = 256 * 1024; // 256 KB
 const MAX_RESPONSE_BYTES = 1024 * 1024; // 1 MB
+const MAX_REDIRECTS = 10;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const DEFAULT_USER_AGENT = 'ruflo-http-fetch/1.0';
 
 const FORBIDDEN_HEADER_PREFIXES = ['x-auth-', 'x-api-key'] as const;
@@ -58,39 +66,13 @@ export function validateUrl(rawUrl: string): URL {
     );
   }
   const host = parsed.hostname.toLowerCase();
-  const allowPrivate = process.env.CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE === '1';
-  if (!allowPrivate && isPrivateOrLoopback(host)) {
+  if (!allowPrivateAddresses() && isPrivateOrLoopback(host)) {
     throw new HttpFetchValidationError(
       `host ${host} is loopback/private/link-local; set CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1 to override`,
       'PRIVATE_ADDRESS',
     );
   }
   return parsed;
-}
-
-function isPrivateOrLoopback(host: string): boolean {
-  if (host === 'localhost' || host === 'localhost.localdomain') return true;
-  // IPv6 loopback
-  if (host === '::1' || host === '[::1]') return true;
-  // IPv4 numeric checks
-  const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (m) {
-    const a = Number(m[1]);
-    const b = Number(m[2]);
-    if (a === 0) return true;          // 0.0.0.0/8
-    if (a === 127) return true;        // loopback
-    if (a === 10) return true;         // RFC1918
-    if (a === 172 && b >= 16 && b <= 31) return true; // RFC1918
-    if (a === 192 && b === 168) return true;          // RFC1918
-    if (a === 169 && b === 254) return true;          // link-local
-    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
-    return false;
-  }
-  // IPv6 bracketed addresses and other special forms — be conservative and
-  // accept only public-looking literals. Reject obvious private/local forms.
-  if (host.startsWith('fc') || host.startsWith('fd')) return true;  // fc00::/7 ULA
-  if (host.startsWith('fe80:')) return true;                        // link-local
-  return false;
 }
 
 export function validateHeaders(headers: Record<string, string>): Record<string, string> {
@@ -145,12 +127,16 @@ export interface HttpFetchResult {
   errorCode?: string;
 }
 
+/** How one request is sent; tests replace it to script responses. The default pins each connection to checked addresses. */
+export type HttpFetchRequest = (url: string, init: PinnedInit) => Promise<Response>;
+
 /**
  * Pure execution path so tests can call it without going through the MCP
  * dispatcher. Returns a result object (does not throw on validation failure
  * — it returns success: false with an errorCode).
  */
-export async function httpFetchExecute(input: Record<string, unknown>): Promise<HttpFetchResult> {
+export async function httpFetchExecute(input: Record<string, unknown>, deps: { request?: HttpFetchRequest } = {}): Promise<HttpFetchResult> {
+  const send = deps.request ?? pinnedRequest;
   const startedAt = Date.now();
   const url = String(input.url ?? '');
   const method = String(input.method ?? 'GET').toUpperCase();
@@ -233,13 +219,97 @@ export async function httpFetchExecute(input: Record<string, unknown>): Promise<
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(parsed.toString(), {
-      method,
-      headers,
-      body: method === 'GET' || method === 'HEAD' ? undefined : body,
-      signal: controller.signal,
-      // Keep redirect default ('follow') — caller sees final status/url.
-    });
+    let currentUrl = parsed;
+    let currentMethod = method;
+    let currentBody = body;
+    let response: Response;
+    let redirects = 0;
+
+    // Do not let fetch follow redirects on its own: only the initial URL was
+    // validated, so an automatic follow could reach loopback/RFC1918 or switch
+    // protocols after passing the allowlist. Every hop is validated with the
+    // same rules; sensitive headers are dropped when the origin changes.
+    while (true) {
+      // Never fetch(): it resolves the hostname again on its own, so what it connects to is
+      // not what was checked. `send` connects only to addresses its DNS lookup checked.
+      response = await send(currentUrl.toString(), {
+        method: currentMethod,
+        headers,
+        body: currentMethod === 'GET' || currentMethod === 'HEAD' ? undefined : currentBody,
+        signal: controller.signal,
+      });
+
+      if (!REDIRECT_STATUSES.has(response.status)) break;
+
+      const location = response.headers.get('location');
+      if (!location) break;
+
+      if (redirects++ >= MAX_REDIRECTS) {
+        try { await response.body?.cancel(); } catch { /* ignore */ }
+        return {
+          success: false,
+          status: response.status,
+          statusText: response.statusText,
+          headers: {},
+          body: '',
+          bodyTruncated: false,
+          bytesRead: 0,
+          durationMs: Date.now() - startedAt,
+          url: currentUrl.toString(),
+          method,
+          error: `too many redirects (max ${MAX_REDIRECTS})`,
+          errorCode: 'REDIRECT_LIMIT',
+        };
+      }
+
+      let nextUrl: URL;
+      try {
+        nextUrl = validateUrl(new URL(location, currentUrl).toString());
+      } catch (e) {
+        try { await response.body?.cancel(); } catch { /* ignore */ }
+        const err = e as HttpFetchValidationError;
+        return {
+          success: false,
+          status: response.status,
+          statusText: response.statusText,
+          headers: {},
+          body: '',
+          bodyTruncated: false,
+          bytesRead: 0,
+          durationMs: Date.now() - startedAt,
+          url: currentUrl.toString(),
+          method,
+          error: `redirect blocked: ${err.message}`,
+          errorCode: err.code ?? 'REDIRECT_BLOCKED',
+        };
+      }
+
+      // The redirect response body is not returned; release the connection
+      // before issuing the next request. A body-less 3xx is also fine.
+      try { await response.body?.cancel(); } catch { /* ignore */ }
+
+      if (nextUrl.origin !== currentUrl.origin) {
+        for (const key of Object.keys(headers)) {
+          const lower = key.toLowerCase();
+          if (lower === 'authorization' || lower === 'cookie' || lower === 'proxy-authorization') {
+            delete headers[key];
+          }
+        }
+      }
+
+      // Match fetch's redirect method rules: 303 becomes GET except for
+      // GET/HEAD, while 301/302 only rewrite POST to GET. 307/308 preserve
+      // both method and body.
+      if (
+        (response.status === 303 && currentMethod !== 'GET' && currentMethod !== 'HEAD') ||
+        ((response.status === 301 || response.status === 302) && currentMethod === 'POST')
+      ) {
+        currentMethod = 'GET';
+        currentBody = undefined;
+      }
+
+      currentUrl = nextUrl;
+    }
 
     // Drain the body with byte budget. Use array-buffer first to bound size
     // deterministically before decoding to UTF-8.
@@ -287,11 +357,17 @@ export async function httpFetchExecute(input: Record<string, unknown>): Promise<
       bodyTruncated,
       bytesRead,
       durationMs: Date.now() - startedAt,
-      url: parsed.toString(),
+      url: currentUrl.toString(),
       method,
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    if (e instanceof PrivateAddressError) {
+      return {
+        success: false, status: 0, statusText: '', headers: {}, body: '', bodyTruncated: false, bytesRead: 0,
+        durationMs: Date.now() - startedAt, url: parsed.toString(), method, error: msg, errorCode: 'PRIVATE_ADDRESS',
+      };
+    }
     const aborted = msg.includes('aborted') || (e as { name?: string } | undefined)?.name === 'AbortError';
     return {
       success: false,
@@ -315,7 +391,7 @@ export async function httpFetchExecute(input: Record<string, unknown>): Promise<
 export const httpFetchTools: MCPTool[] = [
   {
     name: 'http_fetch',
-    description: 'ADR-164 §5.1.8 — HTTP probe primitive for business-pod ops benches (synthetic 200/500 endpoint checks, third-party status pages). Default-secure: blocks file://, ftp://, RFC-1918 / loopback / link-local hosts unless CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1, and rejects Authorization / Cookie / X-Auth-* headers unless CLAUDE_FLOW_HTTP_FETCH_ALLOW_AUTH=1. Hard 30s timeout (60s ceiling), response truncated to 256 KB (1 MB ceiling), default User-Agent ruflo-http-fetch/1.0. Use when a pod or smoke contract needs a guarded HTTP probe — calling Node fetch() directly is wrong because it skips the URL allowlist and header sanitization that ADR-164 mandates for autopilot mode. Pair with the ops-pod bench in plugins/ruflo-business-pods/templates/ops.json (the §4.4 synthetic-endpoint test).',
+    description: 'ADR-164 §5.1.8 — HTTP probe primitive for business-pod ops benches (synthetic 200/500 endpoint checks, third-party status pages). Default-secure: blocks file://, ftp://, and RFC-1918 / loopback / link-local hosts, whether given as an address or as a name that resolves to one (checked on the connection itself, every redirect hop included), unless CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1, and rejects Authorization / Cookie / X-Auth-* headers unless CLAUDE_FLOW_HTTP_FETCH_ALLOW_AUTH=1. Hard 30s timeout (60s ceiling), response truncated to 256 KB (1 MB ceiling), default User-Agent ruflo-http-fetch/1.0. Use when a pod or smoke contract needs a guarded HTTP probe — calling Node fetch() directly is wrong because it skips the URL allowlist and header sanitization that ADR-164 mandates for autopilot mode. Pair with the ops-pod bench in plugins/ruflo-business-pods/templates/ops.json (the §4.4 synthetic-endpoint test).',
     category: 'business-pods',
     tags: ['business-pods', 'http', 'fetch', 'adr-164', 'security', 'ops-pod'],
     inputSchema: {

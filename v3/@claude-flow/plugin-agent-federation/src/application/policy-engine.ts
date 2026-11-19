@@ -20,6 +20,7 @@ export interface SecurityPolicy {
   readonly minTrustLevelForWrite: TrustLevel;
   readonly minTrustLevelForMemory: TrustLevel;
   readonly minTrustLevelForSpawn: TrustLevel;
+  readonly minTrustLevelForAdmin: TrustLevel;
 }
 
 export interface PolicyEvaluationResult {
@@ -43,7 +44,50 @@ const DEFAULT_SECURITY_POLICY: SecurityPolicy = {
   minTrustLevelForWrite: TrustLevel.ATTESTED,
   minTrustLevelForMemory: TrustLevel.TRUSTED,
   minTrustLevelForSpawn: TrustLevel.PRIVILEGED,
+  minTrustLevelForAdmin: TrustLevel.TRUSTED,
 };
+
+// Message categories gated by the per-operation thresholds declared on
+// SecurityPolicy (minTrustLevelForWrite/Memory/Spawn/Admin). Message types
+// not listed here rely solely on CAPABILITY_GATES (trust-level.ts) — their
+// gating is not configurable via SecurityPolicy today.
+//
+// 'admin' covers trust-change/topology-change: control-plane messages that
+// mutate a peer's trust level or the mesh topology itself, as distinct from
+// the data-plane write/memory/spawn categories above (ADR-101).
+// 'write+spawn' is for agent-handoff, which transfers both work state (write)
+// and ownership/lifecycle authority (spawn).
+type PolicyGatedCategory = 'write' | 'memory' | 'spawn' | 'admin' | 'write+spawn';
+
+const POLICY_CATEGORY_FOR_MESSAGE_TYPE: Partial<Record<FederationMessageType, PolicyGatedCategory>> = {
+  'task-assignment': 'write',
+  'context-share': 'write',
+  'claim-event': 'write',
+  'memory-query': 'memory',
+  'memory-response': 'memory',
+  'agent-spawn': 'spawn',
+  'agent-handoff': 'write+spawn',
+  'trust-change': 'admin',
+  'topology-change': 'admin',
+};
+
+function policyThresholdForCategory(policy: SecurityPolicy, category: PolicyGatedCategory): TrustLevel {
+  switch (category) {
+    case 'write':
+      return policy.minTrustLevelForWrite;
+    case 'memory':
+      return policy.minTrustLevelForMemory;
+    case 'spawn':
+      return policy.minTrustLevelForSpawn;
+    case 'admin':
+      return policy.minTrustLevelForAdmin;
+    case 'write+spawn':
+      return Math.max(
+        policy.minTrustLevelForWrite,
+        policy.minTrustLevelForSpawn,
+      ) as TrustLevel;
+  }
+}
 
 const CLAIMS_FOR_MESSAGE_TYPE: Record<FederationMessageType, FederationClaimType[]> = {
   'task-assignment': ['federation:write'],
@@ -153,6 +197,19 @@ export class PolicyEngine {
       };
     }
 
+    const policyCategory = POLICY_CATEGORY_FOR_MESSAGE_TYPE[messageType];
+    if (policyCategory) {
+      const requiredLevel = policyThresholdForCategory(this.securityPolicy, policyCategory);
+      if (trustLevel < requiredLevel) {
+        return {
+          allowed: false,
+          reason: `Trust level ${trustLevel} below configured minimum ${requiredLevel} for ${policyCategory} operations`,
+          requiredClaims,
+          trustLevelSufficient: false,
+        };
+      }
+    }
+
     return {
       allowed: true,
       reason: 'Policy check passed',
@@ -231,6 +288,9 @@ export class PolicyEngine {
         return 'send';
       case 'agent-spawn':
         return 'remote-spawn';
+      case 'trust-change':
+      case 'topology-change':
+        return 'admin-change';
       case 'status-broadcast':
         return 'status';
       case 'heartbeat':

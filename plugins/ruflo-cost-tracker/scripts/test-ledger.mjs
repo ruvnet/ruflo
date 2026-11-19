@@ -21,7 +21,7 @@ mkdirSync(join(process.env.CODEX_HOME, 'archived_sessions'), { recursive: true }
 const grokSession = join(process.env.GROK_HOME, 'sessions', encodeURIComponent('/proj/g'), 'gs1');
 mkdirSync(grokSession, { recursive: true });
 
-const { collect } = await import('./_ledger.mjs');
+const { collect, inProject } = await import('./_ledger.mjs');
 const { priceUsage, lookup } = await import('./_pricebook.mjs');
 const { summarise } = await import('./ledger.mjs');
 const { advise } = await import('./advise.mjs');
@@ -49,7 +49,10 @@ const rollout = [
 ];
 jsonl(join(process.env.CODEX_HOME, 'sessions', '2026', '10', '03', 'rollout-a.jsonl'), rollout);
 jsonl(join(process.env.CODEX_HOME, 'archived_sessions', 'rollout-a.jsonl'), rollout); // same rollout archived: active copy wins
-jsonl(join(process.env.CODEX_HOME, 'sessions', '2026', '10', '03', 'rollout-fork.jsonl'), [{ type: 'turn_context', payload: { model: 'gpt-5.3-codex' } }, event(10, total(1000, 800, 100)), event(11, total(3000, 2600, 300))]); // replayed parent history
+jsonl(join(process.env.CODEX_HOME, 'sessions', '2026', '10', '03', 'rollout-fork.jsonl'), [
+  { type: 'session_meta', payload: { id: 'fork', cwd: '/y' } },
+  ...rollout.slice(0, 5), // copied parent metadata and usage, before any helper activity
+]);
 
 // ── Grok: usage.json with turns[] → one row per turn; cached ⊂ input; project from encoded folder / summary.
 writeFileSync(join(grokSession, 'usage.json'), JSON.stringify({
@@ -197,6 +200,36 @@ test('window: an invalid ISO time, a missing value, or a relative path exits 2 w
     assert.equal(r.status, 2, flags.join(' '));
     assert.match(r.stderr, /^ledger: /, flags.join(' '));
   }
+});
+
+// ── Windows: transcripts record `C:\Users\x\proj`, and the caller may pass either separator or another drive-letter case.
+const winRows = mkdtempSync(join(tmpdir(), 'ledger-winpaths-'));
+mkdirSync(join(winRows, 'claude', 'projects', 'q'), { recursive: true });
+mkdirSync(join(winRows, 'codex'), { recursive: true });
+mkdirSync(join(winRows, 'grok', 'sessions'), { recursive: true });
+jsonl(join(winRows, 'claude', 'projects', 'q', 'w.jsonl'), [
+  at('2026-10-02T06:00:00.000Z', 'in-a', 'C:\\Users\\x\\proj'),
+  at('2026-10-02T07:00:00.000Z', 'in-sub', 'C:\\Users\\x\\proj\\sub'),
+  at('2026-10-02T08:00:00.000Z', 'sibling', 'C:\\Users\\x\\proj-other'),
+  at('2026-10-02T09:00:00.000Z', 'other-drive', 'D:\\Users\\x\\proj'),
+]);
+const ledgerWin = (...flags) => {
+  const r = spawnSync(process.execPath, [join(HERE, 'ledger.mjs'), '--format', 'json', ...flags], { encoding: 'utf-8', env: { PATH: process.env.PATH, CLAUDE_CONFIG_DIR: join(winRows, 'claude'), CODEX_HOME: join(winRows, 'codex'), GROK_HOME: join(winRows, 'grok') } });
+
+  return { ...r, json: r.status === 0 ? JSON.parse(r.stdout) : null };
+};
+test('windows: --project takes a drive path in either separator style and any drive-letter case, and matches the folder and its subfolders only', () => {
+  for (const project of ['C:\\Users\\x\\proj', 'C:/Users/x/proj', 'c:\\users\\X\\PROJ\\', 'C:/Users/x/proj/']) {
+    assert.equal(ledgerWin('--from', FROM, '--to', TO, '--project', project).json?.rows, 2, project); // in-a and in-sub; not proj-other, not drive D
+  }
+});
+test('windows: a relative or climbing drive path still exits 2', () => {
+  for (const project of ['C:proj', 'C:\\Users\\x\\..\\y', 'C:/Users/x/../y']) assert.equal(ledgerWin('--project', project).status, 2, project);
+});
+test('windows: inProject keeps the POSIX rule exact (case-sensitive, directory boundary)', () => {
+  assert.equal(inProject({ project: '/proj/A' }, '/proj/a'), false);
+  assert.equal(inProject({ project: '/proj/ab' }, '/proj/a'), false);
+  assert.equal(inProject({ project: '/proj/a/sub' }, '/proj/a'), true);
 });
 
 if (failed > 0) { console.log(`\n${failed} failed`); process.exit(1); }

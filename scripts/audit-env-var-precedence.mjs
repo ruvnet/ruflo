@@ -57,6 +57,9 @@ const KNOWN_ESCAPE_HATCHES = new Set([
   'RUFLO_ADMIN_TOKEN',            // credential: the x.ruv.io gateway's OWN admin token, read by plugins/ruflo-x-gateway. Env-only by design — a secret must never be a CLI flag (shell history / process lists), and the gateway is a service with no typed command surface at all.
   'RUFLO_SERAPHINA_DAILY_CAP',    // gateway spend guard (#3275): shared daily Seraphina budget. Read by a long-running service, not a typed command — there is no invocation to attach a flag to.
   'RUFLO_SERAPHINA_IP_HOURLY_CAP',// gateway spend guard (#3275): per-client hourly Seraphina budget. Same service-only reasoning.
+  'RUFLO_MANAGED_AGENTS_BASE_URL',// Trust boundary: the Managed Agents adapter sends the API key to this origin, so it is operator config only. MCP/CLI arguments cannot select another host; apiBase() accepts a bare HTTPS origin (no credentials, path, query or fragment) and every request uses redirect:'error'.
+  'RUFLO_MANAGED_CONTROL_SESSIONS', // Trust boundary (#4751): the host allowlist of managed sessions this machine may control besides its own ledger. Deliberately env-only: an MCP/CLI caller (possibly a prompt-injected agent) must not be able to widen it, so there is intentionally no flag to take precedence.
+  'CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE', // Trust boundary (http_fetch SSRF guard): only the operator may let http_fetch reach loopback/private/link-local addresses. A CLI flag or tool argument would let the agent driving the MCP tool (possibly prompt-injected) switch the guard off, so it is env-only by design.
   'RUFLO_X_GATEWAY_URL',          // Trust boundary: gateway reads/admin writes pin destinations to server config; MCP/CLI arguments cannot select another host.
   'SERAPHINA_METALLM_URL',        // Trust boundary: credential-bearing Meta-LLM requests pin destinations to server config.
   'RUFLO_X_ADMIN_TOKEN',          // credential: gateway admin token for x.ruv.io gateway-identity writes (x_federation_publish/invite_mint/admit). Env-only by design — a secret must never be a CLI flag (shell history / process lists). Gateway destination is trusted server config; --gateway/tool arguments must match it.
@@ -123,6 +126,9 @@ const KNOWN_ESCAPE_HATCHES = new Set([
   'CLAUDE_FLOW_HEADLESS',         // Set/read within same process invocation lifecycle
   'CLAUDE_FLOW_FORCE_UPDATE',     // Set by --force flag internally, then cleared — not external
   'CLAUDE_FLOW_AUTO_UPDATE',      // Auto-update cadence — env-only documented design
+  'RUFLO_DAEMON_LOCK_WAIT_MS',    // How long `daemon start` waits on another start's spawn lock; operator tuning knob, env-only by design (no `daemon start` flag)
+  'CLAUDE_FLOW_POLICY_LEDGER_RETENTION', // Operator policy-writer retention window, shared by CLI and long-lived MCP transactions; no per-request flag owns the writer lifecycle. Pruned receipts remain archived and authenticated (#3164/#3892).
+  'CLAUDE_FLOW_POLICY_AUDIT_MAX_RECORD_BYTES', // Operator memory-safety bound shared by archive preflight and full-audit replay, including MCP calls. Intentionally process-wide, not caller-overridable; validated 1 KiB–64 MiB with an unchanged 16 MiB default (#3892).
 
   // ── Logging / diagnostics ───────────────────────────────────────────────────
   'CLAUDE_FLOW_LOG_LEVEL',

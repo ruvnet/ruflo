@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 import { ALERTS_TAIL, parseAlertLine, parseAlerts, parseAnatoleRules, parseAnatoleStatus, readAnatole } from '../hooks/data/anatole'
 import { readSnapshot } from '../hooks/data/snapshot'
 import type { ReaderFs } from '../hooks/data/files'
-import { ANATOLE_RULES, anatolePalette, INSTALL_LINE, slashOf, wireAnatole } from '../hooks/anatole'
+import { ANATOLE_RULES, anatolePalette, HELD_RETRY_MS, INSTALL_LINE, sendProtector, slashOf, wireAnatole } from '../hooks/anatole'
 import { classOf } from '../hooks/model-tools'
 import { newState } from '../hooks/state'
 import { ruleRows } from '../hooks/views/anatole'
@@ -168,7 +168,9 @@ describe('the section', () => {
 
 describe('the actions', () => {
   const sent: string[] = []
-  const host = { invalidate: () => undefined, runSlash: async (command: string, args: string) => { sent.push(`${command} ${args}`); return { text: 'one\ntwo' } } }
+  const host = { invalidate: () => undefined, after: (ms: number, fn: () => void) => setTimeout(fn, 0), runSlash: async (command: string, args: string) => { sent.push(`${command} ${args}`); return { text: 'one\ntwo' } } }
+  // The run returns once the command is sent; the answer lands a tick later.
+  const settle = () => new Promise(resolve => setTimeout(resolve, 5))
   const state = newState({})
 
   wireAnatole(state, host as never)
@@ -203,16 +205,56 @@ describe('the actions', () => {
 
   it('puts run and replay answers in the Result panel, and a failure there too', async () => {
     await specOf('anatole-run')?.run?.()
+    await settle()
     expect(state.lab.result).toMatchObject({ id: 'anatole-run', ok: true, lines: ['one', 'two'] })
 
     const broken = newState({})
 
-    wireAnatole(broken, { invalidate: () => undefined, runSlash: async () => Promise.reject(new Error('no such command')) } as never)
+    wireAnatole(broken, { invalidate: () => undefined, after: host.after, runSlash: async () => Promise.reject(new Error('no such command')) } as never)
 
     const entry = anatolePalette(broken).find(candidate => candidate.id === 'anatole-replay')
 
     await (entry?.run.kind === 'spec' ? entry.run.spec?.run?.() : undefined)
+    await settle()
     expect(broken.lab.result).toMatchObject({ id: 'anatole-replay', ok: false })
+  })
+
+  it('never waits for the mod inside the run, so Claude\'s console_run (a tool.call hook) is not holding the turn when the command starts', async () => {
+    const held = newState({})
+    let answer: (value: { text: string }) => void = () => undefined
+
+    wireAnatole(held, { invalidate: () => undefined, after: host.after, runSlash: () => new Promise(resolve => { answer = resolve }) } as never)
+
+    const entry = anatolePalette(held).find(candidate => candidate.id === 'anatole-ack')
+
+    // The mod has not answered, yet the run is over: the outcome says queued, never done.
+    await (entry?.run.kind === 'text' ? entry.run.make('a1')?.run?.() : undefined)
+    expect(held.outcome).toMatchObject({ ok: true, queued: true })
+    expect(held.outcome?.detail).toContain('when the current turn ends')
+
+    answer({ text: 'a1 marked as a false positive' })
+    await settle()
+    expect(held.outcome).toMatchObject({ ok: true, detail: expect.stringContaining('ran /protector ack a1') })
+    expect(held.outcome?.queued).toBeUndefined()
+  })
+
+  it('tries again while the host refuses the command as held by a hook, and gives up on any other refusal', async () => {
+    const HELD = new Error('command.run: called from a tool.call hook, it would wait on the turn this hook is holding; run it from a later event (turn.complete)')
+    const waits: number[] = []
+    const after = (ms: number, fn: () => void) => { waits.push(ms); setTimeout(fn, 0) }
+    let tries = 0
+
+    await expect(sendProtector({ after, runSlash: async () => { tries += 1; if (tries < 3) throw HELD; return { text: 'ok' } } } as never, 'ack a1')).resolves.toEqual({ text: 'ok' })
+    expect(tries).toBe(3)
+    expect(waits).toEqual(HELD_RETRY_MS.slice(0, 2))
+
+    tries = 0
+    await expect(sendProtector({ after, runSlash: async () => { tries += 1; throw new Error('no such command') } } as never, 'ack a1')).rejects.toThrow('no such command')
+    expect(tries).toBe(1)
+
+    tries = 0
+    await expect(sendProtector({ after, runSlash: async () => { tries += 1; throw HELD } } as never, 'ack a1')).rejects.toThrow('holding')
+    expect(tries).toBe(HELD_RETRY_MS.length + 1)
   })
 
   it('classes them for Claude: reads at read, edits at write, enforce asks as install, reset is delete', () => {

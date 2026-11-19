@@ -79,6 +79,7 @@ RuFlo plugins use Claude Code's native capabilities when available:
 
 ## Links
 
+- [Compare frameworks](compare.md) — Ruflo vs CrewAI, LangGraph, AutoGen and Claude Code
 - [GitHub Repository](https://github.com/ruvnet/ruflo)
 - [npm Packages](https://www.npmjs.com/package/@claude-flow/cli)
 - [ADR-091: Native Integration](https://github.com/ruvnet/ruflo/blob/main/v3/docs/adr/ADR-091-loop-monitor-native-integration.md)

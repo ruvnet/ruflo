@@ -16,6 +16,13 @@ import { join, resolve } from 'node:path';
 import { directoryMarketplace, MARKETPLACE_NAME, type MarketplaceEntry, type Scope } from '../mods/install.js';
 import { probeMods, type Finding } from '../mods/probe.js';
 import { applyMods, removeMods } from '../mods/apply.js';
+import { signatureFindings } from '../mods/install-trust.js';
+import { acceptRiskFrom } from '../plugins/marketplace-trust/scan.js';
+import { claudeConfigDir, marketplaceState } from '../mods/plugin-resolve.js';
+import { MOD_PLUGINS } from '../mods/install.js';
+import { homedir } from 'node:os';
+
+
 
 /**
  * `--source local` / `--marketplace-path <dir>`: a ruflo checkout as a
@@ -57,6 +64,7 @@ const installSub: Command = {
     { name: 'strict', description: 'Exit 1 when a required plugin could not be made loadable', type: 'boolean', default: false },
     { name: 'source', description: 'github (ruvnet/ruflo, default) | local (a ruflo checkout as a directory marketplace: plugins load live from it)', type: 'string', default: 'github' },
     { name: 'marketplace-path', description: 'With --source local: the ruflo checkout (default: the project root)', type: 'string' },
+    { name: 'accept-risk', description: 'Install this plugin (name, comma list) even though the pre-install scan found a high-severity issue; recorded in .claude-flow/mods/install.json (ADR-509)', type: 'string' },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const scope = (ctx.flags.scope as string | undefined) ?? 'local';
@@ -84,6 +92,7 @@ const installSub: Command = {
       marketplace,
       dryRun: ctx.flags.dryRun === true || ctx.flags['dry-run'] === true,
       pluginInstall: ctx.flags.pluginInstall !== false && ctx.flags['plugin-install'] !== false,
+      acceptRisk: acceptRiskFrom(ctx.flags),
     });
     if (result.install.dryRun) return { success: true, data: result };
     if (result.resolvable) output.writeln('Restart Claude Code, then run /ruflo in a session to open the console (/ruflo mods shows what the mod owns). Check with: ruflo mods doctor');
@@ -108,17 +117,36 @@ const uninstallSub: Command = {
   },
 };
 
+/** The doctor's exit gate: a failure always fails; with --strict a warning does too. */
+export function hasFailureOrStrictWarning(findings: readonly Finding[], strict: boolean): boolean {
+  return findings.some((f) => f.status === 'fail' || (strict && f.status === 'warn'));
+}
+
 function findingsCommand(name: 'status' | 'doctor', description: string): Command {
   return {
     name,
     description,
-    options: [rootOption, { name: 'json', description: 'Output as JSON', type: 'boolean', default: false }],
+    options: [
+      rootOption,
+      { name: 'json', description: 'Output as JSON', type: 'boolean', default: false },
+      ...(name === 'doctor' ? [{ name: 'strict', description: 'Exit 1 on a warning too (a mod that is not fully loaded is a failure for a CI gate)', type: 'boolean' as const, default: false }] : []),
+    ],
     action: async (ctx: CommandContext): Promise<CommandResult> => {
-      const findings = probeMods({ projectRoot: projectRoot(ctx) });
+      const findings: Finding[] = probeMods({ projectRoot: projectRoot(ctx) });
+      if (name === 'doctor') {
+        // ADR-509 §2.1: check the clone (and install cache) against the release signatures; writes the status the mod's trust gate reads.
+        const configDir = claudeConfigDir(process.env, homedir());
+        findings.push(...signatureFindings(configDir, marketplaceState(configDir).location, MOD_PLUGINS.map((p) => p.id.split('@')[0]!)));
+      }
       if (ctx.flags.json) output.printJson(findings);
       else printFindings(findings);
-      const failed = findings.some((f) => f.status === 'fail');
-      // status reports (exit 0); doctor gates on a failure (warnings are expected while early access is off).
+      const strict = name === 'doctor' && ctx.flags.strict === true;
+      const failed = hasFailureOrStrictWarning(findings, strict);
+      if (failed && !ctx.flags.json) {
+        const first = findings.find((f) => f.status === 'fail') ?? findings.find((f) => f.status === 'warn');
+        output.writeln(output.error(`doctor: ${findings.filter((f) => f.status === 'fail').length} failure(s), ${findings.filter((f) => f.status === 'warn').length} warning(s)${first?.fix ? `; start with: ${first.fix}` : ''}`));
+      }
+      // status reports (exit 0); doctor gates on a failure, and with --strict on a warning.
       return name === 'doctor' && failed ? { success: false, exitCode: 1, data: findings } : { success: true, data: findings };
     },
   };
@@ -156,7 +184,7 @@ export const modsCommand: Command = {
     installSub,
     uninstallSub,
     statusSub,
-    findingsCommand('doctor', 'Check the mod path; exits 1 only on a failure'),
+    findingsCommand('doctor', 'Check the mod path; exits 1 on a failure (--strict: on a warning too)'),
     syncPolicySub,
   ],
   examples: [
@@ -164,7 +192,9 @@ export const modsCommand: Command = {
     { command: 'ruflo mods install --scope project', description: 'Same, in the committed settings.json (what ruflo init does)' },
     { command: 'ruflo mods install --no-plugin-install', description: 'Only write settings; run no claude command' },
     { command: 'ruflo mods install --source local', description: 'Dogfood: load the mods live from this ruflo checkout (directory marketplace)' },
-    { command: 'ruflo mods doctor', description: 'Marketplace fresh? Plugins loadable? Function hooks on? Refused by policy?' },
+    { command: 'ruflo mods doctor', description: 'Marketplace fresh? Plugins loadable? Function hooks on? Refused by policy? Each problem prints a one-line fix' },
+    { command: 'ruflo mods install --accept-risk ruflo-console', description: 'Install past a high pre-install scan finding for that one plugin (recorded)' },
+    { command: 'ruflo mods doctor --strict', description: 'Same, and exit 1 when anything is not fully working (for CI)' },
     { command: 'ruflo mods uninstall', description: 'Remove only what install added' },
   ],
   action: statusSub.action,

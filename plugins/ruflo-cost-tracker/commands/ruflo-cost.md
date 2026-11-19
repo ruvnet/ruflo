@@ -35,6 +35,13 @@ Cost tracking commands:
 4. Compute utilization vs. budget; emit 🟢 OK / 🟡 INFO / 🟠 WARNING / 🔴 CRITICAL / 🛑 HARD_STOP
 5. Exit code 1 on HARD_STOP — wrap agent spawns in `budget check && spawn ...` to fail closed
 
+**`cost budget file / gateway export / attribution`** (ADR-508) -- One budget file read by the ruflo-mods cost ladder and by gateways; per-agent and per-tool attribution from the mod.
+1. `npx @claude-flow/cli@latest cost budget set --daily 10 --monthly 100 [--hard-stop] [--fallback-model haiku]` writes `.claude-flow/cost/budget.json` (no credentials in it). The ruflo-mods ladder uses its smallest window per session when `costBudgetUsd` is 0.
+2. `npx @claude-flow/cli@latest cost budget export --gateway litellm [--format json] [--model <gateway model>]` prints LiteLLM key budget fields as YAML (`--format json`: the `/key/generate` body) (`budget_limits`; with `--model`, `model_max_budget` and `budget_fallbacks`).
+3. `... --apply --url https://<proxy> --key-env LITELLM_MASTER_KEY` posts them to `<proxy>/key/generate`. HTTPS only unless the host is loopback; the master key is read only from the named environment variable.
+4. `--gateway meta-llm` fails on purpose: meta-llm documents no budget API yet, and ruflo does not guess an endpoint.
+5. `npx @claude-flow/cli@latest cost report [--days 30] [--json]` shows spend by subagent type and by tool (each turn's cost split evenly across its tool calls, an estimate), from `.claude-flow/cost/attribution.jsonl` (written by the ruflo-mods `costLedger` option, on by default).
+
 **`cost optimize`** -- Analyze usage and suggest cost optimizations.
 1. Recall recent usage data from `cost-tracking` namespace
 2. For each agent, analyze: average task complexity, model used, token efficiency
@@ -150,8 +157,8 @@ Cost tracking commands:
 6. Smoke step 23 fails the build if `winRate < 0.80`. See `cost-benchmark` skill for env-var overrides.
 
 **`cost workers`** -- Inspect the `optimize` and `benchmark` background workers consumed from ruflo-loop-workers.
-1. Call `mcp__plugin_ruflo-core_ruflo__hooks_worker-status --worker optimize` -- report last-run timestamp, outcome, and any pending recommendations
-2. Call `mcp__plugin_ruflo-core_ruflo__hooks_worker-status --worker benchmark` -- report last-run timestamp, outcome, and any pending benchmark deltas
+1. Call `mcp__plugin_ruflo-core_ruflo__hooks_worker-status({ includeCompleted: true })` once (the tool takes `workerId` and `includeCompleted` only; there is no per-worker-name filter) and pick out the `optimize` and `benchmark` entries from the result
+2. For each, report last-run timestamp, outcome, and any pending recommendations or benchmark deltas; if neither worker appears, say so instead of inventing a status
 3. Cross-link [ruflo-loop-workers ADR-0001 §"12-worker trigger map"](../../ruflo-loop-workers/docs/adrs/0001-loop-workers-contract.md) — the contract this command honors
 4. Display: worker name, status, last-run timestamp, outcome, last-summary
 

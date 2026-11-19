@@ -14,6 +14,7 @@ const importer = memoryTools.find(t => t.name === 'memory_import')!;
 let dir: string;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'ruflo-import-result-'));
+  process.env.CLAUDE_FLOW_CWD = dir; // MCP import paths are contained to the project
   layer.storeEntry.mockReset().mockResolvedValue({ success: true, id: 'saved' });
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));

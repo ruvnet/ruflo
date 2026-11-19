@@ -29,6 +29,14 @@ const cliBase = pkgDir
   ? join(pkgDir, 'node_modules', '@claude-flow', 'cli')
   : resolve(__dirname, '../../v3/@claude-flow/cli');
 
+if (!pkgDir && !existsSync(join(cliBase, 'bin', 'cli.js'))) {
+  console.error(
+    `ruflo installation is incomplete: @claude-flow/cli could not be found from ${resolve(__dirname, '..')}. ` +
+    'Stop running Ruflo MCP servers and their hosts, then reinstall with npm install -g ruflo@latest.'
+  );
+  process.exit(1);
+}
+
 // The exact dependency pin prevents mismatches in normal installs. Existing
 // partial upgrades can still resolve a different CLI (#3306); make that
 // visible on stderr without taking an otherwise working command offline.
@@ -69,11 +77,23 @@ if (isMCPMode) {
     description: 'Ruflo - AI Agent Orchestration Platform',
   });
   cli.run()
-    .then(() => {
-      // #1641/#1653: Exit cleanly after one-shot commands.
-      // HNSW VectorDb, sql.js WASM, and ONNX worker threads keep the
-      // event loop alive after the command handler returns.
-      process.exit(0);
+    .then(async () => {
+      // #1641/#1653: HNSW VectorDb, sql.js WASM, and ONNX worker threads can
+      // keep the event loop alive after the command handler returns. Close the
+      // memory ControllerRegistry before relying on the event loop to drain.
+      //
+      // #3226: process.exit(0) here raced that teardown and intermittently
+      // aborted on Windows with a libuv UV_HANDLE_CLOSING assertion after a
+      // successful command. Set the exit status and let the loop drain.
+      if (process.exitCode === undefined) process.exitCode = 0;
+      try {
+        const { shutdownBridge } = await import(
+          toImportURL(join(cliBase, 'dist', 'src', 'memory', 'memory-bridge.js'))
+        );
+        if (typeof shutdownBridge === 'function') await shutdownBridge();
+      } catch {
+        // Best-effort cleanup; never turn a successful command into a failure.
+      }
     })
     .catch((error) => {
       console.error('Fatal error:', error.message);

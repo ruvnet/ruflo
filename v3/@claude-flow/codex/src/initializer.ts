@@ -9,11 +9,14 @@ import path from 'path';
 import { fileURLToPath } from 'node:url';
 import type {
   CodexInitOptions,
+  CodexTrust,
   CodexInitResult,
   AgentsMdTemplate,
   BuiltInSkill,
 } from './types.js';
 import { generateAgentsMd } from './generators/agents-md.js';
+import { generateDualAgentsMd, generateDualClaudeMdStub } from './generators/dual-instructions.js';
+import { importsAgentsMd } from './generators/shared-instructions.js';
 import {
   BUILT_IN_SKILL_NAMES,
   generateSkillMd,
@@ -35,12 +38,18 @@ export function resolveBundledSkillsPath(moduleUrl = import.meta.url): string {
 /**
  * Main initializer for Codex projects
  */
+/** `codex plugin marketplace add` clones the repo (~17.5 s measured, ADR-490); `plugin add` is a local copy. */
+const MARKETPLACE_ADD_TIMEOUT_MS = 180_000;
+const PLUGIN_ADD_TIMEOUT_MS = 60_000;
+
 export class CodexInitializer {
   private projectPath: string = '';
   private template: AgentsMdTemplate = 'default';
   private skills: string[] = [];
   private force: boolean = false;
   private dual: boolean = false;
+  private codexTrust: CodexTrust = 'standard';
+  private codexTrustWarning: string | undefined;
   private bundledSkillsPath: string = '';
 
   /**
@@ -52,6 +61,9 @@ export class CodexInitializer {
     this.skills = options.skills ?? DEFAULT_SKILLS_BY_TEMPLATE[this.template];
     this.force = options.force ?? false;
     this.dual = options.dual ?? false;
+    const trust = this.resolveCodexTrust(options.codexTrust);
+    this.codexTrust = trust.level;
+    this.codexTrustWarning = trust.warning;
 
     // Resolve bundled skills path (relative to this file's location)
     this.bundledSkillsPath = resolveBundledSkillsPath();
@@ -159,10 +171,30 @@ export class CodexInitializer {
       }
 
       // Generate local config.toml
+      // A person's own .codex/config.toml is never rewritten, not even with
+      // --force: it holds their sandbox/approval choices (and often local
+      // secrets). The trust level only shapes a file we create.
       const localConfigPath = path.join(this.projectPath, '.codex', 'config.toml');
-      if (await this.shouldWriteFile(localConfigPath)) {
+      if (this.codexTrustWarning) warnings.push(this.codexTrustWarning);
+      if (await fs.pathExists(localConfigPath)) {
+        warnings.push('.codex/config.toml already exists - kept (never rewritten, including with --force)');
+        const existing = await fs.readFile(localConfigPath, 'utf-8').catch(() => '');
+        if (/sandbox_mode\s*=\s*"danger-full-access"/.test(existing)) {
+          warnings.push(
+            '.codex/config.toml uses sandbox_mode = "danger-full-access": Codex can write anywhere and run without approval prompts. ' +
+              'Edit it to "workspace-write" (and approval_policy = "on-request") to tighten it.',
+          );
+        }
+      } else {
         await fs.writeFile(localConfigPath, await this.generateLocalConfigToml(), 'utf-8');
         filesCreated.push('.codex/config.toml');
+        warnings.push(
+          this.codexTrust === 'full'
+            ? '.codex/config.toml: full trust (danger-full-access sandbox, no approval prompts, live web search). ' +
+                'Switch back with --codex-trust standard or edit the file.'
+            : '.codex/config.toml: standard trust (workspace-write sandbox, on-request approvals, cached web search). ' +
+                'Opt in to full access with --codex-trust full (or RUFLO_CODEX_TRUST=full).',
+        );
       }
 
       // Update .gitignore
@@ -505,22 +537,29 @@ export class CodexInitializer {
         }
       }
 
-      // Add the marketplace (idempotent — codex no-ops if already added; any
-      // error here is non-fatal, the plugin-add below reports the real failure).
+      // Add the marketplace (idempotent — codex no-ops if already added). The add is a git clone of
+      // the whole repo: ~17.5 s measured on an idle machine, so a 20 s budget was killed under the
+      // load init itself creates (ADR-490 e2e). A failure here is remembered, not swallowed: the
+      // plugin-add below then fails with "plugin not found in marketplace", which names the wrong cause.
+      let marketplaceFailure = '';
       try {
-        execSync('codex plugin marketplace add ruvnet/ruflo --ref main', { stdio: 'pipe', timeout: 20000 });
-      } catch {
-        // Marketplace may already exist, or the CLI may not support this exact
-        // verb — let the plugin-add attempt surface the actionable error.
+        execSync('codex plugin marketplace add ruvnet/ruflo --ref main', { stdio: 'pipe', timeout: MARKETPLACE_ADD_TIMEOUT_MS });
+      } catch (err) {
+        const e = err as { code?: string; killed?: boolean; message?: string };
+        const timedOut = e.code === 'ETIMEDOUT' || e.killed === true;
+        marketplaceFailure = `marketplace add ${timedOut ? 'timed out (ETIMEDOUT)' : 'failed'}: ${(e.message ?? String(err)).split('\n')[0]}`;
+        // The marketplace may already exist, or the CLI may not support this exact verb:
+        // still try the plugin-add and report both failures if it fails too.
       }
 
       // Install the plugin at user scope.
       try {
-        execSync('codex plugin add ruflo-core@ruflo', { stdio: 'pipe', timeout: 20000 });
+        execSync('codex plugin add ruflo-core@ruflo', { stdio: 'pipe', timeout: PLUGIN_ADD_TIMEOUT_MS });
         return { installed: true, activationMessage: ACTIVATION };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        return { installed: false, warning: `Failed to install ruflo-core@ruflo plugin: ${msg}. ${MANUAL}` };
+        const cause = marketplaceFailure ? ` (the marketplace ${marketplaceFailure})` : '';
+        return { installed: false, warning: `Failed to install ruflo-core@ruflo plugin: ${msg}${cause}. ${MANUAL}` };
       }
     } catch {
       return { installed: false, warning: `Could not install Ruflo plugin. ${MANUAL}` };
@@ -532,6 +571,11 @@ export class CodexInitializer {
    */
   private async generateAgentsMd(): Promise<string> {
     const projectName = path.basename(this.projectPath);
+
+    // #2638: a dual project keeps the shared sections once, here.
+    if (this.dual) {
+      return generateDualAgentsMd({ projectName, skills: this.skills });
+    }
 
     return generateAgentsMd({
       projectName,
@@ -553,17 +597,45 @@ export class CodexInitializer {
   }
 
   /**
+   * Trust level for a newly generated .codex/config.toml: explicit option,
+   * then RUFLO_CODEX_TRUST, then the safe default. Unknown values fall back
+   * to standard with a warning, never to full.
+   */
+  private resolveCodexTrust(option: CodexTrust | undefined): { level: CodexTrust; warning?: string } {
+    const raw = option ?? process.env.RUFLO_CODEX_TRUST;
+    if (raw === undefined || raw === '') return { level: 'standard' };
+    if (raw === 'standard' || raw === 'full') return { level: raw };
+    return {
+      level: 'standard',
+      warning: `Unknown codex trust "${String(raw)}" - using "standard" (valid: standard, full)`,
+    };
+  }
+
+  /**
    * Generate local config.toml for .codex directory
    */
   private async generateLocalConfigToml(): Promise<string> {
+    const full = this.codexTrust === 'full';
+    const approval = full ? 'never' : 'on-request';
+    const sandbox = full ? 'danger-full-access' : 'workspace-write';
+    const webSearch = full ? 'live' : 'cached';
+    const tier = full
+      ? `# Trust level: FULL (opted in with --codex-trust full or RUFLO_CODEX_TRUST=full).
+# Codex can write anywhere and runs commands without asking. Switch back with
+# --codex-trust standard, or set sandbox_mode = "workspace-write" and
+# approval_policy = "on-request" below.`
+      : `# Trust level: STANDARD (the default).
+# Codex may write inside this workspace only and asks before anything riskier.
+# Opt in to full access with --codex-trust full (or RUFLO_CODEX_TRUST=full);
+# this file is never rewritten once it exists, so edit the three keys below directly.`;
     return `# Local Codex Configuration
 # This file overrides .agents/config.toml for local development
 # DO NOT commit this file to version control
 
-# Development profile - more permissive
-approval_policy = "never"
-sandbox_mode = "danger-full-access"
-web_search = "live"
+${tier}
+approval_policy = "${approval}"
+sandbox_mode = "${sandbox}"
+web_search = "${webSearch}"
 
 # Debug settings
 # Uncomment to enable debug logging
@@ -716,108 +788,30 @@ Skills are invoked using \`$skill-name\` syntax. Each skill has:
     const files: string[] = [];
     const warnings: string[] = [];
 
-    // Check if CLAUDE.md already exists
+    // #2638: AGENTS.md is the single source. CLAUDE.md is Claude Code's
+    // `@AGENTS.md` import plus Claude-only notes — never a second copy.
     const claudeMdPath = path.join(this.projectPath, 'CLAUDE.md');
     const claudeMdExists = await fs.pathExists(claudeMdPath);
+    const existing = claudeMdExists ? await fs.readFile(claudeMdPath, 'utf-8') : '';
 
-    if (claudeMdExists && !this.force) {
-      warnings.push('CLAUDE.md already exists - not overwriting. Use --force to replace.');
+    // Already single-source (e.g. written by `ruflo init --dual`): leave it, even under --force.
+    if (claudeMdExists && importsAgentsMd(existing)) {
       return { files, warnings };
     }
 
-    const projectName = path.basename(this.projectPath);
+    if (claudeMdExists && !this.force) {
+      warnings.push(
+        'CLAUDE.md already exists - not overwriting. To share instructions with Claude Code, move your custom ' +
+        'sections into AGENTS.md and add a line `@AGENTS.md` to CLAUDE.md, or use --force to replace it.',
+      );
+      return { files, warnings };
+    }
 
-    // Generate a CLAUDE.md that references AGENTS.md
-    const claudeMd = `# ${projectName}
-
-> This project supports both Claude Code and OpenAI Codex.
-
-## Platform Compatibility
-
-| Platform | Config File | Skill Syntax |
-|----------|-------------|--------------|
-| Claude Code | CLAUDE.md | /skill-name |
-| OpenAI Codex | AGENTS.md | $skill-name |
-
-## Instructions
-
-**Primary instructions are in \`AGENTS.md\`** (Agentic AI Foundation standard).
-Read and follow that file before starting work; it contains the live
-\`guidance_brain\` routing workflow, concurrency ownership rules, and authority
-boundaries.
-
-This file provides compatibility for Claude Code users.
-
-## Quick Start
-
-\`\`\`bash
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Run tests
-npm test
-\`\`\`
-
-## Available Skills
-
-Both platforms share the same skills in \`.agents/skills/\`:
-
-${this.skills.map(s => `- \`$${s}\` (Codex) / \`/${s}\` (Claude Code)`).join('\n')}
-
-## Configuration
-
-### Codex Configuration
-- Main: \`.agents/config.toml\`
-- Local: \`.codex/config.toml\` (gitignored)
-
-### Claude Code Configuration
-- This file: \`CLAUDE.md\`
-- Local: \`CLAUDE.local.md\` (gitignored)
-
-## MCP Integration
-
-\`\`\`bash
-# Start Ruflo's MCP server over stdio (dedicated entry point — the
-# management \`ruflo mcp start\` CLI does NOT answer JSON-RPC on stdio).
-npx -y ruflo@latest mcp start
-\`\`\`
-
-## Swarm Orchestration
-
-This project uses hierarchical swarm coordination:
-
-| Setting | Value |
-|---------|-------|
-| Topology | hierarchical |
-| Max Agents | 8 |
-| Strategy | specialized |
-
-## Code Standards
-
-- Files under 500 lines
-- No hardcoded secrets
-- Input validation at boundaries
-- Typed interfaces for APIs
-
-## Security
-
-- NEVER commit .env files or secrets
-- Always validate user input
-- Use parameterized queries for SQL
-
-## Full Documentation
-
-For complete instructions, see \`AGENTS.md\`.
-
----
-
-*Generated by @claude-flow/codex - Dual platform mode*
-`;
-
-    await fs.writeFile(claudeMdPath, claudeMd, 'utf-8');
+    await fs.writeFile(
+      claudeMdPath,
+      generateDualClaudeMdStub(path.basename(this.projectPath), this.skills),
+      'utf-8',
+    );
     files.push('CLAUDE.md');
 
     // Generate CLAUDE.local.md template

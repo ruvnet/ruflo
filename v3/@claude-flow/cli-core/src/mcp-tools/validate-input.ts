@@ -146,6 +146,40 @@ export function validateText(value: unknown, label: string, maxLen = 10_000): Va
  * real process's own PATH etc. still flows through untouched for callers
  * who don't set them (see terminal-tools.ts's `{ ...process.env,
  * ...session.env }` merge order).
+ *
+ * dream-cycle 2026-10-16: 2026-09-21 covered Python/Perl/Ruby/git/shell
+ * search-path vars but missed credential/arbitrary-command vars in the
+ * same git family (GIT_ASKPASS, GIT_PROXY_COMMAND), interpreter-flag
+ * injection vars for Perl/Ruby/Java (PERL5OPT/RUBYOPT/JAVA_TOOL_OPTIONS/
+ * _JAVA_OPTIONS/JDK_JAVA_OPTIONS — official-docs-confirmed flag-prepend
+ * mechanisms, same shape as the already-listed *LIB search-path vars),
+ * two more search-path vars (PYTHONHOME, CLASSPATH), and git's numbered
+ * GIT_CONFIG_KEY_n/VALUE_n/COUNT family (arbitrary runtime git config
+ * injection — strictly broader than any single fixed name, needs a
+ * pattern check below, not a fixed Set entry). Also GIT_CONFIG_NOSYSTEM:
+ * lets a caller suppress system-level git config entirely, which can
+ * bypass an admin-set git security policy (e.g. protocol/safe.directory
+ * restrictions) — note this repo's OWN `guidance/mod-sources.ts` git()
+ * helper sets this same var to '1' for a benign, defensive purpose (to
+ * sandbox ITS OWN git calls against ambient system config), so the risk
+ * here is specifically a *caller of terminal_create* setting it to widen
+ * trust, not the variable being inherently dangerous — same category
+ * judgment call as the other search-path vars below, not a pure RCE
+ * primitive like GIT_ASKPASS/GIT_PROXY_COMMAND. PYTHONSTARTUP is included
+ * for defense-in-depth despite weaker fit here: official docs confirm
+ * arbitrary code execution, but only in Python's *interactive* REPL mode.
+ * `terminal_execute` doesn't request that mode itself, but a caller-
+ * supplied command string COULD pass `python3 -i` (confirmed empirically:
+ * `-i` triggers PYTHONSTARTUP even off a non-tty stdin) — that caller
+ * already has unrestricted arbitrary-command execution via `command`
+ * under the same trust boundary that controls `env`, so this adds no new
+ * capability; it's kept denylisted as defense-in-depth for a future
+ * caller shape, not because it's exploitable today through this path.
+ * NOT added (researched, rejected): PYTHONEXECUTABLE (macOS-only,
+ * cosmetic sys.argv[0] override, no search-path effect); PSModulePath
+ * (single third-party source, no primary vendor confirmation — Grade C,
+ * insufficient per this routine's evidence-grading rule); GEM_PATH/
+ * GEM_HOME (plausible but not independently verified this session).
  */
 const DENYLISTED_ENV_NAMES = new Set([
   'LD_PRELOAD',
@@ -165,7 +199,25 @@ const DENYLISTED_ENV_NAMES = new Set([
   'GIT_SSH_COMMAND',
   'BASH_ENV',
   'IFS',
+  // dream-cycle 2026-10-16 additions (see note above):
+  'GIT_ASKPASS',
+  'GIT_PROXY_COMMAND',
+  'GIT_CONFIG_NOSYSTEM',
+  'PERL5OPT',
+  'RUBYOPT',
+  'JAVA_TOOL_OPTIONS',
+  '_JAVA_OPTIONS',
+  'JDK_JAVA_OPTIONS',
+  'PYTHONHOME',
+  'CLASSPATH',
+  'PYTHONSTARTUP',
 ]);
+// git's numbered runtime-config-injection family (GIT_CONFIG_COUNT plus
+// GIT_CONFIG_KEY_<n>/GIT_CONFIG_VALUE_<n> for n=0..COUNT-1): lets a caller
+// set *arbitrary* git config at runtime (core.sshCommand, core.hooksPath,
+// http.*, …), strictly broader than any single fixed name above, so it
+// needs a pattern match rather than a Set entry (dream-cycle 2026-10-16).
+const GIT_CONFIG_ENV_RE = /^GIT_CONFIG_(COUNT|KEY_\d+|VALUE_\d+)$/;
 const ENV_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]{0,127}$/;
 
 export interface EnvValidationResult {
@@ -200,6 +252,9 @@ export function validateEnv(value: unknown, label = 'env'): EnvValidationResult 
     // critique, dream-cycle 2026-09-21).
     if (DENYLISTED_ENV_NAMES.has(name.toUpperCase())) {
       return { valid: false, sanitized: {}, error: `${label} key "${name}" is denylisted (loader/runtime hijack)` };
+    }
+    if (GIT_CONFIG_ENV_RE.test(name.toUpperCase())) {
+      return { valid: false, sanitized: {}, error: `${label} key "${name}" is denylisted (arbitrary git config injection)` };
     }
     if (typeof rawVal !== 'string') {
       return { valid: false, sanitized: {}, error: `${label}["${name}"] must be a string` };
@@ -279,7 +334,7 @@ export async function validateAgentSpawn(input: Record<string, unknown>): Promis
     } catch (zodErr: any) {
       if (zodErr.issues) {
         for (const issue of zodErr.issues) {
-          if (issue.code === 'invalid_enum_value') continue;
+          if (isUnknownAgentTypeIssue(issue, input.agentType)) continue;
           errors.push(`${issue.path.join('.')}: ${issue.message}`);
         }
       }
@@ -287,4 +342,21 @@ export async function validateAgentSpawn(input: Record<string, unknown>): Promis
   }
 
   return { valid: errors.length === 0, errors };
+}
+
+/**
+ * True for the issue SpawnAgentSchema raises when `type` is a string outside
+ * its built-in enum. Custom agent types are allowed, so this issue is ignored.
+ * zod 3 reports it as `invalid_enum_value`; zod 4 as `invalid_value`. zod 4
+ * also uses `invalid_value` for a missing or non-string type (zod 3:
+ * `invalid_type`), which must still be reported, so the submitted value
+ * has to be a string.
+ */
+export function isUnknownAgentTypeIssue(
+  issue: { code?: unknown; path?: unknown[] },
+  agentType: unknown,
+): boolean {
+  if (typeof agentType !== 'string') return false;
+  if (!Array.isArray(issue.path) || issue.path.length !== 1 || issue.path[0] !== 'type') return false;
+  return issue.code === 'invalid_enum_value' || issue.code === 'invalid_value';
 }

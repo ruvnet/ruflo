@@ -3,6 +3,7 @@ name: cost-counterfactual
 description: Multi-baseline counterfactual cost analysis. Compares actual session spend to hypothetical always-haiku / always-sonnet / always-opus routing baselines. Answers "is the routing earning its keep?" Negative savings flag over-escalation; positive savings quantify the router's win.
 argument-hint: "[--since 7d] [--baseline always-haiku|always-sonnet|always-opus|all] [--format table|json]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 Multi-baseline counterfactual cost analysis. Pairs with the existing observability surface:

@@ -21,6 +21,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { createRequire } from 'module';
+import { getProjectRoot } from '../services/project-root.js';
 
 // ============================================================================
 // Types & Constants
@@ -124,7 +125,7 @@ const DEFAULT_CONFIG: LoRAConfig = {
   inputDim: INPUT_DIM,
   outputDim: OUTPUT_DIM,
   learningRate: 0.001,
-  weightsPath: join(process.cwd(), '.swarm', 'lora-weights.json'),
+  weightsPath: join(getProjectRoot(), '.swarm', 'lora-weights.json'),
   enableDropout: true,
   dropoutProb: 0.1,
   autoSaveInterval: 50,
@@ -679,7 +680,7 @@ export interface CheckpointInfo {
  * and status surfaces stay consistent.
  */
 function checkpointDirs(): string[] {
-  return [join(process.cwd(), '.claude-flow', 'neural')];
+  return [join(getProjectRoot(), '.claude-flow', 'neural')];
 }
 
 /** Compact relative-age label. Most-significant unit only. */

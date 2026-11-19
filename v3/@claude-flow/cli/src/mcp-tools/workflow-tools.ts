@@ -4,11 +4,15 @@
  * Tool definitions for workflow automation and orchestration.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validatePath, validateText } from './validate-input.js';
 import { executeAgentTask } from './agent-execute-core.js';
+import { readPreservedJsonStore } from './record-store.js';
+import { type StoreUpdate, saved, unchanged, updateJsonStore } from './locked-json-store.js';
+import { containedReadPath, isLocalCliCall } from './path-containment.js';
+import { readImportFile } from './import-limits.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -46,6 +50,39 @@ interface WorkflowStore {
   version: string;
 }
 
+type Condition = { constant: boolean } | { variable: string; expected: string | number | boolean };
+
+function parseCondition(when: unknown): Condition | Error {
+  if (typeof when !== 'string' || !when.trim()) {
+    return new Error('condition step requires a non-empty config.when');
+  }
+  const expression = when.trim();
+  if (expression === 'true' || expression === 'false') {
+    return { constant: expression === 'true' };
+  }
+  // Variable names follow the `{{…}}` interpolation syntax, so a condition can
+  // read a task step's output, stored as `<stepId>.output` (`step-1.output`).
+  const match = expression.match(/^([a-zA-Z_][\w.-]*)\s*===?\s*(?:'([^']*)'|"([^"]*)"|(-?\d+(?:\.\d+)?)|(true|false))$/);
+  if (!match) {
+    return new Error('condition config.when must compare a variable to a quoted string, number, or boolean using == or ===');
+  }
+  const expected = match[2] ?? match[3] ?? (match[4] !== undefined ? Number(match[4]) : match[5] === 'true');
+  return { variable: match[1], expected };
+}
+
+function validateExecutableStep(step: Pick<WorkflowStep, 'type' | 'config'>): string | undefined {
+  if (step.type === 'parallel' || step.type === 'loop') {
+    return `step type '${step.type}' is not implemented by the workflow runtime`;
+  }
+  if (step.type === 'condition') {
+    const parsed = parseCondition(step.config?.when);
+    if (parsed instanceof Error) return parsed.message;
+  } else if (step.type !== 'task' && step.type !== 'wait') {
+    return `unsupported workflow step type '${step.type}'`;
+  }
+  return undefined;
+}
+
 function getWorkflowDir(): string {
   return join(getProjectCwd(), STORAGE_DIR, WORKFLOW_DIR);
 }
@@ -54,34 +91,56 @@ function getWorkflowPath(): string {
   return join(getWorkflowDir(), WORKFLOW_FILE);
 }
 
-function ensureWorkflowDir(): void {
-  const dir = getWorkflowDir();
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+/**
+ * SECURITY: record maps are keyed by ids taken from MCP tool input, and
+ * validateIdentifier accepts names like `__proto__` and `constructor`. On a
+ * plain object those resolve to Object.prototype or a built-in, which a handler
+ * would then write into. Null-prototype maps only ever return own records.
+ */
+function withRecordMaps<S extends object>(store: S, keys: readonly string[]): S {
+  const maps = store as Record<string, unknown>;
+  for (const key of keys) {
+    const map = maps[key];
+    if (map && typeof map === 'object' && !Array.isArray(map)) Object.setPrototypeOf(map, null);
+    else maps[key] = Object.create(null);
   }
+  return store;
+}
+
+const WORKFLOW_MAPS = ['workflows', 'templates'] as const;
+
+function isRecordMap(value: unknown): boolean {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
 function loadWorkflowStore(): WorkflowStore {
-  try {
-    const path = getWorkflowPath();
-    if (existsSync(path)) {
-      const data = readFileSync(path, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch {
-    // Return default store on error
-  }
-  return { workflows: {}, templates: {}, version: '3.0.0' };
+  // #4737: a parse error used to return an empty store, and the next save
+  // overwrote the file. Only a missing file is empty; corrupt bytes are
+  // copied aside and the error is reported.
+  const path = getWorkflowPath();
+  const data = readPreservedJsonStore(
+    path,
+    'workflow',
+    () => ({ workflows: {}, templates: {}, version: '3.0.0' }) as WorkflowStore,
+    (store) => WORKFLOW_MAPS.every((key) => {
+      const map = (store as unknown as Record<string, unknown>)[key];
+      return map === undefined || isRecordMap(map);
+    }),
+  );
+  return withRecordMaps(data, WORKFLOW_MAPS);
 }
 
-function saveWorkflowStore(store: WorkflowStore): void {
-  ensureWorkflowDir();
-  writeFileSync(getWorkflowPath(), JSON.stringify(store, null, 2), 'utf-8');
+/** Every workflow write goes through here, under the workflows lock. */
+function updateWorkflows<R>(mutate: (store: WorkflowStore) => StoreUpdate<R>): Promise<R> {
+  return updateJsonStore(getWorkflowPath(), loadWorkflowStore, mutate, 'workflows');
 }
 
 // A paused in-flight step still owns its executor. Resume joins that execution
 // instead of dispatching the same side effect again (within this process).
 const workflowExecutions = new Map<string, Promise<unknown>>();
+// Executions whose locked start has marked the workflow running. One that is
+// registered but not yet started is still waiting for the store lock.
+const startedExecutions = new Set<string>();
 const workflowExecutionKey = (workflowId: unknown): string =>
   JSON.stringify([getWorkflowPath(), workflowId]);
 
@@ -93,7 +152,10 @@ function withWorkflowExecution<T>(workflowId: unknown, execute: () => Promise<T>
   const execution = execute();
   workflowExecutions.set(key, execution);
   return execution.finally(() => {
-    if (workflowExecutions.get(key) === execution) workflowExecutions.delete(key);
+    if (workflowExecutions.get(key) === execution) {
+      workflowExecutions.delete(key);
+      startedExecutions.delete(key);
+    }
   });
 }
 
@@ -135,7 +197,6 @@ export const workflowTools: MCPTool[] = [
         if (!v.valid) return { success: false, error: v.error };
       }
 
-      const store = loadWorkflowStore();
       const template = input.template as string | undefined;
       const task = input.task as string | undefined;
       const options = (input.options as Record<string, unknown>) || {};
@@ -185,28 +246,35 @@ export const workflowTools: MCPTool[] = [
           name: task || `${templateName} workflow`,
           description: task,
           steps,
-          status: 'running',
+          // #4609: nothing is dispatched here, so this is not a run yet. Saving it
+          // as 'running' made workflow_execute and workflow_delete refuse it.
+          // 'ready' matches workflow_create; workflow_execute starts it.
+          status: 'ready',
           currentStep: 0,
           variables: { template: templateName, ...options },
           createdAt: new Date().toISOString(),
-          startedAt: new Date().toISOString(),
         };
 
-        store.workflows[workflowId] = workflow;
-        saveWorkflowStore(store);
+        await updateWorkflows((store) => {
+          store.workflows[workflowId] = workflow;
+          return saved(undefined);
+        });
       }
 
       return {
         workflowId,
         template: templateName,
-        status: dryRun ? 'validated' : 'running',
+        status: dryRun ? 'validated' : 'ready',
         stages,
         metrics: {
           totalStages: stages.length,
           completedStages: 0,
           agentsSpawned: 0,
-          estimatedDuration: `${stages.length * 30}s`,
+          estimatedDuration: 'unknown',
         },
+        ...(dryRun ? {} : {
+          nextStep: 'Start it with workflow_execute; task steps need config.agentId or options.defaultAgentId.',
+        }),
       };
     },
   },
@@ -226,8 +294,8 @@ export const workflowTools: MCPTool[] = [
             type: 'object',
             properties: {
               name: { type: 'string' },
-              type: { type: 'string', enum: ['task', 'condition', 'parallel', 'loop', 'wait'] },
-              config: { type: 'object' },
+              type: { type: 'string', enum: ['task', 'condition', 'wait'] },
+              config: { type: 'object', description: 'Condition steps require config.when; parallel and loop steps are not yet supported' },
             },
           },
         },
@@ -244,7 +312,6 @@ export const workflowTools: MCPTool[] = [
         if (!v.valid) return { success: false, error: v.error };
       }
 
-      const store = loadWorkflowStore();
       const workflowId = `workflow-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       const steps: WorkflowStep[] = ((input.steps as Array<{name?: string; type?: string; config?: Record<string, unknown>}>) || []).map((s, i) => ({
@@ -254,6 +321,11 @@ export const workflowTools: MCPTool[] = [
         config: s.config || {} as Record<string, unknown>,
         status: 'pending' as const,
       }));
+
+      for (const step of steps) {
+        const error = validateExecutableStep(step);
+        if (error) return { success: false, error: `${step.stepId} (${step.name}): ${error}` };
+      }
 
       const workflow: WorkflowRecord = {
         workflowId,
@@ -266,8 +338,10 @@ export const workflowTools: MCPTool[] = [
         createdAt: new Date().toISOString(),
       };
 
-      store.workflows[workflowId] = workflow;
-      saveWorkflowStore(store);
+      await updateWorkflows((store) => {
+        store.workflows[workflowId] = workflow;
+        return saved(undefined);
+      });
 
       return {
         workflowId,
@@ -296,64 +370,84 @@ export const workflowTools: MCPTool[] = [
       const vId = validateIdentifier(input.workflowId, 'workflowId');
       if (!vId.valid) return { success: false, error: vId.error };
 
-      const store = loadWorkflowStore();
       const workflowId = input.workflowId as string;
-      const workflow = store.workflows[workflowId];
 
-      if (!workflow) {
-        return { workflowId, error: 'Workflow not found' };
-      }
-      if (workflow.status === 'running') {
-        return { workflowId, error: 'Workflow already running' };
-      }
+      // Check, validate and mark running in one locked step, so two processes
+      // cannot both start the same workflow.
+      const start = await updateWorkflows((store): StoreUpdate<{ refused: Record<string, unknown> } | { workflow: WorkflowRecord }> => {
+        const workflow = store.workflows[workflowId];
 
-      // Indices may name a step or the end boundary (used when resuming
-      // after the final step). Reject invalid control flow before any writes.
-      const validIndex = (value: unknown): value is number =>
-        typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 && value <= workflow.steps.length;
-      const startFromStep = input.startFromStep === undefined ? 0 : input.startFromStep;
-      if (!validIndex(startFromStep)) {
-        return { workflowId, error: `startFromStep must be an integer between 0 and ${workflow.steps.length}` };
-      }
-      for (const step of workflow.steps) {
-        if (step.type !== 'condition') continue;
-        for (const target of ['thenStep', 'elseStep']) {
-          if (step.config[target] !== undefined && !validIndex(step.config[target])) {
-            return { workflowId, error: `${step.stepId}.${target} must be an integer between 0 and ${workflow.steps.length}` };
+        if (!workflow) {
+          return unchanged({ refused: { workflowId, error: 'Workflow not found' } });
+        }
+        if (workflow.status === 'running') {
+          return unchanged({ refused: { workflowId, error: 'Workflow already running' } });
+        }
+
+        // Older stored workflows may predate creation-time validation. Reject
+        // unsupported steps before dispatching any task with side effects.
+        for (const step of workflow.steps) {
+          const error = validateExecutableStep(step);
+          if (error) {
+            workflow.status = 'failed';
+            workflow.error = `${step.stepId} (${step.name}): ${error}`;
+            step.status = 'failed';
+            step.result = { error: workflow.error };
+            workflow.completedAt = new Date().toISOString();
+            return saved({ refused: { workflowId, status: 'failed', failedStep: step.stepId, error: workflow.error } });
           }
         }
-      }
 
-      const persistProgress = (): void => {
+        // Indices may name a step or the end boundary (used when resuming
+        // after the final step). Reject invalid control flow before any writes.
+        const validIndex = (value: unknown): value is number =>
+          typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 && value <= workflow.steps.length;
+        const startFromStep = input.startFromStep === undefined ? 0 : input.startFromStep;
+        if (!validIndex(startFromStep)) {
+          return unchanged({ refused: { workflowId, error: `startFromStep must be an integer between 0 and ${workflow.steps.length}` } });
+        }
+        for (const step of workflow.steps) {
+          if (step.type !== 'condition') continue;
+          for (const target of ['thenStep', 'elseStep']) {
+            if (step.config[target] !== undefined && !validIndex(step.config[target])) {
+              return unchanged({ refused: { workflowId, error: `${step.stepId}.${target} must be an integer between 0 and ${workflow.steps.length}` } });
+            }
+          }
+        }
+
+        // Inject runtime variables
+        if (input.variables) {
+          workflow.variables = { ...workflow.variables, ...(input.variables as Record<string, unknown>) };
+        }
+
+        workflow.status = 'running';
+        workflow.startedAt = new Date().toISOString();
+        delete workflow.error;
+        delete workflow.completedAt;
+        workflow.currentStep = startFromStep;
+        return saved({ workflow });
+      });
+      if ('refused' in start) return start.refused;
+      const { workflow } = start;
+      startedExecutions.add(workflowExecutionKey(workflowId));
+
+      const persistProgress = (): Promise<void> => updateWorkflows((latest) => {
         // An awaited step may overlap pause/stop/delete or a sibling workflow
         // mutation. Merge only this workflow into the latest store snapshot.
-        const latest = loadWorkflowStore();
         const current = latest.workflows[workflowId];
         if (!current) {
           workflow.status = 'failed';
           workflow.error = 'Workflow was deleted during execution';
-          return;
+          return unchanged(undefined);
         }
         if (current.status === 'failed') {
           Object.assign(workflow, current);
-          return;
+          return unchanged(undefined);
         }
         if (current.status === 'paused' && workflow.status !== 'failed') workflow.status = 'paused';
         latest.workflows[workflowId] = workflow;
-        saveWorkflowStore(latest);
-      };
-
-      // Inject runtime variables
-      if (input.variables) {
-        workflow.variables = { ...workflow.variables, ...(input.variables as Record<string, unknown>) };
-      }
-
-      workflow.status = 'running';
-      workflow.startedAt = new Date().toISOString();
-      delete workflow.error;
-      delete workflow.completedAt;
-      workflow.currentStep = startFromStep;
-      saveWorkflowStore(store);
+        return saved(undefined);
+      });
 
       // ADR-095 G3: real workflow runtime. Walk the steps in order;
       // dispatch each by type. Persist progress after each step so a
@@ -391,7 +485,7 @@ export const workflowTools: MCPTool[] = [
         if (live.status === 'paused') {
           workflow.status = 'paused';
           workflow.currentStep = i;
-          persistProgress();
+          await persistProgress();
           break;
         }
         if (live.status === 'failed') {
@@ -403,7 +497,7 @@ export const workflowTools: MCPTool[] = [
         step.status = 'running';
         step.startedAt = new Date().toISOString();
         const stepStart = Date.now();
-        persistProgress();
+        await persistProgress();
 
         let stepEntry: typeof stepResults[number] = { stepId: step.stepId, type: step.type, status: 'running' };
 
@@ -434,26 +528,20 @@ export const workflowTools: MCPTool[] = [
             step.result = { waitedMs: ms };
             stepEntry = { stepId: step.stepId, type: 'wait', status: 'completed', durationMs: ms };
           } else if (step.type === 'condition') {
-            // Simple condition: config.when is a JS expression evaluated against workflow.variables.
-            // For safety, we only support `var === 'value'` or `var === number`.
             const cfg = step.config as Record<string, unknown>;
-            const expr = String(cfg.when || 'true').trim();
-            const m = expr.match(/^([a-zA-Z_][\w]*)\s*===?\s*(['\"])?([^'\"]*)\2?$/);
-            let truthy = false;
-            if (m) {
-              const v = workflow.variables[m[1]];
-              const expected = m[2] ? m[3] : Number(m[3]);
-              truthy = v === expected;
-            } else if (expr === 'true') truthy = true;
+            const parsed = parseCondition(cfg.when);
+            if (parsed instanceof Error) throw parsed;
+            const truthy = 'constant' in parsed
+              ? parsed.constant
+              : workflow.variables[parsed.variable] === parsed.expected;
+            const expr = String(cfg.when).trim();
             step.result = { conditionExpr: expr, truthy };
             // condition can declare a target step index to jump to via cfg.thenStep / cfg.elseStep
             if (typeof cfg.thenStep === 'number' && truthy) i = (cfg.thenStep as number) - 1;
             if (typeof cfg.elseStep === 'number' && !truthy) i = (cfg.elseStep as number) - 1;
             stepEntry = { stepId: step.stepId, type: 'condition', status: 'completed' };
           } else {
-            // parallel/loop are deferred — mark skipped honestly rather than mock-completing.
-            step.result = { _note: `step type '${step.type}' not yet implemented in runtime` };
-            stepEntry = { stepId: step.stepId, type: step.type, status: 'skipped' };
+            throw new Error(`step type '${step.type}' is not implemented by the workflow runtime`);
           }
           step.status = stepEntry.status === 'skipped' ? 'skipped' : 'completed';
           step.completedAt = new Date().toISOString();
@@ -467,7 +555,7 @@ export const workflowTools: MCPTool[] = [
           workflow.status = 'failed';
           workflow.error = msg;
           workflow.completedAt = new Date().toISOString();
-          persistProgress();
+          await persistProgress();
           return {
             workflowId,
             status: 'failed',
@@ -482,14 +570,14 @@ export const workflowTools: MCPTool[] = [
         if (typeof stepEntry.durationMs !== 'number') stepEntry.durationMs = Date.now() - stepStart;
         stepResults.push(stepEntry);
         workflow.currentStep = i + 1;
-        persistProgress();
+        await persistProgress();
         i++;
       }
 
       if (workflow.status === 'running') {
         workflow.status = 'completed';
         workflow.completedAt = new Date().toISOString();
-        persistProgress();
+        await persistProgress();
       }
 
       return {
@@ -590,14 +678,16 @@ export const workflowTools: MCPTool[] = [
       let workflows = Object.values(store.workflows);
 
       // Apply filters
-      if (input.status) {
+      // 'all' is the CLI's explicit "no filter" value (`workflow list` sends it by default).
+      if (input.status && input.status !== 'all') {
         workflows = workflows.filter(w => w.status === input.status);
       }
 
       // Sort by creation date (newest first)
       workflows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      // Apply limit
+      // Count the matches before the limit cuts the page down
+      const total = workflows.length;
       const limit = (input.limit as number) || 20;
       workflows = workflows.slice(0, limit);
 
@@ -610,7 +700,7 @@ export const workflowTools: MCPTool[] = [
           createdAt: w.createdAt,
           completedAt: w.completedAt,
         })),
-        total: workflows.length,
+        total,
         filters: { status: input.status },
       };
     },
@@ -631,27 +721,28 @@ export const workflowTools: MCPTool[] = [
       const vId = validateIdentifier(input.workflowId, 'workflowId');
       if (!vId.valid) return { success: false, error: vId.error };
 
-      const store = loadWorkflowStore();
       const workflowId = input.workflowId as string;
-      const workflow = store.workflows[workflowId];
 
-      if (!workflow) {
-        return { workflowId, error: 'Workflow not found' };
-      }
+      return updateWorkflows<Record<string, unknown>>((store) => {
+        const workflow = store.workflows[workflowId];
 
-      if (workflow.status !== 'running') {
-        return { workflowId, error: 'Workflow not running' };
-      }
+        if (!workflow) {
+          return unchanged({ workflowId, error: 'Workflow not found' });
+        }
 
-      workflow.status = 'paused';
-      saveWorkflowStore(store);
+        if (workflow.status !== 'running') {
+          return unchanged({ workflowId, error: 'Workflow not running' });
+        }
 
-      return {
-        workflowId,
-        status: workflow.status,
-        pausedAt: new Date().toISOString(),
-        currentStep: workflow.currentStep,
-      };
+        workflow.status = 'paused';
+
+        return saved({
+          workflowId,
+          status: workflow.status,
+          pausedAt: new Date().toISOString(),
+          currentStep: workflow.currentStep,
+        });
+      });
     },
   },
   {
@@ -670,27 +761,42 @@ export const workflowTools: MCPTool[] = [
       const vId = validateIdentifier(input.workflowId, 'workflowId');
       if (!vId.valid) return { success: false, error: vId.error };
 
-      const store = loadWorkflowStore();
       const workflowId = input.workflowId as string;
-      const workflow = store.workflows[workflowId];
 
-      if (!workflow) {
-        return { workflowId, error: 'Workflow not found' };
-      }
+      // Decide under the lock; wait on or start the execution after it is
+      // released, since workflow_execute takes the same lock.
+      const next = await updateWorkflows((store): StoreUpdate<
+        { refused: Record<string, unknown> } | { active: Promise<unknown> } | { startFromStep: number }
+      > => {
+        const workflow = store.workflows[workflowId];
 
-      if (workflow.status !== 'paused') {
-        return { workflowId, error: 'Workflow not paused' };
-      }
+        if (!workflow) {
+          return unchanged({ refused: { workflowId, error: 'Workflow not found' } });
+        }
 
-      const active = workflowExecutions.get(workflowExecutionKey(workflowId));
-      if (active) {
-        workflow.status = 'running';
-        saveWorkflowStore(store);
-        return { ...((await active) as Record<string, unknown>), resumed: true };
-      }
+        if (workflow.status !== 'paused') {
+          return unchanged({ refused: { workflowId, error: 'Workflow not paused' } });
+        }
+
+        const key = workflowExecutionKey(workflowId);
+        const active = workflowExecutions.get(key);
+        if (active && startedExecutions.has(key)) {
+          // A paused in-flight execution: running again lets it continue.
+          workflow.status = 'running';
+          return saved({ active });
+        }
+        if (active) {
+          // Another call is already starting it, as when resume is requested twice.
+          return unchanged({ refused: { workflowId, error: 'Workflow not paused' } });
+        }
+        return unchanged({ startFromStep: workflow.currentStep });
+      });
+
+      if ('refused' in next) return next.refused;
+      if ('active' in next) return { ...((await next.active) as Record<string, unknown>), resumed: true };
 
       const execute = workflowTools.find(tool => tool.name === 'workflow_execute')!;
-      const result = await execute.handler({ workflowId, startFromStep: workflow.currentStep });
+      const result = await execute.handler({ workflowId, startFromStep: next.startFromStep });
       return { ...(result as Record<string, unknown>), resumed: true };
     },
   },
@@ -715,36 +821,36 @@ export const workflowTools: MCPTool[] = [
         if (!v.valid) return { success: false, error: v.error };
       }
 
-      const store = loadWorkflowStore();
       const workflowId = input.workflowId as string;
-      const workflow = store.workflows[workflowId];
 
-      if (!workflow) {
-        return { workflowId, error: 'Workflow not found' };
-      }
+      return updateWorkflows<Record<string, unknown>>((store) => {
+        const workflow = store.workflows[workflowId];
 
-      if (workflow.status === 'completed' || workflow.status === 'failed') {
-        return { workflowId, error: 'Workflow already finished' };
-      }
+        if (!workflow) {
+          return unchanged({ workflowId, error: 'Workflow not found' });
+        }
 
-      workflow.status = 'failed';
-      workflow.error = (input.reason as string) || 'Cancelled by user';
-      workflow.completedAt = new Date().toISOString();
+        if (workflow.status === 'completed' || workflow.status === 'failed') {
+          return unchanged({ workflowId, error: 'Workflow already finished' });
+        }
 
-      // Mark remaining steps as skipped
-      for (let i = workflow.currentStep; i < workflow.steps.length; i++) {
-        workflow.steps[i].status = 'skipped';
-      }
+        workflow.status = 'failed';
+        workflow.error = (input.reason as string) || 'Cancelled by user';
+        workflow.completedAt = new Date().toISOString();
 
-      saveWorkflowStore(store);
+        // Mark remaining steps as skipped
+        for (let i = workflow.currentStep; i < workflow.steps.length; i++) {
+          workflow.steps[i].status = 'skipped';
+        }
 
-      return {
-        workflowId,
-        status: workflow.status,
-        cancelledAt: workflow.completedAt,
-        reason: workflow.error,
-        skippedSteps: workflow.steps.length - workflow.currentStep,
-      };
+        return saved({
+          workflowId,
+          status: workflow.status,
+          cancelledAt: workflow.completedAt,
+          reason: workflow.error,
+          skippedSteps: workflow.steps.length - workflow.currentStep,
+        });
+      });
     },
   },
   {
@@ -763,26 +869,26 @@ export const workflowTools: MCPTool[] = [
       const vId = validateIdentifier(input.workflowId, 'workflowId');
       if (!vId.valid) return { success: false, error: vId.error };
 
-      const store = loadWorkflowStore();
       const workflowId = input.workflowId as string;
 
-      if (!store.workflows[workflowId]) {
-        return { workflowId, error: 'Workflow not found' };
-      }
+      return updateWorkflows<Record<string, unknown>>((store) => {
+        if (!store.workflows[workflowId]) {
+          return unchanged({ workflowId, error: 'Workflow not found' });
+        }
 
-      const workflow = store.workflows[workflowId];
-      if (workflow.status === 'running') {
-        return { workflowId, error: 'Cannot delete running workflow' };
-      }
+        const workflow = store.workflows[workflowId];
+        if (workflow.status === 'running') {
+          return unchanged({ workflowId, error: 'Cannot delete running workflow' });
+        }
 
-      delete store.workflows[workflowId];
-      saveWorkflowStore(store);
+        delete store.workflows[workflowId];
 
-      return {
-        workflowId,
-        deleted: true,
-        deletedAt: new Date().toISOString(),
-      };
+        return saved({
+          workflowId,
+          deleted: true,
+          deletedAt: new Date().toISOString(),
+        });
+      });
     },
   },
   {
@@ -819,74 +925,76 @@ export const workflowTools: MCPTool[] = [
         if (!v.valid) return { success: false, error: v.error };
       }
 
-      const store = loadWorkflowStore();
       const action = input.action as string;
 
       if (action === 'save') {
-        const workflow = store.workflows[input.workflowId as string];
-        if (!workflow) {
-          return { action, error: 'Workflow not found' };
-        }
+        return updateWorkflows<Record<string, unknown>>((store) => {
+          const workflow = store.workflows[input.workflowId as string];
+          if (!workflow) {
+            return unchanged({ action, error: 'Workflow not found' });
+          }
 
-        const templateId = `template-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const template: WorkflowRecord = {
-          ...workflow,
-          workflowId: templateId,
-          name: (input.templateName as string) || `${workflow.name} Template`,
-          status: 'draft',
-          currentStep: 0,
-          createdAt: new Date().toISOString(),
-          startedAt: undefined,
-          completedAt: undefined,
-        };
+          const templateId = `template-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          const template: WorkflowRecord = {
+            ...workflow,
+            workflowId: templateId,
+            name: (input.templateName as string) || `${workflow.name} Template`,
+            status: 'draft',
+            currentStep: 0,
+            createdAt: new Date().toISOString(),
+            startedAt: undefined,
+            completedAt: undefined,
+          };
 
-        // Reset step statuses
-        template.steps = template.steps.map(s => ({
-          ...s,
-          status: 'pending',
-          result: undefined,
-          startedAt: undefined,
-          completedAt: undefined,
-        }));
+          // Reset step statuses
+          template.steps = template.steps.map(s => ({
+            ...s,
+            status: 'pending',
+            result: undefined,
+            startedAt: undefined,
+            completedAt: undefined,
+          }));
 
-        store.templates[templateId] = template;
-        saveWorkflowStore(store);
+          store.templates[templateId] = template;
 
-        return {
-          action,
-          templateId,
-          name: template.name,
-          savedAt: new Date().toISOString(),
-        };
+          return saved({
+            action,
+            templateId,
+            name: template.name,
+            savedAt: new Date().toISOString(),
+          });
+        });
       }
 
       if (action === 'create') {
-        const template = store.templates[input.templateId as string];
-        if (!template) {
-          return { action, error: 'Template not found' };
-        }
+        return updateWorkflows<Record<string, unknown>>((store) => {
+          const template = store.templates[input.templateId as string];
+          if (!template) {
+            return unchanged({ action, error: 'Template not found' });
+          }
 
-        const workflowId = `workflow-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const workflow: WorkflowRecord = {
-          ...template,
-          workflowId,
-          name: (input.newName as string) || template.name.replace(' Template', ''),
-          status: 'ready',
-          createdAt: new Date().toISOString(),
-        };
+          const workflowId = `workflow-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          const workflow: WorkflowRecord = {
+            ...template,
+            workflowId,
+            name: (input.newName as string) || template.name.replace(' Template', ''),
+            status: 'ready',
+            createdAt: new Date().toISOString(),
+          };
 
-        store.workflows[workflowId] = workflow;
-        saveWorkflowStore(store);
+          store.workflows[workflowId] = workflow;
 
-        return {
-          action,
-          workflowId,
-          name: workflow.name,
-          fromTemplate: input.templateId,
-          createdAt: workflow.createdAt,
-        };
+          return saved({
+            action,
+            workflowId,
+            name: workflow.name,
+            fromTemplate: input.templateId,
+            createdAt: workflow.createdAt,
+          });
+        });
       }
 
+      const store = loadWorkflowStore();
       if (action === 'list') {
         return {
           action,
@@ -921,21 +1029,21 @@ export const workflowTools: MCPTool[] = [
     handler: async (input) => {
       const vId = validateIdentifier(input.workflowId, 'workflowId');
       if (!vId.valid) return { success: false, error: vId.error };
-      const store = loadWorkflowStore();
       const workflowId = input.workflowId as string;
-      const workflow = store.workflows[workflowId];
-      if (!workflow) return { workflowId, error: 'Workflow not found' };
-      if (workflow.status === 'completed' || workflow.status === 'failed') {
-        return { workflowId, error: 'Workflow already finished' };
-      }
-      workflow.status = 'failed';
-      workflow.error = 'Stopped by user';
-      workflow.completedAt = new Date().toISOString();
-      for (let i = workflow.currentStep; i < workflow.steps.length; i++) {
-        workflow.steps[i].status = 'skipped';
-      }
-      saveWorkflowStore(store);
-      return { workflowId, stopped: true, stoppedAt: workflow.completedAt };
+      return updateWorkflows<Record<string, unknown>>((store) => {
+        const workflow = store.workflows[workflowId];
+        if (!workflow) return unchanged({ workflowId, error: 'Workflow not found' });
+        if (workflow.status === 'completed' || workflow.status === 'failed') {
+          return unchanged({ workflowId, error: 'Workflow already finished' });
+        }
+        workflow.status = 'failed';
+        workflow.error = 'Stopped by user';
+        workflow.completedAt = new Date().toISOString();
+        for (let i = workflow.currentStep; i < workflow.steps.length; i++) {
+          workflow.steps[i].status = 'skipped';
+        }
+        return saved({ workflowId, stopped: true, stoppedAt: workflow.completedAt });
+      });
     },
   },
   {
@@ -943,7 +1051,7 @@ export const workflowTools: MCPTool[] = [
     // `workflow_validate` tool. Structural sanity check (JSON workflow files);
     // a full schema validator is a follow-up.
     name: 'workflow_validate',
-    description: 'Structurally validate a workflow definition file (JSON) — checks it has a steps/stages/tasks array and that each step names an agent. Use when native Read is wrong because you want a parsed, structured pass/fail with error/warning lists and step/agent counts rather than eyeballing the file. For just reading the file, native Read is fine. (Basic checks today — a full workflow-schema validator is a tracked follow-up.)',
+    description: 'Structurally validate a workflow definition file (JSON) — checks it has a steps/stages/tasks array and that task steps resolve an agent. Use when native Read is wrong because you want a parsed, structured pass/fail with error/warning lists and step/agent counts rather than eyeballing the file. For just reading the file, native Read is fine. (Basic checks today — a full workflow-schema validator is a tracked follow-up.)',
     category: 'workflow',
     inputSchema: {
       type: 'object',
@@ -953,17 +1061,22 @@ export const workflowTools: MCPTool[] = [
       },
       required: ['file'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const file = String(input.file ?? '');
       const errors: Array<{ line: number; message: string; severity: string }> = [];
       const warnings: Array<{ line: number; message: string }> = [];
       let stages = 0;
       let agents = 0;
       try {
-        if (!file || !existsSync(file)) {
-          errors.push({ line: 0, message: `File not found: ${file || '(empty)'}`, severity: 'error' });
+        // MCP callers may only read regular files inside the project, matching
+        // memory_import; the local CLI may name any file the operator chooses.
+        const local = isLocalCliCall(context);
+        const resolved = !file ? null : local ? (existsSync(file) ? file : null) : containedReadPath(file);
+        if (!resolved) {
+          errors.push({ line: 0, message: !file || local ? `File not found: ${file || '(empty)'}`
+            : 'file must be an existing regular file inside the project directory (not a symlink)', severity: 'error' });
         } else {
-          const raw = readFileSync(file, 'utf-8');
+          const raw = readImportFile(resolved).toString('utf-8');
           let doc: unknown = null;
           if (/\.ya?ml$/i.test(file)) {
             warnings.push({ line: 0, message: 'YAML workflow files are not schema-validated yet — only JSON is fully checked (#1916 follow-up)' });
@@ -980,15 +1093,29 @@ export const workflowTools: MCPTool[] = [
             const agentSet = new Set<string>();
             steps.forEach((s, i) => {
               const step = (s ?? {}) as Record<string, unknown>;
-              const a = (step.agent ?? step.agentType ?? step.agent_type) as string | undefined;
-              if (a) agentSet.add(String(a));
-              else warnings.push({ line: i + 1, message: `step ${i + 1} ("${step.name ?? step.id ?? i + 1}") names no agent` });
+              if (typeof step.type === 'string') {
+                const error = validateExecutableStep({
+                  type: step.type as WorkflowStep['type'],
+                  config: (step.config ?? {}) as Record<string, unknown>,
+                });
+                if (error) errors.push({ line: i + 1, message: `step ${i + 1}: ${error}`, severity: 'error' });
+              }
+              // Match workflow_execute: control steps do not dispatch agents,
+              // and task steps use config.agentId or the workflow default.
+              const config = step.config as Record<string, unknown> | undefined;
+              const variables = d.variables as Record<string, unknown> | undefined;
+              const a = config?.agentId || variables?.defaultAgentId
+                || step.agent || step.agentType || step.agent_type;
+              const needsAgent = !['wait', 'condition', 'parallel', 'loop'].includes(String(step.type));
+              if (needsAgent && a) agentSet.add(String(a));
+              else if (needsAgent) warnings.push({ line: i + 1, message: `step ${i + 1} ("${step.name ?? step.id ?? i + 1}") names no agent` });
             });
             agents = agentSet.size;
           }
         }
       } catch (e) {
-        errors.push({ line: 0, message: `Parse error: ${(e as Error).message}`, severity: 'error' });
+        // Never echo parser text: a SyntaxError message quotes the file's contents.
+        errors.push({ line: 0, message: e instanceof SyntaxError ? 'Parse error: file is not valid JSON' : `Parse error: ${(e as Error).message}`, severity: 'error' });
       }
       const valid = errors.length === 0 && (!input.strict || warnings.length === 0);
       return {

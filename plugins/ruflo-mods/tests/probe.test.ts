@@ -36,10 +36,10 @@ describe('capability probe, pure (ADR-451 item 5)', () => {
 
   test('registeredEvents matches what register() hooks, for every option combination', () => {
     const B = [false, true]
-    for (const costBudgetUsd of [undefined, 5]) for (const costHardStop of B) for (const sessionRollup of B)
+    for (const costBudgetUsd of [undefined, 5]) for (const costHardStop of B) for (const costLedger of B) for (const sessionRollup of B)
     for (const agentTrim of B) for (const modTrust of ['observe', 'off']) for (const toolHints of B)
     for (const deliveryScreen of B) for (const compactCarry of B) {
-      const o = { costBudgetUsd, costHardStop, sessionRollup, agentTrim, modTrust, toolHints, deliveryScreen, compactCarry, capabilityProbe: true }
+      const o = { costBudgetUsd, costHardStop, costLedger, sessionRollup, agentTrim, modTrust, toolHints, deliveryScreen, compactCarry, capabilityProbe: true }
       const seen = new Set<string>()
       const chain: { catch: () => unknown } = { catch: () => chain }
       register(((name: string) => (name !== '*' && seen.add(name), chain)) as never, o as never)
@@ -58,6 +58,7 @@ describe('capability probe, pure (ADR-451 item 5)', () => {
     expect(registeredEvents({ ...base, costBudgetUsd: 5, costHardStop: true })).toContain('agent.spawn')
     expect(registeredEvents({ ...base, costHardStop: true })).not.toContain('agent.spawn')
     expect(registeredEvents({ ...base, sessionRollup: true })).toContain('agent.spawn')
+    expect(registeredEvents({ ...base, costLedger: true })).toEqual(expect.arrayContaining(['session.measure', 'agent.spawn']))
   })
 })
 

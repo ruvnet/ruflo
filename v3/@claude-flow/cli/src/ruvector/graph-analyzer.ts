@@ -13,6 +13,7 @@
  */
 
 import { readFile, readdir, stat } from 'fs/promises';
+import { loadWasmMinCut, minCutWith } from './mincut-bridge.js';
 import { join, relative, extname, dirname, basename } from 'path';
 
 // ============================================================================
@@ -164,48 +165,32 @@ let ruVectorGraph: IRuVectorGraph | null = null;
 let ruVectorLoadAttempted = false;
 
 /**
- * Attempt to load ruvector graph algorithms
+ * Load the accelerated graph backend.
+ *
+ * MinCut runs on ruvector's `DynamicMinCut` (the `@ruvector/mincut-wasm`
+ * solver ruvector ships as an optional dependency), see mincut-bridge.ts.
+ * Inputs the wasm solver cannot describe (isolated nodes, no edges) and
+ * Louvain go to the built-in JS implementations — ruvector's own
+ * `louvainCommunities` is plain JS too, so there is nothing to gain there.
+ * Returns null when the wasm solver is unavailable; callers then use the
+ * built-in Stoer-Wagner `fallbackMinCut`.
  */
 async function loadRuVector(): Promise<IRuVectorGraph | null> {
   if (ruVectorLoadAttempted) return ruVectorGraph;
   ruVectorLoadAttempted = true;
 
-  // Use dynamic module names to bypass TypeScript static analysis
-  // These modules are optional and may not be installed
-  const ruvectorModule = 'ruvector';
-  const wasmModule = '@ruvector/wasm';
+  const Ctor = await loadWasmMinCut();
+  if (!Ctor) return null;
+  ruVectorGraph = {
+    mincut: (nodes, edges) => minCutWith(Ctor, nodes, edges) ?? fallbackMinCut(nodes, edges),
+    louvain: (nodes, edges) => fallbackLouvain(nodes, edges),
+  };
+  return ruVectorGraph;
+}
 
-  try {
-    // Try to load ruvector's graph module
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ruvector: any = await import(/* webpackIgnore: true */ ruvectorModule).catch(() => null);
-
-    if (ruvector && typeof ruvector.hooks_graph_mincut === 'function' && typeof ruvector.hooks_graph_cluster === 'function') {
-      ruVectorGraph = {
-        mincut: (nodes, edges) => ruvector.hooks_graph_mincut(nodes, edges),
-        louvain: (nodes, edges) => ruvector.hooks_graph_cluster(nodes, edges),
-      };
-      return ruVectorGraph;
-    }
-  } catch {
-    // Try alternative import paths
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const wasm: any = await import(/* webpackIgnore: true */ wasmModule).catch(() => null);
-      if (wasm && wasm.GraphAnalyzer) {
-        const analyzer = new wasm.GraphAnalyzer();
-        ruVectorGraph = {
-          mincut: (nodes, edges) => analyzer.mincut(nodes, edges),
-          louvain: (nodes, edges) => analyzer.louvain(nodes, edges),
-        };
-        return ruVectorGraph;
-      }
-    } catch {
-      // Fallback will be used
-    }
-  }
-
-  return null;
+/** Which MinCut backend `analyzeMinCutBoundaries` will use. */
+export async function getMinCutBackend(): Promise<'mincut-wasm' | 'stoer-wagner'> {
+  return (await loadRuVector()) ? 'mincut-wasm' : 'stoer-wagner';
 }
 
 // ============================================================================
@@ -696,6 +681,18 @@ function fallbackLouvain(
   const maxIterations = 10;
   let iteration = 0;
 
+  // Community total weighted degree. Maintained incrementally (±nodeDegree on
+  // each accepted move) rather than rebuilt from a full scan of `community`
+  // inside the per-node loop below — the rebuild was O(n) per node (O(n^2) per
+  // pass), matching neither the reference Louvain implementations (networkx's
+  // `Stot`, python-louvain's `status.degrees`, both updated in O(1) per move)
+  // nor the algorithm's own linear-on-sparse-data design intent.
+  const communityTotal = new Map<number, number>();
+  for (const node of nodes) {
+    const c = community.get(node)!;
+    communityTotal.set(c, (communityTotal.get(c) || 0) + (degree.get(node) || 0));
+  }
+
   while (improved && iteration < maxIterations) {
     improved = false;
     iteration++;
@@ -716,19 +713,17 @@ function fallbackLouvain(
         );
       }
 
-      // Calculate community totals
-      const communityTotal = new Map<number, number>();
-      for (const [n, c] of Array.from(community.entries())) {
-        communityTotal.set(c, (communityTotal.get(c) || 0) + (degree.get(n) || 0));
-      }
-
       let bestCommunity = currentCommunity;
       let bestGain = 0;
 
       for (const [targetCommunity, edgeWeight] of Array.from(communityWeights.entries())) {
         if (targetCommunity === currentCommunity) continue;
 
-        // Calculate modularity gain
+        // Calculate modularity gain. `currentTotal` still includes this
+        // node's own degree (not yet removed) — the `+ nodeDegree` term
+        // below backs it out, so `communityTotal` must stay un-patched for
+        // `node` until after the move decision, matching the pre-existing
+        // formula this complexity fix leaves unchanged.
         const currentTotal = communityTotal.get(currentCommunity) || 0;
         const targetTotal = communityTotal.get(targetCommunity) || 0;
         const currentEdges = communityWeights.get(currentCommunity) || 0;
@@ -745,6 +740,8 @@ function fallbackLouvain(
 
       if (bestCommunity !== currentCommunity) {
         community.set(node, bestCommunity);
+        communityTotal.set(currentCommunity, (communityTotal.get(currentCommunity) || 0) - nodeDegree);
+        communityTotal.set(bestCommunity, (communityTotal.get(bestCommunity) || 0) + nodeDegree);
         improved = true;
       }
     }

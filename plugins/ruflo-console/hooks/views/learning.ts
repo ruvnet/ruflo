@@ -1,7 +1,8 @@
 import type { RenderElement } from 'claude-code'
+import { managedLearningRows } from './managed'
 
 import type { Intelligence } from '../data/cli'
-import { ago, col, count, kv, live, pct, picture, row, section, sourceLine, starts, text, THEME, type Ctx } from './common'
+import { ago, art, col, count, kv, live, pct, picture, row, section, sourceLine, starts, text, THEME, type Ctx } from './common'
 import { stagesOf } from './frames'
 import { CARD_COLUMNS, hasCards } from './card'
 import { pipeStagesOf, routeModelOf, stageNote } from '../data/pipeline'
@@ -12,9 +13,9 @@ import { resultRows } from './automate'
 import { pulseRows } from './learning-pulse'
 import { neuralActionRows } from './neural'
 
-/** A picture drawn here from the real state (the registry in frames.ts is not touched): the grid when the terminal has Raster, else its words. */
+/** A picture drawn here from the real state (the registry in frames.ts is not touched): as the surface draws it, else its words. */
 function drawn(ctx: Ctx, key: string, grid: Grid, fallback: string): RenderElement {
-  return ctx.kit.Raster === undefined ? text(ctx, fallback, { dimColor: true }) : ctx.kit.Raster(grid.toRaster(key))
+  return art(ctx, grid, key, fallback) ?? text(ctx, fallback, { dimColor: true })
 }
 
 /** The width a picture is drawn to: a page in cards is narrower by the border and padding, as in frames.ts. */
@@ -43,7 +44,7 @@ function configRows(ctx: Ctx): RenderElement[] {
         return row(
           ctx,
           [
-            ctx.kit.Text({ bold: true, color: THEME.head, children: ` ${item.title.padEnd(16)}` }),
+            ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: ` ${item.title.padEnd(16)}` }),
             ctx.kit.Text({ color: value === 'true' ? THEME.ok : value === 'false' ? THEME.bad : THEME.info, children: ` ${value === undefined ? 'n/a (open Settings to read it)' : value === 'true' ? 'on' : 'off'} ` }),
             ctx.kit.Button({ key: `learn-cfg-on-${item.key}`, label: ' ● on ', plain: true, onPress: () => ctx.act.settings.core(item.key, 'true') }),
             ctx.kit.Button({ key: `learn-cfg-off-${item.key}`, label: ' ○ off ', plain: true, onPress: () => ctx.act.settings.core(item.key, 'false') }),
@@ -138,6 +139,7 @@ export function learningView(ctx: Ctx): RenderElement {
     text(ctx, 'live engine: hooks_intelligence_stats in a fresh CLI process, so in-memory counters start at zero there', { dimColor: true }),
   ]
   const rows: RenderElement[] = [
+    ...managedLearningRows(ctx),
     ...section(ctx, 'learn-router', 'Router', 'ruflo-mods · routing-outcomes.json', routerRows, true),
     ...section(ctx, 'learn-pipeline', 'Pipeline', 'RETRIEVE → JUDGE → DISTILL → CONSOLIDATE', pipelineRows, true),
     ...section(ctx, 'learn-sona', 'SONA · ReasoningBank', 'neural/stats.json', sonaRows, false),

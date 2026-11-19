@@ -1,15 +1,16 @@
 {
   "name": "ruflo",
-  "version": "3.56.0",
+  "mcpName": "io.github.ruvnet/ruflo",
+  "version": "3.77.2",
   "description": "Ruflo - Enterprise AI agent orchestration platform. Deploy 60+ specialized agents in coordinated swarms with self-learning, fault-tolerant consensus, vector memory, and MCP integration",
   "main": "bin/ruflo.js",
   "type": "module",
   "bin": {
     "ruflo": "bin/ruflo.js"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow#readme",
+  "homepage": "https://ruv.io",
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues",
+    "url": "https://github.com/ruvnet/ruflo/issues",
     "email": "support@ruv.io"
   },
   "funding": {
@@ -18,7 +19,6 @@
   },
   "files": [
     "bin/**",
-    "src/**",
     "dist/**",
     "README.md",
     "LICENSE"
@@ -40,13 +40,14 @@
     "package:rvf": "bash src/scripts/package-rvf.sh"
   },
   "dependencies": {
-    "@claude-flow/cli": "3.56.0"
+    "@claude-flow/cli": "3.77.2"
   },
   "optionalDependencies": {},
   "overrides": {
-    "ruvector": "^0.2.27",
+    "ruvector": "^0.3.13",
     "better-sqlite3": "12.9.0",
     "@ruvector/rvf-wasm": "0.1.5",
+    "@ruvector/rvf": "0.3.4",
     "@hono/node-server": ">=1.19.10",
     "flatted": ">=3.4.0",
     "tar": ">=7.5.11",
@@ -72,9 +73,9 @@
     "@opentelemetry/otlp-exporter-base": ">=0.220.0",
     "@opentelemetry/otlp-grpc-exporter-base": ">=0.220.0",
     "@opentelemetry/otlp-transformer": ">=0.220.0",
-    "agentdb": ">=3.0.0-alpha.17",
-    "agentic-flow": ">=2.0.14",
-    "@ruvector/ruvllm": ">=2.6.0",
+    "agentdb": "^3.3.0",
+    "agentic-flow": "^2.0.14 || ^3.0.0",
+    "@ruvector/ruvllm": "^4.1.0",
     "fast-uri": ">=3.1.6"
   },
   "engines": {
@@ -82,7 +83,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "ruflo"
   },
   "keywords": [
@@ -102,7 +103,10 @@
     "cli",
     "developer-tools",
     "enterprise",
-    "self-learning"
+    "self-learning",
+    "local-vector-search",
+    "rvf",
+    "mcp-server"
   ],
   "author": {
     "name": "RuvNet",

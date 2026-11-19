@@ -12,6 +12,7 @@ import { agentKey, evaluateGuards, NO_RULES, parseGuardRules, trackProgress, typ
 import { costRun, parsePriceBook, spendOf, usageOfTranscript, type AgentUsage, type PriceBook, type RunCost } from './data/wf-cost'
 import { trackerOf } from './data/cost-ledger'
 import { cleanText } from './data/wf-clean'
+import { hasParentSegment, trimTrailing } from './data/paths'
 import { readBounded, under } from './data/files'
 import { TAIL_BYTES, TRANSCRIPT_CAP, type WorkflowFs } from './data/workflows-read'
 import type { WfRun } from './data/workflows'
@@ -60,7 +61,7 @@ const parsed = new Map<string, Parsed>()
 const PARSED_MAX = 800
 
 /** True for a path under `root` with no `..` part and no control character. */
-export const isUnder = (path: string, root: string | null): boolean => root !== null && !/[\u0000-\u001f]/.test(path) && !path.split('/').includes('..') && path.startsWith(`${root.replace(/\/+$/, '')}/`)
+export const isUnder = (path: string, root: string | null): boolean => root !== null && !/[\u0000-\u001f]/.test(path) && !hasParentSegment(path) && path.startsWith(`${trimTrailing(root)}/`)
 
 const rememberParsed = (path: string, entry: Parsed): void => {
   parsed.delete(path)

@@ -1,6 +1,6 @@
 ---
 name: pod-sales
-description: Run one tick of the sales business-pod (ADR-164 §4.1, Phase 2). Loads templates/sales.json, validates it against the pod-schema, resolves agents against ruflo's agent registry, reserves budget via the Phase-2 file-based stub ledger (atomic SQLite tracker is Phase 3 per ADR-164.1), constructs per-agent dry-run prompts, posts a summary envelope to room "sales" via the federation_bbs_publish JSONL backing store, and emits a structured {podName, tickId, agentsRan, totalUsd, envelopeId, status} line for /loop ingestion. Dry-run by default; --live is reserved for Phase 3.
+description: "Run one dry-run tick of the sales business-pod (ADR-164): validate templates/sales.json, reserve budget, post a summary envelope to the \"sales\" room and print a status line for /loop. Use when a person or a /loop asks for the next sales-pod tick."
 argument-hint: "[--pod-template <path>] [--base-path <dir>] [--dry-run|--live] [--budget-cap-usd <amt>] [--tick-id <id>]"
 allowed-tools: Bash
 ---

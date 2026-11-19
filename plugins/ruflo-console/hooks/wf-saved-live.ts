@@ -10,7 +10,9 @@
 import type { ActionSpec } from './actions'
 import { decodeSaved, emptySaved, encodeSaved, captureDrill, restoreDrill, sameDrill, SAVED_FILE, SAVED_MAX_BYTES, type Saved } from './data/wf-saved'
 import { cleanText } from './data/wf-clean'
-import { checkNoLinks, dirOf, removeFileArgv, replaceFileArgv } from './data/wf-file'
+import { checkNoLinks, dirOf, removeFileArgv } from './data/wf-file'
+import { writeFlavorReady, type WriteFlavor } from './data/write-flavor'
+import { writeVia } from './data/write-via'
 import { readBounded } from './data/files'
 import type { Host } from './host'
 import type { State } from './state'
@@ -140,7 +142,7 @@ export async function syncSavedViews(state: State, host: SavedHost, nowMs: numbe
       }
 
       const hasDir = (await host.fs.stat(dirOf(path)).catch(() => undefined)) !== undefined
-      const result = await host.run(replaceFileArgv(path, hasDir), 10_000, encodeSaved(own.saved, nowMs))
+      const result = await writeVia(await writeFlavorReady(), host, { kind: 'replace', path, text: encodeSaved(own.saved, nowMs), hasDir })
 
       own.error = result.exitCode === 0 ? null : `the write exited ${result.exitCode}`
       if (result.exitCode === 0) own.isDirty = false
@@ -155,17 +157,20 @@ export async function syncSavedViews(state: State, host: SavedHost, nowMs: numbe
 }
 
 /** The confirm-gated removal of the saved views file; once it ran the held copy is emptied and the cursor is not saved again until a pin or filter is set. */
-export function forgetSpec(cwd: string): ActionSpec {
+export function forgetSpec(cwd: string, flavor: WriteFlavor = 'gnu'): ActionSpec {
   const path = savedPathOf(cwd)
+  const isHostFs = flavor === 'host-fs'
 
   return {
     label: 'forget saved Workflows views',
     args: [],
     argv: removeFileArgv(path),
-    expect: `${path} removed`,
+    // Windows has no rm here: the file is rewritten as an empty (valid) saved-views document through the host's file API.
+    ...(isHostFs && { write: { kind: 'replace', path, text: encodeSaved(emptySaved(), Date.now()), hasDir: true } as const }),
+    expect: `${path} ${isHostFs ? 'emptied' : 'removed'}`,
     declared: 'delete',
-    shows: `rm -f -- ${path}`,
-    note: 'deletes the console\'s own saved cursor, filters and pins for this project; runs and their files are not touched',
+    shows: isHostFs ? `empty ${path} (no delete on Windows: the file stays, with no views in it)` : `rm -f -- ${path}`,
+    note: `${isHostFs ? 'empties' : 'deletes'} the console's own saved cursor, filters and pins for this project; runs and their files are not touched`,
     timeoutMs: 10_000,
     onOutput: () => {
       const own = savedFor(cwd)
@@ -177,6 +182,13 @@ export function forgetSpec(cwd: string): ActionSpec {
       own.restored = null
       own.said = 'saved views forgotten'
     },
-    verifyLocal: async host => (await host.fs.stat(path).catch(() => undefined)) === undefined,
+    verifyLocal: async host => {
+      if ((await host.fs.stat(path).catch(() => undefined)) === undefined) return true
+      if (!isHostFs) return false
+
+      const kept = decodeSaved(await host.fs.read(path).catch(() => null)).saved
+
+      return kept.pins.length === 0 && kept.drill === null && kept.search === '' && Object.keys(kept.filters).length === 0
+    },
   }
 }

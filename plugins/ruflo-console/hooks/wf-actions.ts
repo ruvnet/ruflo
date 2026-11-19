@@ -4,6 +4,7 @@
  * Nothing in THIS file stops or messages a running Claude Code workflow: that is the control tab (views/wf-control.ts, ADR-465), which calls the engine's own tools through the host.
  */
 import type { ActionSpec } from './actions'
+import { hasParentSegment, trimTrailing } from './data/paths'
 import { walk, type WfKey, type WfUi } from './data/workflows-nav'
 import type { Host } from './host'
 import type { Runner } from './runner'
@@ -32,9 +33,9 @@ export type WorkflowsActions = {
 
 /** True for a path under `<configDir>/projects/` with no `..` part: the only place a run's files live. */
 export function isRunPath(path: string, configDir: string | null): boolean {
-  if (configDir === null || path.includes('\0') || path.split('/').includes('..')) return false
+  if (configDir === null || path.includes('\0') || hasParentSegment(path)) return false
 
-  return path.startsWith(`${configDir.replace(/\/+$/, '')}/projects/`)
+  return path.startsWith(`${trimTrailing(configDir)}/projects/`)
 }
 
 export function workflowsActions(state: State, host: Host, runner: Runner): WorkflowsActions {

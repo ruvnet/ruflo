@@ -594,22 +594,32 @@ export class AttentionCoordinator extends EventEmitter {
     query: number[] | Float32Array;
     key: number[] | Float32Array;
     value: number[] | Float32Array;
+    mask?: boolean[];
   }): string {
-    // Simple hash of first few elements
+    // Hash every element (and its length) for all three tensors. The previous
+    // first-8-elements hash could collide for different vectors with the same
+    // prefix and return a cached result computed from the wrong value.
     const qHash = this.simpleHash(params.query);
     const kHash = this.simpleHash(params.key);
     const vHash = this.simpleHash(params.value);
-    return `${this.config.mechanism}:${qHash}:${kHash}:${vHash}`;
+    const maskKey = params.mask ? params.mask.map((m) => (m ? '1' : '0')).join('') : 'none';
+    return `${this.config.mechanism}:${params.query.length}:${qHash}:${params.key.length}:${kHash}:${params.value.length}:${vHash}:${maskKey}`;
   }
 
   private simpleHash(arr: number[] | Float32Array): number {
-    const slice = Array.isArray(arr) ? arr.slice(0, 8) : Array.from(arr).slice(0, 8);
-    let hash = 0;
-    for (const v of slice) {
-      hash = ((hash << 5) - hash) + Math.floor(v * 1000);
-      hash = hash & hash;
+    const values = arr instanceof Float32Array ? arr : Float32Array.from(arr);
+    if (values.length === 0) return 0;
+
+    // FNV-1a over the complete Float32 byte representation. This preserves
+    // every element (unlike the old Math.floor(v * 1000) prefix hash) and is
+    // stable for number[] and Float32Array inputs of the same values.
+    const bytes = new Uint8Array(values.buffer, values.byteOffset, values.byteLength);
+    let hash = 2166136261;
+    for (let i = 0; i < bytes.length; i++) {
+      hash ^= bytes[i];
+      hash = Math.imul(hash, 16777619);
     }
-    return hash;
+    return hash >>> 0;
   }
 
   private updateCache(key: string, result: AttentionResult): void {

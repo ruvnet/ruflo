@@ -86,7 +86,26 @@ export function taskIdOf(text: string, runId: string): string | null {
   const hits = [...text.matchAll(new RegExp(taskPattern(runId), 'g'))]
   const last = hits.at(-1)
 
-  return last === undefined ? null : (/"taskId":"([A-Za-z0-9]{6,40})"/.exec(last[0])?.[1] ?? null)
+  // A search prints only the matches, with no closing brace between two launches of one run, so one match can hold both: the last task id in it wins.
+  return last === undefined ? null : ([...last[0].matchAll(/"taskId":"([A-Za-z0-9]{6,40})"/g)].at(-1)?.[1] ?? null)
+}
+
+const utf8Base64 = (text: string): string => btoa(Array.from(new TextEncoder().encode(text), byte => String.fromCharCode(byte)).join(''))
+
+/**
+ * The transcript search for Windows, which has no `grep`: PowerShell's Select-String reads the file line by line and prints only what
+ * matched (`grep -o`). The path and the pattern ride inside the script as base64 and are decoded there, so no character of either is ever
+ * parsed as PowerShell (a path with a space, a quote or a `$` is only data); the script itself has no double quote. Null for a run id that is
+ * not one, a path with a NUL, or a host without TextEncoder/btoa.
+ */
+export function windowsSearchArgv(path: string, runId: string, systemRoot = (typeof process !== 'undefined' && process.env?.SystemRoot) || 'C:\\Windows'): readonly string[] | null {
+  if (!RUN_ID.test(runId) || path === '' || path.includes('\0') || typeof TextEncoder !== 'function' || typeof btoa !== 'function') return null
+
+  const text = (value: string): string => `[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${utf8Base64(value)}'))`
+  const script = `$p=${text(path)};$q=${text(taskPattern(runId))};Select-String -LiteralPath $p -Pattern $q -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Value }`
+  const psPath = `${systemRoot.replace(/[\\/]+$/, '')}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
+
+  return [psPath, '-NoProfile', '-NonInteractive', '-Command', script]
 }
 
 /** The session transcript that launched a run: the run's directory (`<session>/subagents/workflows/<run>`) without its tail, plus `.jsonl`. Null when the path is not a run path. */

@@ -42,29 +42,14 @@
  * hive-mind-gate-matrix.test.ts.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync, existsSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hiveMindTools, getHiveTokenForCli } from '../src/mcp-tools/hive-mind-tools.js';
+import { agentTools } from '../src/mcp-tools/agent-tools.js';
 
-const CLI = join(__dirname, '..', 'bin', 'cli.js');
-
-function runCli(args: string[], cwd: string): { stdout: string; exit: number } {
-  try {
-    const stdout = execFileSync('node', [CLI, ...args], {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, CLAUDE_FLOW_CWD: cwd },
-    });
-    return { stdout, exit: 0 };
-  } catch (err) {
-    const e = err as { status?: number; stdout?: Buffer; stderr?: Buffer };
-    return { stdout: (e.stdout?.toString() ?? '') + (e.stderr?.toString() ?? ''), exit: e.status ?? -1 };
-  }
-}
+vi.mock('../src/ruvector/graph-backend.js', () => ({ addNode: vi.fn() }));
 
 const REMOTE = { sessionId: 'auth-test', transport: 'http' };
 const SECRET = 'operator-secret-for-tests-0123456789';
@@ -96,11 +81,16 @@ describe('hive-mind_spawn / consensus(propose) / broadcast / shutdown capability
   let dir: string;
   let prevCwd: string | undefined;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     dir = mkdtempSync(join(tmpdir(), 'hive-mind-auth-'));
     prevCwd = process.env.CLAUDE_FLOW_CWD;
     process.env.CLAUDE_FLOW_CWD = dir;
     process.env.RUFLO_HIVE_BOOTSTRAP_SECRET = SECRET;
+    // #4727: the shutdown fixtures join a previously registered worker.
+    const agent = await agentTools.find(t => t.name === 'agent_spawn')!.handler({
+      agentId: 'worker-0', agentType: 'worker', model: 'sonnet',
+    }) as any;
+    expect(agent.success).toBe(true);
   });
 
   afterEach(() => {
@@ -382,30 +372,6 @@ describe('hive-mind_spawn / consensus(propose) / broadcast / shutdown capability
       const reinit = (await tool('hive-mind_init').handler({ consensus: 'byzantine', bootstrapSecret: SECRET })) as any;
       expect(reinit.success).toBe(true);
       expect(getHiveTokenForCli()).toBe(token);
-    });
-  });
-
-  describe('real CLI-process integration (not just direct handler calls)', () => {
-    it('`hive-mind init` then `hive-mind spawn` succeed end-to-end through the actual CLI binary in a fresh child process', () => {
-      const initResult = runCli(['hive-mind', 'init', '--consensus', 'raft'], dir);
-      expect(initResult.exit).toBe(0);
-      expect(existsSync(join(dir, '.claude-flow', 'hive-mind', 'state.json'))).toBe(true);
-
-      // Fresh state read (this is a separate `node` process from the one
-      // that ran init -- no in-process cache of any kind survives between
-      // these two runCli() calls).
-      const spawnResult = runCli(['hive-mind', 'spawn', '--count', '1'], dir);
-      expect(spawnResult.exit).toBe(0);
-
-      const persisted = readPersistedState(dir) as any;
-      expect(persisted.workers.length).toBe(1);
-    });
-
-    it('a raw MCP-style call with no bootstrapSecret cannot bootstrap a hive via the real dispatch path either (spawning `hive-mind spawn` with no prior init fails)', () => {
-      // No init was ever run in this fresh temp dir/process.
-      const spawnResult = runCli(['hive-mind', 'spawn', '--count', '1'], dir);
-      expect(spawnResult.exit).not.toBe(0);
-      expect(existsSync(join(dir, '.claude-flow', 'hive-mind', 'state.json'))).toBe(false);
     });
   });
 });

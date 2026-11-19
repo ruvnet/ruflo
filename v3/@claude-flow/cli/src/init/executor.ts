@@ -30,9 +30,13 @@ import {
 } from './helpers-generator.js';
 import { getInstalledCliVersion, HELPERS_STAMP_FILE } from './helper-refresh.js';
 import { generateClaudeMd } from './claudemd-generator.js';
+import { writeDualClaudeMd } from './dual-instructions.js';
+import { detectRufloPlugins, emptyDedupReport, type PluginDedupReport, type PluginProvided } from './plugin-dedup.js';
 import { recordMemoryPackagePath } from './memory-package-resolver.js';
-import { ensureCommonJsCompanions } from './helper-companions.js';
-import { scanSettingsForRisk, formatRiskFindingsAsWarnings } from './settings-risk-scanner.js';
+import { COMMONJS_COMPANION_HELPERS, ensureCommonJsCompanions } from './helper-companions.js';
+import { scanSettingsForRisk, formatRiskFindingsAsWarnings, RISKY_SETTINGS_HINT, type RiskySettingsMode } from './settings-risk-scanner.js';
+import { applyRiskyMode, checkInitTrust, checkRiskySettings, type RiskySettingsGate } from './risky-settings-gate.js';
+import { AUTO_MEMORY_HOOK_TIMEOUT_S, GIT_ROOT_STATUSLINE_CMD, helperHookCommand, helperScopeFor, helperStatusLineCommand, pinToUserHelpers } from './helper-commands.js';
 
 /**
  * Skills to copy based on configuration
@@ -41,11 +45,9 @@ const SKILLS_MAP: Record<string, string[]> = {
   core: [
     'swarm-orchestration',
     'swarm-advanced',
-    'sparc-methodology',
     'hooks-automation',
     'pair-programming',
     'verification-quality',
-    'stream-chain',
     'skill-builder',
   ],
   browser: ['browser'],  // agent-browser integration
@@ -59,12 +61,11 @@ const SKILLS_MAP: Record<string, string[]> = {
     'reasoningbank-agentdb',
     'reasoningbank-intelligence',
   ],
+  // github-code-review and github-project-management only use hooks, which v3
+  // ships; the other three drive `ruflo github`, so they live in skills.legacy.
   github: [
     'github-code-review',
-    'github-multi-repo',
     'github-project-management',
-    'github-release-management',
-    'github-workflow-automation',
   ],
   flowNexus: [
     'flow-nexus-neural',
@@ -81,6 +82,28 @@ const SKILLS_MAP: Record<string, string[]> = {
     'v3-performance-optimization',
     'v3-security-overhaul',
     'v3-swarm-coordination',
+  ],
+  // ADR-128 / #4539: skills that document v2-era verbs v3 does not ship
+  // (`stream-chain`, `sparc`, `github`). Their examples fail with `Unknown
+  // command`, so they are opt-in like skills.v3 instead of being installed by
+  // default.
+  legacy: [
+    'github-multi-repo',
+    'github-release-management',
+    'github-workflow-automation',
+    'sparc-methodology',
+    'stream-chain',
+  ],
+  // How and when to use the ecosystem packages ruflo ships or wires in:
+  // ruvector + @ruvector/mincut-wasm, @ruvector/rabitq-wasm, sublinear-time-solver,
+  // @claude-flow/aidefence, agent-booster, @ruvector/learning-wasm.
+  ecosystem: [
+    'vector-quantization',
+    'graph-mincut',
+    'sublinear-solver',
+    'injection-defense',
+    'fast-code-edits',
+    'lora-learning',
   ],
 };
 
@@ -195,6 +218,34 @@ export async function executeInit(options: InitOptions): Promise<InitResult> {
 
   const targetDir = options.targetDir;
 
+  // ADR-509 §2.3 — stop before anything is written when the settings.json this
+  // init would merge carries project auto-approve keys (--force overwrites it,
+  // so nothing is carried forward then).
+  // A project-shipped .claude/helpers/<critical helper> that is not ruflo's
+  // signed copy is part of the same gate: init keeps it, and ruflo's hooks run it.
+  if (options.components.settings && !options.force) {
+    const sourceHelpers = findSourceHelpersDir(options.sourceBaseDir);
+    const gate = checkInitTrust(targetDir, options.riskySettings ?? 'stop', sourceHelpers);
+    if (gate) {
+      result.riskySettings = gate.lines;
+      if (gate.stop) {
+        result.success = false;
+        result.stoppedOnRiskySettings = true;
+        result.errors.push(`.claude/settings.json or .claude/helpers carries ${gate.findings.length} item(s) init would carry forward. ${RISKY_SETTINGS_HINT}`);
+        return result;
+      }
+      if (gate.mode === 'drop') replaceUntrustedHelpers(targetDir, gate, sourceHelpers, result);
+    }
+  }
+
+  // #2640: what the installed ruflo plugins already ship (null: none installed,
+  // or --full). Read-only detection; any doubt means "copy as before".
+  const c = options.components;
+  const provided = options.deferToPlugins && (c.mcp || c.skills || c.commands || c.agents)
+    ? detectRufloPlugins(targetDir)
+    : null;
+  const dedup = provided ? emptyDedupReport(provided) : undefined;
+
   try {
     // Create directory structure
     await createDirectories(targetDir, options, result);
@@ -206,23 +257,25 @@ export async function executeInit(options: InitOptions): Promise<InitResult> {
 
     // Generate and write .mcp.json
     if (options.components.mcp) {
-      await writeMCPConfig(targetDir, options, result);
+      await writeMCPConfig(targetDir, options, result, dedup);
     }
 
     // Copy skills
     if (options.components.skills) {
-      await copySkills(targetDir, options, result);
+      await copySkills(targetDir, options, result, provided, dedup);
     }
 
     // Copy commands
     if (options.components.commands) {
-      await copyCommands(targetDir, options, result);
+      await copyCommands(targetDir, options, result, provided, dedup);
     }
 
     // Copy agents
     if (options.components.agents) {
-      await copyAgents(targetDir, options, result);
+      await copyAgents(targetDir, options, result, provided, dedup);
     }
+
+    if (dedup) result.pluginDedup = dedup;
 
     // Generate helpers
     if (options.components.helpers) {
@@ -329,6 +382,10 @@ export interface UpgradeResult {
    * the upgrade — surfaced so a user can review before trusting it.
    */
   warnings?: string[];
+  /** ADR-509 §2.3 — auto-approve keys found in the existing settings.json. */
+  riskySettings?: string[];
+  /** ADR-509 §2.3 — the upgrade stopped before writing anything because of riskySettings. */
+  stoppedOnRiskySettings?: boolean;
 }
 
 /**
@@ -337,7 +394,8 @@ export interface UpgradeResult {
  * Uses platform-specific commands for Mac, Linux, and Windows
  */
 export function mergeSettingsForUpgrade(
-  existing: Record<string, unknown>
+  existing: Record<string, unknown>,
+  targetDir?: string
 ): { merged: Record<string, unknown>; warnings: string[] } {
   // Scan the pre-existing hooks/permissions BEFORE they get spread into
   // `merged` below — this is the untrusted, disk-sourced content a
@@ -347,6 +405,9 @@ export function mergeSettingsForUpgrade(
   );
 
   const merged = { ...existing };
+  // User-level settings (~/.claude/settings.json) apply to every opened
+  // project, so their helper commands never look inside the project.
+  const scope = helperScopeFor(targetDir);
   const platform = detectPlatform();
   const isWindows = platform.os === 'windows';
 
@@ -370,14 +431,15 @@ export function mergeSettingsForUpgrade(
   const existingHooks = (existing.hooks as Record<string, unknown[]>) || {};
   merged.hooks = { ...existingHooks };
 
-  // Cross-platform auto-memory hook commands that resolve paths via git root.
-  // Uses node -e with git rev-parse so hooks work regardless of CWD (#1259, #1284).
-  const gitRootResolver = "var c=require('child_process'),p=require('path'),u=require('url'),r;"
-    + "try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}"
-    + 'catch(e){r=process.cwd()}';
+  // Auto-memory hook commands. They go through helperHookCommand like every other
+  // helper hook (#4058): the previous `node -e "…import(file)" import` form left the
+  // subcommand in process.argv[1], the helper read argv[2], and both hooks only
+  // printed the status banner. Hooks run in the project directory with
+  // CLAUDE_PROJECT_DIR set, so the shared probe resolves the helper without a
+  // `git rev-parse` of its own.
   const autoMemoryScript = '.claude/helpers/auto-memory-hook.mjs';
-  const autoMemoryImportCmd = `node -e "${gitRootResolver}var f=p.join(r,'${autoMemoryScript}');import(u.pathToFileURL(f).href)" import`;
-  const autoMemorySyncCmd = `node -e "${gitRootResolver}var f=p.join(r,'${autoMemoryScript}');import(u.pathToFileURL(f).href)" sync`;
+  const autoMemoryImportCmd = helperHookCommand(autoMemoryScript, 'import', scope);
+  const autoMemorySyncCmd = helperHookCommand(autoMemoryScript, 'sync', scope);
 
   // Add auto-memory import to SessionStart (if not already present)
   const sessionStartHooks = existingHooks.SessionStart as Array<{ hooks?: Array<{ command?: string }> }> | undefined;
@@ -393,7 +455,7 @@ export function mergeSettingsForUpgrade(
     startGroup.hooks.push({
       type: 'command',
       command: autoMemoryImportCmd,
-      timeout: 6000,
+      timeout: AUTO_MEMORY_HOOK_TIMEOUT_S,
       continueOnError: true,
     });
   }
@@ -413,7 +475,7 @@ export function mergeSettingsForUpgrade(
     endGroup.hooks.unshift({
       type: 'command',
       command: autoMemorySyncCmd,
-      timeout: 8000,
+      timeout: AUTO_MEMORY_HOOK_TIMEOUT_S,
       continueOnError: true,
     });
   }
@@ -435,8 +497,7 @@ export function mergeSettingsForUpgrade(
   // / jetsam / kernel panic. Preserving the user's existing command (the
   // old behavior here) means anyone who installed pre-#2337 and upgraded
   // never gets the fix. Now we detect the broken form and overwrite.
-  const NEW_STATUSLINE_CMD =
-    `node -e "var c=require('child_process'),p=require('path'),r;try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}catch(e){r=process.cwd()}var s=p.join(r,'.claude/helpers/statusline.cjs');process.argv.splice(1,0,s);require(s)"`;
+  const NEW_STATUSLINE_CMD = scope === 'user' ? helperStatusLineCommand('user') : GIT_ROOT_STATUSLINE_CMD;
   // Matches any invocation of `claude-flow hooks statusline` — either via npx
   // (`npx [--prefer-offline] [@]claude-flow[/cli][@<tag>] hooks statusline …`)
   // or as a bare command (`claude-flow hooks statusline …`). Both forms cold-
@@ -453,9 +514,10 @@ export function mergeSettingsForUpgrade(
   if (existingStatusLine) {
     const existingCmd = typeof existingStatusLine.command === 'string' ? existingStatusLine.command : '';
     const isBroken = BROKEN_STATUSLINE_RE.test(existingCmd) || BROKEN_NPX_LATEST_RE.test(existingCmd);
+    const pinned = scope === 'user' ? pinToUserHelpers(existingCmd) : null;
     merged.statusLine = {
       type: 'command',
-      command: isBroken || !existingCmd ? NEW_STATUSLINE_CMD : existingCmd,
+      command: isBroken || !existingCmd ? NEW_STATUSLINE_CMD : pinned ?? existingCmd,
       // Remove invalid fields: refreshMs, enabled (not supported by Claude Code)
     };
   }
@@ -471,15 +533,9 @@ export function mergeSettingsForUpgrade(
   // migration on already-correct settings is a no-op.
   // Bounded for the same reason as BROKEN_STATUSLINE_RE above (CodeQL js/redos).
   const BROKEN_HOOK_RE = /npx\s+(?:--?\S+\s+){0,10}@?claude-flow\/cli@latest\s+hooks\s+(\S+)/;
-  const localHookCmd = (sub: string): string => {
-    // POSIX form mirrors settings-generator.ts::hookCmd() exactly.
-    // Windows users hit a separate code path (cmd /c …) — Claude Code on
-    // Windows is rarer and the migration there is left to a follow-up.
-    if (process.platform === 'win32') {
-      return `cmd /c "IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" ${sub}) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" ${sub})"`;
-    }
-    return `sh -c 'D="\${CLAUDE_PROJECT_DIR:-.}"; [ -f "$D/.claude/helpers/hook-handler.cjs" ] || D="\${HOME}"; exec node "$D/.claude/helpers/hook-handler.cjs" ${sub}'`;
-  };
+  // Same command settings-generator.ts emits for this settings scope.
+  const localHookCmd = (sub: string): string =>
+    helperHookCommand('.claude/helpers/hook-handler.cjs', sub, scope);
   const mergedHooks = merged.hooks as Record<string, unknown> | undefined;
   if (mergedHooks) {
     for (const eventName of Object.keys(mergedHooks)) {
@@ -489,6 +545,12 @@ export function mergeSettingsForUpgrade(
         if (!Array.isArray(group.hooks)) continue;
         group.hooks = group.hooks.filter((h) => {
           if (typeof h?.command !== 'string') return true;
+          // A user-level probe ruflo generated earlier is re-pinned to HOME.
+          const pinned = scope === 'user' ? pinToUserHelpers(h.command) : null;
+          if (pinned) {
+            h.command = pinned;
+            return true;
+          }
           const m = BROKEN_HOOK_RE.exec(h.command);
           if (m) {
             // Subcommand captured (e.g. "pre-bash", "post-edit", "route") — keep it.
@@ -546,7 +608,7 @@ export function mergeSettingsForUpgrade(
  * @param targetDir - Target directory
  * @param upgradeSettings - If true, merge new settings into existing settings.json
  */
-export async function executeUpgrade(targetDir: string, upgradeSettings = false): Promise<UpgradeResult> {
+export async function executeUpgrade(targetDir: string, upgradeSettings = false, riskySettings: RiskySettingsMode = 'stop'): Promise<UpgradeResult> {
   const result: UpgradeResult = {
     success: true,
     updated: [],
@@ -555,6 +617,21 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
     errors: [],
     settingsUpdated: [],
   };
+
+  // ADR-509 §2.3 — `--settings` carries the existing settings.json forward:
+  // stop before anything is written when it holds project auto-approve keys.
+  if (upgradeSettings) {
+    const gate = checkRiskySettings(path.join(targetDir, '.claude', 'settings.json'), riskySettings);
+    if (gate) {
+      result.riskySettings = gate.lines;
+      if (gate.stop) {
+        result.success = false;
+        result.stoppedOnRiskySettings = true;
+        result.errors.push(`.claude/settings.json carries ${gate.findings.length} auto-approve key(s) the upgrade would carry forward. ${RISKY_SETTINGS_HINT}`);
+        return result;
+      }
+    }
+  }
 
   try {
     // Ensure required directories exist
@@ -576,7 +653,7 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
     const sourceHelpersForUpgrade = findSourceHelpersDir();
     if (sourceHelpersForUpgrade) {
       // Keep in sync with helper-refresh.ts:CRITICAL_HELPERS.
-      const criticalHelpers = ['auto-memory-hook.mjs', 'hook-handler.cjs', 'intelligence.cjs', 'statusline.cjs', 'router.cjs'];
+      const criticalHelpers = ['auto-memory-hook.mjs', 'hook-handler.cjs', 'intelligence.cjs', 'statusline.cjs', 'router.cjs', 'learning-loop.cjs'];
       for (const helperName of criticalHelpers) {
         const targetPath = path.join(targetDir, '.claude', 'helpers', helperName);
         const sourcePath = path.join(sourceHelpersForUpgrade, helperName);
@@ -610,10 +687,16 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
       }
     }
 
-    // #3555: the refreshed hook-handler requires the .cjs companions; older
-    // installs only have session.js / memory.js, which can't load in ESM.
-    for (const name of await ensureCommonJsCompanions(path.join(targetDir, '.claude', 'helpers'))) {
-      result.created.push(`.claude/helpers/${name}`);
+    // #4198: refresh existing companions too, so upgraded hook handlers never
+    // keep obsolete session/memory logic. Generate from the CLI trust root.
+    const helpersDir = path.join(targetDir, '.claude', 'helpers');
+    const existingCompanions = new Set<string>(COMMONJS_COMPANION_HELPERS.filter(
+      (name) => fs.existsSync(path.join(helpersDir, name)),
+    ));
+    for (const name of await ensureCommonJsCompanions(helpersDir, true)) {
+      const changes = existingCompanions.has(name)
+        ? result.updated : result.created;
+      changes.push(`.claude/helpers/${name}`);
     }
 
     // Stamp the installed version so the startup auto-refresh treats these as
@@ -729,8 +812,8 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
       const settingsPath = path.join(targetDir, '.claude', 'settings.json');
       if (fs.existsSync(settingsPath)) {
         try {
-          const existingSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
-          const { merged: mergedSettings, warnings: settingsRiskWarnings } = mergeSettingsForUpgrade(existingSettings);
+          const existingSettings = applyRiskyMode(JSON.parse(fs.readFileSync(settingsPath, 'utf-8')), riskySettings).settings;
+          const { merged: mergedSettings, warnings: settingsRiskWarnings } = mergeSettingsForUpgrade(existingSettings, targetDir);
           fs.writeFileSync(settingsPath, JSON.stringify(mergedSettings, null, 2), 'utf-8');
           result.updated.push('.claude/settings.json');
           result.settingsUpdated = [
@@ -750,7 +833,7 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
         }
       } else {
         // Create new settings.json with defaults
-        const defaultSettings = generateSettings(DEFAULT_INIT_OPTIONS);
+        const defaultSettings = generateSettings({ ...DEFAULT_INIT_OPTIONS, targetDir });
         fs.writeFileSync(settingsPath, JSON.stringify(defaultSettings, null, 2), 'utf-8');
         result.created.push('.claude/settings.json');
         result.settingsUpdated = ['Created new settings.json with Agent Teams'];
@@ -771,9 +854,9 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
  * @param targetDir - Target directory
  * @param upgradeSettings - If true, merge new settings into existing settings.json
  */
-export async function executeUpgradeWithMissing(targetDir: string, upgradeSettings = false): Promise<UpgradeResult> {
+export async function executeUpgradeWithMissing(targetDir: string, upgradeSettings = false, riskySettings: RiskySettingsMode = 'stop'): Promise<UpgradeResult> {
   // First do the normal upgrade (pass through upgradeSettings)
-  const result = await executeUpgrade(targetDir, upgradeSettings);
+  const result = await executeUpgrade(targetDir, upgradeSettings, riskySettings);
 
   if (!result.success) {
     return result;
@@ -911,7 +994,8 @@ async function writeSettings(
   if (fs.existsSync(settingsPath) && !options.force) {
     // Merge hooks/env/permissions into existing settings instead of skipping
     try {
-      const existing = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+      const dropped = applyRiskyMode(JSON.parse(fs.readFileSync(settingsPath, 'utf-8')), options.riskySettings);
+      const existing = dropped.settings as Record<string, any>;
 
       // Scan the pre-existing hooks/permissions BEFORE any merge decision
       // below — same untrusted, disk-sourced content mergeSettingsForUpgrade()
@@ -923,7 +1007,8 @@ async function writeSettings(
         result.warnings = [...(result.warnings ?? []), ...riskWarnings];
       }
 
-      let merged = false;
+      // ADR-509: --drop-risky-settings removed keys; the file must be rewritten even if nothing else merges.
+      let merged = dropped.dropped > 0;
 
       // Merge hooks (the critical missing piece — #1484)
       if (generated.hooks && !existing.hooks) {
@@ -1069,7 +1154,8 @@ function normalizeProjectKey(p: string): string {
 async function writeMCPConfig(
   targetDir: string,
   options: InitOptions,
-  result: InitResult
+  result: InitResult,
+  dedup?: PluginDedupReport,
 ): Promise<void> {
   const mcpPath = path.join(targetDir, '.mcp.json');
 
@@ -1117,6 +1203,16 @@ async function writeMCPConfig(
     }
   }
 
+  // #2640: ruflo-core provides the ruflo MCP server. A second, standalone
+  // `claude-flow` server against the same project is a second writer on the
+  // same memory DB. Keep any other servers the preset asks for. Checked after
+  // the guards above, so it is only reported when init would have written it.
+  if (dedup && options.mcp.claudeFlow) {
+    dedup.mcpServerSkipped = true;
+    options = { ...options, mcp: { ...options.mcp, claudeFlow: false } };
+    if (!options.mcp.ruvSwarm && !options.mcp.flowNexus) return;
+  }
+
   const content = generateMCPJson(options);
   fs.writeFileSync(mcpPath, content, 'utf-8');
   result.created.files.push('.mcp.json');
@@ -1128,7 +1224,9 @@ async function writeMCPConfig(
 async function copySkills(
   targetDir: string,
   options: InitOptions,
-  result: InitResult
+  result: InitResult,
+  provided: PluginProvided | null = null,
+  dedup?: PluginDedupReport,
 ): Promise<void> {
   const skillsConfig = options.skills;
   const targetSkillsDir = path.join(targetDir, '.claude', 'skills');
@@ -1147,6 +1245,8 @@ async function copySkills(
     if (skillsConfig.browser) skillsToCopy.push(...SKILLS_MAP.browser);
     if (skillsConfig.v3) skillsToCopy.push(...SKILLS_MAP.v3);
     if (skillsConfig.dualMode) skillsToCopy.push(...SKILLS_MAP.dualMode);
+    if (skillsConfig.legacy) skillsToCopy.push(...SKILLS_MAP.legacy);
+    if (skillsConfig.ecosystem ?? true) skillsToCopy.push(...SKILLS_MAP.ecosystem);
   }
 
   // Find source skills directory
@@ -1158,6 +1258,10 @@ async function copySkills(
 
   // Copy each skill
   for (const skillName of [...new Set(skillsToCopy)]) {
+    if (provided?.skills.has(skillName)) {
+      dedup?.skipped.skills.push(skillName);
+      continue;
+    }
     const sourcePath = path.join(sourceSkillsDir, skillName);
     const targetPath = path.join(targetSkillsDir, skillName);
 
@@ -1179,7 +1283,9 @@ async function copySkills(
 async function copyCommands(
   targetDir: string,
   options: InitOptions,
-  result: InitResult
+  result: InitResult,
+  provided: PluginProvided | null = null,
+  dedup?: PluginDedupReport,
 ): Promise<void> {
   const commandsConfig = options.commands;
   const targetCommandsDir = path.join(targetDir, '.claude', 'commands');
@@ -1228,7 +1334,16 @@ async function copyCommands(
     if (fs.existsSync(sourcePath)) {
       if (!fs.existsSync(targetPath) || options.force) {
         if (fs.statSync(sourcePath).isDirectory()) {
-          copyDirRecursive(sourcePath, targetPath);
+          if (provided) {
+            // #2640: leave out the commands an installed plugin already ships.
+            const copied = copyDirSkipping(sourcePath, targetPath, provided.commands, dedup?.skipped.commands ?? []);
+            if (copied === 0) continue;
+          } else {
+            copyDirRecursive(sourcePath, targetPath);
+          }
+        } else if (provided?.commands.has(path.basename(cmdName))) {
+          dedup?.skipped.commands.push(cmdName);
+          continue;
         } else {
           fs.copyFileSync(sourcePath, targetPath);
         }
@@ -1247,7 +1362,9 @@ async function copyCommands(
 async function copyAgents(
   targetDir: string,
   options: InitOptions,
-  result: InitResult
+  result: InitResult,
+  provided: PluginProvided | null = null,
+  dedup?: PluginDedupReport,
 ): Promise<void> {
   const agentsConfig = options.agents;
   const targetAgentsDir = path.join(targetDir, '.claude', 'agents');
@@ -1287,14 +1404,39 @@ async function copyAgents(
 
     if (fs.existsSync(sourcePath)) {
       if (!fs.existsSync(targetPath) || options.force) {
-        copyDirRecursive(sourcePath, targetPath);
-        // Count agent files (.md only — .yaml agents were migrated to .md)
-        const mdFiles = countFiles(sourcePath, '.md');
+        let mdFiles: number;
+        if (provided) {
+          // #2640: leave out the agents an installed plugin already ships.
+          mdFiles = copyDirSkipping(sourcePath, targetPath, provided.agents, dedup?.skipped.agents ?? []);
+          if (mdFiles === 0) continue;
+        } else {
+          copyDirRecursive(sourcePath, targetPath);
+          // Count agent files (.md only — .yaml agents were migrated to .md)
+          mdFiles = countFiles(sourcePath, '.md');
+        }
         result.summary.agentsCount += mdFiles;
         result.created.files.push(`.claude/agents/${agentCategory}`);
       } else {
         result.skipped.push(`.claude/agents/${agentCategory}`);
       }
+    }
+  }
+}
+
+/**
+ * ADR-509 --drop-risky-settings: put ruflo's shipped copy in place of each
+ * project helper the gate flagged (or remove it when this ruflo ships none, so
+ * the hook falls back to the user's own helper).
+ */
+function replaceUntrustedHelpers(targetDir: string, gate: RiskySettingsGate, sourceHelpers: string | null, result: InitResult): void {
+  for (const f of gate.findings) {
+    if (f.target.kind !== 'helper') continue;
+    const dest = path.join(targetDir, '.claude', 'helpers', f.target.name);
+    const src = sourceHelpers ? path.join(sourceHelpers, f.target.name) : null;
+    fs.rmSync(dest, { force: true, recursive: true });
+    if (src && fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+      result.created.files.push(`.claude/helpers/${f.target.name}`);
     }
   }
 }
@@ -1574,7 +1716,8 @@ swarm:
 memory:
   backend: ${options.runtime.memoryBackend}
   enableHNSW: ${options.runtime.enableHNSW}
-  persistPath: .claude-flow/data
+  # Store location is read from claude-flow.config.json (memory.persistPath);
+  # this YAML file is runtime/daemon configuration only.
   cacheSize: 100
   # ADR-049: Self-Learning Memory
   learningBridge:
@@ -2128,7 +2271,7 @@ npx @claude-flow/cli@latest hive-mind consensus --propose "task"
 ### Integrated Packages
 | Package | Version | Purpose |
 |---------|---------|---------|
-| agentic-flow | 3.0.0-alpha.1 | Core coordination + ReasoningBank + Router |
+| agentic-flow | 3.0.0 | Core coordination + ReasoningBank + Router |
 | agentdb | 3.0.0-alpha.10 | Vector database + 8 controllers |
 | @ruvector/attention | 0.1.3 | Flash attention |
 | @ruvector/sona | 0.1.5 | Neural learning |
@@ -2210,7 +2353,9 @@ async function writeClaudeMd(
 ): Promise<void> {
   const claudeMdPath = path.join(targetDir, 'CLAUDE.md');
 
-  if (fs.existsSync(claudeMdPath) && !options.force) {
+  if (options.instructionsSource === 'agents-md') {
+    writeDualClaudeMd(claudeMdPath, options, result);
+  } else if (fs.existsSync(claudeMdPath) && !options.force) {
     result.skipped.push('CLAUDE.md');
   } else {
     // #2208: if overwriting an existing CLAUDE.md (force mode), back it up first so
@@ -2356,6 +2501,37 @@ function copyDirRecursive(src: string, dest: string): void {
       fs.copyFileSync(srcPath, destPath);
     }
   }
+}
+
+/**
+ * #2640: copy a bundle directory, leaving out every `.md` whose basename an
+ * installed plugin provides. Returns the number of agent/command `.md` files
+ * copied (README.md excluded); writes nothing at all when that is zero.
+ */
+function copyDirSkipping(src: string, dest: string, provided: Map<string, string>, skipped: string[]): number {
+  const plan: Array<[string, string]> = [];
+  let kept = 0;
+  const walk = (from: string, to: string) => {
+    for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+      const srcPath = path.join(from, entry.name);
+      const destPath = path.join(to, entry.name);
+      if (entry.isDirectory()) {
+        walk(srcPath, destPath);
+      } else if (entry.name.endsWith('.md') && provided.has(entry.name)) {
+        skipped.push(entry.name.replace(/\.md$/, ''));
+      } else {
+        plan.push([srcPath, destPath]);
+        if (entry.name.endsWith('.md') && entry.name !== 'README.md') kept++;
+      }
+    }
+  };
+  walk(src, dest);
+  if (kept === 0) return 0;
+  for (const [from, to] of plan) {
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.copyFileSync(from, to);
+  }
+  return kept;
 }
 
 /**

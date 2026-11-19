@@ -7,6 +7,7 @@ import type { RenderElement } from 'claude-code'
 
 import { MAX_PINS, SAVED_FILE, SAVED_MAX_BYTES, isPinned, pinsIn, togglePin } from '../data/wf-saved'
 import { currentPhase, type WfRun } from '../data/workflows'
+import { writeFlavorReady } from '../data/write-flavor'
 import { forgetSpec, savedFor, updateSaved } from '../wf-saved-live'
 import { ago, button, clip, row, text, THEME } from './common'
 import { fold, redraw } from './wf-fold'
@@ -36,7 +37,7 @@ export function savedBody(env: SlotEnv, run: WfRun | null): RenderElement[] {
     text(ctx, ` search: ${own.saved.search === '' ? 'none' : `"${clip(own.saved.search, 40)}"`} · filters: ${filters === '' ? 'none' : filters}`, { dimColor: true }),
     row(ctx, [
       ...(run === null ? [] : [button(ctx, 'wf-saved-pin', isPinned(own.saved, run.id) ? 'Unpin this run' : 'Pin this run', pin)]),
-      button(ctx, 'wf-saved-forget', 'Forget saved views', () => ctx.act.workflows.ask(forgetSpec(cwd))),
+      button(ctx, 'wf-saved-forget', 'Forget saved views', () => void writeFlavorReady().then(flavor => ctx.act.workflows.ask(forgetSpec(cwd, flavor)))),
     ], 'wf-saved-controls'),
     ...(own.said === null ? [] : [text(ctx, ` ${own.said}`, { color: THEME.info })]),
     ...(pins.length === 0 ? [text(ctx, ` No pinned runs (up to ${MAX_PINS}).`, { dimColor: true })] : pins.map(entry => (entry.index === null || entry.run === null ? text(ctx, ` ◌ ${clip(entry.pin.name, 40)} · not among the runs read now`, { dimColor: true }) : row(ctx, [button(ctx, `wf-saved-go-${entry.index}`, `▸ ${clip(entry.pin.name, 28)}`, () => jump(env, entry.index as number, entry.run as WfRun)), text(ctx, ` ${entry.run.state} · ${entry.run.done}/${entry.run.total} agents`, { dimColor: true })], `wf-saved-pin-${entry.index}`)))),

@@ -8,9 +8,11 @@
  * place rather than duplicated.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getProjectCwd } from './types.js';
+import { type StoreUpdate, saved, unchanged, updateJsonStore } from './locked-json-store.js';
+import { appendAgentExecution, summarizeAgentExecutions, type AgentExecutionSample } from './agent-health-metrics.js';
 import { configManager } from '../services/config-file-manager.js';
 
 const STORAGE_DIR = '.claude-flow';
@@ -43,6 +45,7 @@ export interface AgentRecord {
   /** ADR-148 phase 2 — concrete OpenRouter slug when provider='openrouter'. */
   openrouterModel?: string;
   lastResult?: Record<string, unknown>;
+  executionHistory?: AgentExecutionSample[];
 }
 
 interface AgentStore {
@@ -52,19 +55,15 @@ interface AgentStore {
 
 function getAgentDir(): string { return join(getProjectCwd(), STORAGE_DIR, AGENT_DIR); }
 function getAgentPath(): string { return join(getAgentDir(), AGENT_FILE); }
-function ensureAgentDir(): void {
-  const dir = getAgentDir();
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-}
 function loadAgentStore(): AgentStore {
   try {
     if (existsSync(getAgentPath())) return JSON.parse(readFileSync(getAgentPath(), 'utf-8'));
   } catch { /* fall through */ }
   return { agents: {}, version: '3.0.0' };
 }
-function saveAgentStore(store: AgentStore): void {
-  ensureAgentDir();
-  writeFileSync(getAgentPath(), JSON.stringify(store, null, 2), 'utf-8');
+/** Same file and lock as agent-tools.ts's agent writes. */
+function updateAgentStore<R>(mutate: (store: AgentStore) => StoreUpdate<R>): Promise<R> {
+  return updateJsonStore(getAgentPath(), loadAgentStore, mutate, 'agents');
 }
 
 // #1906/#2232 — Current model ids (Claude 4.x family):
@@ -225,12 +224,24 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
     // checked in that order — matching callOllamaCompat's own precedence).
     const resolvedBaseUrl = process.env.OLLAMA_BASE_URL || persistedOllama?.baseUrl;
     const isSelfHosted = !!resolvedBaseUrl && !/^https:\/\/ollama\.com\/?$/i.test(resolvedBaseUrl);
+    // The persisted baseUrl comes from project config, which a cloned repo
+    // can commit. Never hand the environment's OLLAMA_API_KEY to an endpoint
+    // the project chose: that endpoint gets only the key saved beside it (or
+    // none). The env key goes to OLLAMA_BASE_URL, or to Ollama Cloud itself.
+    const baseFromProject = !process.env.OLLAMA_BASE_URL && !!persistedOllama?.baseUrl && isSelfHosted;
+    const apiKey = baseFromProject
+      ? persistedOllama?.apiKey || 'local'
+      : ollamaKey || persistedOllama?.apiKey || 'local';
     if (ollamaKey || persistedOllama?.apiKey || isSelfHosted) {
       return callOllamaCompat({
         ...input,
-        apiKey: ollamaKey || persistedOllama?.apiKey || 'local',
+        apiKey,
         baseUrl: resolvedBaseUrl,
-        model: input.model || persistedOllama?.model,
+        model: input.model,
+        // Local default for tier aliases / Anthropic ids (see
+        // resolveOllamaModel): OLLAMA_DEFAULT_MODEL, then the model saved by
+        // `providers configure -p ollama -m <tag>`.
+        defaultModel: process.env.OLLAMA_DEFAULT_MODEL || persistedOllama?.model,
       });
     }
     return { success: false, error: 'Ollama was selected but no API key or self-hosted endpoint is configured.' };
@@ -326,15 +337,17 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
  *
  * Translates the Anthropic-flavored input shape onto OpenAI chat-completions
  * and translates the response back so callers never see provider-specific
- * fields. Logical model names are mapped to Ollama Cloud defaults:
- *   - 'haiku'  / 'sonnet'  → 'gpt-oss:120b-cloud' (sensible single default)
- *   - 'opus'              → 'gpt-oss:120b-cloud' (no opus tier on Ollama)
- *   - explicit 'ollama:<model>' or bare provider-native name → passed through
+ * fields. Logical model names ('haiku' / 'sonnet' / 'opus' / a tier-routed
+ * `claude-*` id) resolve to the configured OLLAMA_DEFAULT_MODEL / persisted
+ * default; only when the endpoint is genuinely Ollama's cloud service AND no
+ * default is configured does this fall back to 'gpt-oss:120b-cloud' — a
+ * self-hosted/local endpoint with no default configured fails loudly instead
+ * (see resolveOllamaModel). An explicit 'ollama:<model>' or bare
+ * provider-native name always passes through unchanged.
  */
 async function callOllamaCompat(
-  input: AnthropicCallInput & { apiKey: string; baseUrl?: string },
+  input: AnthropicCallInput & { apiKey: string; baseUrl?: string; defaultModel?: string },
 ): Promise<AnthropicCallResult> {
-  const model = resolveOllamaModel(input.model);
   const startedAt = Date.now();
   // #2962 — input.baseUrl (resolved by the caller from persisted
   // `providers configure` config, then OLLAMA_BASE_URL) takes precedence
@@ -343,6 +356,19 @@ async function callOllamaCompat(
   // Cloud. Falls back to the original OLLAMA_BASE_URL-or-cloud behavior
   // for any direct caller that doesn't pass baseUrl.
   const base = (input.baseUrl || process.env.OLLAMA_BASE_URL || 'https://ollama.com').replace(/\/+$/, '');
+  // Only a base URL actually pointed at Ollama's real cloud endpoint may
+  // fall back to a `-cloud`-suffixed default model — see resolveOllamaModel.
+  const isCloudEndpoint = /^https:\/\/ollama\.com\/?$/i.test(base);
+  let model: string;
+  try {
+    model = resolveOllamaModel(input.model, input.defaultModel, isCloudEndpoint);
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - startedAt,
+    };
+  }
   const url = `${base}/v1/chat/completions`;
   // Self-hosted endpoints typically don't need an Authorization header
   // (the daemon binds to 11434 with no auth by default), but Ollama Cloud
@@ -507,16 +533,42 @@ function resolveOpenAICompatModel(input: string | undefined, fallback: string): 
   return input;
 }
 
-function resolveOllamaModel(input: string | undefined): string {
-  const DEFAULT = 'gpt-oss:120b-cloud';
-  if (!input) return DEFAULT;
-  // Logical → cloud default
+/**
+ * Resolve the model name to send to an Ollama-compatible endpoint.
+ *
+ * Self-hosted setups name their default via OLLAMA_DEFAULT_MODEL or
+ * `providers configure -p ollama -m <tag>` (`defaultModel`, resolved by the
+ * caller). When no default is configured AND the endpoint is not actually
+ * Ollama's real cloud service, this must NOT silently rewrite a tier-routed
+ * `claude-*` id (or a bare tier alias) to a `-cloud`-suffixed model name: a
+ * signed-in local Ollama daemon forwards any `-cloud`-suffixed model to
+ * Ollama's actual cloud service, so a silent rewrite would leak a prompt
+ * that was supposed to stay local. Fail loudly instead and tell the caller
+ * how to fix it — a loud, local failure beats silent cloud egress.
+ */
+function resolveOllamaModel(input: string | undefined, defaultModel?: string, isCloudEndpoint = false): string {
+  const cloudDefault = 'gpt-oss:120b-cloud';
+  const resolveDefault = (): string => {
+    if (defaultModel) return defaultModel;
+    if (isCloudEndpoint) return cloudDefault;
+    throw new Error(
+      'No Ollama model configured for this self-hosted/local endpoint — refusing to fall back to '
+      + `a cloud-suffixed default ("${cloudDefault}") a local Ollama daemon would forward to Ollama `
+      + 'Cloud. Set OLLAMA_DEFAULT_MODEL, or run `providers configure -p ollama -m <tag>`, to pin a '
+      + 'real local model.',
+    );
+  };
+  if (!input) return resolveDefault();
+  // Logical tier alias → default
   if (input === 'haiku' || input === 'sonnet' || input === 'opus' || input === 'inherit') {
-    return DEFAULT;
+    return resolveDefault();
   }
   // Explicit provider prefix
   if (input.startsWith('ollama:')) return input.slice('ollama:'.length);
-  // Bare name with cloud suffix (e.g. 'llama3:70b-cloud') passes through
+  // Anthropic model ids (what executeAgentTask sends for a tier-routed agent
+  // via MODEL_MAP) never exist on an Ollama endpoint → default.
+  if (/^claude-/i.test(input)) return resolveDefault();
+  // Bare name (e.g. 'qwen3-coder:30b', 'llama3:70b-cloud') passes through
   return input;
 }
 
@@ -566,10 +618,18 @@ export interface AgentExecuteResult {
 const activeExecutions = new Map<string, number>();
 
 export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentExecuteResult> {
-  const store = loadAgentStore();
-  const agent = store.agents[input.agentId];
-  if (!agent) return { success: false, agentId: input.agentId, error: 'Agent not found' };
-  if (agent.status === 'terminated') return { success: false, agentId: input.agentId, error: 'Agent has been terminated' };
+  // Check the agent and mark it busy in one locked step; the provider call
+  // below runs without the lock.
+  const claimed = await updateAgentStore((store): StoreUpdate<AgentRecord | string> => {
+    const found = store.agents[input.agentId];
+    if (!found) return unchanged('Agent not found');
+    if (found.status === 'terminated') return unchanged('Agent has been terminated');
+    found.status = 'busy';
+    found.taskCount = (found.taskCount || 0) + 1;
+    return saved(found);
+  });
+  if (typeof claimed === 'string') return { success: false, agentId: input.agentId, error: claimed };
+  const agent = claimed;
 
   // ADR-149 iter 13 — first-call dispatch prefers `agent.modelId` (the
   // cost-optimal pick from the neural backend) over `MODEL_MAP[agent.model]`
@@ -613,9 +673,6 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
 
   const initialModelId = agent.modelId;
   const initialModel = agent.model;
-  agent.status = 'busy';
-  agent.taskCount = (agent.taskCount || 0) + 1;
-  saveAgentStore(store);
 
   const executionKey = JSON.stringify([getAgentPath(), input.agentId, agent.createdAt]);
   activeExecutions.set(executionKey, (activeExecutions.get(executionKey) || 0) + 1);
@@ -783,12 +840,11 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
   }
 
   const remaining = (activeExecutions.get(executionKey) || 1) - 1;
-  const persistCompletion = (out?: AgentExecuteResult): void => {
+  const persistCompletion = (out?: AgentExecuteResult): Promise<void> => updateAgentStore((latest) => {
     // Awaited provider/feedback work may have overlapped registration, updates,
     // termination or deletion. Never replace that newer registry snapshot.
-    const latest = loadAgentStore();
     const current = latest.agents[input.agentId];
-    if (!current || current.createdAt !== agent.createdAt) return;
+    if (!current || current.createdAt !== agent.createdAt) return unchanged(undefined);
     if (current.status === 'busy') current.status = remaining > 0 ? 'busy' : 'idle';
     if (agent.modelId !== initialModelId && current.modelId === initialModelId) {
       // A fallback may also change its tier. Carry that change with the model
@@ -797,8 +853,22 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
       current.modelId = agent.modelId;
     }
     if (out) current.lastResult = out as unknown as Record<string, unknown>;
-    saveAgentStore(latest);
-  };
+    const previousMeasuredHealth = summarizeAgentExecutions(current.executionHistory).health;
+    const mayUpdateStoredHealth = previousMeasuredHealth === null
+      ? current.health === agent.health
+      : current.health === previousMeasuredHealth;
+    current.executionHistory = appendAgentExecution(current.executionHistory, {
+      at: new Date().toISOString(),
+      success: result.success,
+      durationMs: result.durationMs ?? Date.now() - startedAt,
+    });
+    // An explicit agent_update during the provider call still wins. The
+    // measured value remains available from executionHistory in agent_health.
+    if (mayUpdateStoredHealth) {
+      current.health = summarizeAgentExecutions(current.executionHistory).health ?? current.health;
+    }
+    return saved(undefined);
+  });
 
   if (result.success) {
     const out: AgentExecuteResult = {
@@ -812,11 +882,11 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
       durationMs: result.durationMs ?? Date.now() - startedAt,
       ...(fallbackHistory.length > 0 ? { fallbackHistory } : {}),
     };
-    persistCompletion(out);
+    await persistCompletion(out);
     return out;
   }
 
-  persistCompletion();
+  await persistCompletion();
   // No-provider-configured error → surface the same actionable message
   // the router built, with a #2042-aware remediation pointer.
   const noProvider = (result.error || '').includes('No LLM provider configured');

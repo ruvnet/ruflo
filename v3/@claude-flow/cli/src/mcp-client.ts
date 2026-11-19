@@ -16,6 +16,7 @@ import { swarmTools } from './mcp-tools/swarm-tools.js';
 import { memoryTools } from './mcp-tools/memory-tools.js';
 import { configTools } from './mcp-tools/config-tools.js';
 import { hooksTools } from './mcp-tools/hooks-tools.js';
+import { fastApplyTools } from './mcp-tools/fast-apply-tools.js';
 import { taskTools } from './mcp-tools/task-tools.js';
 import { sessionTools } from './mcp-tools/session-tools.js';
 import { hiveMindTools } from './mcp-tools/hive-mind-tools.js';
@@ -36,6 +37,9 @@ import { performanceTools } from './mcp-tools/performance-tools.js';
 import { githubTools } from './mcp-tools/github-tools.js';
 import { daaTools } from './mcp-tools/daa-tools.js';
 import { coordinationTools } from './mcp-tools/coordination-tools.js';
+// ruRE Phase 1 (plugins/ruflo-rure ADR-0001/0002) — JS/Electron static
+// analysis. Always registered: pure-TS, no native engine dependency.
+import { rureTools } from './mcp-tools/rure-tools.js';
 import { browserTools } from './mcp-tools/browser-tools.js';
 import { browserSessionTools } from './mcp-tools/browser-session-tools.js';
 // ADR-175 — page-agent natural-language intent layer (browser_act). Always
@@ -79,6 +83,8 @@ import { businessPodTools } from './mcp-tools/business-pod-tools.js';
 // + auth headers; opt-in via CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE / _AUTH=1.
 import { httpFetchTools } from './mcp-tools/http-fetch-tools.js';
 import { missionTools } from './mcp-tools/mission-tools.js';
+// ADR-402 — host-agnostic Agent Teams bus (team_create/send/inbox/spawn/…)
+import { teamTools } from './mcp-tools/team-tools.js';
 // #1916: coverage-aware routing tools — defined in ruvector/coverage-tools.ts
 // but were never registered, so the `ruflo hooks coverage-*` CLI subcommands
 // failed with `Tool not found: hooks_coverage-route`.
@@ -137,6 +143,7 @@ registerTools([
   ...memoryTools,
   ...configTools,
   ...hooksTools,
+  ...fastApplyTools,
   ...taskTools,
   ...sessionTools,
   ...hiveMindTools,
@@ -159,6 +166,7 @@ registerTools([
   ...githubTools,
   ...daaTools,
   ...coordinationTools,
+  ...rureTools,
   ...getBrowserTools(),
   ...getBrowserSessionTools(),
   ...getBrowserIntentTools(),
@@ -194,6 +202,8 @@ registerTools([
   ...httpFetchTools,
   // ADR-406 — mission semantic operations (create/plan/get/events/request_action)
   ...missionTools,
+  // ADR-402 — host-agnostic Agent Teams (9 tools)
+  ...teamTools,
 ]);
 
 // The capability brain consumes the completed live registry. This is injected

@@ -147,6 +147,66 @@ describe('http_fetch — URL allowlist (default-deny)', () => {
   });
 });
 
+// ---------- IPv4-mapped-IPv6 SSRF bypass (regression) -------------
+
+describe('http_fetch — IPv4-mapped IPv6 SSRF bypass', () => {
+  it('rejects ::ffff:127.0.0.1 (loopback via IPv4-mapped IPv6, dotted form)', () => {
+    expect(() => validateUrl('http://[::ffff:127.0.0.1]/foo')).toThrow(/loopback|private/i);
+  });
+
+  it('rejects the canonical hex form Node normalizes ::ffff:127.0.0.1 to', () => {
+    // new URL('http://[::ffff:127.0.0.1]/').hostname === '[::ffff:7f00:1]'
+    expect(() => validateUrl('http://[::ffff:7f00:1]/foo')).toThrow(/loopback|private/i);
+  });
+
+  it('rejects ::ffff:169.254.169.254 (cloud-metadata link-local via IPv4-mapped IPv6)', () => {
+    expect(() => validateUrl('http://[::ffff:169.254.169.254]/latest/meta-data/')).toThrow(/loopback|private/i);
+  });
+
+  it('rejects a fully-expanded IPv4-mapped-IPv6 literal (Node collapses it to the same canonical form)', () => {
+    expect(() => validateUrl('http://[0:0:0:0:0:ffff:169.254.169.254]/latest/meta-data/')).toThrow(/loopback|private/i);
+  });
+
+  it('rejects ::ffff:10.0.0.5 (RFC1918 via IPv4-mapped IPv6)', () => {
+    expect(() => validateUrl('http://[::ffff:10.0.0.5]/foo')).toThrow(/loopback|private/i);
+  });
+
+  it('opt-in CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1 also unlocks IPv4-mapped IPv6 private addresses', () => {
+    process.env.CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE = '1';
+    expect(() => validateUrl('http://[::ffff:127.0.0.1]/foo')).not.toThrow();
+  });
+
+  it('does not reject an IPv4-mapped-IPv6 PUBLIC address (control — must not over-block)', () => {
+    // 8.8.8.8 is Google public DNS — ::ffff:8.8.8.8 must remain allowed.
+    expect(() => validateUrl('http://[::ffff:8.8.8.8]/foo')).not.toThrow();
+  });
+});
+
+// ---------- IPv6 ULA / link-local bracket-stripping (regression) --
+
+describe('http_fetch — IPv6 ULA/link-local checks (previously dead due to unstripped brackets)', () => {
+  it('rejects fc00::/7 unique local address', () => {
+    expect(() => validateUrl('http://[fc00::1]/foo')).toThrow(/loopback|private/i);
+  });
+
+  it('rejects fd00::/8 unique local address', () => {
+    expect(() => validateUrl('http://[fd12:3456:789a::1]/foo')).toThrow(/loopback|private/i);
+  });
+
+  it('rejects fe80::/10 link-local address', () => {
+    expect(() => validateUrl('http://[fe80::1]/foo')).toThrow(/loopback|private/i);
+  });
+
+  it('still rejects ::1 loopback (control — must not regress the existing check)', () => {
+    expect(() => validateUrl('http://[::1]/foo')).toThrow(/loopback|private/i);
+  });
+
+  it('does not reject a public-looking IPv6 literal (control — must not over-block)', () => {
+    // 2001:4860:4860::8888 is Google public DNS over IPv6.
+    expect(() => validateUrl('http://[2001:4860:4860::8888]/foo')).not.toThrow();
+  });
+});
+
 // ---------- header sanitization tests ----------------------------
 
 describe('http_fetch — header sanitization (default-deny auth)', () => {

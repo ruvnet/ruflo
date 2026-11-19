@@ -13,7 +13,7 @@
  *     absent (what is beneath answers); in a `.catch`, `next` is replay-safe
  *     (`next.called`, `next.error`) and its answer stands;
  *   - `e` is frozen; matchers narrow on equal values, arrays (any of) and RegExps;
- *   - `$` ops: fs.stat rejects ENOENT for a missing path, fs.read rejects
+ *   - `$` ops: tool.list (from `world.tools`), fs.stat rejects ENOENT for a missing path, fs.read rejects
  *     over 4 MiB, env.get/set, settings.read, session.root, ui.*, command.register.
  * What it does not model: tiers above the mod (sec-default is reasoned about,
  * not run), budgets, streaming events, rendering.
@@ -40,7 +40,12 @@ export interface World {
   /** Per-op failure injection: `fs.read` → error to throw for a path. */
   failRead?: (path: string) => Error | undefined;
   failStat?: (path: string) => Error | undefined;
+  failWrite?: (path: string) => Error | undefined;
   failLog?: boolean;
+  /** What `$.tool.list()` returns (default: none). `mcp` marks an MCP server's tool. */
+  tools?: { name: string; description: string; mcp: boolean }[];
+  /** What `$.session.messages()` returns (default: none). */
+  messages?: { role: 'user' | 'assistant'; text: string; toolUses: unknown[] }[];
 }
 
 export function memoryWorld(root = '/work', settings: unknown = {}): World {
@@ -82,6 +87,8 @@ function engineOf(world: World) {
         return readFileSync(path, 'utf8');
       },
       async write(path: string, text: string) {
+        const injected = world.failWrite?.(path);
+        if (injected) throw injected;
         if (mem) {
           mem.set(path, { text, mtimeMs: (mem.get(path)?.mtimeMs ?? 0) + 1 });
           return;
@@ -107,9 +114,17 @@ function engineOf(world: World) {
         return typeof world.settings === 'function' ? (world.settings as () => unknown)() : world.settings;
       },
     },
+    tool: {
+      async list() {
+        return world.tools ?? [];
+      },
+    },
     session: {
       async root() {
         return world.root;
+      },
+      async messages() {
+        return world.messages ?? [];
       },
     },
     command: {
@@ -145,6 +160,18 @@ function matches(matcher: Record<string, unknown> | undefined, e: Record<string,
 
 export type Core = (event: string, e: any) => any;
 
+/**
+ * Claude Code's hooks loader refuses a module that registers the same event twice WITHOUT a matcher ("on(\"session.start\") is registered
+ * twice without a matcher"), and then none of the mod's hooks run. The fake host used to accept it, which is how ruflo-mods 0.7.0 shipped
+ * broken (#4485). Mirror the rule so every mod test, and the all-options test, fails the same way.
+ */
+export function assertLoadable(regs: ReadonlyArray<{ event: string; matcher?: unknown }>): void {
+  const bare = new Map<string, number>();
+  for (const reg of regs) if (reg.matcher === undefined) bare.set(reg.event, (bare.get(reg.event) ?? 0) + 1);
+  const twice = [...bare].filter(([, count]) => count > 1).map(([event]) => event);
+  if (twice.length) throw new Error(`hooks module did not load: ${twice.map((event) => `on("${event}") is registered twice without a matcher`).join('; ')}`);
+}
+
 export function loadMod(register: (on: any, options: any) => unknown, world: World, options: Record<string, unknown> = {}) {
   const regs: Registration[] = [];
   const on = (event: string, a: unknown, b?: unknown) => {
@@ -158,6 +185,7 @@ export function loadMod(register: (on: any, options: any) => unknown, world: Wor
     };
   };
   register(on, options);
+  assertLoadable(regs);
   const $ = engineOf(world);
 
   async function dispatch(event: string, e: any, core: (e: any) => any): Promise<any> {

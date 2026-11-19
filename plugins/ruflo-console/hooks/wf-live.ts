@@ -8,6 +8,7 @@
 import { cleanRun, cleanText } from './data/wf-clean'
 import { readWorkflowRuns, type WorkflowFs } from './data/workflows-read'
 import { allRuns, startOn } from './data/workflows-nav'
+import { managedRuns } from './data/managed'
 import type { WfRun } from './data/workflows'
 import { plain } from './data/parse'
 import type { Host } from './host'
@@ -41,9 +42,10 @@ export function runNotices(prev: ReadonlyMap<string, string> | null, next: reado
 export function workflowsModelOf(state: State, nowMs: number): WorkflowsModel | null {
   const read = state.wf.read
 
-  if (read === null) return null
+  if (read === null && !state.snapshot?.managed) return null
+  if (read === null) return { runs: managedRuns(state.snapshot?.managed, nowMs), root: null, capBytes: 128000, skipped: 0, more: 0 }
 
-  return { runs: allRuns(read.runs, state.snapshot?.swarm ?? null, state.snapshot?.agents ?? [], nowMs), root: read.root, capBytes: read.capBytes, skipped: read.skipped, more: read.more }
+  return { runs: allRuns([...read.runs, ...managedRuns(state.snapshot?.managed, nowMs)], state.snapshot?.swarm ?? null, state.snapshot?.agents ?? [], nowMs), root: read.root, capBytes: read.capBytes, skipped: read.skipped, more: read.more }
 }
 
 /**

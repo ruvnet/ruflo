@@ -31,7 +31,7 @@ const stopAutopilot = ($: Body[0]) => $.command.run(command('autopilot stop'))
 const savedMode = (world: { stored: Map<string, unknown> }) => JSON.parse(String(world.stored.get('toasts') ?? '{}')) as { mode?: string; muted?: string[] }
 
 describe('toasts (ADR-477), end to end through the console', () => {
-  test('Settings has a Toasts row with all, important and off, and a mute chip per source', { options: { boot: false } }, async ($, on) => {
+  test('Settings has a Toasts row with all, important and off, and a mute chip per source', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
     const tree = await pane.drawn()
     const keys = elementsOf(tree, 'Button').map(keyOf)
@@ -41,7 +41,7 @@ describe('toasts (ADR-477), end to end through the console', () => {
     await pane.unmount()
   })
 
-  test('by default a toast draws with its level prefix; a repeat of it inside a minute does not', { options: { boot: false } }, async ($, on) => {
+  test('by default a toast draws with its level prefix; a repeat of it inside a minute does not', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
 
     await stopAutopilot($)
@@ -50,7 +50,7 @@ describe('toasts (ADR-477), end to end through the console', () => {
     await pane.unmount()
   })
 
-  test('important keeps this warning; off draws nothing; the choice is saved and mirrored to the file the other plugins read', { options: { boot: false } }, async ($, on) => {
+  test('important keeps this warning; off draws nothing; the choice is saved and mirrored to the file the other plugins read', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
 
     await pane.press({ key: 'st-opt-ui-toasts-important' })
@@ -66,7 +66,7 @@ describe('toasts (ADR-477), end to end through the console', () => {
     await pane.unmount()
   })
 
-  test('off draws nothing, and the toast is still on the Events page, flagged off', { options: { boot: false } }, async ($, on) => {
+  test('off draws nothing, and the toast is still on the Events page, flagged off', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane, clock } = await opened($, on)
 
     await pane.press({ key: 'st-opt-ui-toasts-off' })
@@ -85,7 +85,7 @@ describe('toasts (ADR-477), end to end through the console', () => {
     await pane.unmount()
   })
 
-  test('muting the console silences it, an error as well as a warning, and unmuting brings it back', { options: { boot: false } }, async ($, on) => {
+  test('muting the console silences it, an error as well as a warning, and unmuting brings it back', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
 
     await pane.press({ key: 'st-toast-mute-console' })

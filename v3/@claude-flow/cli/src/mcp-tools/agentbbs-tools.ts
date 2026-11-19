@@ -36,7 +36,7 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, statSync, openSync, readSync, closeSync } from 'node:fs';
-import { resolve, isAbsolute, join } from 'node:path';
+import { resolve, isAbsolute, join, relative } from 'node:path';
 import { randomBytes, createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import type { MCPTool } from './types.js';
@@ -102,6 +102,8 @@ function validateRoomLabel(label: string): string {
   if (!/^[A-Za-z0-9_.\-:/@#]+$/.test(label)) {
     throw new Error('roomLabel may only contain [A-Za-z0-9_.\\-:/@#]');
   }
+  // The label becomes part of the room id, and the room id part of a file name.
+  if (label.includes('..')) throw new Error('roomLabel must not contain ..');
   return label;
 }
 
@@ -110,6 +112,13 @@ function validateRoomId(roomId: string): string {
   if (roomId.length > 128) throw new Error('roomId exceeds 128 chars');
   if (!/^[A-Za-z0-9_.\-:/@#]+$/.test(roomId)) {
     throw new Error('roomId may only contain [A-Za-z0-9_.\\-:/@#]');
+  }
+  // `.` and `/` are allowed chars, so reject `..` explicitly. The roomId is
+  // joined into a file path in roomLogPath; without this check a value like
+  // ../../../../tmp/x escapes the .agentbbs directory. Matches the validator
+  // in agentbbs-federation.ts.
+  if (roomId.includes('..')) {
+    throw new Error('roomId must not contain ..');
   }
   return roomId;
 }
@@ -128,7 +137,11 @@ function roomIdFromLabel(label: string): string {
 }
 
 function roomLogPath(basePath: string, roomId: string): string {
-  return join(basePath, `room-${roomId}.jsonl`);
+  validateRoomId(roomId);
+  const file = join(basePath, `room-${roomId}.jsonl`);
+  const rel = relative(resolve(basePath), resolve(file));
+  if (rel.startsWith('..') || isAbsolute(rel)) throw new Error('roomId escapes the BBS directory');
+  return file;
 }
 
 function roomsRegistryPath(basePath: string): string {
@@ -473,14 +486,19 @@ export const agentbbsTools: MCPTool[] = [
       const all = readEnvelopes(logPath);
 
       let slice = all;
+      let resuming = false;
       if (sinceEnvelopeId) {
         const idx = all.findIndex(e => e.envelopeId === sinceEnvelopeId);
-        slice = idx >= 0 ? all.slice(idx + 1) : all;
+        resuming = idx >= 0;
+        slice = resuming ? all.slice(idx + 1) : all;
       }
       // Dedup by envelopeId before applying the limit — a relay replay or a
       // double-append must not surface the same envelope twice to a watcher.
       const deduped = dedupEnvelopes(slice);
-      const envelopes = deduped.slice(-limit);
+      // A watcher resuming after sinceEnvelopeId gets the oldest envelopes
+      // first, so passing the last returned id pages through the rest when
+      // hasMore is set. Without a cursor, it gets the most recent window.
+      const envelopes = resuming ? deduped.slice(0, limit) : deduped.slice(-limit);
       return {
         success: true,
         roomId,

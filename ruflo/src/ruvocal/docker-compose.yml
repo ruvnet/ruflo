@@ -1,11 +1,12 @@
 # For development only
 # Set MONGODB_URL=mongodb://localhost:27017 in .env.local to use this container
+# The unauthenticated development database is published on host loopback only.
 services:
   mongo:
     image: mongo:8
     hostname: mongodb
     ports:
-      - ${LOCAL_MONGO_PORT:-27017}:27017
+      - "127.0.0.1:${LOCAL_MONGO_PORT:-27017}:27017"
     command: --replSet rs0 --bind_ip_all #--setParameter notablescan=1
     mem_limit: "5g"
     mem_reservation: "3g"

@@ -1,6 +1,6 @@
 import type { RenderElement } from 'claude-code'
 
-import { sortedFound, type FoundSkill, type InstalledSkill } from '../data/skills'
+import { PINNED_SKILLS, sortedFound, type FoundSkill, type InstalledSkill } from '../data/skills'
 import { ago, clip, col, row, rule, text, THEME, type Ctx } from './common'
 import { authorRows, maintainRows, previewRows, projectRows, targetRows } from './skills-more'
 
@@ -13,7 +13,7 @@ function leader(ctx: Ctx, key: string, name: string, about: string, actions: rea
   return row(
     ctx,
     [
-      ctx.kit.Text({ bold: true, color, children: clip(` ${name} `, lead).padEnd(lead, '.') }),
+      ctx.kit.Text({ weight: 'semibold', color, children: clip(` ${name} `, lead).padEnd(lead, '.') }),
       ctx.kit.Text({ color: THEME.info, wrap: 'truncate-end', children: clip(` ${about}`, Math.max(4, ctx.columns - lead - actions.length * 11)) }),
       ...actions.map(action => ctx.kit.Button({ key: action.key, label: ` ▸ ${action.label}`, plain: true, dimColor: true, onPress: action.onPress })),
     ],
@@ -32,7 +32,7 @@ function installedRows(ctx: Ctx): RenderElement[] {
   for (const [scope, error] of Object.entries(skills.listErrors)) rows.push(text(ctx, ` ${scope} list unreadable: ${error}`, { color: THEME.warn }))
 
   if (skills.installed === null) {
-    rows.push(text(ctx, skills.isListing ? ' asking npx -y skills ls --json (project) and ls -g --json (global)… the first run downloads the CLI' : ' not listed yet: r lists them (npx -y skills ls --json)', { dimColor: true }))
+    rows.push(text(ctx, skills.isListing ? ` asking npx -y skills@${PINNED_SKILLS} ls --json (project) and ls -g --json (global)… the first run downloads the CLI` : ` not listed yet: r lists them (npx -y skills@${PINNED_SKILLS} ls --json)`, { dimColor: true }))
   } else if (installed.length === 0 && Object.keys(skills.listErrors).length === 0) {
     rows.push(text(ctx, ' no skills in this project or globally: search below and ▸ add one', { dimColor: true }))
   }
@@ -135,7 +135,7 @@ export function skillsView(ctx: Ctx): RenderElement {
   const skills = state.skills
   const status: RenderElement[] = []
 
-  if (skills.busy !== null) status.push(text(ctx, ` running: ${skills.busy}…`, { bold: true, color: THEME.warn }))
+  if (skills.busy !== null) status.push(text(ctx, ` running: ${skills.busy}…`, { weight: 'semibold', color: THEME.warn }))
   else if (skills.last !== null) {
     status.push(text(ctx, ` ${skills.last.ok ? '✓' : '✗'} ${skills.last.label}${skills.last.verified === 'yes' ? ' · listed' : skills.last.verified === 'no' ? ' · not listed' : ''}: ${skills.last.detail} (${ago(skills.last.atMs, nowMs)})`, { color: skills.last.ok ? THEME.ok : THEME.bad }))
   }

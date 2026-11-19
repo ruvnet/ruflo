@@ -1,0 +1,18 @@
+{
+  "kind": "local durable-admission CPU benchmark",
+  "node": "v24.22.1",
+  "rounds": 7,
+  "signedRows": 18,
+  "baseline": "18 recordLearning transactions",
+  "candidate": "one recordLearningBatch transaction",
+  "equivalentEvidence": true,
+  "sequentialMedianMs": 185.276346,
+  "atomicMedianMs": 25.40276300000005,
+  "speedup": 7.293550941682983,
+  "admissionTransactions": {
+    "baseline": 18,
+    "candidate": 1
+  },
+  "sourceSha256": "53ec943484530e9c8c44ead4f8b7f8088b54548d9f262ef4fa041413b8d860a6",
+  "limitations": "Synthetic metadata, same-machine temporary filesystem and seven runs. No provider task quality, native backend speed, billing savings or deployment promotion is inferred."
+}

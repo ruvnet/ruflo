@@ -24,7 +24,7 @@
   "bundle": {
     "skills": ["launch-ai-team", "monitor-ai-team", "coordinate-team-work", "remember-team-context", "review-team-deliverables", "manage-team-lifecycle"],
     "agents": ["team-coordinator", "researcher", "builder", "verifier"],
-    "commands": ["team-start", "team-status", "team-review", "team-stop"]
+    "commands": ["team-start", "team-status", "team-review", "team-stop", "team-remember", "team-board"]
   },
   "review": {
     "tool_count": 12,

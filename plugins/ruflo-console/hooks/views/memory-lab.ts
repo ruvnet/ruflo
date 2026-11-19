@@ -74,7 +74,7 @@ function entryRow(ctx: Ctx, entry: MemEntry, lead: number): RenderElement {
     ctx,
     [
       tagChip(ctx, tag.text, tag.color()),
-      ctx.kit.Text({ bold: true, color: entry.cost === 'deletes' ? THEME.bad : THEME.head, children: ` ${entry.name} `.padEnd(lead, '.') }),
+      ctx.kit.Text({ weight: 'semibold', color: entry.cost === 'deletes' ? THEME.bad : THEME.head, children: ` ${entry.name} `.padEnd(lead, '.') }),
       ctx.kit.Text({ color: THEME.info, dimColor: !isReady, wrap: 'truncate-end', children: clip(` ${entry.about}`, Math.max(4, ctx.columns - lead - 16)) }),
       ctx.kit.Button({ key: `mem-lab-${entry.id}`, label: ' ▸ run', plain: true, dimColor: true, onPress: () => ctx.act.memory.run(entry.id) }),
     ],
@@ -117,7 +117,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
     return [frameResult(ctx, rows, running !== null ? 'run' : 'idle')]
   }
 
-  rows.push(text(ctx, ` ${result.label}`, { bold: true, color: result.ok ? THEME.ok : THEME.bad }))
+  rows.push(text(ctx, ` ${result.label}`, { weight: 'semibold', color: result.ok ? THEME.ok : THEME.bad }))
   if (result.note !== undefined) rows.push(text(ctx, ` ${result.note}`, { color: /DELETES|network/i.test(result.note) ? THEME.bad : THEME.warn }))
 
   const top = Math.max(0, Math.min(state.select.item, result.lines.length - MEM_ROWS))

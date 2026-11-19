@@ -9,6 +9,10 @@ import { readFileSync, existsSync } from 'node:fs';
 import type { MCPTool, MCPToolResult } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { resolveAgentBrowserLaunch, resolveNpxLaunch } from '../runtime/browser-command.js';
+import { commandArgvError, launchArgsError } from './browser-argv.js';
+import { containedWritePath } from './path-containment.js';
+
+const SCREENSHOT_EXTENSIONS = ['.png', '.jpg', '.jpeg'] as const;
 
 // Session registry for multi-session support
 const browserSessions = new Map<string, {
@@ -52,9 +56,16 @@ function browserCommandFailure(error: unknown, missingExecutable?: string): MCPT
  * Exported so browser-intent-tools.ts (ADR-175 `browser_act`) can reuse the same
  * exec + fallback + session-plumbing instead of duplicating it.
  */
-export async function execBrowserCommand(args: string[], session = 'default'): Promise<MCPToolResult> {
+export async function execBrowserCommand(
+  args: string[],
+  session = 'default',
+  launchArgs: readonly string[] = [],
+): Promise<MCPToolResult> {
+  const argvError = commandArgvError(args) ?? launchArgsError(launchArgs);
+  if (argvError) return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: argvError }) }], isError: true };
   const { execFileSync } = await import('child_process');
   const fullArgs = ['--session', session, '--json', ...args];
+  if (launchArgs.length > 0) fullArgs.push('--args', launchArgs.join(','));
 
   // ADR-401: fullArgs carries tool-supplied text (fill values, eval scripts,
   // selectors), so no spawn here may use a shell. On Windows the npm shims are
@@ -156,7 +167,7 @@ export const browserTools: MCPTool[] = [
         args: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Additional Chrome launch args (e.g., ["--no-sandbox", "--disable-dev-shm-usage"])',
+          description: 'Additional Chrome launch switches. Only these are accepted: --no-sandbox, --disable-setuid-sandbox, --disable-gpu, --disable-dev-shm-usage, --disable-extensions, --mute-audio, --hide-scrollbars, --incognito',
         },
       },
       required: ['url'],
@@ -170,13 +181,14 @@ export const browserTools: MCPTool[] = [
         session?: string;
         waitUntil?: string;
       };
-      const launchArgs = (input.args as string[] | undefined) || [];
+      const vArgs = launchArgsError(input.args);
+      if (vArgs) return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: vArgs }) }], isError: true };
+      const launchArgs = [...((input.args as string[] | undefined) || [])];
       if (needsNoSandbox() && !launchArgs.includes('--no-sandbox')) {
         launchArgs.push('--no-sandbox');
       }
       const args = ['open', url];
       if (waitUntil) args.push('--wait-until', waitUntil);
-      if (launchArgs.length > 0) args.push('--args', launchArgs.join(','));
 
       // Create session if new
       const sessionId = session || 'default';
@@ -188,7 +200,7 @@ export const browserTools: MCPTool[] = [
         });
       }
 
-      return execBrowserCommand(args, sessionId);
+      return execBrowserCommand(args, sessionId, launchArgs);
     },
   },
   {
@@ -316,7 +328,16 @@ export const browserTools: MCPTool[] = [
         fullPage?: boolean;
       };
       const args = ['screenshot'];
-      if (path) args.push(path);
+      if (path) {
+        // The browser writes the image wherever it is told and replaces what
+        // is there, so a caller-named path must stay inside the project.
+        const target = containedWritePath(path, SCREENSHOT_EXTENSIONS);
+        if (!target) {
+          const error = `path must be a new or regular file inside the project ending in ${SCREENSHOT_EXTENSIONS.join(', ')}`;
+          return { content: [{ type: 'text', text: JSON.stringify({ success: false, error }) }], isError: true };
+        }
+        args.push(target);
+      }
       if (fullPage) args.push('--full');
       return execBrowserCommand(args, session);
     },

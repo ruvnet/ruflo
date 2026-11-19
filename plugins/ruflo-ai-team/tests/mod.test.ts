@@ -59,6 +59,19 @@ describe('guard', () => {
     expect(status(w.files)).toMatchObject({ blocked: 1 })
   })
 
+  test('guard: team_create and team_update are screened like the other team writes', async ($, on) => {
+    world(on)
+    on('tool.call', () => ({ result: 'went through' }))
+    await $.session.start(START)
+    for (const tool of ['team_create', 'team_update']) {
+      const denied = await $.tool.call(({ tool: `mcp__plugin_ruflo-ai-team_ruflo-ai-team__${tool}`, text: `objective: use ${ghp}` }) as never).then(r => r, (e: unknown) => ({ text: String(e) }))
+      expect(JSON.stringify(denied)).toContain('secret')
+      expect(JSON.stringify(denied)).not.toContain('ghp_')
+    }
+    expect(JSON.stringify(await $.tool.call(({ tool: 'mcp__plugin_ruflo-ai-team_ruflo-ai-team__team_create', text: 'prepare the release checklist' }) as never))).toContain('went through')
+    expect(JSON.stringify(await $.tool.call(({ tool: 'mcp__plugin_ruflo-ai-team_ruflo-ai-team__team_get', text: ghp }) as never))).toContain('went through')
+  })
+
   test('guard: off lets the call through', { options: { guard: 'off' } }, async ($, on) => {
     world(on)
     on('tool.call', () => ({ result: 'went through' }))

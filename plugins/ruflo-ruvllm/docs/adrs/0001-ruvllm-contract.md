@@ -47,3 +47,14 @@ bash plugins/ruflo-ruvllm/scripts/smoke.sh
 ## Implementation status
 
 Plugin version v0.2.0 shipped and listed in marketplace.json. Source exists at `plugins/ruflo-ruvllm/`. Contract elements implemented: LLM-config + chat-format slice owned; SONA/MicroLoRA ownership deferred to ruflo-intelligence; HNSW WASM router ownership deferred to ruflo-agentdb; namespace `ruvllm-configs` claimed; smoke-as-contract gate defined in `scripts/smoke.sh`.
+
+## Addendum (2026-11-05) — runtime packages, plugin 0.4.0
+
+`@ruvector/ruvllm` 4.0.0/4.0.1 were published from the wrong repository and
+lacked the runtime classes; 4.1.0 (dual CJS/ESM) restores `SonaCoordinator`,
+`ContrastiveTrainer`, `TrainingPipeline` and `LoraAdapter` and delegates
+`ruvllm gpu …` to `@ruvector/ruvllm-gpu-loop` 1.1.x. A third skill,
+`ruvllm-runtime`, tells the three packages apart (WASM add-on behind the MCP
+tools, native runtime, GPU loop) and how to detect a 4.0.x install. Smoke step 2
+now requires it. MicroLoRA learning inside ruflo is covered by the CLI's
+`lora-learning` skill, which this plugin links instead of duplicating.

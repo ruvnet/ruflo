@@ -22,7 +22,7 @@ function manifest(nodeId: string): FederationManifest {
 async function fixture(resolveTrust = true) {
   let counter = 0;
   // Deterministic signing adapters isolate trust authorization from cryptography and transport.
-  const discovery = new DiscoveryService({ signManifest: async () => 'fixture-signature', verifyManifest: async () => true });
+  const discovery = new DiscoveryService({ signManifest: async () => 'fixture-signature', verifyManifest: async () => true, pinnedKeyFor: (id) => `${id}-key` });
   const handshake = new HandshakeService({ generateSessionId: () => `session-${++counter}`,
     generateSessionToken: () => `token-${++counter}`, generateNonce: () => `nonce-${++counter}`,
     signChallenge: async () => 'signature', verifySignature: async () => true,

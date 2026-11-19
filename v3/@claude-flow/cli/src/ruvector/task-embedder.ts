@@ -20,6 +20,10 @@
  * @module task-embedder
  */
 
+import * as fs from 'node:fs';
+import { resolveModelCacheDir } from '../memory/model-cache-dir.js';
+import { resolveEmbeddingConfig } from '../memory/embedding-config.js';
+
 // ============================================================================
 // FNV-1a-32 hash (matches scripts/gen-seed-corpus.mjs + router-trajectory.ts)
 // ============================================================================
@@ -52,15 +56,51 @@ type ExtractorFn = (input: string | string[], opts: { pooling: 'mean'; normalize
 // so we don't pay the ONNX model-load cost twice.
 let _extractorPromise: Promise<ExtractorFn | null> | null = null;
 
+/**
+ * ADR-454: distinguishes a null-extractor result caused by a genuinely
+ * missing dependency (permanent — nothing changes without a reinstall) from
+ * one caused by an environmental/fixable failure during `pipeline(...)`
+ * init, such as EACCES on the model cache dir (retryable).
+ */
+let _extractorDegradedReason: 'permanent' | 'retryable' | null = null;
+let _extractorLastAttemptAt = 0;
+const EXTRACTOR_RETRY_INTERVAL_MS = 60_000;
+
 function loadExtractor(): Promise<ExtractorFn | null> {
-  if (_extractorPromise !== null) return _extractorPromise;
+  if (_extractorPromise !== null) {
+    const isRetryableDue =
+      _extractorDegradedReason === 'retryable' &&
+      Date.now() - _extractorLastAttemptAt >= EXTRACTOR_RETRY_INTERVAL_MS;
+    if (!isRetryableDue) return _extractorPromise;
+    // Fall through to re-attempt — the retryable failure may now be fixed.
+  }
+  _extractorLastAttemptAt = Date.now();
   _extractorPromise = (async () => {
+    let packageImportable = false;
     try {
       const specifier = '@xenova/transformers';
       const mod = await import(/* @vite-ignore */ specifier).catch(() => null);
-      if (!mod || typeof mod.pipeline !== 'function') return null;
-      return await mod.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { quantized: true });
+      if (!mod || typeof mod.pipeline !== 'function') {
+        _extractorDegradedReason = 'permanent';
+        return null;
+      }
+      packageImportable = true;
+
+      // ADR-454: route model downloads to a user-writable cache dir — the
+      // package-relative default is root-owned under a system-prefix
+      // global install, which throws EACCES for the runtime user.
+      const cacheDir = resolveModelCacheDir();
+      fs.mkdirSync(cacheDir, { recursive: true });
+      const env = (mod as Record<string, unknown>).env as { cacheDir: string } | undefined;
+      if (env) env.cacheDir = cacheDir;
+
+      // #2305: honour `.claude-flow/embeddings.json` (default MiniLM/384).
+      const { model } = resolveEmbeddingConfig(process.cwd());
+      const extractor = await mod.pipeline('feature-extraction', model, { quantized: true });
+      _extractorDegradedReason = null;
+      return extractor;
     } catch {
+      _extractorDegradedReason = packageImportable ? 'retryable' : 'permanent';
       return null;
     }
   })();
@@ -88,7 +128,7 @@ async function loadEmbedderBatch(): Promise<EmbedBatchFn | null> {
   if (!ex) return null;
   return async (texts: string[]): Promise<number[][]> => {
     const out = await ex(texts, { pooling: 'mean', normalize: true });
-    const dims = out.dims ?? [texts.length, 384];
+    const dims = out.dims ?? [texts.length, resolveEmbeddingConfig(process.cwd()).dimension];
     const N = dims[0] ?? texts.length;
     const dim = dims[1] ?? Math.floor(out.data.length / N);
     const data = out.data;
@@ -138,7 +178,8 @@ function lruSet(key: string, value: number[]): void {
 // ============================================================================
 
 /**
- * Compute (or fetch from cache) the 384-dim MiniLM embedding for `task`.
+ * Compute (or fetch from cache) the embedding for `task` with the configured
+ * model (`.claude-flow/embeddings.json`; default 384-dim MiniLM).
  * Returns `undefined` on any failure (missing @xenova/transformers, ONNX
  * runtime error, etc.) so callers can gracefully fall back to the
  * heuristic+bandit path. Best-effort and never throws.
@@ -242,4 +283,6 @@ export function __resetTaskEmbedderForTests(): void {
   _hits = 0;
   _misses = 0;
   _extractorPromise = null;
+  _extractorDegradedReason = null;
+  _extractorLastAttemptAt = 0;
 }

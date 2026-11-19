@@ -44,7 +44,7 @@ function rule(kit: Kit, title: string, width: number, right = ''): RenderChildre
 
   return (
     <Box>
-      <Text bold color={HEAD}>{title}</Text>
+      <Text weight="semibold" color={HEAD}>{title}</Text>
       <Text dimColor>{` ${'─'.repeat(fill)} `}</Text>
       <Text>{right}</Text>
     </Box>
@@ -57,12 +57,12 @@ function tile(kit: Kit, member: Member, width: number, isSelected: boolean): Ren
   const text = pad(`${isSelected ? '▸' : ' '}${glyph} ${clip(member.label, width - 4)}`, width)
 
   if (member.pulse !== undefined) {
-    return <Text inverse bold color={PULSE_COLORS[member.pulse]}>{text}</Text>
+    return <Text inverse weight="semibold" color={PULSE_COLORS[member.pulse]}>{text}</Text>
   }
 
   const color = STATE_COLORS[member.state]
 
-  return color === undefined ? <Text dimColor={!isSelected} bold={isSelected}>{text}</Text> : <Text color={color} bold={isSelected}>{text}</Text>
+  return color === undefined ? <Text dimColor={!isSelected} weight={isSelected ? 'semibold' : 'regular'}>{text}</Text> : <Text color={color} weight={isSelected ? 'semibold' : 'regular'}>{text}</Text>
 }
 
 /** The agents as a grid of tiles, wrapped to the width; past `maxRows` the rest are a count. */
@@ -128,7 +128,7 @@ function selection(kit: Kit, model: PaneModel, actions: PaneActions): Section {
       <Box flexDirection="column">
         <Box>
           <Button key="prev" dimColor onPress={actions.prev}>◀</Button>
-          <Text bold>{` ${clip(who, Math.max(8, model.columns - 8))} `}</Text>
+          <Text weight="semibold">{` ${clip(who, Math.max(8, model.columns - 8))} `}</Text>
           <Button key="next" dimColor onPress={actions.next}>▶</Button>
         </Box>
         <Box flexWrap="wrap" columnGap={1}>
@@ -153,7 +153,7 @@ function prompts(kit: Kit, model: PaneModel, actions: PaneActions): Section | nu
       rows: 1,
       node: (
         <Box columnGap={1}>
-          <Text color={WARN} bold>{clip(`${model.confirm.label}?`, Math.max(8, model.columns - 22))}</Text>
+          <Text color={WARN} weight="semibold">{clip(`${model.confirm.label}?`, Math.max(8, model.columns - 22))}</Text>
           <Button key="confirm" onPress={actions.confirm}>confirm</Button>
           <Button key="cancel" dimColor onPress={actions.cancel}>cancel</Button>
         </Box>
@@ -197,7 +197,7 @@ function board(kit: Kit, model: PaneModel, maxRows: number, actions: PaneActions
       <Box flexDirection="column">
         {rule(kit, 'Tasks', model.columns, right)}
         {shown.map(row => (
-          <Text bold={row.isSelected} dimColor={!row.isSelected && row.status === 'completed'}>
+          <Text weight={row.isSelected ? 'semibold' : 'regular'} dimColor={!row.isSelected && row.status === 'completed'}>
             {clip(`${row.isSelected ? '▸' : ' '} ${pad(row.status, 12)} ${row.description || row.type} → ${row.owner}`, model.columns)}
           </Text>
         ))}
@@ -258,7 +258,7 @@ function detail(kit: Kit, model: PaneModel, actions: PaneActions, maxRows: numbe
     node: (
       <Box flexDirection="column">
         <Box justifyContent="space-between">
-          <Text bold color={HEAD}>{clip(model.detail.title, model.columns - 8)}</Text>
+          <Text weight="semibold" color={HEAD}>{clip(model.detail.title, model.columns - 8)}</Text>
           <Button key="close-detail" dimColor onPress={actions.closeDetail}>close</Button>
         </Box>
         {lines.map(line => <Text dimColor wrap="truncate-end">{clip(line, model.columns)}</Text>)}
@@ -272,7 +272,7 @@ function header(kit: Kit, model: PaneModel, actions: PaneActions): RenderChildre
 
   return (
     <Box justifyContent="space-between">
-      <Text bold wrap="truncate-end">{clip(model.title, Math.max(8, model.columns - 7))}</Text>
+      <Text weight="semibold" wrap="truncate-end">{clip(model.title, Math.max(8, model.columns - 7))}</Text>
       <Button key="hide" dimColor onPress={actions.hide}>hide</Button>
     </Box>
   )
@@ -290,7 +290,7 @@ function nextRow(kit: Kit, model: PaneModel, actions: PaneActions): Section | nu
     node: (
       <Box flexDirection="column">
         <Text>
-          <Text color={ACCENT} bold>Next </Text>
+          <Text color={ACCENT} weight="semibold">Next </Text>
           <Text>{clip(model.next.text, Math.max(8, model.columns - 5))}</Text>
         </Text>
         <Box columnGap={1}>
@@ -331,7 +331,7 @@ function narrow(kit: Kit, model: PaneModel, actions: PaneActions): RenderElement
         const color = member.pulse !== undefined ? PULSE_COLORS[member.pulse] : STATE_COLORS[member.state]
 
         return (
-          <Text color={color} dimColor={color === undefined} inverse={member.pulse !== undefined} bold={member.id === model.selected?.id}>
+          <Text color={color} dimColor={color === undefined} inverse={member.pulse !== undefined} weight={(member.id === model.selected?.id) ? 'semibold' : 'regular'}>
             {clip(`${member.id === model.selected?.id ? '▸' : ' '}${member.isLeader ? '★' : STATE_GLYPHS[member.state]} ${member.label} ${member.state}`, model.columns)}
           </Text>
         )

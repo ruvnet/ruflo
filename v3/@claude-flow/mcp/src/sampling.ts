@@ -272,12 +272,17 @@ export class SamplingManager extends EventEmitter {
    * Call with timeout
    */
   private async callWithTimeout<T>(promise: Promise<T>, timeout: number): Promise<T> {
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        setTimeout(() => reject(new Error('Sampling timeout')), timeout);
-      }),
-    ]);
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Sampling timeout')), timeout);
+        }),
+      ]);
+    } finally {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    }
   }
 }
 
@@ -329,7 +334,7 @@ export function createAnthropicProvider(apiKey: string): LLMProvider {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: request.maxTokens,
           temperature: request.temperature,
           system: request.systemPrompt,

@@ -8,8 +8,9 @@
 import type { RenderElement } from 'claude-code'
 
 import { cleanText } from '../data/wf-clean'
-import { controlActions, taskIdOf, taskPattern, transcriptOf, type ControlAction, type ControlInput, type TaskRef } from '../data/wf-control'
+import { controlActions, taskIdOf, taskPattern, transcriptOf, windowsSearchArgv, type ControlAction, type ControlInput, type TaskRef } from '../data/wf-control'
 import { tidy } from '../data/wf-send'
+import { writeFlavorReady } from '../data/write-flavor'
 import type { Host } from '../host'
 import type { State } from '../state'
 import type { WfRun } from '../data/workflows'
@@ -70,7 +71,12 @@ async function findTask(state: State, host: Host, run: Pick<WfRun, 'id' | 'dir'>
 
 /** A transcript too large to read whole: grep prints only the launch result's task and run ids (argv, no shell; the path is a checked run path). */
 async function searchTask(host: Host, path: string, runId: string): Promise<string | null> {
-  const result = await host.run(['grep', '-o', '-E', taskPattern(runId), path], 10_000)
+  // Windows has no grep: the same search through PowerShell (data/wf-control.ts); null where it cannot be built.
+  const argv = (await writeFlavorReady()) === 'host-fs' ? windowsSearchArgv(path, runId) : ['grep', '-o', '-E', taskPattern(runId), path]
+
+  if (argv === null) return null
+
+  const result = await host.run(argv, 10_000)
 
   return result.exitCode === 0 ? taskIdOf(result.stdout, runId) : null
 }

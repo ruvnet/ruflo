@@ -2,6 +2,30 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-x-gateway`.
 
+## 0.10.5 — 2026-11-18
+- fix: the WebSocket proxy released its connection slot once per close or error event, so a socket that fired both drove the 500-connection counter below its true value; each connection now releases its slot exactly once (#4752).
+
+## 0.10.4 — 2026-11-09
+- fix(deps): zod ^4.6.7 (GHSA-mrhx-c7xc-m3w5: zod < 4.6.6 can exhaust memory validating oversized constrained collections).
+
+## 0.10.3 — 2026-11-04
+- fix: every per-IP limit (MCP rate limit, Seraphina hourly allowance, GitHub hourly allowance) now keys on the trusted end of the forwarding chain, the same address registration uses, instead of the caller-supplied leftmost `X-Forwarded-For` entry. `RUFLO_PROXY_HOPS` (falling back to `RUFLO_REGISTRATION_PROXY_HOPS`) sets the trusted hop count (gateway 0.9.2)
+
+## 0.10.2 — 2026-10-24
+- fix: a `tools/call` without an `arguments` field (allowed by MCP, and what clients send for tools that take none) failed with `-32602 expected object, received undefined` on every path; an absent or null `arguments` is now treated as `{}` (gateway 0.9.1)
+- fix: `POST /` on the bare host now serves the directory-safe profile instead of a 404, so a connector added as `https://x.ruv.io` (no path) works; its OAuth challenge points at the root metadata
+- chore: the gateway log now records why a bearer was denied (`why=`) and one `mcp-reject` line per 4xx/5xx MCP response (path, status, JSON-RPC method, protocol-version header, client name); no body or token is logged
+
+## 0.10.1 — 2026-10-12
+- fix: the shared text screen now catches `.env` and e-mailed credentials, no longer flags a model's token talk (`--max-tokens`, `/oauth/token`, "token usage"), and no longer flags values that only name where a secret lives (`./service-account.json`, `--set-secrets=NAME=NAME:latest`); every rule stays linear (#4094, thanks @proffesor-for-testing)
+
+## 0.10.0 — 2026-10-09
+- feat: `ruv_github_search`, `ruv_github_repo`, `ruv_github_file` and `ruv_registry_latest` on the legacy `/mcp` surface (gateway 0.9.0, ADR-485): read-only queries of an allowlisted owner's public GitHub repositories and npm latest versions, SSRF-pinned, size/time capped, cached with ETag revalidation, fenced as untrusted GitHub data
+- chore: the `/chatgpt/mcp` and `/claude/mcp` directory profiles are unchanged (twelve tools); adding the GitHub tools there would need a directory re-review
+
+## 0.9.5 — 2026-10-09
+- fix: the directory bundle (0.8.2) documentationUrl points at the main branch path, not the feat/ruflo-ai-team branch
+
 ## 0.9.4 — 2026-10-05
 - fix: shared textsOf reports truncation and every guard fails closed on it
 

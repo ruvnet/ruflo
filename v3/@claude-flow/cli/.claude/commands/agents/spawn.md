@@ -117,7 +117,7 @@ Use MCP tools only for swarm coordination setup:
 
 ```javascript
 mcp__claude-flow__swarm_init({ topology: "hierarchical", maxAgents: 15 })
-mcp__claude-flow__agent_spawn({ type: "coordinator", name: "queen" })
+mcp__claude-flow__agent_spawn({ agentType: "coordinator", name: "queen" })
 ```
 
 ## Output

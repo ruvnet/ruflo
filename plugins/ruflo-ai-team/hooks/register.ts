@@ -21,7 +21,7 @@ async function flush($: Dollar, s: Session): Promise<void> {
 }
 
 /**
- * AI Team as a mod (ADR-445 pattern): a tighten-only guard on what goes into team memory and task or run records (`memory_remember`, `task_create`, `task_update`, `run_create` on the ruflo-ai-team server), `/ai-team-mod`, and a status file the console reads.
+ * AI Team as a mod (ADR-445 pattern): a tighten-only guard on what goes into team memory and team, task or run records (`memory_remember`, `task_create`, `task_update`, `run_create`, `team_create`, `team_update` on the ruflo-ai-team server), `/ai-team-mod`, and a status file the console reads.
  * No network, no process: only the hooks API.
  */
 export const register: Register = (on, options) => {

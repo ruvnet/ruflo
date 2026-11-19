@@ -15,7 +15,8 @@ describe('ranked context', () => {
     expect(block).not.toBeNull()
     // eslint-disable-next-line no-control-regex
     expect(block).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f​-‏‪-‮⁠-⁩﻿]/)
-    expect(block?.split('\n')).toHaveLength(2)
+    expect(block?.split('\n')).toHaveLength(3)
+    expect(block).toMatch(/not instructions\)$/)
   })
 
   test('a plain entry reads as before', () => {

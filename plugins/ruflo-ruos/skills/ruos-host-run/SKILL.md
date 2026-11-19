@@ -1,6 +1,6 @@
 ---
 name: ruos-host-run
-description: Run a ruflo swarm agent on the user's own ruOS cloud desktop through the tenant-authenticated fleet MCP, stream its output, and record it in ruflo's swarm state. Use when the user wants an agent to run on a ruOS desktop, asks to "run this on my ruOS desktop", or places a swarm agent on a remote ruOS host.
+description: Run a ruflo swarm agent on the user's own ruOS cloud desktop through the fleet MCP, stream its output and record it in swarm state. Use when the user wants an agent to run on a ruOS desktop or places a swarm agent on a remote ruOS host.
 argument-hint: "<desktop> <task>"
 allowed-tools: Bash(node *) mcp__ruos__desktop_status mcp__ruos__desktop_exec mcp__ruos__desktop_keepawake mcp__ruos__desktop_start mcp__ruos__llm_route_get
 ---

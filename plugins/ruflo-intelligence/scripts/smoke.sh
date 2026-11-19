@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Structural smoke test for ruflo-intelligence v0.4.2.
+# Structural smoke test for ruflo-intelligence v0.6.0.
 # Per ADR-0001 §6 Verification: 13 contract checks + 3 doc invariants.
 # Offline-safe; no live MCP calls.
 set -u
@@ -27,10 +27,10 @@ grep -qE "IPFS.+pattern|pattern.+IPFS|Pinata" "$ROOT/README.md" \
   && ok || bad "README missing IPFS / Pinata transfer docs"
 
 # 1. plugin.json bump + new keywords
-step "1. plugin.json declares 0.4.2 with new keywords"
+step "1. plugin.json declares 0.6.0 with new keywords"
 v=$(grep -E '"version"[[:space:]]*:' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.4.2" ]]; then
-  bad "expected 0.4.2, got '$v'"
+if [[ "$v" != "0.6.0" ]]; then
+  bad "expected 0.6.0, got '$v'"
 else
   miss=""
   for k in microlora ewc attention moe pattern-transfer model-routing; do
@@ -140,12 +140,12 @@ else
   bad "ADR missing or status != Proposed"
 fi
 
-# 13. Compatibility section pins to v3.6
-step "13. Compatibility section pins @claude-flow/cli to v3.6"
-if grep -qE "@claude-flow/cli.*v3\.6|v3\.6.*claude-flow/cli" "$ROOT/README.md"; then
+# 13. Compatibility section pins the CLI line the docs were checked against
+step "13. Compatibility section pins @claude-flow/cli to 3.56"
+if grep -qE "@claude-flow/cli.*3\.56|3\.56.*claude-flow/cli" "$ROOT/README.md"; then
   ok
 else
-  bad "Compatibility pin to v3.6 missing"
+  bad "Compatibility pin to 3.56 missing"
 fi
 
 
@@ -159,15 +159,23 @@ for f in options screen tools guard command status register; do
 done
 [[ $mod_ok -eq 1 ]] && ok || bad "mod hooks incomplete or too long"
 
-step "M2. mod: userConfig defaults are the safe ones (guard confirmReset all on)"
+step "M2. mod: userConfig defaults are the safe ones (guard piiGuard confirmReset all on)"
 node -e '
 const c = require(process.argv[1]).userConfig || {}
 const need = process.argv.slice(2)
 process.exit(need.every(k => c[k] && c[k].default === "on") ? 0 : 1)
-' "$ROOT/.claude-plugin/plugin.json" guard confirmReset && ok || bad "userConfig defaults wrong"
+' "$ROOT/.claude-plugin/plugin.json" guard piiGuard confirmReset && ok || bad "userConfig defaults wrong"
 
 step "M3. mod: hooks never touch the network or spawn a process"
 if grep -nE '\$\.(http|process)\.|child_process|fetch\(' "$ROOT"/hooks/*.ts >/dev/null; then bad "network or process call in hooks"; else ok; fi
+
+step "W1. neural wsp (ADR-528) documented in command, agent and route skill"
+miss=""
+for f in commands/neural.md agents/intelligence-specialist.md skills/intelligence-route/SKILL.md; do
+  grep -q "neural wsp\\|\\*\\*wsp\\*\\*" "$ROOT/$f" || miss="$miss $f"
+done
+grep -q "evidence only\\|Evidence only" "$ROOT/commands/neural.md" || miss="$miss no-authority-note"
+[[ -z "$miss" ]] && ok || bad "missing:$miss"
 
 printf "\n%s passed, %s failed\n" "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]] || exit 1

@@ -12,15 +12,26 @@ import type { AppendCondition } from './append-conditions.js';
 
 import { loadBetterSqlite3 } from './shared-sqlite.js';
 import { resolveMemoryRoot } from './memory-root.js';
+import { getProjectRoot } from '../services/project-root.js';
+import { DEFAULT_SEARCH_THRESHOLD } from './search-defaults.js';
 import { liveMemoryRowSql } from './live-memory-row.js';
 import { encodeEmbeddingQ8, MAX_LIST_EMBEDDINGS, type EmbeddingQ8 } from './embedding-q8.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { readFileMaybeEncrypted, writeFileAtomic, writeFileRestricted } from '../fs-secure.js';
+import { hostname } from 'node:os';
+import { readFileMaybeEncrypted, writeDbImagePreservingFormat, writeFileAtomic, writeFileRestricted } from '../fs-secure.js';
+import {
+  _resetEmbeddingConfigCache,
+  DEFAULT_EMBEDDING_DIMENSION,
+  resolveEffectiveEmbeddingConfig,
+  resolveEmbeddingConfig,
+} from './embedding-config.js';
 import { restoreMemoryDbFromBackup } from '../services/memory-backup.js';
 import { validateIdentifier } from '../mcp-tools/validate-input.js';
+import { resolveModelCacheDir } from './model-cache-dir.js';
 
 /**
  * ADR-323 — typed memory provenance. Distinguishes WHO/WHAT wrote a memory
@@ -177,10 +188,18 @@ async function releaseOwnNativeHandle(dbPath: string): Promise<void> {
  * this file flows through it.
  *
  * Precedence (highest → lowest):
- *   1. CLAUDE_FLOW_MEMORY_PATH env var
- *   2. memory.persistPath / memory.path in claude-flow.config.json (cwd or
- *      the directory the CLI was invoked from)
- *   3. Default: cwd/.swarm
+ *   1. CLAUDE_FLOW_MEMORY_PATH env var (a relative value resolves against
+ *      the project root)
+ *   2. memory.persistPath / memory.path in claude-flow.config.json or
+ *      .claude-flow/config.json at the project root
+ *   3. Default: <project root>/.swarm
+ *
+ * #2633: "project root" is the nearest ancestor of process.cwd() carrying a
+ * Ruflo marker (getProjectRoot: the walk the daemon uses since #2877, minus
+ * home / filesystem roots),
+ * so a shell that drifted into a subdirectory still opens the project's
+ * memory DB instead of silently starting a new one. With no marker it is
+ * process.cwd(), exactly as before.
  *
  * Cached per-process so repeated lookups are cheap; reset only by spawning
  * a fresh process (which is how config changes already propagate).
@@ -188,7 +207,7 @@ async function releaseOwnNativeHandle(dbPath: string): Promise<void> {
 let _memoryRootCache: string | undefined;
 export function getMemoryRoot(): string {
   if (_memoryRootCache !== undefined) return _memoryRootCache;
-  _memoryRootCache = resolveMemoryRoot(process.cwd());
+  _memoryRootCache = resolveMemoryRoot(getProjectRoot());
   return _memoryRootCache;
 }
 
@@ -778,9 +797,13 @@ function saveHNSWMetadata(): void {
     const swarmDir = getMemoryRoot();
     const metadataPath = path.join(swarmDir, 'hnsw.metadata.json');
     const metadata = Array.from(hnswIndex.entries.entries());
-    fs.writeFileSync(metadataPath, JSON.stringify(metadata));
-  } catch {
-    // Silently fail - metadata save is best-effort
+    writeFileAtomic(metadataPath, Buffer.from(JSON.stringify(metadata), 'utf-8'));
+  } catch (error) {
+    // Metadata is best-effort, but persistence failures must be visible.
+    console.warn(
+      '[memory] Failed to save hnsw.metadata.json:',
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 
@@ -1281,7 +1304,7 @@ export function flashAttentionSearch(
 /**
  * Initial metadata to insert after schema creation
  */
-export function getInitialMetadata(backend: string): string {
+export function getInitialMetadata(backend: string, dimension: number = DEFAULT_EMBEDDING_DIMENSION): string {
   return `
 INSERT OR REPLACE INTO metadata (key, value) VALUES
   ('schema_version', '3.0.0'),
@@ -1293,13 +1316,13 @@ INSERT OR REPLACE INTO metadata (key, value) VALUES
   ('temporal_decay', 'enabled'),
   ('hnsw_indexing', 'enabled');
 
--- Create default vector index configuration. Dimension matches the default
--- ONNX embedding model (Xenova/all-MiniLM-L6-v2, 384-dim); HNSW rejects
--- inserts whose dim does not match this row, so a 768 here breaks every
--- memory_store --vector and memory_search on a fresh install (#1947).
+-- Create default vector index configuration. Dimension matches the
+-- configured embedding model (#2305; default Xenova/all-MiniLM-L6-v2,
+-- 384-dim); HNSW rejects inserts whose dim does not match this row, so a
+-- mismatch here breaks every memory_store --vector and memory_search (#1947).
 INSERT OR IGNORE INTO vector_indexes (id, name, dimensions) VALUES
-  ('default', 'default', 384),
-  ('patterns', 'patterns', 384);
+  ('default', 'default', ${dimension}),
+  ('patterns', 'patterns', ${dimension});
 `;
 }
 
@@ -1413,7 +1436,10 @@ export async function ensureSchemaColumns(dbPath: string, options: { encryptWrit
       if (columnsAdded.includes('status') || existingColumns.has('status')) {
         try {
           db.run(`UPDATE memory_entries SET status = 'active' WHERE status IS NULL`);
-          modified = true;
+          // #3918: only a backfill that changed rows dirties the image. Setting
+          // this unconditionally rewrote every up-to-date store on each open (and,
+          // with encryption at rest, with a fresh nonce, so the bytes changed too).
+          if (db.getRowsModified() > 0) modified = true;
         } catch {
           /* table is read-only or doesn't exist — skip */
         }
@@ -1422,7 +1448,7 @@ export async function ensureSchemaColumns(dbPath: string, options: { encryptWrit
       if (modified) {
         // Save updated database
         const data = db.export();
-        writeFileRestricted(dbPath, Buffer.from(data), { encrypt: options.encryptWrites ?? true });
+        writeDbImagePreservingFormat(dbPath, data, { encrypt: options.encryptWrites ?? true });
       }
 
       db.close();
@@ -1966,6 +1992,8 @@ export async function initializeMemoryDatabase(options: {
       // Load existing database or create new
       if (fs.existsSync(dbPath) && force) {
         fs.unlinkSync(dbPath);
+        // #2305: the recorded dimension of the deleted store no longer binds.
+        _resetEmbeddingConfigCache();
       }
 
       db = new SQL.Database();
@@ -1982,7 +2010,7 @@ export async function initializeMemoryDatabase(options: {
       db.run(MEMORY_SCHEMA_V3);
 
       // Insert initial metadata
-      db.run(getInitialMetadata(backend));
+      db.run(getInitialMetadata(backend, resolveEmbeddingConfig(process.cwd()).dimension));
 
       // Save to file
       const data = db.export();
@@ -1994,7 +2022,7 @@ export async function initializeMemoryDatabase(options: {
 
       // Also create schema file for reference
       const schemaPath = path.join(dbDir, 'schema.sql');
-      fs.writeFileSync(schemaPath, MEMORY_SCHEMA_V3 + '\n' + getInitialMetadata(backend));
+      fs.writeFileSync(schemaPath, MEMORY_SCHEMA_V3 + '\n' + getInitialMetadata(backend, resolveEmbeddingConfig(process.cwd()).dimension));
 
       // ADR-053: Activate ControllerRegistry so controllers (ReasoningBank,
       // SkillLibrary, ExplainableRecall, etc.) are instantiated during init
@@ -2043,7 +2071,7 @@ export async function initializeMemoryDatabase(options: {
     } else {
       // Fall back to schema file approach
       const schemaPath = path.join(dbDir, 'schema.sql');
-      fs.writeFileSync(schemaPath, MEMORY_SCHEMA_V3 + '\n' + getInitialMetadata(backend));
+      fs.writeFileSync(schemaPath, MEMORY_SCHEMA_V3 + '\n' + getInitialMetadata(backend, resolveEmbeddingConfig(process.cwd()).dimension));
 
       // Create minimal valid SQLite file
       const sqliteHeader = Buffer.alloc(4096, 0);
@@ -2209,7 +2237,7 @@ export async function applyTemporalDecay(dbPath?: string): Promise<{
       const initSqlJs = (await import('sql.js')).default;
       const SQL = await initSqlJs();
 
-      const fileBuffer = fs.readFileSync(path_);
+      const fileBuffer = readFileMaybeEncrypted(path_, null);
       const db = new SQL.Database(fileBuffer);
 
       // Apply decay: confidence *= exp(-decay_rate * days_since_last_use)
@@ -2230,7 +2258,7 @@ export async function applyTemporalDecay(dbPath?: string): Promise<{
 
       // Save (atomic — issue #2584: a torn full-image flush corrupts the store)
       const data = db.export();
-      writeFileAtomic(path_, Buffer.from(data));
+      writeDbImagePreservingFormat(path_, data);
       db.close();
 
       return {
@@ -2256,7 +2284,20 @@ interface EmbeddingModel {
   model: unknown;
   tokenizer: unknown;
   dimensions: number;
+  /** Which model produced the vectors (ADR-527 checks it against the agent centroids). */
+  modelId?: string;
+  /**
+   * ADR-454: distinguishes a hash-fallback state that's legitimately
+   * permanent (no transformers package importable at all) from one caused
+   * by an environmental/fixable failure (EACCES, ENOSPC, a transient
+   * download failure) that should be retried rather than memoized forever.
+   */
+  degradedReason?: 'permanent' | 'retryable';
+  lastAttemptAt?: number;
 }
+
+/** ADR-454: minimum interval before a 'retryable' degraded state re-attempts real init. */
+const MODEL_INIT_RETRY_INTERVAL_MS = 60_000;
 
 /**
  * State of the LOCAL embedding chain only (transformers.js / agentic-flow /
@@ -2327,8 +2368,31 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
   error?: string;
 }> {
   if (embeddingModelState?.loaded) {
-    return { success: true, dimensions: embeddingModelState.dimensions, modelName: 'cached', loadTime: 0 };
+    const isRetryableDue =
+      embeddingModelState.degradedReason === 'retryable' &&
+      Date.now() - (embeddingModelState.lastAttemptAt ?? 0) >= MODEL_INIT_RETRY_INTERVAL_MS;
+    if (!isRetryableDue) {
+      return { success: true, dimensions: embeddingModelState.dimensions, modelName: 'cached', loadTime: 0 };
+    }
+    // Fall through to re-attempt real initialization — the retryable
+    // failure (e.g. EACCES on the model cache dir) may now be fixed.
   }
+
+  let sawRetryableFailure = false;
+
+  // #2305: honour `.claude-flow/embeddings.json` instead of always loading
+  // MiniLM/384 — unless the memory store already holds vectors of another
+  // dimension, in which case its recorded dimension is kept (with a warning).
+  // Both stores the memory path writes vectors to are checked, in the same
+  // order the bridge uses, so the local chain and the bridge agree.
+  const memoryDbPath = resolveDbPath();
+  const embCfg = await resolveEffectiveEmbeddingConfig({
+    root: process.cwd(),
+    dbPaths: [memoryDbPath, path.join(path.dirname(memoryDbPath), 'agentdb-memory.db')],
+  });
+  // The agentic-flow and ruvector fallbacks below bundle MiniLM only; using
+  // them for any other configured dimension would mix vector sizes.
+  const bundledMiniLmFits = embCfg.dimension === DEFAULT_EMBEDDING_DIMENSION;
 
   try {
     // ADR-094: prefer @huggingface/transformers (clears protobufjs <7.5.5
@@ -2338,6 +2402,7 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
     // @claude-flow/embeddings/src/transformers-loader.ts.
     let transformersSource: '@huggingface/transformers' | '@xenova/transformers' | null = null;
     let pipelineFn: ((task: string, model?: string) => Promise<unknown>) | null = null;
+    let transformersModule: Record<string, unknown> | null = null;
 
     {
       const tryLoad = async (specifier: string): Promise<Record<string, unknown> | null> => {
@@ -2348,11 +2413,13 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
       if (hf && typeof hf.pipeline === 'function') {
         pipelineFn = hf.pipeline as (t: string, m?: string) => Promise<unknown>;
         transformersSource = '@huggingface/transformers';
+        transformersModule = hf;
       } else {
         const xen = await tryLoad('@xenova/transformers');
         if (xen && typeof xen.pipeline === 'function') {
           pipelineFn = xen.pipeline as (t: string, m?: string) => Promise<unknown>;
           transformersSource = '@xenova/transformers';
+          transformersModule = xen;
         }
       }
     }
@@ -2368,24 +2435,38 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
       // (reading 'model')" on every memory store / search call.
       try {
         if (verbose) {
-          console.log(`Loading ONNX embedding model via ${transformersSource} (all-MiniLM-L6-v2)...`);
+          console.log(`Loading ONNX embedding model via ${transformersSource} (${embCfg.model})...`);
         }
-        const embedder = await pipelineFn('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+
+        // ADR-454: route model downloads to a user-writable cache dir —
+        // the package-relative default is root-owned under a system-prefix
+        // global install, which throws EACCES for the runtime user.
+        const cacheDir = resolveModelCacheDir();
+        fs.mkdirSync(cacheDir, { recursive: true });
+        const env = transformersModule?.env as { cacheDir: string } | undefined;
+        if (env) env.cacheDir = cacheDir;
+
+        const embedder = await pipelineFn('feature-extraction', embCfg.model);
 
         embeddingModelState = {
           loaded: true,
           model: embedder,
           tokenizer: null,
-          dimensions: 384 // MiniLM-L6 produces 384-dim vectors
+          dimensions: embCfg.dimension,
+          modelId: embCfg.model,
         };
 
         return {
           success: true,
-          dimensions: 384,
-          modelName: 'Xenova/all-MiniLM-L6-v2',
+          dimensions: embCfg.dimension,
+          modelName: embCfg.model,
           loadTime: Date.now() - startTime
         };
       } catch (err) {
+        // ADR-454: a real backend was importable and callable — this failure
+        // (EACCES, ENOSPC, transient network error, etc.) is environmental,
+        // not a missing dependency, so it must not be memoized permanently.
+        sawRetryableFailure = true;
         if (verbose) {
           console.warn(
             `${transformersSource} pipeline init failed (${err instanceof Error ? err.message : String(err)}); ` +
@@ -2399,21 +2480,26 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
     // Fallback: Check for agentic-flow ReasoningBank embeddings (v3)
     const reasoningBank = await import('agentic-flow/reasoningbank').catch(() => null);
 
-    if (reasoningBank?.computeEmbedding) {
+    if (bundledMiniLmFits && reasoningBank?.computeEmbedding) {
       if (verbose) {
         console.log('Loading agentic-flow ReasoningBank embedding model...');
       }
 
+      // #3113: register a callable, like the ruvector branch below —
+      // generateLocalEmbedding() only invokes function models. The bundled
+      // model is all-MiniLM-L6-v2 (384-dim, per agentic-flow's
+      // getEmbeddingDimensions()).
       embeddingModelState = {
         loaded: true,
-        model: { embed: reasoningBank.computeEmbedding },
+        model: (text: string) => reasoningBank.computeEmbedding(text),
         tokenizer: null,
-        dimensions: 768
+        dimensions: 384,
+        modelId: 'agentic-flow/all-MiniLM-L6-v2',
       };
 
       return {
         success: true,
-        dimensions: 768,
+        dimensions: 384,
         modelName: 'agentic-flow/reasoningbank',
         loadTime: Date.now() - startTime
       };
@@ -2434,7 +2520,7 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
         if (onnxEmb?.embed) {
           // Probe embed to trigger lazy ONNX init and verify it works
           const probe = await onnxEmb.embed('test');
-          if (probe && probe.length > 0 && (Array.isArray(probe) ? probe.some((v: number) => v !== 0) : true)) {
+          if (probe && probe.length > 0 && probe.length === embCfg.dimension && (Array.isArray(probe) ? probe.some((v: number) => v !== 0) : true)) {
             if (verbose) {
               console.log(`Loading ruvector ONNX embedder (all-MiniLM-L6-v2, ${probe.length}d)...`);
             }
@@ -2442,7 +2528,8 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
               loaded: true,
               model: (text: string) => onnxEmb.embed(text),
               tokenizer: null,
-              dimensions: probe.length || 384
+              dimensions: probe.length || 384,
+              modelId: 'ruvector/all-MiniLM-L6-v2',
             };
             return {
               success: true,
@@ -2457,35 +2544,21 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
       }
     }
 
-    // Legacy fallback: Check for agentic-flow core embeddings
-    const agenticFlow = await import('agentic-flow').catch(() => null);
+    // No agentic-flow root-entry fallback: no published root exports
+    // `embeddings`, and importing it runs its CLI main() in 3.0.0-alpha.x.
 
-    if (agenticFlow && (agenticFlow as any).embeddings) {
-      if (verbose) {
-        console.log('Loading agentic-flow embedding model...');
-      }
-
-      embeddingModelState = {
-        loaded: true,
-        model: (agenticFlow as any).embeddings,
-        tokenizer: null,
-        dimensions: 768
-      };
-
-      return {
-        success: true,
-        dimensions: 768,
-        modelName: 'agentic-flow',
-        loadTime: Date.now() - startTime
-      };
-    }
-
-    // No ONNX model available - use fallback
+    // No ONNX model available - use fallback.
+    // ADR-454: mark whether this is a permanent (no backend importable at
+    // all) or retryable (a backend existed but init failed for an
+    // environmental reason) degraded state, so a later call can re-attempt
+    // real initialization once the condition is fixed.
     embeddingModelState = {
       loaded: true,
       model: null, // Will use simple hash-based fallback
       tokenizer: null,
-      dimensions: 128 // Smaller fallback dimensions
+      dimensions: 128, // Smaller fallback dimensions
+      degradedReason: sawRetryableFailure ? 'retryable' : 'permanent',
+      lastAttemptAt: Date.now()
     };
 
     return {
@@ -2517,12 +2590,21 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
  * own embedder is real or stubbed). Set `backend` truthfully by the path that
  * actually produced the vector. Do NOT change the embedding math.
  */
-export async function generateEmbedding(text: string): Promise<{
+export async function generateEmbedding(
+  text: string,
+  options?: { normalize?: boolean },
+): Promise<{
   embedding: number[];
   dimensions: number;
   model: string;
   backend: 'onnx' | 'mock';
 }> {
+  // #4724: AgentDB embed() has no normalize switch and always returns a unit
+  // vector. A raw request has to use the local chain, which can skip L2.
+  if (options?.normalize === false) {
+    return generateLocalEmbedding(text, { normalize: false });
+  }
+
   // ADR-053: Try AgentDB v3 bridge first
   const bridge = await getBridge();
   if (bridge) {
@@ -2555,17 +2637,33 @@ export async function generateEmbedding(text: string): Promise<{
  *
  * Keeping the local chain as its own export breaks that cycle structurally.
  */
-export async function generateLocalEmbedding(text: string): Promise<{
+export async function generateLocalEmbedding(
+  text: string,
+  options?: { normalize?: boolean },
+): Promise<{
   embedding: number[];
   dimensions: number;
   model: string;
+  /** Model id behind an onnx vector, when known (ADR-527). */
+  modelId?: string;
   backend: 'onnx' | 'mock';
 }> {
+  // Default true keeps the historical unit-norm embedding math.
+  const normalize = options?.normalize !== false;
   // Ensure the LOCAL model is loaded. #3375: this must not go through
   // loadEmbeddingModel(), which is bridge-first — when the bridge answered
   // there, no local model was ever loaded and this function always returned
   // the hash fallback.
-  if (!embeddingModelState?.loaded) {
+  //
+  // ADR-454: also re-attempt when the memoized state is a 'retryable'
+  // degraded fallback whose retry interval has elapsed — otherwise this
+  // guard short-circuits past loadLocalEmbeddingChain()'s own retry check
+  // and the fix (e.g. a now-writable cache dir) never gets exercised.
+  const shouldRetryLoad =
+    !embeddingModelState?.loaded ||
+    (embeddingModelState.degradedReason === 'retryable' &&
+      Date.now() - (embeddingModelState.lastAttemptAt ?? 0) >= MODEL_INIT_RETRY_INTERVAL_MS);
+  if (shouldRetryLoad) {
     await loadLocalEmbeddingChain();
   }
 
@@ -2585,16 +2683,20 @@ export async function generateLocalEmbedding(text: string): Promise<{
   // Use ONNX model if available
   if (state.model && typeof (state.model as any) === 'function') {
     try {
-      const output = await (state.model as any)(text, { pooling: 'mean', normalize: true });
-      // Handle both @xenova/transformers (output.data) and ruvector (plain array) formats
+      const output = await (state.model as any)(text, { pooling: 'mean', normalize });
+      // Handle @xenova/transformers (output.data), ruvector (plain array) and
+      // typed-array (ReasoningBank Float32Array, #3114) formats. DataView is an
+      // ArrayBuffer view without an iterator (Array.from gives []), so exclude it.
       const embedding = output?.data
         ? Array.from(output.data as Float32Array)
-        : Array.isArray(output) ? output : null;
+        : Array.isArray(output) ? output
+        : ArrayBuffer.isView(output) && !(output instanceof DataView) ? Array.from(output as Float32Array) : null;
       if (embedding) {
         return {
           embedding,
           dimensions: embedding.length,
           model: 'onnx',
+          ...(state.modelId ? { modelId: state.modelId } : {}),
           backend: 'onnx'
         };
       }
@@ -2606,7 +2708,7 @@ export async function generateLocalEmbedding(text: string): Promise<{
   // Deterministic hash-based fallback (for testing/demo without ONNX).
   // AUDIT #3: backend='mock' — these vectors do NOT carry real semantics.
   (await import('./embedding-policy.js')).enforceNoStub('memory-initializer.generateLocalEmbedding'); // "no stubs" strict mode
-  const embedding = generateHashEmbedding(text, state.dimensions);
+  const embedding = generateHashEmbedding(text, state.dimensions, normalize);
   return {
     embedding,
     dimensions: state.dimensions,
@@ -2691,7 +2793,7 @@ export async function generateBatchEmbeddings(
  * Generate deterministic hash-based embedding
  * Not semantic, but deterministic and useful for testing
  */
-function generateHashEmbedding(text: string, dimensions: number): number[] {
+function generateHashEmbedding(text: string, dimensions: number, normalize = true): number[] {
   const embedding: number[] = new Array(dimensions).fill(0);
 
   // Simple hash-based approach for reproducibility
@@ -2706,7 +2808,8 @@ function generateHashEmbedding(text: string, dimensions: number): number[] {
     }
   }
 
-  // Normalize to unit vector
+  // Normalize to unit vector unless the caller asked for the raw vector (#4724).
+  if (!normalize) return embedding;
   const magnitude = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0)) || 1;
   return embedding.map(v => v / magnitude);
 }
@@ -2922,6 +3025,8 @@ export async function storeEntry(options: {
   namespace?: string;
   generateEmbeddingFlag?: boolean;
   tags?: string[];
+  /** #1426: JSON object persisted to the metadata column. */
+  metadata?: Record<string, unknown>;
   ttl?: number;
   dbPath?: string;
   upsert?: boolean;
@@ -3102,7 +3207,7 @@ export async function storeEntry(options: {
           embeddingDimensions,
           embeddingModel,
           tags.length > 0 ? JSON.stringify(tags) : null,
-          '{}',
+          JSON.stringify(options.metadata ?? {}),
           persistedProvenance,
           now,
           now,
@@ -3117,7 +3222,7 @@ export async function storeEntry(options: {
 
       // Save
       const data = db.export();
-      writeFileRestricted(dbPath, Buffer.from(data), { encrypt: true });
+      writeDbImagePreservingFormat(dbPath, data);
       db.close();
     });
 
@@ -3203,7 +3308,7 @@ export async function searchEntries(options: {
     query,
     namespace,
     limit = 10,
-    threshold = 0.3,
+    threshold = DEFAULT_SEARCH_THRESHOLD,
     dbPath: customPath,
     provenanceFilter
   } = options;
@@ -3227,7 +3332,11 @@ export async function searchEntries(options: {
 
     // Try RaBitQ pre-filter first (32× compressed Hamming scan)
     try {
-      const { searchRabitq } = await import('./rabitq-index.js');
+      const { ensureRabitqIndex, searchRabitq } = await import('./rabitq-index.js');
+      // #4203: build/rebuild on demand — without this the index was only ever
+      // populated by the explicit `embeddings_rabitq_build` tool, so this
+      // pre-filter always missed.
+      await ensureRabitqIndex({ dbPath, dimensions: queryEmbedding.length });
       const rabitqCandidates = await searchRabitq(queryEmbedding, { k: limit * 2, namespace: effectiveNamespace });
       if (rabitqCandidates && rabitqCandidates.length > 0) {
         // Rerank candidates with exact cosine similarity from SQLite
@@ -3474,6 +3583,10 @@ export async function listEntries(options: {
   provenanceFilter?: string[];
   /** ADR-472: include each entry's embedding as int8+scale (`embeddingQ8`); at most MAX_LIST_EMBEDDINGS rows. Read-only. */
   includeEmbedding?: boolean;
+  /** #4056: also return rows whose TTL has passed (with `expiresAt`). For cleanup only; normal reads hide them. */
+  includeExpired?: boolean;
+  /** Require entries to include all of these tags (AND). */
+  tags?: string[];
 }): Promise<{
   success: boolean;
   entries: {
@@ -3484,12 +3597,16 @@ export async function listEntries(options: {
     accessCount: number;
     createdAt: string;
     updatedAt: string;
+    /** #4056: epoch ms the row expires at; null when it never does. */
+    expiresAt?: number | null;
     hasEmbedding: boolean;
     /** #2073: Present when `includeContent: true` was requested. */
     content?: string;
     provenanceType?: string;
     /** ADR-472: present when `includeEmbedding: true` and the row has a valid stored vector. */
     embeddingQ8?: EmbeddingQ8;
+    /** Tag set stored with the entry (empty array when none). */
+    tags?: string[];
   }[];
   total: number;
   error?: string;
@@ -3519,7 +3636,8 @@ export async function listEntries(options: {
     limit = 20,
     offset = 0,
     dbPath: customPath,
-    provenanceFilter
+    provenanceFilter,
+    tags: requiredTags,
   } = options;
 
   const swarmDir = getMemoryRoot();
@@ -3549,18 +3667,43 @@ export async function listEntries(options: {
     // #2120 — accept `status IS NULL` alongside `'active'`. Old DBs
     // that predate the status column may have NULL after migration.
     // See memory-bridge.ts:bridgeListEntries for full context.
-    // Get total count
-    const whereClauses = [liveMemoryRowSql()];
+    const whereClauses = [liveMemoryRowSql({ includeExpired: options.includeExpired })];
     const whereParams: string[] = [];
     if (namespace) {
       whereClauses.push('namespace = ?');
       whereParams.push(namespace);
     }
+    // ADR-323: restrict to the requested provenance types. This must be
+    // ANDed alongside any tags filter below, never replaced by it — dropping
+    // this clause lets unverified user_claim rows leak into results that
+    // are supposed to be tool_result-only.
     if (provenanceFilter?.length) {
       whereClauses.push(`provenance_type IN (${provenanceFilter.map(() => '?').join(',')})`);
       whereParams.push(...provenanceFilter);
     }
+    // Tags are stored as JSON-array TEXT (e.g. `["a","b"]`). Match each
+    // required tag as an exact element via SQLite's json_each so a tag of
+    // `prod` can't be satisfied by a substring like `"prod` or by a
+    // differently-cased value like `PROD` (LIKE is ASCII case-insensitive
+    // and matches raw JSON-array bytes, not parsed array elements).
+    const tagFilter = Array.isArray(requiredTags)
+      ? requiredTags.filter((t): t is string => typeof t === 'string' && t.length > 0)
+      : [];
+    for (const tag of tagFilter) {
+      whereClauses.push(`EXISTS (SELECT 1 FROM json_each(tags) WHERE value = ?)`);
+      whereParams.push(tag);
+    }
     const whereSql = whereClauses.join(' AND ');
+
+    // `|| 100` would treat an explicit `limit: 0` as falsy and silently
+    // substitute the default (returning rows instead of the requested
+    // zero) — only fall back to the default when parsing genuinely failed.
+    const parsedLimit = parseInt(String(limit), 10);
+    const safeLimit = Number.isNaN(parsedLimit) ? 100 : parsedLimit;
+    const parsedOffset = parseInt(String(offset), 10);
+    const safeOffset = Number.isNaN(parsedOffset) ? 0 : parsedOffset;
+
+    // Get total count
     const countStmt = db.prepare(`SELECT COUNT(*) as cnt FROM memory_entries WHERE ${whereSql}`);
     if (whereParams.length > 0) countStmt.bind(whereParams);
     const countRows: unknown[][] = [];
@@ -3568,25 +3711,40 @@ export async function listEntries(options: {
       countRows.push(countStmt.get());
     }
     countStmt.free();
-    const countResult = countRows.length > 0 ? [{ values: countRows }] : [];
-    const total = countResult[0]?.values?.[0]?.[0] as number || 0;
+    const total = (countRows[0]?.[0] as number) || 0;
 
-    // Get entries
-    const safeLimit = Math.min(parseInt(String(limit), 10) || 100, options.includeEmbedding ? MAX_LIST_EMBEDDINGS : Number.MAX_SAFE_INTEGER);
-    const safeOffset = parseInt(String(offset), 10) || 0;
-    // #2120 — same NULL-as-active acceptance as the count above.
-    const listStmt = db.prepare(
-      `SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type
-       FROM memory_entries WHERE ${whereSql}
-       ORDER BY updated_at DESC LIMIT ? OFFSET ?`
-    );
-    listStmt.bind([...whereParams, safeLimit, safeOffset]);
-    const listRows: unknown[][] = [];
-    while (listStmt.step()) {
-      listRows.push(listStmt.get());
+    // Get entries. ADR-472: embedding rows are capped at MAX_LIST_EMBEDDINGS.
+    const listLimit = options.includeEmbedding ? Math.min(safeLimit, MAX_LIST_EMBEDDINGS) : safeLimit;
+    const columns = 'id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type, expires_at, tags';
+    // #4686: page row identities first so the temporary sort B-tree does not
+    // carry full content/embedding payloads for rows outside the page.
+    const pagedSql = `SELECT ${columns} FROM memory_entries
+       WHERE _rowid_ IN (
+         SELECT _rowid_ FROM memory_entries WHERE ${whereSql}
+         ORDER BY updated_at DESC LIMIT ? OFFSET ?
+       )
+       ORDER BY updated_at DESC`;
+    const originalSql = `SELECT ${columns} FROM memory_entries WHERE ${whereSql}
+       ORDER BY updated_at DESC LIMIT ? OFFSET ?`;
+    let listRows: unknown[][] = [];
+    const runList = (sql: string): unknown[][] => {
+      const stmt = db.prepare(sql);
+      try {
+        stmt.bind([...whereParams, listLimit, safeOffset]);
+        const rows: unknown[][] = [];
+        while (stmt.step()) rows.push(stmt.get());
+        return rows;
+      } finally {
+        stmt.free();
+      }
+    };
+    try {
+      listRows = runList(pagedSql);
+    } catch {
+      // Legacy WITHOUT ROWID tables have no _rowid_: keep the original query.
+      listRows = runList(originalSql);
     }
-    listStmt.free();
-    const result = listRows.length > 0 ? [{ values: listRows }] : [];
+
     const entries: {
       id: string;
       key: string;
@@ -3595,51 +3753,64 @@ export async function listEntries(options: {
       accessCount: number;
       createdAt: string;
       updatedAt: string;
+      expiresAt?: number | null;
       hasEmbedding: boolean;
       content?: string;
       provenanceType?: string;
       embeddingQ8?: EmbeddingQ8;
+      tags?: string[];
     }[] = [];
 
-    if (result[0]?.values) {
-      for (const row of result[0].values) {
-        const [id, key, ns, content, embedding, accessCount, createdAt, updatedAt, provenanceTypeVal] = row as [
-          string, string, string, string, string | null, number, string, string, string | null
-        ];
-        const entry: {
-          id: string;
-          key: string;
-          namespace: string;
-          size: number;
-          accessCount: number;
-          createdAt: string;
-          updatedAt: string;
-          hasEmbedding: boolean;
-          content?: string;
-          provenanceType?: string;
-          embeddingQ8?: EmbeddingQ8;
-        } = {
-          // #2073: don't truncate id when content is requested — callers
-          // (notably memory_export) need the full id to round-trip via import.
-          id: options.includeContent ? String(id) : String(id).substring(0, 20),
-          key: key || String(id).substring(0, 15),
-          namespace: ns || 'default',
-          size: (content || '').length,
-          accessCount: accessCount || 0,
-          createdAt: createdAt || new Date().toISOString(),
-          updatedAt: updatedAt || new Date().toISOString(),
-          hasEmbedding: !!embedding && embedding.length > 10,
-          provenanceType: provenanceTypeVal || 'unknown'
-        };
-        if (options.includeContent) {
-          entry.content = content || '';
-        }
-        if (options.includeEmbedding) {
-          const q8 = encodeEmbeddingQ8(embedding);
-          if (q8) entry.embeddingQ8 = q8;
-        }
-        entries.push(entry);
+    for (const row of listRows) {
+      const [id, key, ns, content, embedding, accessCount, createdAt, updatedAt, provenanceTypeVal, expiresAtVal, tagsJson] = row as [
+        string, string, string, string, string | null, number, string, string, string | null, number | null, string | null
+      ];
+      let tags: string[] = [];
+      if (tagsJson) {
+        try {
+          const parsed = JSON.parse(tagsJson);
+          if (Array.isArray(parsed)) {
+            tags = parsed.filter((t): t is string => typeof t === 'string');
+          }
+        } catch { /* invalid tags JSON */ }
       }
+      const entry: {
+        id: string;
+        key: string;
+        namespace: string;
+        size: number;
+        accessCount: number;
+        createdAt: string;
+        updatedAt: string;
+        expiresAt?: number | null;
+        hasEmbedding: boolean;
+        content?: string;
+        provenanceType?: string;
+        embeddingQ8?: EmbeddingQ8;
+        tags?: string[];
+      } = {
+        // #2073: don't truncate id when content is requested — callers
+        // (notably memory_export) need the full id to round-trip via import.
+        id: options.includeContent ? String(id) : String(id).substring(0, 20),
+        key: key || String(id).substring(0, 15),
+        namespace: ns || 'default',
+        size: (content || '').length,
+        accessCount: accessCount || 0,
+        createdAt: createdAt || new Date().toISOString(),
+        updatedAt: updatedAt || new Date().toISOString(),
+        expiresAt: expiresAtVal ?? null,
+        hasEmbedding: !!embedding && embedding.length > 10,
+        provenanceType: provenanceTypeVal || 'unknown',
+        tags,
+      };
+      if (options.includeContent) {
+        entry.content = content || '';
+      }
+      if (options.includeEmbedding) {
+        const q8 = encodeEmbeddingQ8(embedding);
+        if (q8) entry.embeddingQ8 = q8;
+      }
+      entries.push(entry);
     }
 
     db.close();
@@ -3700,10 +3871,18 @@ export async function getEntry(options: {
       return { success: false, found: false, error: 'Database not found' };
     }
 
-    // #2735 — see storeEntry's identical gate for the corruption mechanism
-    // this closes. Applies here too because the fallback's access_count
-    // bump is itself a whole-image write, not a lightweight read, even
-    // though this function's contract reads as a "get".
+    // #4734: a get is a pure READ. It no longer bumps access_count nor
+    // export/rewrites the whole sql.js image — doing so made every read a
+    // full-image write that serialised on the exclusive memory.db lock and lost
+    // writes under concurrent readers. It is now lock-free like listEntries /
+    // searchEntries: writeFileAtomic's rename() keeps every reader on a complete
+    // image, and ensureSchemaColumns self-locks only if it must ALTER/backfill.
+    // access_count stays display-only (response returns stored+1); it is never
+    // consulted for eviction/decay, so skipping the persistent bump is safe.
+    //
+    // #2735 — still refuse while a native WAL connection holds an uncommitted
+    // transaction: reading a snapshot a live writer is mid-commit would expose
+    // stale data. releaseOwnNativeHandle drops our own idle handle first.
     await releaseOwnNativeHandle(dbPath);
     if (await hasNativeWalSidecars(dbPath)) {
       return {
@@ -3713,85 +3892,71 @@ export async function getEntry(options: {
       };
     }
 
-    // #2878: this is a mutator, not a reader — the access_count bump below
-    // rewrites the whole image, so an unlocked "get" concurrent with a store
-    // flushes a predecessor image over it and silently drops the new row.
-    // There is no cheaper granularity available: the read and the bump share
-    // one image, so the lock has to span both.
-    return await withMemoryDbLock(dbPath, async () => {
-      // Ensure schema has all required columns (migration for older DBs)
-      await ensureSchemaColumns(dbPath);
+    // Ensure schema has all required columns (migration for older DBs).
+    // This self-locks internally only when it actually has to ALTER/backfill;
+    // on a healthy DB it is a plain read. See ensureSchemaColumns (#2878).
+    await ensureSchemaColumns(dbPath);
 
-      const initSqlJs = (await import('sql.js')).default;
-      const SQL = await initSqlJs();
+    const initSqlJs = (await import('sql.js')).default;
+    const SQL = await initSqlJs();
 
-      const fileBuffer = readFileMaybeEncrypted(dbPath, null);
-      const db = new SQL.Database(fileBuffer);
+    const fileBuffer = readFileMaybeEncrypted(dbPath, null);
+    const db = new SQL.Database(fileBuffer);
 
-      // Find entry by key
-      const getStmt = db.prepare(`
-        SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, tags
-        FROM memory_entries
-        WHERE ${liveMemoryRowSql()}
-          AND key = ?
-          AND namespace = ?
-        LIMIT 1
-      `);
-      getStmt.bind([key, namespace]);
-      const getRows: unknown[][] = [];
-      while (getStmt.step()) {
-        getRows.push(getStmt.get());
-      }
-      getStmt.free();
-      const result = getRows.length > 0 ? [{ values: getRows }] : [];
+    // Find entry by key
+    const getStmt = db.prepare(`
+      SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, tags
+      FROM memory_entries
+      WHERE ${liveMemoryRowSql()}
+        AND key = ?
+        AND namespace = ?
+      LIMIT 1
+    `);
+    getStmt.bind([key, namespace]);
+    const getRows: unknown[][] = [];
+    while (getStmt.step()) {
+      getRows.push(getStmt.get());
+    }
+    getStmt.free();
+    const result = getRows.length > 0 ? [{ values: getRows }] : [];
 
-      if (!result[0]?.values?.[0]) {
-        db.close();
-        return { success: true, found: false };
-      }
-
-      const [id, entryKey, ns, content, embedding, accessCount, createdAt, updatedAt, tagsJson] = result[0].values[0] as [
-        string, string, string, string, string | null, number, string, string, string | null
-      ];
-
-      // Update access count
-      db.run(`
-        UPDATE memory_entries
-        SET access_count = access_count + 1, last_accessed_at = strftime('%s', 'now') * 1000
-        WHERE id = ?
-      `, [String(id)]);
-
-      // Save updated database
-      const data = db.export();
-      writeFileRestricted(dbPath, Buffer.from(data), { encrypt: true });
-
+    if (!result[0]?.values?.[0]) {
       db.close();
+      return { success: true, found: false };
+    }
 
-      let tags: string[] = [];
-      if (tagsJson) {
-        try {
-          tags = JSON.parse(tagsJson);
-        } catch {
-          // Invalid JSON
-        }
+    const [id, entryKey, ns, content, embedding, accessCount, createdAt, updatedAt, tagsJson] = result[0].values[0] as [
+      string, string, string, string, string | null, number, string, string, string | null
+    ];
+
+    // Read-only: do NOT bump access_count or re-persist the image (#4734).
+    // The response below still returns accessCount = stored + 1 for display.
+    db.close();
+
+    let tags: string[] = [];
+    if (tagsJson) {
+      try {
+        tags = JSON.parse(tagsJson);
+      } catch {
+        // Invalid JSON
       }
+    }
 
-      return {
-        success: true,
-        found: true,
-        entry: {
-          id: String(id),
-          key: entryKey || String(id),
-          namespace: ns || 'default',
-          content: content || '',
-          accessCount: (accessCount || 0) + 1,
-          createdAt: createdAt || new Date().toISOString(),
-          updatedAt: updatedAt || new Date().toISOString(),
-          hasEmbedding: !!embedding && embedding.length > 10,
-          tags
-        }
-      };
-    });
+    return {
+      success: true,
+      found: true,
+      entry: {
+        id: String(id),
+        key: entryKey || String(id),
+        namespace: ns || 'default',
+        content: content || '',
+        accessCount: (accessCount || 0) + 1,
+        createdAt: createdAt || new Date().toISOString(),
+        updatedAt: updatedAt || new Date().toISOString(),
+        hasEmbedding: !!embedding && embedding.length > 10,
+        tags
+      }
+    };
   } catch (error) {
     return {
       success: false,
@@ -3881,6 +4046,11 @@ export async function deleteEntry(options: {
       const fileBuffer = readFileMaybeEncrypted(dbPath, null);
       const db = new SQL.Database(fileBuffer);
 
+      // #3785: zero the old cells as well as the live row. Without
+      // secure_delete, UPDATE leaves the previous text in SQLite free pages,
+      // so the "deleted" value is still recoverable from the file image.
+      db.run('PRAGMA secure_delete = ON');
+
       // Check if entry exists first
       const checkStmt = db.prepare(`
         SELECT id FROM memory_entries
@@ -3912,12 +4082,19 @@ export async function deleteEntry(options: {
         };
       }
 
-      // Delete the entry (soft delete by setting status to 'deleted')
-      // Also null out the embedding to clean up vector data from SQLite
+      // Soft delete by setting status to 'deleted'. Scrub the payload, not
+      // only the vector: a tombstone that keeps `content` on disk still
+      // exposes deleted data to anyone who opens the SQLite file. `content`
+      // is NOT NULL, so use the empty string rather than SQL NULL.
       db.run(`
         UPDATE memory_entries
         SET status = 'deleted',
+            content = '',
             embedding = NULL,
+            embedding_model = NULL,
+            embedding_dimensions = NULL,
+            tags = NULL,
+            metadata = NULL,
             updated_at = strftime('%s', 'now') * 1000
         WHERE key = ?
           AND namespace = ?
@@ -3930,7 +4107,7 @@ export async function deleteEntry(options: {
 
       // Save updated database
       const data = db.export();
-      writeFileRestricted(dbPath, Buffer.from(data), { encrypt: options.encryptWrites ?? true });
+      writeDbImagePreservingFormat(dbPath, data, { encrypt: options.encryptWrites ?? true });
 
       db.close();
 
@@ -3979,7 +4156,168 @@ export async function deleteEntry(options: {
 // which is the concrete case this feature needs to be safe against.
 
 const MEMORY_DB_LOCK_STALE_MS = 10_000;
+const MEMORY_DB_LOCK_UNVERIFIABLE_STALE_MS = 5 * 60_000;
 const MEMORY_DB_LOCK_ACQUIRE_TIMEOUT_MS = 15_000;
+const MEMORY_DB_LOCK_IDENTITY = (() => {
+  let pidns: string | undefined;
+  let boot: string | undefined;
+  if (process.platform === 'linux') {
+    try {
+      pidns = fs.readlinkSync('/proc/self/ns/pid');
+      boot = fs.readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim();
+    } catch { /* missing Linux identity requires the longer stale lease */ }
+  }
+  return { host: hostname(), platform: process.platform, pidns, boot };
+})();
+
+interface MemoryDbLockSnapshot {
+  content: string;
+  mtimeMs: number;
+  dev: number;
+  ino: number;
+}
+
+function readMemoryDbLock(lockFile: string): MemoryDbLockSnapshot | undefined {
+  let fd: number | undefined;
+  try {
+    if (!fs.lstatSync(lockFile).isFile()) return undefined;
+    fd = fs.openSync(lockFile, fs.constants.O_RDONLY
+      | (fs.constants.O_NOFOLLOW ?? 0) | (fs.constants.O_NONBLOCK ?? 0));
+    const stat = fs.fstatSync(fd);
+    if (!stat.isFile() || stat.size > 1024) return undefined;
+    const buffer = Buffer.alloc(1025);
+    const size = fs.readSync(fd, buffer, 0, buffer.length, 0);
+    if (size > 1024) return undefined;
+    return { content: buffer.toString('utf8', 0, size), mtimeMs: stat.mtimeMs, dev: stat.dev, ino: stat.ino };
+  } catch {
+    return undefined;
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
+
+function memoryDbLockOwnerState(content: string): 'live' | 'dead' | 'unknown' {
+  try {
+    const owner = JSON.parse(content);
+    // A PID alone (including the legacy format) cannot identify an owner
+    // across hosts, kernel boots or container PID namespaces.
+    if (!owner || owner.host !== MEMORY_DB_LOCK_IDENTITY.host
+      || owner.platform !== MEMORY_DB_LOCK_IDENTITY.platform
+      || owner.pidns !== MEMORY_DB_LOCK_IDENTITY.pidns
+      || owner.boot !== MEMORY_DB_LOCK_IDENTITY.boot) return 'unknown';
+    if (process.platform === 'linux'
+      && (!MEMORY_DB_LOCK_IDENTITY.pidns || !MEMORY_DB_LOCK_IDENTITY.boot)) return 'unknown';
+    const pid = owner.pid;
+    if (!Number.isInteger(pid) || pid <= 0 || pid > 0x7fffffff) return 'unknown';
+    try {
+      process.kill(pid, 0);
+      return 'live';
+    } catch (error) {
+      // EPERM and unexpected probe failures are not evidence of a dead owner.
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'EPERM') return 'live';
+      return code === 'ESRCH' ? 'dead' : 'unknown';
+    }
+  } catch {
+    return 'unknown';
+  }
+}
+
+function memoryDbLockCanBeReclaimed(snapshot: MemoryDbLockSnapshot): boolean {
+  const age = Date.now() - snapshot.mtimeMs;
+  if (age <= MEMORY_DB_LOCK_STALE_MS) return false;
+  // A live owner renews every few seconds, so five minutes without renewal
+  // means the owner is gone even when its PID still answers: the PID may have
+  // been reused by an unrelated process, or (on macOS/Windows, which have no
+  // boot id) the lock may predate a reboot. The same lease covers owners whose
+  // PID cannot be scoped to this host/boot/namespace.
+  if (age > MEMORY_DB_LOCK_UNVERIFIABLE_STALE_MS) return true;
+  // Inside the lease, only a verifiably dead owner may be taken over. A live
+  // owner whose event loop is briefly blocked keeps its lock.
+  return memoryDbLockOwnerState(snapshot.content) === 'dead';
+}
+
+function sameMemoryDbLock(a: MemoryDbLockSnapshot | undefined, b: MemoryDbLockSnapshot): boolean {
+  return a?.dev === b.dev && a.ino === b.ino && a.content === b.content && a.mtimeMs === b.mtimeMs;
+}
+
+function removeExpiredMemoryDbLockFile(file: string): void {
+  const snapshot = readMemoryDbLock(file);
+  // Same rule as the main lock: a provably dead owner's guard or candidate is
+  // removable once the short stale window passes, not only after the lease.
+  if (!snapshot || !memoryDbLockCanBeReclaimed(snapshot)) return;
+  try {
+    if (sameMemoryDbLock(readMemoryDbLock(file), snapshot)) fs.unlinkSync(file);
+  } catch { /* already removed or replaced */ }
+}
+
+function cleanupMemoryDbLockCandidates(lockFile: string): void {
+  const prefix = `${path.basename(lockFile)}.`;
+  try {
+    for (const name of fs.readdirSync(path.dirname(lockFile))) {
+      if (name.startsWith(prefix)
+        && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.tmp$/i.test(name.slice(prefix.length))) {
+        removeExpiredMemoryDbLockFile(path.join(path.dirname(lockFile), name));
+      }
+    }
+  } catch { /* candidate cleanup must not prevent acquiring the lock */ }
+}
+
+/** Returns a separate descriptor only when hard-link publication is unavailable. */
+function publishMemoryDbLock(ownerFile: string, target: string, ownership: string): number | undefined {
+  try {
+    fs.linkSync(ownerFile, target);
+    return undefined;
+  } catch (error) {
+    if (!['ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EPERM', 'EXDEV'].includes((error as NodeJS.ErrnoException).code ?? '')) throw error;
+  }
+  // Preserve the original O_EXCL protocol on filesystems without hard links.
+  // A crash before writing ownership leaves an empty file recoverable by lease.
+  const fd = fs.openSync(target, 'wx', 0o600);
+  try {
+    fs.writeFileSync(fd, ownership);
+    return fd;
+  } catch (error) {
+    const owned = fs.fstatSync(fd);
+    fs.closeSync(fd);
+    try {
+      const current = fs.lstatSync(target);
+      if (current.dev === owned.dev && current.ino === owned.ino) fs.unlinkSync(target);
+    } catch { /* already removed or replaced */ }
+    throw error;
+  }
+}
+
+function reclaimStaleMemoryDbLock(lockFile: string, ownerFile: string, ownership: string): boolean {
+  const previous = readMemoryDbLock(lockFile);
+  if (!previous || !memoryDbLockCanBeReclaimed(previous)) return false;
+
+  // Only one reclaimer may inspect and unlink an orphan at a time. Without
+  // this guard, a second reclaimer could unlink the first successor's lock.
+  const guard = `${lockFile}.reclaim`;
+  let guardFd: number | undefined;
+  try {
+    guardFd = publishMemoryDbLock(ownerFile, guard, ownership);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') removeExpiredMemoryDbLockFile(guard);
+    return false;
+  }
+  try {
+    // Another reclaimer may have installed a successor while we waited. Read
+    // again under our guard and preserve renewed or replaced lock inodes.
+    const current = readMemoryDbLock(lockFile);
+    if (!current || !sameMemoryDbLock(current, previous) || !memoryDbLockCanBeReclaimed(current)) return false;
+    if (readMemoryDbLock(guard)?.content !== ownership
+      || !sameMemoryDbLock(readMemoryDbLock(lockFile), current)) return false;
+    fs.unlinkSync(lockFile);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    if (guardFd !== undefined) fs.closeSync(guardFd);
+    try { if (readMemoryDbLock(guard)?.content === ownership) fs.unlinkSync(guard); } catch { /* preserve a replacement */ }
+  }
+}
 
 function delayMs(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -3997,8 +4335,10 @@ function delayMs(ms: number): Promise<void> {
 const heldMemoryDbLocks = new AsyncLocalStorage<ReadonlySet<string>>();
 
 /**
- * Advisory O_EXCL lock scoped to a single memory.db file (`<dbPath>.lock`),
- * same stale-takeover pattern as services/global-ai-budget.ts.
+ * Advisory exclusive lock scoped to a single memory.db file (`<dbPath>.lock`),
+ * renewed while held and reclaimed after a scoped owner exits, or after five
+ * minutes without renewal when its identity cannot be verified. Hard links
+ * publish complete metadata atomically; O_EXCL is used where unavailable.
  *
  * #2878: sql.js persists by rewriting the whole database image, so every
  * `load → mutate → export → write` sequence is a read-modify-write that a
@@ -4020,34 +4360,52 @@ export async function withMemoryDbLock<T>(dbPath: string, fn: () => Promise<T> |
   nested.add(resolved);
 
   const lockFile = `${resolved}.lock`;
+  cleanupMemoryDbLockCandidates(lockFile);
+  removeExpiredMemoryDbLockFile(`${lockFile}.reclaim`);
+  const token = randomUUID();
+  const ownership = JSON.stringify({ ...MEMORY_DB_LOCK_IDENTITY, pid: process.pid, token });
+  const ownerFile = `${lockFile}.${token}.tmp`;
+  const fd = fs.openSync(ownerFile, 'wx', 0o600);
   const deadline = Date.now() + MEMORY_DB_LOCK_ACQUIRE_TIMEOUT_MS;
-  for (;;) {
-    let fd: number;
-    try {
-      fd = fs.openSync(lockFile, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY, 0o600);
-    } catch (e) {
-      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
+  let acquired = false;
+  let lockFd: number | undefined;
+  try {
+    // Publish fully initialized ownership atomically. A crash while writing
+    // the unique candidate must not leave an empty, unrecoverable lock file.
+    fs.writeFileSync(fd, ownership);
+    for (;;) {
       try {
-        const st = fs.lstatSync(lockFile);
-        if (Date.now() - st.mtimeMs > MEMORY_DB_LOCK_STALE_MS) {
-          fs.unlinkSync(lockFile);
-          continue;
+        lockFd = publishMemoryDbLock(ownerFile, lockFile, ownership);
+        acquired = true;
+        break;
+      } catch (e) {
+        const code = (e as NodeJS.ErrnoException).code;
+        if (code !== 'EEXIST') throw e;
+        if (reclaimStaleMemoryDbLock(lockFile, ownerFile, ownership)) continue;
+        if (Date.now() > deadline) {
+          const guard = `${lockFile}.reclaim`;
+          const recovery = fs.existsSync(guard)
+            ? `; inspect the recorded owner of ${guard} and confirm no reclamation is active before manual recovery`
+            : '; inspect the recorded owner before manual recovery';
+          throw new Error(`timed out acquiring memory.db lock: ${lockFile}${recovery}`);
         }
-      } catch { /* raced — retry */ }
-      if (Date.now() > deadline) {
-        throw new Error(`timed out acquiring memory.db lock: ${lockFile}`);
+        await delayMs(25);
       }
-      await delayMs(25);
-      continue;
     }
-
-    fs.writeSync(fd, String(process.pid));
+    heartbeat = setInterval(() => {
+      // Refresh the inode we opened, never a replacement at the same path.
+      const now = new Date();
+      try { fs.futimesSync(lockFd ?? fd, now, now); } catch { /* PID probing still protects a live owner */ }
+    }, Math.floor(MEMORY_DB_LOCK_STALE_MS / 3));
+    heartbeat.unref();
+    return await heldMemoryDbLocks.run(nested, fn);
+  } finally {
+    if (heartbeat) clearInterval(heartbeat);
+    if (lockFd !== undefined) fs.closeSync(lockFd);
     fs.closeSync(fd);
-    try {
-      return await heldMemoryDbLocks.run(nested, fn);
-    } finally {
-      try { fs.unlinkSync(lockFile); } catch { /* already gone */ }
-    }
+    try { if (acquired && readMemoryDbLock(lockFile)?.content === ownership) fs.unlinkSync(lockFile); } catch { /* already gone or replaced */ }
+    try { fs.unlinkSync(ownerFile); } catch { /* already gone */ }
   }
 }
 
@@ -4114,6 +4472,9 @@ export async function purgeNamespace(options: {
       const fileBuffer = readFileMaybeEncrypted(dbPath, null);
       const db = new SQL.Database(fileBuffer);
 
+      // #3785: purge is advertised as irreversible; zero free pages too.
+      db.run('PRAGMA secure_delete = ON');
+
       const beforeResult = db.exec(`SELECT COUNT(*) FROM memory_entries WHERE namespace = ?`, [namespace]);
       const deletedCount = (beforeResult[0]?.values?.[0]?.[0] as number) || 0;
 
@@ -4123,7 +4484,7 @@ export async function purgeNamespace(options: {
       const remainingEntries = (countResult[0]?.values?.[0]?.[0] as number) || 0;
 
       const data = db.export();
-      writeFileRestricted(dbPath, Buffer.from(data), { encrypt: options.encryptWrites ?? true });
+      writeDbImagePreservingFormat(dbPath, data, { encrypt: options.encryptWrites ?? true });
       db.close();
 
       if (deletedCount > 0 && hnswIndex?.entries) {

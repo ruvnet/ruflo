@@ -1,0 +1,17 @@
+{
+  "kind": "synthetic event processing only",
+  "node": "v24.22.1",
+  "baselineCommit": "973d0ab497c9138d7bee1dc3c7a4d3985e37bf9e",
+  "baselineSha256": "261e5a46ea94bf9dc79b9907f68f7768df15ae156fc0033cd18a2c8155fa287f",
+  "candidateSha256": "513ecb0b0d6fcb7d1504c3c81e78356372066564986234aa18bc157e102e5959",
+  "events": 5001,
+  "polls": 51,
+  "repeats": 9,
+  "baselineMedianMs": 10.286731000000032,
+  "candidateMedianMs": 6.096832000000006,
+  "latencyRatio": 1.6872255951943602,
+  "baselineEventVisits": 132501,
+  "incrementalEventVisits": 5001,
+  "eventVisitReduction": 0.9622568886272557,
+  "limitations": "No provider latency, token savings, dollar savings or bug-finding improvement measured. Snapshot output assembly is included in both timings."
+}

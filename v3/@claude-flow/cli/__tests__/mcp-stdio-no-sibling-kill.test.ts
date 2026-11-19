@@ -58,6 +58,8 @@ vi.mock('../src/mcp-server.js', () => ({
   filterAdvertisedMcpTools: (tools: unknown[]) => tools,
   parseMcpToolSelection: () => 'all',
   resolveMcpHttpAuthToken: () => undefined,
+  ensureDefaultMcpToken: () => ({ token: 'x'.repeat(32), file: '/nowhere' }),
+  isUnauthenticatedHttpAllowed: () => false,
   isLoopbackHost: () => true,
 }));
 

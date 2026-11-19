@@ -5,6 +5,7 @@ import { DEV, DEV_GROUPS, devSpec, type DevCost, type DevEntry, type DevGroup } 
 import { slot } from './attention'
 import { ago, button, clip, col, type Ctx, row, section, tagChip, text, THEME } from './common'
 import { frameResult } from './status-card'
+import { RURE_GROUPS } from '../rure'
 import { SANDBOX_GROUPS } from '../sandbox'
 import { spinAt } from '../spinner'
 import { sendResultRow } from './secure'
@@ -45,6 +46,13 @@ const FIELDS: Partial<Record<DevGroup, readonly { field: DevField; label: string
     { field: 'send', label: 'type', placeholder: 'one command line to type into that session: Enter shows it, then asks before it runs', submit: 'send' },
   ],
   daa: [{ field: 'note', label: 'note', placeholder: 'feedback or knowledge to send (also a managed-agent prompt)' }],
+  // The ruRE page (ADR-494) draws these two sections; the sample is a path inside the project.
+  'rure-auto': [{ field: 'sample', label: 'sample', placeholder: 'any file or folder inside this project: DETECT picks the reader', submit: 'detect' }],
+  'rure-app': [
+    { field: 'sample', label: 'sample', placeholder: 'a .asar file or a folder of JS source, inside this project', submit: 'map' },
+    { field: 'query', label: 'feature', placeholder: 'for FIND FEATURE: the feature in words, e.g. license check', submit: 'find' },
+  ],
+  'rure-native': [{ field: 'sample', label: 'sample', placeholder: 'a binary, .NET assembly, CUDA program (.cubin, .fatbin, .ptx) or bytecode file, inside this project', submit: 'inspect' }],
 }
 
 /** One dotted-leader row: the cost tag, the name, what it does, and its ▸ button; an n/a row says why instead. */
@@ -56,12 +64,12 @@ export function entryRow(ctx: Ctx, entry: DevEntry, lead: number): RenderElement
   return row(
     ctx,
     [
-      isNa ? ctx.kit.Text({ bold: true, color: THEME.info, dimColor: true, children: ` ${'n/a '}` }) : tagChip(ctx, tag.text, tag.color()),
-      ctx.kit.Text({ bold: true, color: entry.cost === 'spends' || entry.cost === 'deletes' ? THEME.warn : THEME.head, dimColor: isNa, children: clip(` ${entry.name} `, lead).padEnd(lead, '.') }),
+      isNa ? ctx.kit.Text({ weight: 'semibold', color: THEME.info, dimColor: true, children: ` ${'n/a '}` }) : tagChip(ctx, tag.text, tag.color()),
+      ctx.kit.Text({ weight: 'semibold', color: entry.cost === 'spends' || entry.cost === 'deletes' ? THEME.warn : THEME.head, dimColor: isNa, children: clip(` ${entry.name} `, lead).padEnd(lead, '.') }),
       ctx.kit.Text({ color: THEME.info, dimColor: isNa || isBlocked, wrap: 'truncate-end', children: clip(` ${entry.about}`, Math.max(4, ctx.columns - lead - 16)) }),
       // A blocked row keeps its button: pressing it says which field to fill. The button is primary, the one action on the row.
       ...(isNa ? [] : [ctx.kit.Button({ key: `dt-${entry.id.slice(3)}`, label: ' ▶ run ', variant: 'primary' as const, onPress: () => void ctx.act.run(entry.id) })]),
-      ...(isBlocked ? [ctx.kit.Text({ bold: true, color: THEME.warn, children: ' needs input above ↑' })] : []),
+      ...(isBlocked ? [ctx.kit.Text({ weight: 'semibold', color: THEME.warn, children: ' needs input above ↑' })] : []),
     ],
     `dt-row-${entry.id}`,
   )
@@ -83,7 +91,7 @@ export function fieldRows(ctx: Ctx, group: DevGroup): RenderElement[] {
       value: ctx.state.devtools.fields[field],
       submitLabel: submit ?? 'keep',
       onInput: value => ctx.act.devtools.draft(field, value),
-      onSubmit: value => ctx.act.devtools.submit(field, value),
+      onSubmit: value => ctx.act.devtools.submit(field, value, group),
     }),
   )
 }
@@ -112,7 +120,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
     return [frameResult(ctx, rows, running !== null ? 'run' : 'idle')]
   }
 
-  rows.push(text(ctx, ` ${result.label}`, { bold: true, color: result.ok ? THEME.ok : THEME.bad }))
+  rows.push(text(ctx, ` ${result.label}`, { weight: 'semibold', color: result.ok ? THEME.ok : THEME.bad }))
   if (result.note !== undefined) rows.push(text(ctx, ` ${result.note}`, { color: /MONEY|DELETES|DISCARDS|SHELL/.test(result.note) ? THEME.bad : THEME.warn }))
 
   const top = Math.max(0, Math.min(state.select.item, result.lines.length - RESULT_ROWS))
@@ -146,8 +154,8 @@ export function devtoolsView(ctx: Ctx): RenderElement {
   const hasRun = state.lab.running?.id.startsWith('dt-') === true || state.lab.result?.id.startsWith('dt-') === true || state.pending !== null
   const rows: RenderElement[] = [text(ctx, ' $0 local read, runs at once · cpu/wr local work or a write · net the network · $$ may spend · del deletes: each of these asks first', { dimColor: true })]
 
-  // The sandbox groups (tmux, RVM) are drawn on the Sandbox page, not here.
-  DEV_GROUPS.filter(group => !SANDBOX_GROUPS.some(sandbox => sandbox.id === group.id)).forEach((group, i) => {
+  // The sandbox groups (tmux, RVM) are drawn on the Sandbox page and the ruRE groups on the ruRE page, not here.
+  DEV_GROUPS.filter(group => !SANDBOX_GROUPS.some(sandbox => sandbox.id === group.id) && !RURE_GROUPS.some(re => re.id === group.id)).forEach((group, i) => {
     const entries = DEV.filter(candidate => candidate.group === group.id)
 
     // The first group, and every group with a text field, opens: a field folded away could not be typed into, so its runs would refuse.

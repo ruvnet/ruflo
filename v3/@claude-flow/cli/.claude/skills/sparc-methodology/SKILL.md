@@ -455,7 +455,7 @@ mcp__claude-flow__swarm_init {
 
 // Spawn specialized agents
 mcp__claude-flow__agent_spawn {
-  type: "<agent-type>",
+  agentType: "<agent-type>",
   capabilities: ["<capability1>", "<capability2>"]
 }
 
@@ -522,15 +522,15 @@ mcp__claude-flow__swarm_init {
 
 // Spawn coordinator
 mcp__claude-flow__agent_spawn {
-  type: "coordinator",
+  agentType: "coordinator",
   capabilities: ["planning", "delegation", "monitoring"]
 }
 
 // Spawn specialized workers
-mcp__claude-flow__agent_spawn { type: "architect" }
-mcp__claude-flow__agent_spawn { type: "coder" }
-mcp__claude-flow__agent_spawn { type: "tester" }
-mcp__claude-flow__agent_spawn { type: "reviewer" }
+mcp__claude-flow__agent_spawn { agentType: "architect" }
+mcp__claude-flow__agent_spawn { agentType: "coder" }
+mcp__claude-flow__agent_spawn { agentType: "tester" }
+mcp__claude-flow__agent_spawn { agentType: "reviewer" }
 ```
 
 ### Pattern 2: Mesh Coordination
@@ -703,14 +703,14 @@ mcp__claude-flow__memory_usage {
 ```javascript
 // ✅ CORRECT: All operations together
 [Single Message]:
-  mcp__claude-flow__agent_spawn { type: "researcher" }
-  mcp__claude-flow__agent_spawn { type: "coder" }
-  mcp__claude-flow__agent_spawn { type: "tester" }
+  mcp__claude-flow__agent_spawn { agentType: "researcher" }
+  mcp__claude-flow__agent_spawn { agentType: "coder" }
+  mcp__claude-flow__agent_spawn { agentType: "tester" }
   TodoWrite { todos: [8-10 todos] }
 
 // ❌ WRONG: Multiple messages
-Message 1: mcp__claude-flow__agent_spawn { type: "researcher" }
-Message 2: mcp__claude-flow__agent_spawn { type: "coder" }
+Message 1: mcp__claude-flow__agent_spawn { agentType: "researcher" }
+Message 2: mcp__claude-flow__agent_spawn { agentType: "coder" }
 Message 3: TodoWrite { todos: [...] }
 ```
 

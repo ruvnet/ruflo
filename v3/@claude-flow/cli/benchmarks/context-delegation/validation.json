@@ -1,0 +1,94 @@
+{
+  "schema": "ruflo.context-validation/v1",
+  "baselineCommit": "3667ba6573ef811383881f8a887978798bf2113d",
+  "candidateSnapshotSha256": "20491e6e177cdbab52a4a1b633fafad3463b534609e0bac4a39478a0c11ee5cf",
+  "runtime": {
+    "node": "v24.22.2",
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "AMD Ryzen 9 9950X 16-Core Processor"
+  },
+  "checks": [
+    {
+      "command": "node_modules/.bin/tsc -p v3/@claude-flow/cli/tsconfig.context-delegation.json",
+      "exitCode": 0,
+      "scope": "Strict type checking of core service, provider adapter, launch budget dependency and CLI metadata command; not full repository build"
+    },
+    {
+      "command": "../../../node_modules/.bin/vitest run __tests__/context-delegation.test.ts __tests__/anthropic-context-adapter.test.ts __tests__/context-provider-pilot.test.ts __tests__/context-subscription-pilot.test.ts __tests__/bounded-worker-pool.test.ts __tests__/bounded-worker-pool-preabort.test.ts __tests__/services/global-ai-budget.test.ts __tests__/services/ai-job-dedup.test.ts",
+      "cwd": "v3/@claude-flow/cli",
+      "exitCode": 0,
+      "vitest": "3.2.6",
+      "filesPassed": 8,
+      "testsPassed": 163,
+      "focusedNewTests": 126,
+      "coreContextTests": 67,
+      "providerAdapterTests": 35,
+      "providerPilotRunnerTests": 7,
+      "subscriptionPilotTests": 17
+    },
+    {
+      "command": "node v3/@claude-flow/cli/benchmarks/context-delegation/run.mjs",
+      "exitCode": 0,
+      "pairedSamples": 300,
+      "independentCases": 30,
+      "repetitions": 10,
+      "networkCalls": 0,
+      "modelCalls": 0
+    },
+    {
+      "command": "node v3/@claude-flow/cli/benchmarks/context-delegation/verify.mjs",
+      "exitCode": 0,
+      "sourceHashesVerified": 17
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    },
+    {
+      "command": "node v3/@claude-flow/cli/benchmarks/context-delegation/provider-pilot.mjs",
+      "exitCode": 0,
+      "scope": "Zero-network preflight; no bound runtime API key",
+      "networkCalls": 0,
+      "modelCalls": 0,
+      "globalLimitsChanged": false
+    },
+    {
+      "scope": "Independent history-free runner fixtures",
+      "exitCode": 0,
+      "testsPassed": 7,
+      "parentGitRepositoryPresent": false,
+      "runtime": "Node 24.22.1"
+    },
+    {
+      "scope": "Manual ruOS subscription baseline attempt",
+      "launches": 1,
+      "outcome": "55 second process deadline; failed; termination confirmed; zero active reservations afterwards",
+      "retainedUsageReceipt": false,
+      "actualModelCalls": "unknown",
+      "cost": "unknown",
+      "automaticRetry": false,
+      "proof": "subscription-live-attempt.json"
+    },
+    {
+      "scope": "Frozen baseline investigation for separate root pattern failure",
+      "baselineCommit": "47406b0a9620ecf1134e29569b6b9527c2beba4d",
+      "testsPassed": 18,
+      "runtime": "Node 24.22.1",
+      "backend": "sql.js",
+      "attribution": "Not reproduced; runtime/backend differ from failing CI; no causal exoneration claimed"
+    }
+  ],
+  "review": {
+    "architecture": "Independent read-only review of adapter and runner; endpoint disclosure, usage overrun detection, durable intent, source-bound resume, enforce-mode recheck and runtime entrypoint identity fixes applied.",
+    "benchmark": "Independent read-only source-binding, accounting and mock pilot review. No live model/economic/semantic claim; API credential binding is unavailable in observed execution shells."
+  },
+  "limitations": [
+    "No complete repository test suite was run locally",
+    "Initial full CI identified two new runner fixture issues, now repaired; root pattern assertion remains unattributed pending matching CI",
+    "HTTP API pilot still lacks runtime credential binding and requires existing enforce mode policy",
+    "One separate subscription launch failed at its deadline; inference count and cost remain unknown, so no automatic repeat",
+    "No live accuracy, latency, isolation or monetary savings proof",
+    "Validation is unsigned and independently replayable"
+  ]
+}

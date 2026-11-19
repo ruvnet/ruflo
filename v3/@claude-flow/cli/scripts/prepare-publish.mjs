@@ -39,6 +39,28 @@ await cp(
   { recursive: true },
 );
 
+// ADR-489: `ruflo tui` loads one bundled file from the CLI's own install
+// (plugins/ruflo-console/dist/tui.mjs, see src/commands/tui.ts). Build it from
+// the plugin's source with the repo's esbuild and stage only that file, so the
+// registry install runs the console and the tarball carries no console source.
+const tuiBundle = join(pluginsDir, 'ruflo-console', 'dist', 'tui.mjs');
+const tuiBuild = spawnSync(
+  process.execPath,
+  [join(repoRoot, 'plugins', 'ruflo-console', 'scripts', 'build-tui.mjs'), '--outfile', tuiBundle],
+  { cwd: repoRoot, stdio: 'inherit' },
+);
+if (tuiBuild.error) throw tuiBuild.error;
+if (tuiBuild.status !== 0) {
+  throw new Error(`build-tui.mjs failed with exit code ${tuiBuild.status ?? 'unknown'}`);
+}
+
+// 3.74.0 shipped 3.63.4 helpers: a hook-spawned daemon running an older CLI
+// rewrote .claude/helpers between pack prep and publish, and verify-helpers
+// passed because it signs whatever is on disk. Refuse unless the helper
+// content matches the commit being published (the manifest and version stamp
+// are regenerated below, so they are excluded).
+assertHelpersMatchHead();
+
 for (const script of [
   'generate-catalog-manifest.mjs',
   'sign-helpers.mjs',
@@ -51,5 +73,29 @@ for (const script of [
   if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(`${script} failed with exit code ${result.status ?? 'unknown'}`);
+  }
+}
+
+assertHelpersMatchHead();
+
+function assertHelpersMatchHead() {
+  if (process.env.RUFLO_ALLOW_DIRTY_HELPERS === '1') return;
+  const diff = spawnSync('git', [
+    'diff', '--name-only', 'HEAD', '--',
+    '.claude/helpers',
+    ':(exclude).claude/helpers/helpers.manifest.json',
+    ':(exclude).claude/helpers/.helpers-version',
+  ], { cwd: packageDir, encoding: 'utf8' });
+  if (diff.error || diff.status !== 0) {
+    throw new Error(`cannot check .claude/helpers against HEAD: ${diff.error?.message ?? diff.stderr}`);
+  }
+  const dirty = diff.stdout.trim();
+  if (dirty) {
+    throw new Error(
+      `.claude/helpers differ from HEAD, refusing to publish:\n${dirty}\n` +
+      'Something rewrote them (often a daemon or MCP server running an older CLI). ' +
+      'Stop it, run `git checkout HEAD -- .claude/helpers`, and retry. ' +
+      'Set RUFLO_ALLOW_DIRTY_HELPERS=1 only for a deliberate local experiment.',
+    );
   }
 }

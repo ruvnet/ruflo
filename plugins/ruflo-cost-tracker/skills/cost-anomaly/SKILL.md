@@ -1,8 +1,9 @@
 ---
 name: cost-anomaly
-description: MAD-based outlier detection on session spend. Robust to the very outliers it hunts (unlike mean+sigma). Surfaces specific anomalous sessions with modified-z scores; optional --alert-on-outliers exit code for CI gates. Distinct from cost-burn (aggregate trend) — this answers "which INDIVIDUAL session is the outlier?".
+description: "MAD-based outlier detection on session spend: lists anomalous sessions with modified-z scores, with an optional --alert-on-outliers exit code for CI. Use when asked which individual session is the cost outlier; cost-burn covers the aggregate trend."
 argument-hint: "[--since 7d] [--threshold 3.5] [--alert-on-outliers N] [--format table|json]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 Per-session outlier detection — the diagnostic counterpart to cost-burn's

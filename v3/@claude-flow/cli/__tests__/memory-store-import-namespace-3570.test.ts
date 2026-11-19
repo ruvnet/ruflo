@@ -34,6 +34,7 @@ const importTool = memoryTools.find(t => t.name === 'memory_import')!;
 const exportTool = memoryTools.find(t => t.name === 'memory_export')!;
 
 const tempDir = mkdtempSync(join(tmpdir(), 'ruflo-ns-3570-'));
+process.env.CLAUDE_FLOW_CWD = tempDir; // MCP export/import paths are contained to the project
 const writeImport = (name: string, entries: unknown[]) => {
   const p = join(tempDir, name);
   writeFileSync(p, JSON.stringify({ entries }));

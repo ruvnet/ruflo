@@ -20,6 +20,7 @@ import {
   clearHistory,
 } from '../update/executor.js';
 import { clearCache } from '../update/rate-limiter.js';
+import { resolveStartupUpdateConfig } from '../update/index.js';
 
 // Helper functions
 function formatUpdateType(type: string): string {
@@ -66,7 +67,7 @@ const checkCommand: Command = {
     }
 
     try {
-      const { results, skipped, reason } = await checkForUpdates(DEFAULT_CONFIG);
+      const { results, skipped, reason } = await checkForUpdates(resolveStartupUpdateConfig());
 
       if (skipped) {
         output.printInfo(`Update check skipped: ${reason}`);
@@ -140,6 +141,8 @@ const allCommand: Command = {
   ],
   async action(ctx: CommandContext): Promise<CommandResult> {
     const { flags } = ctx;
+    // The parser stores `--dry-run` as `dryRun`.
+    const dryRun = flags.dryRun === true || flags['dry-run'] === true;
     process.env.CLAUDE_FLOW_FORCE_UPDATE = 'true';
 
     try {
@@ -150,7 +153,7 @@ const allCommand: Command = {
         autoUpdate: {
           patch: true,
           minor: true,
-          major: flags['include-major'] as boolean || false,
+          major: flags.includeMajor as boolean || false,
         },
       };
 
@@ -175,19 +178,19 @@ const allCommand: Command = {
       const updateResults = await executeMultipleUpdates(
         results,
         installedPackages,
-        flags['dry-run'] as boolean
+        dryRun
       );
 
       const successful = updateResults.filter((r) => r.success);
       const failed = updateResults.filter((r) => !r.success);
 
       output.writeln();
-      output.writeln(output.highlight(flags['dry-run'] ? '═══ Dry Run - Would Update ═══' : '═══ Update Results ═══'));
+      output.writeln(output.highlight(dryRun ? '═══ Dry Run - Would Update ═══' : '═══ Update Results ═══'));
       output.writeln();
 
       if (successful.length > 0) {
         output.printSuccess(
-          `${successful.length} package(s) ${flags['dry-run'] ? 'would be ' : ''}updated:`
+          `${successful.length} package(s) ${dryRun ? 'would be ' : ''}updated:`
         );
         for (const r of successful) {
           output.writeln(`  ${output.success('✓')} ${r.package}@${r.version}`);

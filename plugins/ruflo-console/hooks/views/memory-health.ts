@@ -61,7 +61,7 @@ function clusterRows(ctx: Ctx, report: HealthReport): RenderElement[] {
     const names = cluster.members.slice(0, 3).map(member => `${member.namespace}/${member.key}`).join(' · ')
     const more = cluster.size > 3 ? ` +${cluster.size - 3}` : ''
 
-    rows.push(row(ctx, [ctx.kit.Text({ bold: true, color: cluster.kind === 'exact' ? THEME.bad : THEME.warn, children: ` ${cluster.kind === 'exact' ? 'same ' : 'near '}×${cluster.size} ` }), text(ctx, clip(`${names}${more}`, Math.max(10, ctx.columns - 14)), { color: THEME.info })]))
+    rows.push(row(ctx, [ctx.kit.Text({ weight: 'semibold', color: cluster.kind === 'exact' ? THEME.bad : THEME.warn, children: ` ${cluster.kind === 'exact' ? 'same ' : 'near '}×${cluster.size} ` }), text(ctx, clip(`${names}${more}`, Math.max(10, ctx.columns - 14)), { color: THEME.info })]))
   }
 
   if (report.clusterCount > SHOW_CLUSTERS) rows.push(text(ctx, `   +${report.clusterCount - SHOW_CLUSTERS} more cluster${report.clusterCount - SHOW_CLUSTERS === 1 ? '' : 's'} not drawn (the counts above include them)`, { dimColor: true }))
@@ -152,7 +152,7 @@ function semanticRows(ctx: Ctx, entries: readonly MapEntry[] | null): RenderElem
   for (const cluster of report.clusters.slice(0, SHOW_CLUSTERS)) {
     const names = cluster.members.slice(0, 3).map(member => `${member.namespace}/${member.key}`).join(' · ')
 
-    rows.push(row(ctx, [ctx.kit.Text({ bold: true, color: THEME.warn, children: ` like ×${cluster.size} ` }), text(ctx, clip(`${names}${cluster.size > 3 ? ` +${cluster.size - 3}` : ''} (min cos ${cluster.minCosine.toFixed(3)})`, Math.max(10, ctx.columns - 14)), { color: THEME.info })]))
+    rows.push(row(ctx, [ctx.kit.Text({ weight: 'semibold', color: THEME.warn, children: ` like ×${cluster.size} ` }), text(ctx, clip(`${names}${cluster.size > 3 ? ` +${cluster.size - 3}` : ''} (min cos ${cluster.minCosine.toFixed(3)})`, Math.max(10, ctx.columns - 14)), { color: THEME.info })]))
   }
 
   if (report.clusterCount > SHOW_CLUSTERS) rows.push(text(ctx, `   +${report.clusterCount - SHOW_CLUSTERS} more cluster${report.clusterCount - SHOW_CLUSTERS === 1 ? '' : 's'} not drawn (${report.entries} entries in ${report.clusterCount} clusters in all)`, { dimColor: true }))
@@ -176,13 +176,13 @@ export function healthRows(ctx: Ctx, now: () => number = () => ctx.nowMs): Rende
 
   return [
     ...summaryRows(ctx, report, total),
-    text(ctx, ' duplicate clusters', { bold: true, color: THEME.head }),
+    text(ctx, ' duplicate clusters', { weight: 'semibold', color: THEME.head }),
     ...clusterRows(ctx, report),
-    text(ctx, ' similar by meaning (stored vectors)', { bold: true, color: THEME.head }),
+    text(ctx, ' similar by meaning (stored vectors)', { weight: 'semibold', color: THEME.head }),
     ...semanticRows(ctx, mapped),
-    text(ctx, ' stale entries', { bold: true, color: THEME.head }),
+    text(ctx, ' stale entries', { weight: 'semibold', color: THEME.head }),
     ...staleRows(ctx, report),
-    text(ctx, ' recall by namespace', { bold: true, color: THEME.head }),
+    text(ctx, ' recall by namespace', { weight: 'semibold', color: THEME.head }),
     ...namespaceRows(ctx, report),
     ...consolidateRows(ctx),
   ]

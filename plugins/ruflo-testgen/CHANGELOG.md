@@ -2,6 +2,16 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.3.4 — 2026-10-29
+- chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
+
+## 0.3.3 — 2026-10-12
+- fix: tdd-workflow reports the observed validation outcome to `hooks_post-task` instead of a literal `success: true` (#4085)
+
+## 0.3.2 — 2026-10-11
+- fix: tdd-repair now enforces that the failing test is not edited (original bytes restored, attempt scored failed with `test-file-modified`) instead of only asking in the prompt, with a node:test; docs no longer claim Bash is a sandbox with no network or arbitrary writes
+- fix: testgen command put user text inside double quotes in shell commands; test-gaps used a `--limit` flag `coverage-gaps` does not have
+
 ## 0.3.1 — 2026-10-04
 - feat: vendor the flag option parser from one origin with the screen sync and drift check (review #2)
 - fix: one iterative textsOf in the shared screen — depth, sibling, size caps, object keys and the invisible-character set fixed at the root (ADR-…

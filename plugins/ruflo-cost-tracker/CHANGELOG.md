@@ -2,6 +2,35 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-cost-tracker`.
 
+## 0.31.3 — 2026-11-09
+- fix: `scripts/compact.mjs` exits once its output has been flushed. With a patched agentic-flow (>= 2.0.14, GHSA-vcv2-r9jh-99m5) the ReasoningBank backend leaves a timer alive, so the script printed its result and then never exited. `scripts/smoke-compact-exit.mjs` guards it.
+
+## 0.31.2 — 2026-11-05
+- fix: `cost-health` resolves an npx CLI once before starting its four subchecks in parallel. With a cold npm cache, four concurrent first installs raced in one `~/.npm/_npx` directory and left a broken install (#4711). Skip with `HEALTH_SKIP_WARMUP=1`.
+- fix: budget, burn, anomaly and projection report a failed `memory list` as an error (exit 2, with the CLI's stderr) instead of treating it as no data, which showed "no budget set" (#4711).
+
+## 0.31.0 — 2026-10-29
+- docs: `/ruflo-cost` documents the budget file and `ruflo cost budget set|export --gateway litellm [--apply]` and `ruflo cost report` (ADR-508, #4592).
+
+## 0.30.0 — 2026-10-29
+- chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
+
+## 0.29.0 — 2026-10-29
+- feat: `openrouterApiKey` is a `userConfig` option with `sensitive: true` (ADR-506, #4587): entered masked, kept in the platform credential store, read through `readSecret` before the `OPENROUTER_API_KEY` environment fallback; never logged or put on a command line.
+
+## 0.28.3 — 2026-10-24
+- fix: `ledger.mjs`, `advise.mjs` and `local-cost.mjs` do nothing on Windows: they ran only when `import.meta.url === "file://" + argv[1]`, which is never true there (`file:///C:/…` against `C:…`), so every call exited 0 with no output. They now compare against `pathToFileURL(argv[1])`.
+- fix: `ledger.mjs --project` takes a drive-lettered path, and the project filter matches Windows paths ignoring separator style and drive-letter case, so the ruflo console's mission spend works on Windows.
+- chore: `scripts/smoke.sh` builds its root with `pwd -W` under Git Bash, so a Windows `node` can open the paths it is given (5 steps failed there before).
+
+## 0.28.2 — 2026-10-12
+- fix: a failed Stop-hook telemetry write is logged to ~/.claude-flow/logs/cost-tracker-failures.log (capped at 512 KB, rotated to the newest 200 lines) instead of being discarded; the hook still never blocks a turn (#3227, #4078, thanks @nicholas-ruest)
+
+## 0.28.1 — 2026-10-11
+- fix: cost-analyst uses `neural train --pattern optimization` (there is no `--pattern-type`, and `cost-optimization` is not a valid pattern) and drops the invalid `--train-neural` post-task flag
+- fix: `cost workers` and the analyst call `hooks_worker-status({ includeCompleted: true })` and pick out the optimize and benchmark entries (the tool has no worker-name filter)
+- fix: cost-track verification call written as a real memory_search call; cost-federation ADR link repaired; smoke expectation corrected to 63
+
 ## 0.28.0 — 2026-10-08
 - feat: read Grok CLI sessions (usage.json) into the cost ledger (`--provider grok`)
 - fix: Grok prices are list prices and are flagged approximate in the ledger output (subscription billing may differ)

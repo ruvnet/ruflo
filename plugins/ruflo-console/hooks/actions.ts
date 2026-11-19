@@ -5,7 +5,10 @@
  */
 import { idOf, type AgentRecord, type ClaimRecord, type Claimant, type TaskRecord } from './data/parse'
 import type { Snapshot } from './data/snapshot'
+import type { Findings } from './data/failure'
 import type { Host } from './host'
+import type { Options } from './state'
+import type { WriteOp } from './data/write-via'
 
 export type ActionSpec = {
   label: string
@@ -13,20 +16,32 @@ export type ActionSpec = {
   /** A fixed command outside ruflo, or an offline read, with optional JSON on stdin. */
   argv?: readonly string[]
   stdin?: string
+  /** A disk write that goes through the host's file API instead of `argv` (the Windows write flavor, data/write-via.ts); `argv` then is only a stand-in the runner never executes. */
+  write?: WriteOp
   expect: string
   verify?: (snapshot: Snapshot) => boolean
+  /**
+   * Before anything starts (a read at once, a confirmed action after the confirm): a reason it must not run (shown as the result, nothing spawned), or what to run
+   * instead (the arguments, label, lab id, note and reader a check chose, ADR-496), or null to run as built. ADR-495 added it; ADR-496 lets it choose.
+   */
+  preflight?: (host: Pick<Host, 'fs'>, options: Pick<Options, 'rureFolders'>) => Promise<string | Partial<Pick<ActionSpec, 'args' | 'label' | 'lab' | 'note' | 'lines'>> | null>
   /** A local check after a confirmed action succeeds; never part of background refreshes. */
   verifyLocal?: (host: Pick<Host, 'fs' | 'home'>) => Promise<boolean>
   /** Reads only: runs at once, without the confirm step, and shows what the CLI printed. */
   isReadOnly?: boolean
-  /** Not a ruflo CLI call: what runs instead once confirmed (a terminal harness), reporting for itself. */
-  run?: () => Promise<void>
+  /**
+   * Not a ruflo CLI call: what runs instead once confirmed (a terminal harness), reporting for itself. A run that answers a RunReport also has
+   * the runner keep it as the console's outcome, so what console_state shows Claude (and `/ruflo yes` prints) is how the run ended.
+   */
+  run?: () => Promise<void | RunReport>
   /** Where the ask came from in its view (`goal`, `controls`, `guide`): a view that draws its own confirm puts it under that field. */
   scope?: string
   /** The command line the confirm row shows when it is not `ruflo <args>`. */
   shows?: string
   /** Raised on Claude's behalf: set by a deferred ask (one that resolves after its screen) from the origin it had when called, so it is never attributed to the person (ADR-450 T14, #3815). */
   byModel?: boolean
+  /** Which of Claude's console_run / console_set calls started this ask (model-tools.ts hands out the numbers): the call that settles it is that one and no other (#3983). */
+  byCall?: number
   /** The class the entry itself declares (a Dev Tools entry's `cost`): Claude's confirm gate never reads it as less than this. */
   declared?: 'write' | 'network' | 'install' | 'spend' | 'delete'
   /** A MetaHarness lab entry's id: the runner keeps what it printed for the lab's result panel. */
@@ -43,7 +58,16 @@ export type ActionSpec = {
   onOutput?: (stdout: string) => void
   /** A lab entry that reads its own output: it may keep what it parsed, and answers the result panel's lines (masked where it must be). */
   read?: (stdout: string, stderr: string, ok: boolean) => string[]
+  /**
+   * A verdict command's convention, checked against the CLI's source: the exits it uses for "it found something" and the
+   * shape of its JSON answer. Such an exit WITH an answer of that shape is an answer, not a failure; without one (no JSON,
+   * `{}`, a banner) it stays a failure. A run with such an answer is judged by the answer's top-level keys only.
+   */
+  findings?: Findings
 }
+
+/** How a run that reports for itself ended, in the shape of the console's outcome. */
+export type RunReport = { label: string; ok: boolean; detail: string; lines?: string[] }
 
 export const exec = (tool: string, params: Record<string, string>) => ['mcp', 'exec', '-t', tool, '-p', JSON.stringify(params)] as const
 const SAFE_WORD = /^[A-Za-z0-9_.-]{1,40}$/

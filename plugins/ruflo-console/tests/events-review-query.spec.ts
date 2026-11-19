@@ -54,11 +54,16 @@ describe('query language: bounded time on hostile patterns', () => {
 
     ui.parsed = parseQuery('/.*.*x/')
 
+    // The scan is CPU-bound, so what it costs is its CPU time; wall-clock time also counts every other worker of a parallel run (and the machine's other
+    // work) and failed this spec only in full runs. The wall-clock bound stays as a guard against a hang.
     const started = performance.now()
+    const cpuBefore = process.cpuUsage()
     const model = eventsModel(w.state, T + 20_000_000)
+    const cpu = process.cpuUsage(cpuBefore)
     const took = performance.now() - started
 
-    expect(took).toBeLessThan(2500)
+    expect((cpu.user + cpu.system) / 1000).toBeLessThan(2500)
+    expect(took).toBeLessThan(30_000)
 
     // Either it was quick enough to search everything, or it stopped and said so; never a silent partial answer.
     expect(model.skipped === 0 || model.shown.length > 0).toBe(true)

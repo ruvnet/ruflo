@@ -52,7 +52,7 @@ const compileCommand: Command = {
         return { success: false, message: `File not found: ${rootPath}` };
       }
 
-      const modExport = ctx.flags['mod-projection'] === true;
+      const modExport = (ctx.flags.modProjection ?? ctx.flags['mod-projection']) === true;
       const checked = modExport ? await (await import('../guidance/mod-sources.js')).readModGuidanceSources({
         rootPath, localPath, revision: String(ctx.flags.revision || ''),
       }) : undefined;
@@ -134,7 +134,7 @@ const retrieveCommand: Command = {
     const task = ctx.flags.task as string;
     const rootPath = ctx.flags.root as string || './CLAUDE.md';
     const localPath = ctx.flags.local as string | undefined;
-    const maxShards = parseInt(ctx.flags['max-shards'] as string || '5', 10);
+    const maxShards = parseInt(String(ctx.flags.maxShards ?? ctx.flags['max-shards'] ?? 5), 10);
     const intentOverride = ctx.flags.intent as string | undefined;
     const jsonOutput = ctx.flags.json === true;
 
@@ -383,9 +383,9 @@ const optimizeCommand: Command = {
     const rootPath = ctx.flags.root as string || './CLAUDE.md';
     const localPath = ctx.flags.local as string | undefined;
     const applyChanges = ctx.flags.apply === true;
-    const contextSize = (ctx.flags['context-size'] as string || 'standard') as 'compact' | 'standard' | 'full';
-    const targetScore = parseInt(ctx.flags['target-score'] as string || '90', 10);
-    const maxIterations = parseInt(ctx.flags['max-iterations'] as string || '5', 10);
+    const contextSize = (ctx.flags.contextSize ?? ctx.flags['context-size'] ?? 'standard') as 'compact' | 'standard' | 'full';
+    const targetScore = parseInt(String(ctx.flags.targetScore ?? ctx.flags['target-score'] ?? 90), 10);
+    const maxIterations = parseInt(String(ctx.flags.maxIterations ?? ctx.flags['max-iterations'] ?? 5), 10);
     const jsonOutput = ctx.flags.json === true;
 
     output.writeln();
@@ -496,10 +496,10 @@ const abTestCommand: Command = {
     { command: 'claude-flow guidance ab-test --json', description: 'Output full report as JSON' },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const configAPath = ctx.flags['config-a'] as string | undefined;
-    const configBPath = ctx.flags['config-b'] as string || './CLAUDE.md';
+    const configAPath = (ctx.flags.configA ?? ctx.flags['config-a']) as string | undefined;
+    const configBPath = (ctx.flags.configB ?? ctx.flags['config-b'] ?? './CLAUDE.md') as string;
     const tasksPath = ctx.flags.tasks as string | undefined;
-    const workDir = ctx.flags['work-dir'] as string | undefined;
+    const workDir = (ctx.flags.workDir ?? ctx.flags['work-dir']) as string | undefined;
     const jsonOutput = ctx.flags.json === true;
 
     output.writeln();
@@ -610,7 +610,7 @@ const modCandidatesCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     try {
       const { collectModCandidates } = await import('../guidance/mod-projection.js');
-      const data = await collectModCandidates(String(ctx.flags.directory || '.claude-flow/mods/guidance/observations'), ctx.flags['bundle-id'] as string | undefined);
+      const data = await collectModCandidates(String(ctx.flags.directory || '.claude-flow/mods/guidance/observations'), (ctx.flags.bundleId ?? ctx.flags['bundle-id']) as string | undefined);
       output.writeln(JSON.stringify(data, null, ctx.flags.json === true ? undefined : 2));
       return { success: true, data };
     } catch (error) {

@@ -228,3 +228,82 @@ describe('MoERouter load-balance gradient wiring', () => {
     expect(after.allScores[dominantExpert]).toBeLessThan(probBefore);
   });
 });
+
+describe('computeLoadBalanceLoss() uses the mean router probability (#4381)', () => {
+  // L = N * coef * sum_i f_i * P_i, with f_i and P_i both averaged over the
+  // route() calls made before the current one.
+  function expectedLoss(history: { scores: number[]; picked: number[] }[], coef: number): number {
+    let loss = 0;
+    for (let i = 0; i < NUM_EXPERTS; i++) {
+      const f = history.filter((h) => h.picked.includes(i)).length / history.length;
+      const p = history.reduce((s, h) => s + h.scores[i], 0) / history.length;
+      loss += f * p;
+    }
+    return NUM_EXPERTS * coef * loss;
+  }
+  const alternating = () => {
+    const arr = new Float32Array(INPUT_DIM);
+    for (let i = 0; i < INPUT_DIM; i++) arr[i] = i % 2 === 0 ? 1 : -1;
+    return arr;
+  };
+
+  it('matches the hand-computed value over a mixed history at topK=2', () => {
+    const coef = 1.0;
+    const router = new MoERouter({ enableNoise: false, topK: 2, loadBalanceCoef: coef, autoSaveInterval: 0 });
+    const inputs = [fixedEmbedding(), alternating(), fixedEmbedding(), alternating(), alternating()];
+    const history: { scores: number[]; picked: number[] }[] = [];
+    for (const input of inputs) {
+      const r = router.route(input);
+      if (history.length > 0) {
+        expect(r.loadBalanceLoss).toBeCloseTo(expectedLoss(history, coef), 5);
+      } else {
+        expect(r.loadBalanceLoss).toBe(0);
+      }
+      history.push({ scores: r.allScores, picked: r.experts.map((e) => e.index) });
+    }
+  });
+
+  it('is not driven by the current call: one divergent query leaves the loss at the historical value', () => {
+    const coef = 1.0;
+    const router = new MoERouter({ enableNoise: false, topK: 1, loadBalanceCoef: coef, autoSaveInterval: 0 });
+    let warm = router.route(fixedEmbedding());
+    for (let i = 0; i < 9; i++) warm = router.route(fixedEmbedding());
+    const dominant = warm.experts[0].index;
+
+    const divergent = router.route(alternating());
+    // Every prior call picked `dominant` with the same probabilities, so
+    // f_dominant = 1 and P_dominant = warm's probability for it.
+    expect(divergent.loadBalanceLoss).toBeCloseTo(NUM_EXPERTS * coef * warm.allScores[dominant], 5);
+    // Guard against a vacuous pass: the latest call's probability differs.
+    expect(Math.abs(divergent.allScores[dominant] - warm.allScores[dominant])).toBeGreaterThan(1e-3);
+  });
+
+  it('resetStats() clears the probability history', () => {
+    const router = new MoERouter({ enableNoise: false, topK: 1, loadBalanceCoef: 1, autoSaveInterval: 0 });
+    for (let i = 0; i < 3; i++) router.route(fixedEmbedding());
+    router.resetStats();
+    const afterReset = router.route(alternating());
+    expect(afterReset.loadBalanceLoss).toBe(0);
+    // The next loss must only see the post-reset call, not the 3 earlier ones.
+    const next = router.route(fixedEmbedding());
+    expect(next.loadBalanceLoss).toBeCloseTo(
+      expectedLoss([{ scores: afterReset.allScores, picked: afterReset.experts.map((e) => e.index) }], 1), 6);
+  });
+
+  it('persists the probability history across save/load', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'moe-router-probsums-'));
+    try {
+      const weightsPath = join(dir, 'weights.json');
+      const router = new MoERouter({ enableNoise: false, topK: 2, weightsPath, autoSaveInterval: 0 });
+      for (const input of [fixedEmbedding(), alternating(), alternating()]) router.route(input);
+      expect(await router.saveWeights()).toBe(true);
+      const expected = router.route(fixedEmbedding()).loadBalanceLoss;
+
+      const reloaded = new MoERouter({ enableNoise: false, topK: 2, weightsPath, autoSaveInterval: 0 });
+      expect(await reloaded.loadWeights()).toBe(true);
+      expect(reloaded.route(fixedEmbedding()).loadBalanceLoss).toBeCloseTo(expected, 6);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

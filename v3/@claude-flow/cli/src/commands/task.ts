@@ -382,7 +382,7 @@ const statusCommand: Command = {
 
     try {
       const result = await callMCPTool<{
-        id: string;
+        taskId: string;
         type: string;
         description: string;
         priority: string;
@@ -437,7 +437,7 @@ const statusCommand: Command = {
           '',
           `Description: ${result.description}`
         ].join('\n'),
-        `Task: ${result.id}`
+        `Task: ${result.taskId}`
       );
 
       // Assignment info
@@ -568,14 +568,28 @@ const cancelCommand: Command = {
 
     try {
       const result = await callMCPTool<{
+        success: boolean;
         taskId: string;
-        cancelled: boolean;
-        previousStatus: string;
-        cancelledAt: string;
+        status?: string;
+        previousStatus?: string;
+        cancelledAt?: string;
+        error?: string;
       }>('task_cancel', {
         taskId,
         reason: reason || 'Cancelled by user via CLI'
       });
+
+      // task_cancel answers an unknown or already-finished task with
+      // success: false instead of throwing; report it instead of printing
+      // "Task ... cancelled" and exiting 0.
+      if (result.success === false) {
+        if (ctx.flags.format === 'json') {
+          output.printJson(result);
+        } else {
+          output.printError(`Failed to cancel task ${taskId}: ${result.error || 'unknown error'}`);
+        }
+        return { success: false, exitCode: 1, data: result };
+      }
 
       output.writeln();
       output.printSuccess(`Task ${taskId} cancelled`);
@@ -658,10 +672,19 @@ const assignCommand: Command = {
             taskId: string;
             assignedTo: string[];
             previouslyAssigned: string[];
+            success?: boolean;
+            error?: string;
           }>('task_assign', {
             taskId,
             agentIds: selectedAgents
           });
+
+          // task_assign answers a finished task or an unknown agent with
+          // success: false instead of throwing (#4725).
+          if (result.success === false) {
+            output.printError(`Failed to assign task ${taskId}: ${result.error || 'unknown error'}`);
+            return { success: false, exitCode: 1, data: result };
+          }
 
           output.writeln();
           output.printSuccess(`Task ${taskId} assigned to ${result.assignedTo.join(', ')}`);
@@ -685,11 +708,24 @@ const assignCommand: Command = {
         taskId: string;
         assignedTo: string[];
         previouslyAssigned: string[];
+        success?: boolean;
+        error?: string;
       }>('task_assign', {
         taskId,
         agentIds: unassign ? [] : agentIds.split(',').map(id => id.trim()),
         unassign
       });
+
+      // task_assign answers a finished task or an unknown agent with
+      // success: false instead of throwing (#4725).
+      if (result.success === false) {
+        if (ctx.flags.format === 'json') {
+          output.printJson(result);
+        } else {
+          output.printError(`Failed to assign task ${taskId}: ${result.error || 'unknown error'}`);
+        }
+        return { success: false, exitCode: 1, data: result };
+      }
 
       output.writeln();
       if (unassign) {
@@ -729,7 +765,7 @@ const retryCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const taskId = ctx.args[0];
-    const resetState = ctx.flags['reset-state'] as boolean;
+    const resetState = (ctx.flags.resetState ?? ctx.flags['reset-state']) as boolean | undefined;
 
     if (!taskId) {
       output.printError('Task ID is required');

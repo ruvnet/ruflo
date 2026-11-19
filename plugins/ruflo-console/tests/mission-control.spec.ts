@@ -13,19 +13,33 @@ import { missionPart } from '../hooks/views/bar'
 const ID = 'msn_0123456789abcdef01234567'
 const out = (data: unknown) => `[INFO] Executing tool\nResult:\n${JSON.stringify(data, null, 2)}\n[INFO] done`
 
-type Calls = { runs: string[][]; prompts: string[]; fills: string[]; slashes: string[]; stored: Map<string, unknown> }
+type Calls = { runs: string[][]; prompts: string[]; fills: string[]; slashes: string[]; stored: Map<string, unknown>; writes: string[] }
 
 function hostOf(calls: Calls, answer: (tool: string, params: Record<string, unknown>) => unknown = () => ({ ok: true })): Host {
   return {
-    run: async (argv: readonly string[]) => {
+    run: async (argv: readonly string[], _ms?: number, stdin?: string) => {
+      // The plan goes in a file (the gnu and posix write flavors take it on stdin) and is read by `mission plan --plan-file`, which prints the bare answer.
+      if (argv[argv.indexOf('mission') + 1] === 'plan') {
+        calls.runs.push([...argv])
+
+        return { exitCode: 0, stdout: JSON.stringify(answer('mission_plan', {}), null, 2), stderr: '' }
+      }
+      if (argv.indexOf('-t') < 0) {
+        if (stdin !== undefined) calls.writes.push(stdin)
+
+        return { exitCode: 0, stdout: '', stderr: '' }
+      }
+
       calls.runs.push([...argv])
 
       const at = argv.indexOf('-t')
-      const tool = at >= 0 ? (argv[at + 1] as string) : ''
-      const params = at >= 0 ? (JSON.parse(argv[argv.indexOf('-p') + 1] as string) as Record<string, unknown>) : {}
+      const tool = argv[at + 1] as string
+      const params = JSON.parse(argv[argv.indexOf('-p') + 1] as string) as Record<string, unknown>
 
       return { exitCode: 0, stdout: out(answer(tool, params)), stderr: '' }
     },
+    // Windows writes the plan file through the host's file API, the other flavors through argv with the text on stdin (above).
+    fs: { write: async (_path: string, text: string) => void calls.writes.push(text), exists: async () => false, stat: async () => undefined },
     storeGet: async (key: string) => calls.stored.get(key),
     storeSet: async (key: string, value: unknown) => void calls.stored.set(key, value),
     invalidate: () => undefined,
@@ -37,7 +51,7 @@ function hostOf(calls: Calls, answer: (tool: string, params: Record<string, unkn
   } as unknown as Host
 }
 
-const fresh = (): Calls => ({ runs: [], prompts: [], fills: [], slashes: [], stored: new Map() })
+const fresh = (): Calls => ({ runs: [], prompts: [], fills: [], slashes: [], stored: new Map(), writes: [] })
 const task = (id: string, status: string, tags: string[], extra: Partial<TaskRecord> = {}): TaskRecord => ({ id, type: 'feature', description: '', status, assignedTo: [], tags, ...extra })
 
 /** A mission of three tasks whose ruflo task ids are r1..r3: t1 → t2 → t3, with t2 and t3 both after t1. */
@@ -81,6 +95,15 @@ describe('mission control: status comes from the ruflo task store', () => {
     expect(derive(mission, [task('r1', 'pending', [])]).get('t2')).toBe('waiting')
     expect(derive(mission, [task('r1', 'failed', [])]).get('t1')).toBe('failed')
     expect(progressOf(mission, tasks)).toEqual({ done: 1, total: 3 })
+  })
+
+  it('never hands a task an older CLI stored as "complete" to Claude again', () => {
+    const mission = missionOf()
+
+    expect(derive(mission, [task('r1', 'complete', [])]).get('t1')).toBe('done')
+    expect(nextTask(mission, [task('r1', 'complete', [])])?.id).toBe('t2')
+    expect(derive(mission, [task('r1', ' Done ', [])]).get('t1')).toBe('done')
+    expect(derive(mission, [task('r1', 'canceled', [])]).get('t1')).toBe('cancelled')
   })
 
   it('hands out the first ready task, none while one is running or failed, none while paused or cancelled', () => {
@@ -143,11 +166,12 @@ describe('mission control: goal, plan, create', () => {
     expect(calls.runs).toEqual([]) // building the spec runs nothing
     await spec.run?.()
 
-    const tools = calls.runs.map(argv => argv[argv.indexOf('-t') + 1])
+    const tools = calls.runs.map(argv => (argv[argv.indexOf('mission') + 1] === 'plan' ? 'mission_plan' : argv[argv.indexOf('-t') + 1]))
     const tasks = mcOf(state).planned?.steps.length ?? 0
 
     expect(tools).toEqual(['mission_create', 'mission_plan', ...Array(tasks).fill('task_create')])
-    expect(calls.runs.every(argv => argv.includes('mcp') && argv.includes('exec'))).toBe(true)
+    expect(calls.runs.every(argv => (argv.includes('mcp') && argv.includes('exec')) || (argv.includes('mission') && argv.includes('plan') && argv.includes('--plan-file')))).toBe(true)
+    expect(calls.runs[1]?.join(' ')).not.toContain('"tasks"') // the plan is never an argument: it would pass the Windows command-line limit
 
     const mission = activeMission(state) as MissionRecord
 
@@ -158,9 +182,9 @@ describe('mission control: goal, plan, create', () => {
     expect(mission.events.map(event => event.seq)).toEqual([1, 2, 3])
     expect(calls.stored.get('mission-ledger')).toBeDefined()
 
-    const plan = JSON.parse(calls.runs[1]?.[calls.runs[1].indexOf('-p') + 1] as string) as { plan: { tasks: { executor: { mode: string } }[] } }
+    const plan = JSON.parse(calls.writes[0] as string) as { tasks: { executor: { mode: string } }[] }
 
-    expect(plan.plan.tasks.every(candidate => candidate.executor.mode === 'session-bound')).toBe(true)
+    expect(plan.tasks.every(candidate => candidate.executor.mode === 'session-bound')).toBe(true)
   })
 
   it('create stops and says why when the mission record refuses; no task is created', async () => {

@@ -61,7 +61,7 @@ function prepareIn(state: State, label: string): (text: string) => Promise<void>
   }
 }
 
-const line = (ctx: Ctx, value: string, props: { color?: string; dimColor?: boolean; bold?: boolean } = {}): RenderElement => text(ctx, cleanText(value), props)
+const line = (ctx: Ctx, value: string, props: { color?: string; dimColor?: boolean; weight?: 'regular' | 'medium' | 'semibold' | 'bold' } = {}): RenderElement => text(ctx, cleanText(value), props)
 
 function linksBoard(env: SlotEnv): RenderElement[] {
   const { ctx } = env

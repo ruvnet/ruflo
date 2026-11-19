@@ -64,7 +64,7 @@ function settingRows(ctx: Ctx, o: RowSpec): RenderElement[] {
           ? ctx.kit.Text({ color: THEME.warn, children: ' hidden: set it in /plugin configure' })
           : o.choices.length > 0
             ? row(ctx, chips(ctx, `st-opt-${o.key}`, o.choices, o.current, o.onChoice), `st-chips-${o.key}`)
-            : ctx.kit.Text({ bold: true, color: THEME.info, children: ` ${o.current === '' ? 'n/a' : o.current}` }),
+            : ctx.kit.Text({ weight: 'semibold', color: THEME.info, children: ` ${o.current === '' ? 'n/a' : o.current}` }),
         ...(o.isSecret === true ? [] : asks(ctx, o.key, o.title, o.description, o.current, o.where)),
       ],
       `st-row-${o.key}`,
@@ -169,6 +169,8 @@ function aiItems(ctx: Ctx): Item[] {
     one('advisor', 'Advisor checkpoints', 'off by default. On: a mission asks for a read-only second opinion (a separate claude -p turn, asked first, under the turn budget and the mission spend cap) before its plan locks, when the same check fails twice in a row (a third failure pauses the mission), and before it is declared done. This is not Claude Code’s in-session advisor tool, which a mod cannot call', ai.advisor ? 'on' : 'off', ['off', 'on'], ai.advisor, value => ctx.act.settings.ai({ advisor: value === 'on' }), 'advisor checkpoint consult second opinion root cause stop the line'),
     one('advisor-model', 'Advisor model', 'the model passed to claude -p --model for an advisor consult (default leaves it to the claude CLI); the consult card always names the model that will be used', ai.advisorModel, CLAUDE_MODELS, ai.advisorModel !== DEFAULT_AI.advisorModel, value => ctx.act.settings.ai({ advisorModel: value as (typeof CLAUDE_MODELS)[number] }), 'advisor model haiku sonnet opus'),
     one('subagent-summaries', 'Subagents return summaries only', 'adds a line to a mission’s /loop prompt asking subagents for a structured summary (findings, file paths, a verdict), not raw files or logs; an instruction to Claude, not enforced by the console', ai.subagentSummaries ? 'on' : 'off', ['off', 'on'], ai.subagentSummaries, value => ctx.act.settings.ai({ subagentSummaries: value === 'on' }), 'subagent summary structured scope discovery'),
+    one('grounding-nudge', 'RuvNet Brain nudge', 'on (the default): while a mission names the ruvnet stack (RuVector, RVF, AgentDB, ruflo ...) and the optional third-party ruvnet-brain plugin is installed and enabled, Claude’s mission context carries one fixed line pointing at its search_ruvnet tool. Nothing else changes; the console never calls the brain', ai.groundingNudge ? 'on' : 'off', ['on', 'off'], !ai.groundingNudge, value => ctx.act.settings.ai({ groundingNudge: value === 'on' }), 'grounding ruvnet brain nudge search_ruvnet'),
+    one('grounding-hint', 'RuvNet Brain install hint', 'off by default. On: when the optional ruvnet-brain plugin is not installed, one dismissible toast per session and an Overview line name it and link its repository. The console never installs it', ai.groundingHint ? 'on' : 'off', ['off', 'on'], ai.groundingHint, value => ctx.act.settings.ai(value === 'on' ? { groundingHint: true, groundingDismissed: false } : { groundingHint: false }), 'grounding ruvnet brain hint install'),
     ...LOOP_ROWS.map(row => one(row.id, row.title, row.description, row.current(ai), row.options, row.isChanged(ai), value => ctx.act.settings.ai(row.patch(value)), row.extra)),
     one('ctx-mission', 'Mission context in Claude’s prompt', 'the active mission and task ride in Claude’s system prompt, and change only when the task does (a changed prompt makes Claude re-read the chat)', ai.missionContext ? 'on' : 'off', ['on', 'off'], !ai.missionContext, value => ctx.act.settings.ai({ missionContext: value === 'on' }), 'mission context prompt cache claude'),
     one('loop-gates', 'Mission gates', 'your own commands a mission may run to verify a task, one per line; each asks first and shows its exact argv; no shell characters', ai.loopGates, [], ai.loopGates !== '', value => ctx.act.settings.ai({ loopGates: value }), 'gates verify tests smoke evidence'),
@@ -292,7 +294,7 @@ function rememberedRows(ctx: Ctx): RenderElement[] {
 
   return [
     ...entries.map(([key, label]) =>
-      row(ctx, [ctx.kit.Text({ color: THEME.ok, children: ' ✓ ' }), ctx.kit.Text({ bold: true, children: `${key} ` }), ctx.kit.Text({ dimColor: true, children: clip(`e.g. ${label}`, Math.max(10, ctx.columns - key.length - 24)) }), button(ctx, `st-forget-${key}`, '✕ forget', () => ctx.act.forget(key))], `st-allowed-${key}`),
+      row(ctx, [ctx.kit.Text({ color: THEME.ok, children: ' ✓ ' }), ctx.kit.Text({ weight: 'semibold', children: `${key} ` }), ctx.kit.Text({ dimColor: true, children: clip(`e.g. ${label}`, Math.max(10, ctx.columns - key.length - 24)) }), button(ctx, `st-forget-${key}`, '✕ forget', () => ctx.act.forget(key))], `st-allowed-${key}`),
     ),
     row(ctx, [button(ctx, 'st-forget-all', 'forget all (ask every time again)', () => ctx.act.forget(''))], 'st-allowed-all'),
   ]
@@ -304,7 +306,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
 
   if (outcome === null || ctx.nowMs - outcome.atMs > 120_000 || !/^set /.test(outcome.label)) return []
 
-  return [text(ctx, ` ${outcome.ok ? '✓' : '✗'} ${outcome.label}`, { bold: true, color: outcome.ok ? THEME.ok : THEME.bad }), ...(outcome.detail === '' ? [] : [text(ctx, `   ${clip(outcome.detail, 200)}`, { dimColor: true })])]
+  return [text(ctx, ` ${outcome.ok ? '✓' : '✗'} ${outcome.label}`, { weight: 'semibold', color: outcome.ok ? THEME.ok : THEME.bad }), ...(outcome.detail === '' ? [] : [text(ctx, `   ${clip(outcome.detail, 200)}`, { dimColor: true })])]
 }
 
 /** The search box: a framed field that applies the search on Enter and empties itself; the active search shows as a chip you can clear. */
@@ -324,7 +326,7 @@ function searchRows(ctx: Ctx, query: string, found: number): RenderElement[] {
     )
   }
 
-  if (query !== '') rows.push(row(ctx, [text(ctx, ` search “${clip(query, 40)}” · ${found} found `, { bold: true, color: THEME.ok }), button(ctx, 'st-search-clear', '✕ clear', () => ctx.act.settings.search(''))], 'st-search-chip'))
+  if (query !== '') rows.push(row(ctx, [text(ctx, ` search “${clip(query, 40)}” · ${found} found `, { weight: 'semibold', color: THEME.ok }), button(ctx, 'st-search-clear', '✕ clear', () => ctx.act.settings.search(''))], 'st-search-chip'))
 
   return rows
 }
@@ -354,6 +356,7 @@ export function settingsView(ctx: Ctx): RenderElement {
 
   const rows: RenderElement[] = [rule(ctx, 'Settings', `${shown.length} shown of ${everything.length} · ${changed} changed`)]
 
+  rows.push(button(ctx, 'st-theme-studio', 'Theme Studio: colors and animation', () => ctx.act.view('themes')))
   rows.push(
     row(
       ctx,
@@ -379,7 +382,7 @@ export function settingsView(ctx: Ctx): RenderElement {
 
     for (const item of shown) {
       if (item.source !== last) {
-        rows.push(text(ctx, ` ── ${item.source} `, { bold: true, color: THEME.head }))
+        rows.push(text(ctx, ` ── ${item.source} `, { weight: 'semibold', color: THEME.head }))
         last = item.source
       }
 

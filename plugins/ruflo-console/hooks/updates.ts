@@ -6,6 +6,7 @@
  * confirmation for a marketplace-declared command is never bypassed (no `-y`, no `--accept-command`).
  */
 import { ESCAPES, HIDDEN } from './data/parse'
+import { insideOrSame } from './data/paths'
 import { RUFLO_MARKET } from './data/snapshot'
 
 export type UpdatesMode = 'ask' | 'auto' | 'off'
@@ -116,7 +117,7 @@ export function installedEntries(listJson: string, cwd: string, id: string = PLU
     if (!Array.isArray(list)) return []
 
     const ours = list.filter((entry): entry is { id: string; version?: unknown; scope?: unknown; projectPath?: unknown } => typeof entry === 'object' && entry !== null && (entry as { id?: unknown }).id === id)
-    const here = (entry: { projectPath?: unknown }) => typeof entry.projectPath === 'string' && entry.projectPath !== '' && (cwd === entry.projectPath || cwd.startsWith(`${entry.projectPath.replace(/\/+$/, '')}/`))
+    const here = (entry: { projectPath?: unknown }) => typeof entry.projectPath === 'string' && entry.projectPath !== '' && insideOrSame(entry.projectPath, cwd)
     const applies = ours.filter(entry => entry.scope === 'user' || ((entry.scope === 'project' || entry.scope === 'local') && here(entry)))
     const valid = applies.flatMap(entry => (typeof entry.version === 'string' && typeof entry.scope === 'string' ? [{ version: entry.version, scope: entry.scope }] : []))
 

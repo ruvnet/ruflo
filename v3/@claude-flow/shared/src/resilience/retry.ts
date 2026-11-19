@@ -202,17 +202,19 @@ export const RetryableErrors = {
   /** Network errors (ECONNRESET, ETIMEDOUT, etc.) */
   network: (error: Error): boolean => {
     const networkCodes = ['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN'];
-    return networkCodes.some((code) => error.message.includes(code));
+    const code = (error as Error & { code?: unknown }).code;
+    return (typeof code === 'string' && networkCodes.includes(code)) ||
+      networkCodes.some((code) => error.message.includes(code));
   },
 
   /** Rate limit errors (429) */
   rateLimit: (error: Error): boolean => {
-    return error.message.includes('429') || error.message.toLowerCase().includes('rate limit');
+    return /(^|\D)429(?!\d)/.test(error.message) || error.message.toLowerCase().includes('rate limit');
   },
 
   /** Server errors (5xx) */
   serverError: (error: Error): boolean => {
-    return /5\d\d/.test(error.message) || error.message.includes('Internal Server Error');
+    return /(^|\D)5\d\d(?!\d)/.test(error.message) || error.message.includes('Internal Server Error');
   },
 
   /** Transient errors (network + rate limit + 5xx) */

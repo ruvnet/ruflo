@@ -70,9 +70,9 @@ function activity(ctx: Ctx, m: Model, agent: WfAgent): RenderElement[] {
     const at = origin === undefined || call.atMs === undefined ? '     ' : `+${fmtSpan(call.atMs - origin)}`.padEnd(7)
 
     return row(ctx, [
-      ctx.kit.Text({ ...(here && { bold: true }), children: `${here ? '▸' : ' '}#${String(call.callIndex + 1).padEnd(3)}` }),
+      ctx.kit.Text({ ...(here && { weight: 'semibold' }), children: `${here ? '▸' : ' '}#${String(call.callIndex + 1).padEnd(3)}` }),
       ctx.kit.Text({ color: CALL_COLOR[call.status], children: `${CALL_MARK[call.status]} ` }),
-      ctx.kit.Text({ ...(here && { bold: true }), wrap: 'truncate-end', children: clip(`${call.tool.padEnd(10)} ${call.summary}`, Math.max(12, ctx.columns - 26)) }),
+      ctx.kit.Text({ ...(here && { weight: 'semibold' }), wrap: 'truncate-end', children: clip(`${call.tool.padEnd(10)} ${call.summary}`, Math.max(12, ctx.columns - 26)) }),
       ctx.kit.Text({ dimColor: true, children: ` ${at}${fmtSpan(durationOf(call)).padStart(6)}` }),
     ])
   })
@@ -94,10 +94,10 @@ function log(ctx: Ctx, m: Model, ops: Ops, isPhase: boolean): RenderElement[] {
     const here = i === window.at
 
     return row(ctx, [
-      ctx.kit.Text({ ...(here && { bold: true }), children: `${here ? '▸' : ' '}${clockOf(line.atMs)} ` }),
+      ctx.kit.Text({ ...(here && { weight: 'semibold' }), children: `${here ? '▸' : ' '}${clockOf(line.atMs)} ` }),
       ctx.kit.Text({ color: line.level === 'error' ? THEME.bad : line.level === 'tool' ? THEME.info : line.level === 'assistant' ? THEME.ok : undefined, dimColor: line.level === 'thinking' || line.level === 'user', children: `${line.level.slice(0, 4).padEnd(5)}` }),
       ...(isPhase ? [ctx.kit.Text({ dimColor: true, children: `${clip(line.agent, 14).padEnd(15)}` })] : []),
-      ctx.kit.Text({ ...(here && { bold: true }), wrap: 'truncate-end', children: clip(line.text, Math.max(12, ctx.columns - (isPhase ? 38 : 22))) }),
+      ctx.kit.Text({ ...(here && { weight: 'semibold' }), wrap: 'truncate-end', children: clip(line.text, Math.max(12, ctx.columns - (isPhase ? 38 : 22))) }),
     ])
   })
 
@@ -177,7 +177,7 @@ export function blockRows(ctx: Ctx, title: string, block: Capped, from: number, 
   const width = Math.max(20, ctx.columns - 4)
   const lines = block.text.split('\n').flatMap(line => (line.length <= width ? [line] : (line.match(new RegExp(`.{1,${width}}`, 'g')) ?? [line])))
   const shown = lines.slice(from, from + max)
-  const rows: RenderElement[] = [text(ctx, `${title} · ${block.isCut ? `first ${block.text.length.toLocaleString('en-US')} of ${block.total.toLocaleString('en-US')} characters (cap ${FIELD_CAP.toLocaleString('en-US')})` : `${block.total.toLocaleString('en-US')} characters`} · lines ${Math.min(from + 1, lines.length)}–${from + shown.length} of ${lines.length}`, { bold: true })]
+  const rows: RenderElement[] = [text(ctx, `${title} · ${block.isCut ? `first ${block.text.length.toLocaleString('en-US')} of ${block.total.toLocaleString('en-US')} characters (cap ${FIELD_CAP.toLocaleString('en-US')})` : `${block.total.toLocaleString('en-US')} characters`} · lines ${Math.min(from + 1, lines.length)}–${from + shown.length} of ${lines.length}`, { weight: 'semibold' })]
 
   for (const line of shown) rows.push(ctx.kit.Text({ wrap: 'truncate-end', children: `  ${line}` }))
 
@@ -219,7 +219,7 @@ export function itemBody(ctx: Ctx, agent: WfAgent, m: Model, ops: Ops): RenderEl
 
   if (entry === undefined) return [text(ctx, 'Nothing is selected: go back and pick a call or a line.', { dimColor: true })]
 
-  const rows: RenderElement[] = [text(ctx, `${KIND(entry)} · #${entry.index + 1} of ${parsed?.entries.length ?? 0} · ${clockOf(entry.atMs)}${entry.kind === 'call' ? ` · ${entry.status} · ${fmtSpan(durationOf(entry))}` : ''}`, { bold: true })]
+  const rows: RenderElement[] = [text(ctx, `${KIND(entry)} · #${entry.index + 1} of ${parsed?.entries.length ?? 0} · ${clockOf(entry.atMs)}${entry.kind === 'call' ? ` · ${entry.status} · ${fmtSpan(durationOf(entry))}` : ''}`, { weight: 'semibold' })]
   const blocks: [string, Capped][] = entry.kind === 'call' ? [['input', entry.input], ...(entry.output === null ? [] : ([['output', entry.output]] as [string, Capped][]))] : [['text', entry.body]]
   let from = m.drill.scroll
   let budget = ITEM_ROWS

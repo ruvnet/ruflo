@@ -36,16 +36,17 @@ export function strip(ctx: Ctx, key: string, items: readonly Item[]): RenderElem
 /** True when Enter repeats the text the pending ask came from: the field holds the keys, so Enter again confirms. */
 export function isAskedAgain(ctx: Ctx, id: string, value: string): boolean {
   const pending = ctx.state.pending
-  const entry = [...automateEntries(ctx.state), ...neuralEntries(ctx.state)].find(candidate => candidate.id === id)
+  const again = ctx.state.askedAgain
 
-  return pending !== null && value.trim() !== '' && entry?.make?.(value)?.label === pending.label
+  // The same entry, the same text, and the very card that text raised (its id): a card with the same words that replaced it is not it.
+  return pending !== null && pending.id !== undefined && again !== null && value.trim() !== '' && again.entry === id && again.text === value.trim() && again.card === pending.id
 }
 
 /** A typed entry's field: Enter runs a read at once, or asks for a change; Enter again on the same text confirms it. */
 export function field(ctx: Ctx, id: string, label: string, placeholder: string, submitLabel = 'ask'): RenderElement {
   if (ctx.kit.Input === undefined) return text(ctx, ` ${label}: this surface has no text field; /ruflo run ${id} <text> does the same`, { dimColor: true })
 
-  return ctx.kit.Input({ key: `in-${id}`, label, placeholder, submitLabel, onSubmit: value => (isAskedAgain(ctx, id, value) ? ctx.act.confirm() : void ctx.act.run(id, value)) })
+  return ctx.kit.Input({ key: `in-${id}`, label, placeholder, submitLabel, onSubmit: value => (isAskedAgain(ctx, id, value) ? ctx.act.confirm(ctx.state.pending?.id) : void ctx.act.run(id, value)) })
 }
 
 /** The last run whose id has one of `prefixes`: what it was, how it exited, its cost note and a window of its lines. */
@@ -64,7 +65,7 @@ export function resultRows(ctx: Ctx, prefixes: readonly string[]): RenderElement
     return [frameResult(ctx, rows, running !== null ? 'run' : 'idle')]
   }
 
-  rows.push(text(ctx, ` ${result.label}`, { bold: true, color: result.ok ? THEME.ok : THEME.bad }))
+  rows.push(text(ctx, ` ${result.label}`, { weight: 'semibold', color: result.ok ? THEME.ok : THEME.bad }))
   if (result.note !== undefined) rows.push(text(ctx, ` ${result.note}`, { color: /money|models/i.test(result.note) ? THEME.bad : THEME.warn }))
 
   const top = Math.max(0, Math.min(state.select.item, result.lines.length - RESULT_ROWS))
@@ -110,7 +111,7 @@ function workerRows(ctx: Ctx): RenderElement[] {
       borderColor: lit.color,
       key: `worker-${name}`,
       children: [
-        ctx.kit.Text({ bold: true, color: lit.color, wrap: 'truncate-end', children: clip(`${lit.glyph} ${name.toUpperCase()}`, width - 2) }),
+        ctx.kit.Text({ weight: 'semibold', color: lit.color, wrap: 'truncate-end', children: clip(`${lit.glyph} ${name.toUpperCase()}`, width - 2) }),
         ctx.kit.Text({ color: THEME.info, wrap: 'truncate-end', children: clip(WORKER_ABOUT[name], width - 2) }),
         ctx.kit.Text({ dimColor: true, wrap: 'truncate-end', children: clip(`${lit.line}${record?.lastRunMs !== undefined ? ` · ${ago(record.lastRunMs, nowMs)}` : ''}`, width - 2) }),
         ctx.kit.Button({ key: `run-auto-worker-${name}`, label: '▸ run', plain: true, onPress: () => void ctx.act.run(`auto-worker-${name}`) }),
@@ -140,7 +141,7 @@ function taskCard(ctx: Ctx, task: TaskRecord, width: number): RenderElement {
     flexDirection: 'column',
     key: `task-${task.id}`,
     children: [
-      ctx.kit.Text({ bold: true, color: THEME.head, wrap: 'truncate-end', children: clip(`${task.type} · ${task.status}`, width - 2) }),
+      ctx.kit.Text({ weight: 'semibold', color: THEME.head, wrap: 'truncate-end', children: clip(`${task.type} · ${task.status}`, width - 2) }),
       ctx.kit.Text({ color: THEME.info, wrap: 'truncate-end', children: clip(task.description || task.id, width - 2) }),
       ...(task.assignedTo.length > 0 ? [ctx.kit.Text({ dimColor: true, wrap: 'truncate-end', children: clip(`→ ${task.assignedTo.join(', ')}`, width - 2) })] : []),
       ctx.kit.Box({
@@ -173,7 +174,7 @@ function kanbanRows(ctx: Ctx): RenderElement[] {
           borderColor: lane === 'running' ? THEME.warn : lane === 'done' ? THEME.ok : THEME.info,
           key: `lane-${lane}`,
           children: [
-            ctx.kit.Text({ bold: true, color: THEME.head, children: `${lane.toUpperCase()} (${list.length})` }),
+            ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: `${lane.toUpperCase()} (${list.length})` }),
             ...(list.length === 0 ? [ctx.kit.Text({ dimColor: true, children: '(none)' })] : list.slice(0, 6).map(task => taskCard(ctx, task, width))),
             ...(list.length > 6 ? [ctx.kit.Text({ dimColor: true, children: `+${list.length - 6} more` })] : []),
           ],
@@ -201,7 +202,7 @@ function workflowRows(ctx: Ctx): RenderElement[] {
       row(
         ctx,
         [
-          ctx.kit.Text({ bold: true, color: THEME.head, children: clip(` ${workflow.name} `, 28).padEnd(28, '.') }),
+          ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: clip(` ${workflow.name} `, 28).padEnd(28, '.') }),
           ctx.kit.Text({ color: STATUS_COLOR(workflow.status), children: ` ${workflow.status} · ${workflow.steps} step${workflow.steps === 1 ? '' : 's'} ` }),
           ...workflowVerbs(workflow.status).map(verb => ctx.kit.Button({ key: `run-auto-wf-${verb}-${workflow.id}`, label: ` ▸ ${verb === 'run' ? 'run $$' : verb}`, plain: true, dimColor: verb !== 'run', onPress: () => void ctx.act.run(`auto-wf-${verb}-${workflow.id}`) })),
         ],
@@ -247,7 +248,7 @@ function sessionRows(ctx: Ctx): RenderElement[] {
       row(
         ctx,
         [
-          ctx.kit.Text({ bold: true, color: THEME.head, children: clip(` ${session.name} `, 30).padEnd(30, '.') }),
+          ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: clip(` ${session.name} `, 30).padEnd(30, '.') }),
           ctx.kit.Text({ color: THEME.info, children: ` ${session.savedAtMs !== undefined ? ago(session.savedAtMs, ctx.nowMs) : 'n/a'} ` }),
           ...(['restore', 'export', 'delete'] as const).map(verb => ctx.kit.Button({ key: `run-auto-ses-${verb}-${session.id}`, label: ` ▸ ${verb}`, plain: true, dimColor: verb !== 'export', onPress: () => void ctx.act.run(`auto-ses-${verb}-${session.id}`) })),
         ],

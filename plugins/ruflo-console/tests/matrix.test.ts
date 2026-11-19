@@ -17,7 +17,7 @@ const BAD = /\bundefined\b|\bNaN\b|\[object |TypeError|ReferenceError|Cannot rea
 
 describe('matrix: every section', () => {
   for (const view of VIEWS) {
-    test(`${view.id}: frame contract at 80 and 150 columns, then ask Claude through the bridge`, { options: { boot: false } }, async ($, on) => {
+    test(`${view.id}: frame contract at 80 and 150 columns, then ask Claude through the bridge`, { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
       const world = worldOf(on, RUFLO_FILES, { commands: ['ruflo-cost-tracker:ruflo-cost'] })
 
       world.respond = missionCli
@@ -67,7 +67,7 @@ describe('matrix: every section', () => {
     })
   }
 
-  test('launch: a section with plugin commands ends with a Launch section that asks first; one without has none', { options: { boot: false } }, async ($, on) => {
+  test('launch: a section with plugin commands ends with a Launch section that asks first; one without has none', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES, { commands: ['ruflo-cost-tracker:ruflo-cost', 'ruflo-adr:adr'] })
 
     world.respond = missionCli

@@ -4,7 +4,8 @@
  * reader and the (optional) permission check. Nothing here widens anything: a task it cannot place is `cls: null` and is parked.
  */
 import { missionCostArgv, parseMissionCost } from './mission-cost'
-import { DENY_PATTERNS, KILL_FILE, TOOL_CLASSES, type ToolClass } from './ap-envelope'
+import { writeFlavorReady } from './write-flavor'
+import { DENY_PATTERNS, KILL_CLEARED, KILL_FILE, TOOL_CLASSES, type ToolClass } from './ap-envelope'
 import { ESCAPES, HIDDEN, INVISIBLE } from './parse'
 import { ANATOLE_STALE_MS } from './anatole'
 import type { EffectFact, Preflight, TaskFact } from './ap-loop'
@@ -27,8 +28,16 @@ const CLASS_WORDS: readonly [ToolClass, RegExp][] = [
 ]
 
 const PATH = /(?:^|[\s"'`(=:])(\/(?:[A-Za-z0-9._@-]+\/)*[A-Za-z0-9._@-]+)/g
-/** A path that is not absolute (home, a variable, a parent): it is never inside the envelope's folders, so a task naming one is parked. */
-const RELATIVE_PATH = /(?:^|[\s"'`(=:])(~\/\S*|~(?=\s|$)|\$\{?HOME\}?(?:\/\S*)?|\.\.\/\S*|\.\.(?=\s|$))/g
+/**
+ * An absolute Windows path: a drive (`C:\proj\x`, `C:/proj`, `C:\`), spaces in folder names (`C:\Program Files\x`),
+ * extended length (`\\?\C:\x`), or a share (`\\srv\share\x` or `//srv/share/x`). It is checked against the envelope's folders like a POSIX one.
+ */
+const WINDOWS_PATH = /(?:^|[\s"'`(=])((?:\\\\[?.]\\[A-Za-z]:[\\/]|[A-Za-z]:[\\/])(?:(?:[A-Za-z0-9._@ -]+[\\/])*[A-Za-z0-9._@-]+)?|(?:\\\\|\/\/)[A-Za-z0-9._-]+[\\/][A-Za-z0-9._$-]+(?:\\[A-Za-z0-9._@ -]+|\/[A-Za-z0-9._@ -]+)*)/g
+/**
+ * A path that is not absolute (home, a variable, a parent, drive-relative or raw device namespace): it is never inside the envelope's folders, so a task naming one is parked.
+ * Either separator, Windows variables (`%USERPROFILE%\x`, `$env:USERPROFILE\x`), drive-relative (`C:foo`), device (`\\.\`), extended (`\\?\`), and `~` / `$HOME`.
+ */
+const RELATIVE_PATH = /(?:^|[\s"'`(=:])(~[\\/]\S*|~(?=\s|$)|\$\{?HOME\}?(?:\/\S*)?|%[A-Za-z_]{1,24}%(?:[\\/]\S*)?|\$env:[A-Za-z_]{1,24}(?:[\\/]\S*)?|\.\.[\\/]\S*|\.\.(?=\s|$)|[A-Za-z]:[^\\/\s"'`(=:][^\s"'`(=:]*|\\\\[?.]\\[^\s"'`(=:]*)/g
 /** Verbs whose effect the class words do not capture (they leave the machine, change the system or run arbitrary code): a task using one is parked instead of guessed. */
 const UNPLACED = /\b(push(es|ed|ing)?|install(s|ed|ing)?|uninstall|upload|send|post|e-?mail|ssh|scp|rsync|sudo|execute|exec|kill|chmod|chown|shred|wipe|systemctl|crontab)\b/i
 
@@ -49,7 +58,7 @@ export function classifyTask(id: string, title: string, requirement = ''): TaskF
   const hardDeny = DENIES.find(([, pattern]) => pattern.test(text))?.[0] ?? null
   const hits = CLASS_WORDS.filter(([, pattern]) => pattern.test(text)).map(([cls]) => cls)
   const cls = hits.length === 0 || UNPLACED.test(text) ? null : (hits.at(-1) as ToolClass)
-  const paths = [...new Set([...[...text.matchAll(PATH)].map(m => m[1] as string), ...[...text.matchAll(RELATIVE_PATH)].map(m => m[1] as string)])].slice(0, 12)
+  const paths = [...new Set([...[...text.matchAll(PATH)], ...[...text.matchAll(WINDOWS_PATH)], ...[...text.matchAll(RELATIVE_PATH)]].map(m => (m[1] as string).trimEnd()))].slice(0, 12)
   const urls = [...text.matchAll(URLS)]
   const hosts = [...new Set(urls.map(match => (match[1] as string).toLowerCase()))].slice(0, 8)
   const repos = [...new Set(urls.flatMap(match => ((match[1] as string).toLowerCase() === 'github.com' ? [repoOf(match[2] as string)] : []).filter((name): name is string => name !== null)))].slice(0, 8)
@@ -76,10 +85,18 @@ export function anatoleFact(facts: AnatoleFacts | undefined, nowMs?: number): 'o
   return 'on'
 }
 
-/** True when the kill flag exists. A stat that throws means no flag (a missing file is how stat says it). Checked on every tick. */
-export async function killSeen(fs: Pick<ReaderFs, 'stat'>, cwd: string): Promise<boolean> {
+/**
+ * True when the kill flag exists. A stat that throws means no flag (a missing file is how stat says it). Checked on every tick. On host-fs
+ * (Windows, no delete) a flag whose content is exactly KILL_CLEARED is a cleared one, not a stop; any other content, empty included, is a stop.
+ */
+export async function killSeen(fs: Pick<ReaderFs, 'stat'> & { read?: ReaderFs['read'] }, cwd: string): Promise<boolean> {
   try {
-    return (await fs.stat(`${cwd.replace(/\/+$/, '')}/${KILL_FILE}`)) !== undefined
+    const path = `${cwd.replace(/\/+$/, '')}/${KILL_FILE}`
+
+    if ((await fs.stat(path)) === undefined) return false
+    if ((await writeFlavorReady()) !== 'host-fs' || fs.read === undefined) return true
+
+    return (await fs.read(path).catch(() => '')) !== KILL_CLEARED
   } catch {
     return false
   }

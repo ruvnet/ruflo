@@ -174,7 +174,7 @@ export function policyOpinion(projection: Projection, tool: string, input: unkno
   const verdict: Verdict | undefined = deny
     ? { decision: 'deny', reason: `ruflo policy: denied-by:${deny.id}` }
     : approval
-      ? { decision: 'ask', reason: `ruflo policy: approval-required-by:${approval.id}` }
+      ? { decision: 'ask', reason: `ruflo policy: approval-required-by:${approval.id}`, decider: 'person' }
       : undefined
   if (!verdict) return {}
   return projection.mode === 'enforce' ? { verdict } : { wouldBe: verdict.reason }

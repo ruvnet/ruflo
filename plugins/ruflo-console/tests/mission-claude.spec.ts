@@ -89,6 +89,10 @@ describe('the mission in Claude\'s prompt', () => {
     expect(contextSection(stateWith([task('r1', 'completed', [`mission:${ID}`, 'task:t1']), task('r2', 'completed', [`mission:${ID}`, 'task:t2'])]))).toBeNull()
   })
 
+  it('is absent for a cancelled mission, so a new goal is not planned under "do not start new work"', () => {
+    expect(contextSection(stateWith(open, { ...mission(), cancelled: true }))).toBeNull()
+  })
+
   it('names the mission and the task Claude is on, as a session section', () => {
     const section = contextSection(stateWith(t1Running))
 

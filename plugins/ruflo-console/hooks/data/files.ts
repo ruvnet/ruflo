@@ -6,6 +6,7 @@
  * Never listed here, never read: `.claude-flow/federation/key-*.json`, `~/.ruflo/nostr.key` and `~/.ruflo/channels.json`
  * hold private keys. The console names the first by listing the folder and stats the second only with federation enabled.
  */
+import { trimTrailing } from './paths'
 
 /** The `$.fs` calls a reader makes; each may reject. */
 export type ReaderFs = {
@@ -115,7 +116,7 @@ export async function readBounded(fs: ReaderFs, cache: ReadCache, path: string, 
 }
 
 /** Joins a root and a relative path with one slash. */
-export const under = (root: string, path: string): string => `${root.replace(/\/+$/, '')}/${path}`
+export const under = (root: string, path: string): string => `${trimTrailing(root)}/${path}`
 
 /** Every file the console reads, as text or the reason it has none, and how many changed since the last pass. */
 export type DiskRead = { project: Record<ProjectKey, Read>; home: Record<keyof typeof HOME, Read>; changed: number; federationNodes: string[] | null; hasNostrKey: boolean | null }

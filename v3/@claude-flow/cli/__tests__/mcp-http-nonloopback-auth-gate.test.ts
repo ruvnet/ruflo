@@ -121,10 +121,9 @@ describe('MCPServerManager.start() - non-loopback hosts are refused without auth
     expect(createMCPServer).not.toHaveBeenCalled();
   });
 
-  it('a token with the standalone websocket transport is rejected (no working check there)', async () => {
-    await expect(manager({ transport: 'websocket', host: '0.0.0.0', authToken: TOKEN }).start())
-      .rejects.toThrow(/only supported with --transport http/);
-    expect(createMCPServer).not.toHaveBeenCalled();
+  it('a token is accepted with the standalone websocket transport (checked at upgrade)', async () => {
+    await manager({ transport: 'websocket', host: '0.0.0.0', authToken: TOKEN }).start();
+    expect(createMCPServer).toHaveBeenCalled();
   });
 
   it('websocket transport on a non-loopback host is still refused without the opt-out', async () => {

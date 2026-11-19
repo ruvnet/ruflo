@@ -4,6 +4,7 @@
  * every string cleaned. A value a file does not hold is absent, and the view says n/a.
  */
 import { jsonObject, msOf, plain, recordOf, stringOf } from './parse'
+import { hasParentSegment, insideOrSame, isAbsolutePath } from './paths'
 import { countOf, ratioOf } from './safe'
 
 export type NeuralStats = { trajectories?: number; patterns?: number; signals?: number; lastAdaptationMs?: number }
@@ -159,8 +160,28 @@ export function parseHelpers(text: string | null): { version: string; files: str
 
 export type Installed = { id: string; name: string; marketplace: string; version: string; scope: string; updatedMs?: number; installPath?: string }
 
-/** `~/.claude/plugins/installed_plugins.json` (version 2): every installed plugin, `name@marketplace`. */
-export function parseInstalled(text: string | null): Installed[] | null {
+/**
+ * The install record that applies to a session in `cwd`: a project or local one whose `projectPath` is `cwd` or holds it (Windows paths compare
+ * ignoring case and separator style; the longest `projectPath` wins, so a record for the exact project beats one for a parent folder), else the
+ * user-scope one. A plugin installed for several projects has one record each; a record for another project never describes this one, so with
+ * none applying the result is null ("not installed here"). Without a `cwd` there is no project to judge and the first record stands in.
+ */
+function entryFor(entries: unknown, cwd: string | undefined): Record<string, unknown> | null {
+  const list: Record<string, unknown>[] = (Array.isArray(entries) ? entries : [entries]).flatMap(entry => recordOf(entry) ?? [])
+
+  if (cwd === undefined) {
+    return list.find(entry => entry.scope === 'user') ?? list[0] ?? null
+  }
+
+  const rootOf = (entry: Record<string, unknown>): string => (typeof entry.projectPath === 'string' && insideOrSame(entry.projectPath, cwd) ? entry.projectPath : '')
+  const here = list.filter(entry => (entry.scope === 'project' || entry.scope === 'local') && rootOf(entry) !== '')
+  const nearest = here.reduce<Record<string, unknown> | null>((best, entry) => (best === null || rootOf(entry).length > rootOf(best).length ? entry : best), null)
+
+  return nearest ?? list.find(entry => entry.scope === 'user') ?? null
+}
+
+/** `~/.claude/plugins/installed_plugins.json` (version 2): every installed plugin, `name@marketplace`. `cwd` picks the record of a plugin installed more than once. */
+export function parseInstalled(text: string | null, cwd?: string): Installed[] | null {
   const value = jsonObject(text)
   const plugins = recordOf(value?.plugins)
 
@@ -172,7 +193,7 @@ export function parseInstalled(text: string | null): Installed[] | null {
     .slice(0, 400)
     .flatMap(([id, entries]) => {
       const [name, marketplace] = id.split('@')
-      const entry = recordOf(Array.isArray(entries) ? entries[0] : entries)
+      const entry = entryFor(entries, cwd)
 
       if (entry === null || name === undefined || marketplace === undefined || !/^[A-Za-z0-9._-]{1,80}$/.test(name) || !/^[A-Za-z0-9._-]{1,80}$/.test(marketplace)) {
         return []
@@ -202,7 +223,7 @@ export function parseMarketplaces(text: string | null): Marketplace[] | null {
       const location = typeof market?.installLocation === 'string' ? market.installLocation : undefined
       const updatedMs = msOf(market?.lastUpdated)
       // Only an absolute path with no `..` is followed to the clone's manifest.
-      const safeLocation = location !== undefined && location.startsWith('/') && !location.split('/').includes('..') && location.length < 400 ? location : undefined
+      const safeLocation = location !== undefined && isAbsolutePath(location) && !hasParentSegment(location) && location.length < 400 ? location : undefined
 
       return market === null || !/^[A-Za-z0-9._-]{1,80}$/.test(name)
         ? []

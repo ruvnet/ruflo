@@ -107,12 +107,25 @@ export interface MCPServerConfig {
   tlsCert?: string;
   tlsKey?: string;
   auth?: AuthConfig;
+  /** Allow a non-loopback bind with no token. Off unless the operator opts in. */
+  allowUnauthenticated?: boolean;
   loadBalancer?: LoadBalancerConfig;
   connectionPool?: ConnectionPoolConfig;
   corsEnabled?: boolean;
   corsOrigins?: string[];
   maxRequestSize?: number;
   requestTimeout?: number;
+  /** Per-client-IP limit on HTTP /rpc and /mcp (default 120 requests per 60s). */
+  rateLimit?: {
+    windowMs?: number;
+    limit?: number;
+  };
+  /** Token buckets checked per request (defaults 100/s with burst 200 server-wide, 50 per session). */
+  sessionRateLimit?: {
+    requestsPerSecond?: number;
+    burstSize?: number;
+    perSessionLimit?: number;
+  };
   enableMetrics?: boolean;
   enableCaching?: boolean;
   cacheTTL?: number;

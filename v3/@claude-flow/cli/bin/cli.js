@@ -161,13 +161,34 @@ const isMCPMode = !process.stdin.isTTY
   && !explicitNonStdioTransport
   && (process.argv.length === 2 || isExplicitMCP);
 
-if (isMCPMode) {
+// `harness` observes the running system (it is the SessionStart hook), so it
+// skips normal CLI startup entirely: no daemon autostart, update check, policy
+// migration or config adoption, and no heavy imports. With --hook it fails
+// silently (no stack on stderr) so a missing dist/ can't disturb a session.
+const isHarness = cliArgs[0] === 'harness' && !cliArgs.includes('--help') && !cliArgs.includes('-h');
+
+if (isHarness) {
+  const hook = cliArgs.includes('--hook');
+  try {
+    const { runHarnessCli } = await import('../dist/src/commands/harness.js');
+    process.exitCode = runHarnessCli(cliArgs.slice(1));
+  } catch (error) {
+    if (!hook) {
+      const missing = error && error.code === 'ERR_MODULE_NOT_FOUND';
+      console.error(`ruflo harness: ${missing ? 'the CLI is not built (dist/ is missing)' : (error && error.message) || error}`);
+    }
+    process.exitCode = hook ? 0 : 1;
+  }
+} else if (isMCPMode) {
   // Run MCP server mode
   const { listMCPTools, callMCPTool, hasTool } = await import('../dist/src/mcp-client.js');
   const { isPolicyEnforcementEnabled, loadMcpPolicy, evaluateToolCall } =
     await import('../dist/src/mcp-tools/policy-enforcer.js');
+  // ADR-524: shared MCP revision handling (2026-07-28 + legacy initialize).
+  const mcpProtocol = await import('../dist/src/mcp-protocol.js');
+  const MCP_CAPABILITIES = { tools: { listChanged: true }, resources: {} };
 
-  const VERSION = '3.0.0';
+  const VERSION = mcpProtocol.defaultServerIdentity().version;
   const sessionId = `mcp-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
   console.error(
@@ -244,26 +265,18 @@ if (isMCPMode) {
         error: { code: -32600, message: 'Invalid Request: missing method' },
       };
     }
+    const preflight = mcpProtocol.protocolPreflight(message, MCP_CAPABILITIES);
+    if (preflight.response) return preflight.response;
+    const response = await dispatchMessage(message, preflight.context);
+    return mcpProtocol.finalizeResponse(response, message.method, preflight.context);
+  }
 
+  async function dispatchMessage(message, protocol) {
     const params = message.params || {};
 
     switch (message.method) {
-      case 'initialize':
-        return {
-          jsonrpc: '2.0',
-          id: message.id,
-          result: {
-            protocolVersion: '2024-11-05',
-            serverInfo: { name: 'ruflo', version: VERSION },
-            capabilities: {
-              tools: { listChanged: true },
-              resources: { subscribe: true, listChanged: true },
-            },
-          },
-        };
-
       case 'tools/list': {
-        const tools = _filterAdvertisedMcpTools(listMCPTools());
+        const tools = mcpProtocol.sortToolsDeterministically(_filterAdvertisedMcpTools(listMCPTools()));
         return {
           jsonrpc: '2.0',
           id: message.id,
@@ -301,7 +314,7 @@ if (isMCPMode) {
         }
 
         try {
-          const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio' });
+          const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio', ...mcpProtocol.traceContextFields(protocol) });
           // Failed task outcomes are data; an explicit handler error is a tool failure.
           const isError = result !== null && typeof result === 'object'
             && typeof result.error === 'string' && result.error.trim().length > 0;
@@ -322,6 +335,16 @@ if (isMCPMode) {
         }
       }
 
+      // A declared capability must be served (ADR-490): no resources are exposed, so list answers are empty and a read is "not found".
+      case 'resources/list':
+        return { jsonrpc: '2.0', id: message.id, result: { resources: [] } };
+
+      case 'resources/templates/list':
+        return { jsonrpc: '2.0', id: message.id, result: { resourceTemplates: [] } };
+
+      case 'resources/read':
+        return { jsonrpc: '2.0', id: message.id, error: { code: mcpProtocol.resourceNotFoundCode(protocol), message: 'Resource not found' } };
+
       case 'notifications/initialized':
         return null;
 
@@ -341,11 +364,28 @@ if (isMCPMode) {
   const { CLI } = await import('../dist/src/index.js');
   const cli = new CLI();
   cli.run()
-    .then(() => {
-      // #1552: Exit cleanly after one-shot commands.
-      // Long-running commands (daemon foreground, mcp, status --watch) never resolve,
-      // so this only fires for normal CLI commands.
-      process.exit(0);
+    .then(async () => {
+      // #1552: one-shot commands can leave the memory ControllerRegistry's
+      // database handles and timers alive. Close them before relying on the
+      // event loop to drain.
+      //
+      // #3226: calling process.exit(0) here used to race that teardown and
+      // intermittently abort on Windows with a libuv UV_HANDLE_CLOSING
+      // assertion *after* the command had printed a successful result. Set
+      // the exit status and let the loop drain instead.
+      if (process.exitCode === undefined) process.exitCode = 0;
+      try {
+        const { shutdownBridge } = await import('../dist/src/memory/memory-bridge.js');
+        if (typeof shutdownBridge === 'function') await shutdownBridge();
+      } catch (error) {
+        // Cleanup is best-effort for everything except a failed persist: when
+        // the sql.js save is refused (#4733), the command's writes never reached
+        // disk, so it must not exit 0. Other teardown errors stay silent.
+        if (error?.code === 'AGENTDB_LOCK_UNRECOVERABLE') {
+          console.error(`Error: ${error.message}`);
+          process.exitCode = 1;
+        }
+      }
     })
     .catch((error) => {
       console.error('Fatal error:', error.message);

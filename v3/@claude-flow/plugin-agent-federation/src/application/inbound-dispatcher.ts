@@ -24,12 +24,20 @@ import type { DiscoveryService } from '../domain/services/discovery-service.js';
 import type { AuditService } from '../domain/services/audit-service.js';
 import type { FederationNode } from '../domain/entities/federation-node.js';
 import { FederationNodeState } from '../domain/value-objects/federation-node-state.js';
+import type { InboundEnvelopeGuard, InboundEnvelopeRejection } from './inbound-envelope-guard.js';
 
 /** What gets emitted on the event bus per messageType. */
+/** Message types whose policy denial is enforced even outside enforce mode. */
+const CONSEQUENTIAL_MESSAGE_TYPES: ReadonlySet<string> = new Set([
+  'task-assignment', 'memory-query', 'context-share', 'trust-change',
+  'topology-change', 'agent-spawn', 'claim-event', 'agent-handoff',
+]);
+
 export const FEDERATION_INBOUND_EVENT_PREFIX = 'federation:inbound';
 
 /** Reasons we reject an inbound message — constant strings, no oracle leak. */
 export type InboundRejectionReason =
+  | InboundEnvelopeRejection
   | 'PEER_UNKNOWN'
   | 'PEER_SUSPENDED'
   | 'PEER_EVICTED'
@@ -60,11 +68,18 @@ export const JCS_SIGNATURE_PROTOCOL = 'ruflo-signature-jcs-v1' as const;
 export type EnvelopeSignatureVersion = 'legacy-v1' | 'jcs-v1';
 export type EnvelopeSignatureMode = 'legacy' | 'prefer-jcs' | 'require-jcs';
 /**
- * Updated peers advertise and negotiate recursively complete JCS signatures
- * without operator configuration. Legacy mode remains explicit for low-risk
- * heartbeat/status interoperability only.
+ * legacy-v1 signs only `id` and `type`, so it is refused unless the operator
+ * opts in with `prefer-jcs` (legacy-v1 for heartbeat/status from peers that do
+ * not advertise JCS) or `legacy`.
  */
-export const DEFAULT_ENVELOPE_SIGNATURE_MODE: EnvelopeSignatureMode = 'prefer-jcs';
+export const DEFAULT_ENVELOPE_SIGNATURE_MODE: EnvelopeSignatureMode = 'require-jcs';
+
+export function acceptedSignatureVersionsFor(
+  mode: EnvelopeSignatureMode,
+): readonly EnvelopeSignatureVersion[] {
+  return mode === 'require-jcs' ? ['jcs-v1'] : ['legacy-v1', 'jcs-v1'];
+}
+
 export type InboundAuthorizationMode = 'legacy' | 'observe' | 'enforce';
 
 /**
@@ -125,6 +140,8 @@ export interface InboundDispatchDeps {
   readonly authorizationMode?: InboundAuthorizationMode;
   /** Injected policy decision point. It is always called before event emission. */
   readonly authorizeInbound?: InboundAuthorizationEvaluator;
+  /** Shared across callbacks. Production injects one guard per plugin lifecycle. */
+  readonly envelopeGuard?: InboundEnvelopeGuard;
 }
 
 /**
@@ -379,6 +396,10 @@ export async function dispatchInbound(
   }
 
   const authorizationMode = deps.authorizationMode ?? 'legacy';
+  // Message types that start work, read memory or change who is trusted. A denial
+  // for one of these is final in every mode: legacy/observe only soften claim
+  // checks for the rest, they never deliver what the policy engine refused.
+  const consequential = CONSEQUENTIAL_MESSAGE_TYPES.has(message.type);
   if (
     authorizationMode !== 'legacy' &&
     authorizationMode !== 'observe' &&
@@ -408,7 +429,7 @@ export async function dispatchInbound(
       }
       authorizationDecision = decision;
     } catch {
-      if (authorizationMode === 'enforce') {
+      if (authorizationMode === 'enforce' || consequential) {
         await deps.audit.log('message_rejected', {
           sourceNodeId,
           metadata: { address, reason: 'AUTHORIZATION_ERROR', messageType: message.type },
@@ -430,7 +451,7 @@ export async function dispatchInbound(
   }
 
   if (authorizationDecision && !authorizationDecision.allowed) {
-    if (authorizationMode === 'enforce') {
+    if (authorizationMode === 'enforce' || consequential) {
       await deps.audit.log('message_rejected', {
         sourceNodeId,
         metadata: {
@@ -447,6 +468,18 @@ export async function dispatchInbound(
       `Inbound authorization would deny ${message.type} from ${sourceNodeId} ` +
         `(mode=${authorizationMode})`,
     );
+  }
+
+  if (signatureVersion === 'jcs-v1' && deps.envelopeGuard) {
+    const reason = deps.envelopeGuard.checkAndRecord(message, sourceNodeId);
+    if (reason) {
+      await deps.audit.log('message_rejected', {
+        sourceNodeId,
+        metadata: { address, reason, messageType: message.type },
+      });
+      deps.logger.warn(`Inbound rejected: ${reason} from ${sourceNodeId}`);
+      return { accepted: false, reason };
+    }
   }
 
   // Touch lastSeen on every successful inbound — drives the

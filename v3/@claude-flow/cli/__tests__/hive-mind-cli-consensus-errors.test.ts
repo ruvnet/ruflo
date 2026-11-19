@@ -19,7 +19,10 @@ vi.mock('../src/mcp-client.js', async () => {
 });
 import { hiveMindCommand } from '../src/commands/hive-mind.js';
 import { hiveMindTools } from '../src/mcp-tools/hive-mind-tools.js';
+import { agentTools } from '../src/mcp-tools/agent-tools.js';
 import type { CommandContext } from '../src/types.js';
+
+vi.mock('../src/ruvector/graph-backend.js', () => ({ addNode: vi.fn() }));
 
 // Only the MCP dispatch seam and output presentation are replaced. The real
 // command action calls the real hive handler, which reads/writes disposable files.
@@ -42,7 +45,13 @@ describe('CLI consensus outcomes reflect actual persisted hive state', () => {
     const init = await tool('hive-mind_init').handler({ consensus: 'quorum' }) as Record<string, unknown>;
     token = init.hiveToken as string;
     for (const agentId of ['worker-1', 'worker-2', 'worker-3']) {
-      await tool('hive-mind_join').handler({ agentId, hiveToken: token });
+      // #4727: registration is required before hive membership.
+      const agent = await agentTools.find(t => t.name === 'agent_spawn')!.handler({
+        agentId, agentType: 'worker', model: 'sonnet',
+      }) as Record<string, unknown>;
+      expect(agent.success).toBe(true);
+      const joined = await tool('hive-mind_join').handler({ agentId, hiveToken: token }) as Record<string, unknown>;
+      expect(joined.success).toBe(true);
     }
     const proposal = await tool('hive-mind_consensus').handler({ action: 'propose', type: 'design', value: 'use-jwt' }) as Record<string, unknown>;
     proposalId = proposal.proposalId as string;

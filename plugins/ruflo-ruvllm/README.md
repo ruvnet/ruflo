@@ -9,22 +9,42 @@ RuVLLM local inference with chat formatting, model configuration, MicroLoRA fine
 /plugin install ruflo-ruvllm@ruflo
 ```
 
+## Requirements
+
+The WASM-backed tools (`ruvllm_chat_format`, `ruvllm_microlora_*`, `ruvllm_sona_*`, `ruvllm_hnsw_*`) need `@ruvector/ruvllm-wasm`, which `@claude-flow/cli` does not install. `ruvllm_status` reports `wasm.available: false` plus a `wasm.hint` until it is present:
+
+```bash
+npm i -g @ruvector/ruvllm-wasm   # global ruflo / @claude-flow/cli install
+npm i @ruvector/ruvllm-wasm      # project-local install
+```
+
+The native runtime is a separate package. `ruvllm_status` reports it under `native`, and ruflo's learning pipeline loads its `SonaCoordinator`, `ContrastiveTrainer`, `TrainingPipeline` and `LoraAdapter`:
+
+```bash
+npm i @ruvector/ruvllm@^4.1.0
+```
+
+Use `^4.1.0`. Versions 4.0.0 and 4.0.1 were a wrong-repository publish (a GPU-loop harness with none of those classes), so callers silently fell back to JS. 4.1.0 restores the runtime and forwards `ruvllm gpu …` to `@ruvector/ruvllm-gpu-loop` 1.1.x (Node 22+), the bounded GPU experiment and job-loop harness. The `ruvllm-runtime` skill explains which package does what.
+
 ## Features
 
 - **Model configuration**: Generate optimal configs for local inference
-- **MicroLoRA**: Task-specific fine-tuning with lightweight adapters
+- **MicroLoRA**: Ultra-light in-process LoRA adapters (rank 1-4) adjusted from quality signals
 - **SONA adaptation**: Real-time neural adaptation (<0.05ms)
-- **Chat formatting**: Multi-provider prompt formatting (Claude, GPT, Gemini, Ollama, Cohere)
+- **Chat formatting**: Local-model chat templates (llama3, mistral, chatml, phi, gemma, or a model id for auto-detect)
 - **HNSW routing**: Context retrieval for RAG pipelines (≤11 hot patterns; for large-corpus search see `ruflo-agentdb` `embeddings_search`)
 
 ## Commands
 
-- `/ruvllm` -- Model status, adapters, and provider availability
+- `/ruvllm` -- ruvllm-wasm, native backend and graph backend status
 
 ## Skills
 
 - `llm-config` -- Configure models, MicroLoRA, and SONA
-- `chat-format` -- Format prompts for different LLM providers
+- `chat-format` -- Format messages in a local model's chat template
+- `ruvllm-runtime` -- Pick and check the WASM add-on, the 4.1 native runtime or the GPU loop
+
+For ruflo's own MicroLoRA learning backend (`@ruvector/learning-wasm`), see the `lora-learning` skill that `ruflo init` installs.
 
 ## Compatibility
 
@@ -64,7 +84,7 @@ bash plugins/ruflo-ruvllm/scripts/smoke.sh
 
 - `ruflo-intelligence` — owns SONA + MicroLoRA in the 4-step pipeline
 - `ruflo-agentdb` — owns HNSW WASM router; namespace convention owner
-- `ruflo-ruvector` — sibling substrate plugin (pinned `ruvector@0.2.25`)
+- `ruflo-ruvector` — sibling substrate plugin (pinned `ruvector@0.3.12`)
 - `ruflo-rag-memory` — consumes RAG context routing
 
 ## As a mod

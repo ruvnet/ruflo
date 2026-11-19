@@ -29,6 +29,8 @@ import { parseMissions, type MissionObservation } from './missions'
 import { readBounded, readDisk, textOf, type ProjectKey, type Read, type ReadCache, type ReaderFs } from './files'
 import { parseAgentdbMod, type AgentdbMod } from './agentdb-mod'
 import { readMods, type ModsFacts } from './mods'
+import { readManaged, type ManagedFacts, type ManagedLearning } from './managed'
+import { joinPath } from './paths'
 import {
   parseAgents,
   parseClaims,
@@ -52,6 +54,8 @@ export const EXPECTED_IN_MARKET = ['ruflo-core', 'ruflo-mods', 'ruflo-swarm'] as
 export type PluginsFacts = {
   installed: Installed[] | null
   enabled: Set<string>
+  /** Whether the merged settings held an `enabledPlugins` record at all: without one, "not enabled" is not known (ADR-485). */
+  enabledKnown?: boolean
   markets: Marketplace[] | null
   /** The ruflo clone's plugin names, or null when the clone or its manifest is not readable. */
   rufloOffered: string[] | null
@@ -90,6 +94,8 @@ export type Snapshot = {
   recall?: RecallFacts
   /** Every `.claude-flow/<short>-mod/status.json` the per-plugin mods wrote (ADR-446), bounded and shape-checked. */
   mods: ModsFacts
+  managed?: ManagedFacts | null
+  managedLearning?: ManagedLearning | null
   changed: number
   readAtMs: number
 }
@@ -108,11 +114,15 @@ export async function readSnapshot(fs: ReaderFs, cache: ReadCache, cwd: string, 
     stored ?? (pointer !== null ? { id: pointer.id, topology: pointer.topology ?? 'unknown', status: pointer.status ?? 'unknown', agentIds: [], ...(pointer.strategy !== undefined && { strategy: pointer.strategy }) } : null)
   const markets = parseMarketplaces(textOf(disk.home.marketplaces))
   const location = markets?.find(market => market.name === RUFLO_MARKET)?.location
-  const offered = location === undefined ? null : parseMarketplaceManifest(textOf(await readBounded(fs, cache, `${location}/.claude-plugin/marketplace.json`)))
+  const offered = location === undefined ? null : parseMarketplaceManifest(textOf(await readBounded(fs, cache, joinPath(location, '.claude-plugin', 'marketplace.json'))))
   const reads = Object.fromEntries((Object.keys(disk.project) as ProjectKey[]).map(key => [key, statusOf(disk.project[key])])) as Snapshot['reads']
+
+  const managed = await readManaged(fs, cache, cwd)
 
   return {
     reads,
+    managed: managed.managed,
+    managedLearning: managed.learning,
     swarm,
     agents: parseAgents(text('agents')),
     tasks: parseTasks(text('tasks')),
@@ -132,8 +142,9 @@ export async function readSnapshot(fs: ReaderFs, cache: ReadCache, cwd: string, 
     federationNodes: disk.federationNodes,
     hasNostrKey: disk.hasNostrKey,
     plugins: {
-      installed: parseInstalled(textOf(disk.home.installed)),
+      installed: parseInstalled(textOf(disk.home.installed), cwd),
       enabled: enabledOf(settings),
+      enabledKnown: typeof (settings as { enabledPlugins?: unknown } | null)?.enabledPlugins === 'object' && (settings as { enabledPlugins?: unknown }).enabledPlugins !== null,
       markets,
       rufloOffered: offered,
       missingFromClone: offered === null ? [] : EXPECTED_IN_MARKET.filter(name => !offered.includes(name)),

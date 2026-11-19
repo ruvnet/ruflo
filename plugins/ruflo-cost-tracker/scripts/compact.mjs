@@ -4,11 +4,10 @@
 // inlined Node one-liner.
 //
 // Resolution strategy (#1930): pnpm-workspace marketplace installs don't
-// hoist `@claude-flow/integration` into `v3/node_modules/`, so resolving
-// from cwd alone breaks. Try, in order:
-//   1. createRequire(cwd)           — works for npm-style hoisted installs
-//   2. createRequire(script-dir)    — works when run from inside the plugin
-//   3. absolute path from this file — works on the marketplace layout
+// hoist `@claude-flow/integration` into `v3/node_modules/`. The resolved
+// module is imported, so it never comes from the cwd (the project). Try:
+//   1. createRequire(script-dir)    — works when run from inside the plugin
+//   2. absolute path from this file — works on the marketplace layout
 //      (script lives at <ruflo>/plugins/ruflo-cost-tracker/scripts/, the
 //       integration package at <ruflo>/v3/@claude-flow/integration/)
 //
@@ -24,6 +23,9 @@
 // Optional env:
 //   COMPACT_QUIET=1   emit JSON only (no markdown banner)
 //   HEALTH_PORT=<n>   override agentic-flow's health-server port (default 0)
+//
+// The script always exits when it is done, even if agentic-flow leaves a
+// timer or server handle open.
 
 import { createRequire } from 'node:module';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -68,9 +70,9 @@ async function main() {
     process.exit(2);
   }
 
-  // Resolution chain — cwd → script dir → absolute fallback (#1930 step 5)
+  // Resolution chain — script dir → absolute fallback (#1930 step 5). Not the
+  // cwd: the module found here is imported, and the cwd is the project.
   const candidates = [
-    tryResolveFrom(join(process.cwd(), 'package.json')),
     tryResolveFrom(join(__dirname, 'package.json')),
     tryAbsolutePath(),
   ].filter(Boolean);
@@ -104,7 +106,7 @@ async function main() {
       memoriesRetrieved: 0,
       tokensSaved: 0,
       agenticFlowAvailable: false,
-      hint: 'Tried cwd, script dir, and absolute path from this script — see #1930 for full troubleshooting.',
+      hint: 'Tried the script dir and the absolute path from this script — see #1930 for full troubleshooting.',
     };
     if (process.env.COMPACT_QUIET === '1') return console.log(JSON.stringify(out));
     console.log(`# cost-compact-context\n\nbridge unavailable: ${reason}`);
@@ -150,4 +152,16 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error('compact.mjs failed:', e.message || e); process.exit(1); });
+// Exit explicitly once stdout has drained. A patched agentic-flow (>= 2.0.14)
+// leaves a ReasoningBank timer alive after getTokenOptimizer(), so the event
+// loop never empties and the script would print its result and then hang. The
+// empty write's callback runs after every earlier console.log chunk has been
+// flushed, so piped output is not truncated.
+function exitAfterFlush(code) {
+  process.stdout.write('', () => process.exit(code));
+}
+
+main().then(
+  () => exitAfterFlush(0),
+  (e) => { console.error('compact.mjs failed:', e.message || e); exitAfterFlush(1); },
+);

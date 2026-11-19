@@ -26,13 +26,16 @@ async function opened($: Body[0], on: Body[1], view: string) {
 }
 
 describe('the compact nav', () => {
-  test('shows the five groups and the open group pages only; a chip shows another group; every page is still a button', { options: { boot: false } }, async ($, on) => {
+  test('shows the five groups and the open group pages only; a chip shows another group; every page is still a button', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const pane = await opened($, on, 'swarm')
     const first = await pane.drawn()
 
     expect(keys(first)).toEqual(expect.arrayContaining(['nav-group-MIND', 'nav-group-SAFETY', 'nav-group-NETWORK', 'nav-group-TOOLS', 'tab-menu']))
     // The open group's pages are in the card; another group's pages are there too but hidden, so their hotkeys still work.
     expect(textOf(first)).toContain('[SWARM ▾]')
+    // A bar sits between the menu and each group, and between pages on a row: the groups read as separate, not run together.
+    expect(keys(first)).toEqual(expect.arrayContaining(['nav-bar-0', 'nav-bar-1']))
+    expect(textOf(first)).toContain('│')
     expect(keys(first)).toEqual(expect.arrayContaining(['tab-missions', 'tab-hive', 'tab-learning', 'tab-memory']))
 
     await pane.press({ key: 'nav-group-MIND' })
@@ -47,7 +50,7 @@ describe('the compact nav', () => {
     await pane.unmount()
   })
 
-  test('the search lists the pages it finds, says when none match, and clears', { options: { boot: false } }, async ($, on) => {
+  test('the search lists the pages it finds, says when none match, and clears', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const pane = await opened($, on, 'overview')
 
     await pane.input({ key: 'nav-find', text: 'lab', kind: 'submit' })

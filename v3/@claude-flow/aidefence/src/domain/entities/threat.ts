@@ -14,6 +14,11 @@ export type ThreatType =
   | 'role_switching'
   | 'context_manipulation'
   | 'encoding_attack'
+  // Added in 3.1.0 for the AIMDS pattern packs (tool_invocation, exfil_url,
+  // slack_markup_forgery). Additive: existing values are unchanged.
+  | 'tool_invocation'
+  | 'data_exfiltration'
+  | 'markup_forgery'
   | 'unknown';
 
 export interface Threat {
@@ -23,6 +28,8 @@ export interface Threat {
   readonly confidence: number;
   readonly pattern: string;
   readonly description: string;
+  /** Pack rule id (e.g. `EX-001`) when an AIMDS pattern pack produced the threat. */
+  readonly ruleId?: string;
   readonly location?: {
     start: number;
     end: number;
@@ -66,6 +73,7 @@ export function createThreat(params: {
   confidence: number;
   pattern: string;
   description: string;
+  ruleId?: string;
   location?: { start: number; end: number };
 }): Threat {
   return {
@@ -75,6 +83,7 @@ export function createThreat(params: {
     confidence: params.confidence,
     pattern: params.pattern,
     description: params.description,
+    ...(params.ruleId ? { ruleId: params.ruleId } : {}),
     location: params.location,
     detectedAt: new Date(),
   };

@@ -164,7 +164,8 @@ export const benchmarkCommand: Command = {
     const topK = parseInt((ctx.flags.k as string) || '10', 10);
     const metric = (ctx.flags.metric as string) || 'cosine';
     const indexType = (ctx.flags.index as string) || 'hnsw';
-    const batchSize = parseInt((ctx.flags['batch-size'] as string) || '1000', 10);
+    const batchSizeFlag = ctx.flags.batchSize ?? ctx.flags['batch-size'] ?? 1000;
+    const batchSize = typeof batchSizeFlag === 'string' ? Number(batchSizeFlag) : batchSizeFlag;
     const cleanup = ctx.flags.cleanup !== false;
 
     output.writeln();
@@ -174,6 +175,11 @@ export const benchmarkCommand: Command = {
 
     if (!config.database) {
       output.printError('Database name is required. Use --database or -d flag, or set PGDATABASE env.');
+      return { success: false, exitCode: 1 };
+    }
+
+    if (typeof batchSize !== 'number' || !Number.isSafeInteger(batchSize) || batchSize < 1) {
+      output.printError('--batch-size must be a positive integer');
       return { success: false, exitCode: 1 };
     }
 

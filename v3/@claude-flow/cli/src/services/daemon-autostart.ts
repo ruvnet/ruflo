@@ -31,6 +31,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawn } from 'child_process';
+import { isRufloProject, resolveProjectRoot } from './project-root.js';
 
 /** True if a live daemon already holds the project's pidfile. */
 export function isDaemonAlive(projectRoot: string): boolean {
@@ -76,6 +77,54 @@ function autostartDisabledByProjectConfig(projectRoot: string): boolean {
   return false;
 }
 
+/**
+ * #4654: an explicit `daemon stop` is an opt-out that must survive the next
+ * hook. Every ruflo-core plugin hook (PreToolUse/PostToolUse, PreCompact, Stop)
+ * runs the CLI, and the CLI auto-starts a daemon whenever none is alive, so a
+ * stopped daemon came back within minutes. `daemon stop` now writes this
+ * marker, auto-start honours it, and only an explicit `daemon start` clears it.
+ */
+export const DAEMON_STOP_MARKER = 'daemon.stopped';
+
+/**
+ * Set on the daemon that auto-start spawns, so that spawned `daemon start` does
+ * not clear a stop marker written after auto-start checked it (a `daemon stop`
+ * racing a hook). Only a user-driven start clears the marker.
+ */
+export const AUTOSTART_ENV = 'RUFLO_DAEMON_AUTOSTARTED';
+
+function stopMarkerPath(projectRoot: string): string {
+  return path.join(projectRoot, '.claude-flow', DAEMON_STOP_MARKER);
+}
+
+/** True if the user explicitly stopped the daemon for this project (#4654). */
+export function isDaemonStopMarked(projectRoot: string): boolean {
+  try { return fs.existsSync(stopMarkerPath(projectRoot)); } catch { return false; }
+}
+
+/**
+ * Record an explicit `daemon stop` (#4654). Writes only into a directory that is
+ * already a Ruflo project or already has `.claude-flow/`, so `daemon stop` in an
+ * unrelated directory does not litter it. Best-effort; never throws.
+ */
+export function writeDaemonStopMarker(projectRoot: string): boolean {
+  try {
+    const dir = path.join(projectRoot, '.claude-flow');
+    if (!fs.existsSync(dir) && !isRufloProject(projectRoot)) return false;
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      stopMarkerPath(projectRoot),
+      JSON.stringify({ stoppedAt: new Date().toISOString(), pid: process.pid }) + '\n',
+    );
+    return true;
+  } catch { return false; }
+}
+
+/** Clear the stop marker. Called by an explicit `daemon start` (#4654). Never throws. */
+export function clearDaemonStopMarker(projectRoot: string): void {
+  try { fs.unlinkSync(stopMarkerPath(projectRoot)); } catch { /* absent */ }
+}
+
 function autostartDisabled(projectRoot: string): boolean {
   if (/^(0|false|no|off)$/i.test(process.env.RUFLO_DAEMON_AUTOSTART ?? '')) return true;
   return autostartDisabledByProjectConfig(projectRoot);
@@ -83,43 +132,10 @@ function autostartDisabled(projectRoot: string): boolean {
 
 /**
  * Return true only when the directory contains a durable Ruflo project marker.
- *
- * A bare `.claude/` is owned by Claude Code, and a bare `.claude-flow/` is not
- * sufficient either: startup-time policy/champion migration can create it
- * before this function runs. Treating that mutation as authorization caused a
- * read-only command in any Claude project to spawn a detached daemon (#2852).
+ * Implementation lives in ./project-root.ts (shared with #2633 state anchoring);
+ * re-exported here for existing importers.
  */
-export function isRufloProject(projectRoot: string): boolean {
-  const root = path.resolve(projectRoot);
-  const directMarkers = [
-    path.join(root, '.claude-flow', 'config.yaml'),
-    path.join(root, '.claude-flow', 'config.yml'),
-    path.join(root, '.claude-flow', 'config.json'),
-    path.join(root, 'claude-flow.config.json'),
-    path.join(root, '.swarm', 'memory.db'),
-  ];
-  if (directMarkers.some((marker) => fs.existsSync(marker))) return true;
-
-  try {
-    const settings = JSON.parse(
-      fs.readFileSync(path.join(root, '.claude', 'settings.json'), 'utf-8'),
-    );
-    if (settings && typeof settings === 'object' && 'claudeFlow' in settings) {
-      return true;
-    }
-  } catch { /* absent/malformed/non-Ruflo settings */ }
-
-  try {
-    const mcp = JSON.parse(fs.readFileSync(path.join(root, '.mcp.json'), 'utf-8'));
-    const servers = mcp?.mcpServers;
-    if (servers && typeof servers === 'object'
-      && ('ruflo' in servers || 'claude-flow' in servers)) {
-      return true;
-    }
-  } catch { /* absent/malformed/non-Ruflo MCP config */ }
-
-  return false;
-}
+export { isRufloProject };
 
 /**
  * #2877: Normalize a working directory to the project root that owns the
@@ -145,15 +161,8 @@ export function isRufloProject(projectRoot: string): boolean {
  * non-Ruflo directory still fails `isRufloProject` and declines autostart.
  */
 export function resolveDaemonProjectRoot(startDir: string): string {
-  const start = path.resolve(startDir);
-  let dir = start;
-  for (;;) {
-    if (isRufloProject(dir)) return dir;
-    if (fs.existsSync(path.join(dir, '.git'))) return start;
-    const parent = path.dirname(dir);
-    if (parent === dir) return start;
-    dir = parent;
-  }
+  // #2633: the walk is shared with durable-state anchoring (./project-root.ts).
+  return resolveProjectRoot(startDir);
 }
 
 export interface EnsureResult { started: boolean; reason?: string }
@@ -167,7 +176,7 @@ const defaultSpawn: SpawnDaemonFn = (projectRoot) => {
     cwd: projectRoot,
     detached: true,
     stdio: 'ignore',
-    env: { ...process.env },
+    env: { ...process.env, [AUTOSTART_ENV]: '1' },
   });
   child.unref();
 };
@@ -189,6 +198,9 @@ export function ensureDaemonRunning(
     if (autostartDisabled(projectRoot)) return { started: false, reason: 'disabled (RUFLO_DAEMON_AUTOSTART=0 or project config)' };
     if (!isRufloProject(projectRoot)) {
       return { started: false, reason: 'not a ruflo project' };
+    }
+    if (isDaemonStopMarked(projectRoot)) {
+      return { started: false, reason: 'stopped by user (daemon stop); run `daemon start` to re-enable' };
     }
     const alive = (opts.isAlive ?? isDaemonAlive)(projectRoot);
     if (alive) return { started: false, reason: 'already running' };

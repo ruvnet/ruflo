@@ -6,11 +6,12 @@
  *
  * Consent gates (any one):
  *   - `daemon start --headless`            → constructor { aiWorkersEnabled: true }
- *   - `daemon.aiWorkers.enabled: true`     → .claude-flow/config.json
+ *   - `daemon.aiWorkers.enabled: true`     → the USER-level ~/.claude-flow/config.json only
+ *     (a project file is repo content and can only say `false`)
  *   - `RUFLO_DAEMON_AI_WORKERS=1`          → environment
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WorkerDaemon } from '../src/services/worker-daemon.js';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
@@ -26,6 +27,7 @@ describe('#2661 — AI workers are opt-in', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     delete process.env.RUFLO_DAEMON_AI_WORKERS;
     rmSync(tempDir, { recursive: true, force: true });
     process.removeAllListeners('SIGTERM');
@@ -57,16 +59,19 @@ describe('#2661 — AI workers are opt-in', () => {
     expect(daemon.getStatus().config.aiWorkersEnabled).toBe(true);
   });
 
-  it('enables via daemon.aiWorkers.enabled in .claude-flow/config.json', () => {
+  it('does NOT enable via daemon.aiWorkers.enabled in the project .claude-flow/config.json (a clone could set it)', () => {
+    const home = mkdtempSync(join(tmpdir(), 'daemon-2661-home-'));
+    vi.stubEnv('HOME', home);
+    vi.stubEnv('USERPROFILE', home);
     writeFileSync(
       join(tempDir, '.claude-flow', 'config.json'),
       JSON.stringify({ 'daemon.aiWorkers.enabled': true })
     );
     const daemon = new WorkerDaemon(tempDir);
-    expect(daemon.getStatus().config.aiWorkersEnabled).toBe(true);
+    expect(daemon.getStatus().config.aiWorkersEnabled).toBe(false);
   });
 
-  it('config.json false beats env opt-in precedence is flag > file > env', () => {
+  it('config.json false beats env opt-in; precedence is flag > file false > env > user config', () => {
     process.env.RUFLO_DAEMON_AI_WORKERS = '1';
     writeFileSync(
       join(tempDir, '.claude-flow', 'config.json'),

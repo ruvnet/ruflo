@@ -107,8 +107,17 @@ describe('the icon row', () => {
       expect([...glyph].length, name).toBe(1)
       expect(glyph, name).not.toBe('?')
       // None may be an emoji, or have an emoji form: a terminal can draw those two cells wide, and the lit icon (bold) would then jump.
-      expect(glyph, name).not.toMatch(/\p{Extended_Pictographic}|\p{Emoji_Presentation}/u)
+      // \p{Emoji} is exactly "has an emoji form" (⚙ yes, ⛭ no); \p{Extended_Pictographic} also covers reserved emoji-range
+      // code points such as ⛭ that have no emoji form, which is why settings uses it.
+      expect(glyph, name).not.toMatch(/\p{Emoji}|\p{Emoji_Presentation}/u)
     }
+  })
+
+  it('the emoji-form check tells a gear with an emoji form from one without', () => {
+    const emojiForm = /\p{Emoji}|\p{Emoji_Presentation}/u
+    expect('⚙').toMatch(emojiForm) // U+2699 takes an emoji form with U+FE0F
+    expect('☀').toMatch(emojiForm)
+    for (const glyph of ['⛭', '⌂', '⌘', 'ʔ', '⟳']) expect(glyph).not.toMatch(emojiForm)
   })
 
   it('each icon does its one thing', () => {
@@ -130,7 +139,7 @@ describe('the icon row', () => {
     const cells = (el: El | undefined): number => (el?.kind === 'Button' ? String(el.props.label).length : String(flat(el)[1]?.props.children).length)
     const lit = (tree: El, name: string): El | undefined => flat(key(tree, name)).find(node => node.kind === 'Text')
 
-    expect(lit(onMenu, 'pane-icon-menu')?.props).toMatchObject({ bold: true, color: expect.stringMatching(/^#|^[a-z]/) })
+    expect(lit(onMenu, 'pane-icon-menu')?.props).toMatchObject({ weight: 'semibold', color: expect.stringMatching(/^#|^[a-z]/) })
     expect(key(onMenu, 'pane-icon-help')?.kind).toBe('Button')
     expect(lit(onSettings, 'pane-icon-settings')).toBeDefined()
     expect(lit(onHelp, 'pane-icon-help')).toBeDefined()

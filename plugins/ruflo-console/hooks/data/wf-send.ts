@@ -13,6 +13,7 @@ import { callTool, permissionOf } from './wf-control'
 import { cleanText } from './wf-clean'
 import { guardText } from './wf-guide'
 import { idOf, plain, type HiveInfo } from './parse'
+import { isWindowsPath } from './paths'
 import { endpointsOf, type Config, type Endpoint, type Target } from './wf-targets'
 
 export type SendDeps = Pick<Host, 'toolCall' | 'toolCheck' | 'run' | 'httpSend' | 'submitPrompt'> & {
@@ -24,6 +25,8 @@ export type SendDeps = Pick<Host, 'toolCall' | 'toolCheck' | 'run' | 'httpSend' 
   cwd: string
   hive: HiveInfo | null
   config: Config
+  /** Reads a model key from the environment. Set on Windows, which has no `printenv` (and where the engine allows only a literal variable name, so only $OPENROUTER_API_KEY); where absent a key is read with `printenv`. */
+  readEnv?: (name: string) => Promise<string | undefined>
 }
 
 export type SendState = 'reply' | 'queued' | 'sent' | 'error' | 'refused'
@@ -178,6 +181,9 @@ export async function sendTo(deps: SendDeps, target: Target, raw: string): Promi
     case 'x-channel':
       return viaCli(deps, 'x_federation_channel_publish', { channel: target.ref, msgType: 'Status', payload: { text: body, from: 'ruflo-console' } })
     case 'peer': {
+      // The helper is a shell script. Windows has no bash of its own on the PATH (`bash` there is the WSL launcher, which cannot open a C:... script path), so nothing is run.
+      if (isWindowsPath(deps.helper)) return err('refused', 'a peer is reached through a bash helper script (federation.sh), which Windows cannot run from here: nothing was sent. Use a BBS room or a channel instead.')
+
       const result = await deps.run(['bash', deps.helper, 'dispatch', target.ref, body, ...(deps.trustedPeers.has(target.ref) ? [] : ['--confirm'])], WAIT.peer).catch((error: unknown) => ({ exitCode: -1, stdout: '', stderr: error instanceof Error ? error.message : 'refused' }))
 
       return result.exitCode === 0 && result.stdout.trim() !== '' ? { ok: true, state: 'reply', text: tidy(result.stdout).trim() } : err('error', result.stderr.trim() !== '' ? result.stderr : `the peer answered nothing (exit ${result.exitCode})`)
@@ -197,11 +203,17 @@ export async function sendTo(deps: SendDeps, target: Target, raw: string): Promi
       let key: string | undefined
 
       if (endpoint.keyEnv !== 'NONE') {
-        const read = await deps.run(['printenv', endpoint.keyEnv], 5_000).catch(() => undefined)
+        if (deps.readEnv !== undefined) key = (await deps.readEnv(endpoint.keyEnv).catch(() => undefined))?.trim()
+        else {
+          const read = await deps.run(['printenv', endpoint.keyEnv], 5_000).catch(() => undefined)
 
-        key = read !== undefined && read.exitCode === 0 ? read.stdout.trim() : undefined
+          key = read !== undefined && read.exitCode === 0 ? read.stdout.trim() : undefined
+        }
 
-        if (key === undefined || key === '') return err('refused', `$${endpoint.keyEnv} is not set in the environment Claude Code runs in: nothing was sent`)
+        // Where the environment read stands in for printenv (Windows) it can name only the OpenRouter key: the engine lists the variables a module reads.
+        const unreadable = deps.readEnv !== undefined && endpoint.keyEnv !== 'OPENROUTER_API_KEY'
+
+        if (key === undefined || key === '') return err('refused', unreadable ? `$${endpoint.keyEnv} cannot be read here: on Windows the console can read only $OPENROUTER_API_KEY from the environment. Nothing was sent` : `$${endpoint.keyEnv} is not set in the environment Claude Code runs in: nothing was sent`)
       }
 
       const response = await deps.httpSend(`${endpoint.baseUrl}/chat/completions`, { method: 'POST', headers: { 'content-type': 'application/json', ...(key !== undefined && { authorization: `Bearer ${key}` }) }, body: chatBody(endpoint, body) }).catch((error: unknown) => ({ ok: false, status: 0, text: error instanceof Error ? error.message : 'refused' }))

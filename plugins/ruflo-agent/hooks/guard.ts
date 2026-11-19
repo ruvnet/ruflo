@@ -13,7 +13,7 @@ export function splitName(name: string): { server: string; tool: string } | unde
 export function owns(tool: string, input: unknown): boolean {
   const parts = splitName(tool)
   const name = parts?.tool ?? tool
-  return ['wasm_agent_prompt', 'wasm_agent_tool', 'wasm_agent_create', 'wasm_gallery_create', 'managed_agent_create', 'managed_agent_prompt'].includes(name)
+  return ['wasm_agent_prompt', 'wasm_agent_tool', 'wasm_agent_create', 'wasm_gallery_create', 'managed_agent_create', 'managed_agent_prompt', 'managed_agent_learning'].includes(name)
 }
 
 /** The reason a call is refused, or undefined when it may go. Never names or echoes the secret. */

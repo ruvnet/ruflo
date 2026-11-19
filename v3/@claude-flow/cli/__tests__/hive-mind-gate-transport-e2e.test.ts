@@ -139,7 +139,7 @@ describe('hive-mind gate end to end (ADR-476)', () => {
     let lastFailure = '';
     for (let attempt = 1; attempt <= 4 && !port; attempt++) {
       const candidate = 34000 + Math.floor(Math.random() * 4000);
-      const e = env({ RUFLO_HIVE_BOOTSTRAP_SECRET: SECRET });
+      const e = env({ RUFLO_HIVE_BOOTSTRAP_SECRET: SECRET, RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP: '1' });
       child = spawn('node', [path.join(BIN, 'cli.js'), 'mcp', 'start', '-t', 'http', '--port', String(candidate)], {
         cwd: dir, env: e, stdio: ['ignore', 'pipe', 'pipe'],
       });

@@ -18,6 +18,12 @@ import { loadMod, memoryWorld, type World } from './harness';
 import { generateHookHandler } from '../../src/init/helpers-generator';
 
 const HELPERS = join(resolve(__dirname, '../..'), '.claude', 'helpers');
+// `bash -c '<inner>'` nested n times, each level single-quoted as bash would need it.
+const nest = (n: number, inner: string): string => {
+  let command = inner;
+  for (let i = 0; i < n; i++) command = `bash -c '${command.replace(/'/g, `'\\''`)}'`;
+  return command;
+};
 const PROJECTION = '/work/.claude-flow/policy/claude-code.json';
 const RANK = { allow: 0, ask: 1, deny: 2 } as const;
 type D = keyof typeof RANK;
@@ -388,6 +394,54 @@ describe('#3698 root deletion guard parity', () => {
     ['rm -rf $x', false],
     ['rm -rf /${x}', false],
     ['find / -delete', false],
+    // A substitution's output is not known, whichever spelling: neither is caught.
+    ['rm -rf `echo /`', false],
+    ['rm -rf $(echo /)', false],
+    // #4742: $(...) is a substitution like a backtick one (the rm keeps its state across it), $((...)) is arithmetic.
+    ['rm -rf "$(echo)"/', true],
+    ['rm -rf $(true) /', true],
+    ['rm $(:) -rf /', true],
+    ['rm -rf "/$(true)"', true],
+    ['echo "$(rm -rf /)"', true],
+    ['bash -c "echo $(rm -rf /)"', true],
+    ['echo $(echo $(rm -rf /))', true],
+    ['echo $(( $(rm -rf /) ))', true],
+    ['echo $(echo ")"); rm -rf /', true],
+    ['echo $( ; rm -rf /', true],
+    ['rm -rf "$(mktemp -d)"', false],
+    ['rm -rf "$(git rev-parse --show-toplevel)/build"', false],
+    ['rm -rf /$((0))', false],
+    ['echo "$(date)" /', false],
+    ['echo $(echo ")"); ls /', false],
+    // $'...' escapes and comments do not close a $(...); one that never closes in a command with an rm is refused.
+    ["rm -rf $(echo $'\\'')/", true],
+    ['rm -rf $(: # )\n)/', true],
+    ["rm -rf $(echo $'\\'') ; rm -rf $(echo)/", true],
+    ['rm -rf $(echo $#)/', true],
+    ['rm -rf "$(pwd)"/*', true],
+    ['rm -rf build $(echo', true],
+    ['echo $(date', false],
+    ["rm -rf $(echo $'\\'')/tmp", false],
+    ['rm -rf $(: # )\n)/tmp', false],
+    // #4742: a parameter's default is a word the shell uses when it is unset; single quotes keep it literal.
+    ['rm -rf ${X:-/}', true],
+    ['rm -rf "${X:-/}"', true],
+    ['rm -rf ${X:=/}', true],
+    ['rm -rf ${X-/}', true],
+    ['rm -rf ${X:-}/', true],
+    ['rm -rf ${HOME:-/tmp}/..', true],
+    ['rm -rf ${X:-${Y:-/}}', true],
+    ['rm ${F:--rf} /', true],
+    ['sh -c "${X:-rm -rf /}"', true],
+    ["rm -rf '${X:-/}'", false],
+    ['rm -rf ${TMPDIR:-/tmp}/build', false],
+    ['rm -rf "${TMPDIR:-/tmp}/x"', false],
+    ['rm -rf ${v:-{/,}}', false],
+    // Array elements and indirect parameters take defaults too.
+    ['rm -rf ${A[0]:-/}', true],
+    ['rm -rf ${!X:-/}', true],
+    ['rm -rf ${A[@]-/}', true],
+    ['rm -rf ${A[0]:-/tmp}/x', false],
     // $'...' is decoded as bash does: escapes stand for the characters they name, \0 ends the string, \' does not close it.
     ["rm -rf $'/'", true],
     ["rm -rf $'\\x2f'", true],
@@ -415,12 +469,73 @@ describe('#3698 root deletion guard parity', () => {
     ["rm -rf $'\\\\' /tmp", false],
     ["rm -r $'\\x2d' /tmp", false],
     ['echo "$"\'rm -rf /\'', false],
-    // Brace expansion is not evaluated either (documented limit).
-    ['{rm,-rf,/}', false],
-    ['rm -rf /{tmp,}', false],
+    // Unquoted brace lists expand into words, as bash does (no sequences, no ${...}): one of them can be the root.
+    ['{rm,-rf,/}', true],
+    ['rm -rf /{tmp,}', true],
+    ['rm -rf {/*,}', true],
+    ['rm -rf {/,}*', true],
+    ['rm -rf {,/}*', true],
+    ['rm -rf /{,}', true],
+    ['rm -rf {/,/tmp}', true],
+    ['rm -rf {a,{b,/*}}', true],
+    ['rm -rf x{/*,}', false],
+    ['rm -rf {/tmp/a,/tmp/b}', false],
+    ['rm -rf /tmp/{a,b,c}', false],
+    ["rm -rf '{/*,}'", false],
+    ['rm -rf "{/,}"*', false],
+    ['rm -rf \\{/,\\}', false],
+    ['rm -rf ${HOME}/tmp', false],
+    ['echo {/,}', false],
+    // Review additions (#4096): a list that includes the root in any position, nested lists, and ordinary uses of braces.
+    ['rm -rf {/tmp,/}', true],
+    ['rm -rf {a,b/,{/,c}}', true],
+    ['rm -rf /tmp/{a,b}', false],
+    ['curl -s https://x.test/a{1,2}.json', false],
+    ['git commit -m "fix: guard handles brace lists {a,b}"', false],
+    ['echo "{a,b}"', false],
+    ['bomb(){ bomb | bomb & }; bomb', true],
+    ['f(){ echo hi; }; f', false],
+    ['echo ' + '{a,b}'.repeat(14), false],
+    // Past the expansion budget an rm in progress fails closed: one of the words may be the root.
+    ['rm -rf ' + '{a,b}'.repeat(14), true],
+    ['rm -rf /tmp/' + '{a,b}'.repeat(10), false],
+    // A list too large to expand is judged by its tokens, so it cannot hide the rm itself.
+    ['{rm,-rf,/,' + '{a,b}'.repeat(14) + '} --no-preserve-root', true],
+    // A quoted brace list handed to a shell is rescanned and expanded there.
+    ["bash -c '{rm,-rf,/,--no-preserve-root}'", true],
+    ['echo ${v:-{a,b}}', false],
+    // Deep or comma-free nesting is linear and never throws (a throw would fail the classic hook open).
+    ['echo ' + '{a,'.repeat(4000) + 'b' + '}'.repeat(4000) + '; rm -rf / --no-preserve-root', true],
+    ['echo ' + '{'.repeat(8000) + 'a' + '}'.repeat(8000), false],
+    ['rm -' + 'r'.repeat(16000) + '! /tmp', false],
+    ['echo ' + '$('.repeat(30000) + '; rm -rf / --no-preserve-root', true],
+    ['echo ' + '$(x)'.repeat(15000), false],
+    ['rm -rf ' + '${a:-y'.repeat(8000) + '}'.repeat(8000), false],
+    // Past four rescans a nested string is judged by its tokens, not by one literal spelling.
+    [nest(5, 'rm -fr /'), true],
+    [nest(5, "rm -rf '/'"), true],
+    [nest(6, 'rm --recursive --force /'), true],
+    [nest(5, 'rm -rf /tmp/x'), false],
+    [nest(5, 'r"m" -rf /'), true],
+    [nest(5, 'rm -rf /{tmp,}'), true],
+    [nest(4, 'echo `rm -fr /`'), true],
+    [nest(4, 'echo `rm -rf /tmp/x`'), false],
     ['format c: /q /y', true],
     ['del /s /q c:\\', true],
     [':(){:|:&};:', true],
+    // A fork bomb whatever the spacing or the function's name, with or without the ; before the call.
+    [':(){ :|:& };:', true],
+    [':(){ :|: & };:', true],
+    [':() { : | : & } ; :', true],
+    ['bomb(){ bomb|bomb& };bomb', true],
+    [':(){ :|:& }\n:', true],
+    // Defining one is the danger: the call may come later, after other commands or a comment.
+    ['function f(){ f|f& };f', true],
+    ['function f { f|f& }; f', true],
+    ['f(){ f|f& };true;f', true],
+    ['f(){ f|f& };# later\nf', true],
+    ['f(){ echo hi; };f', false],
+    ['f(){ f|g& };f', false],
   ];
   function expectParity(command: string, denied: boolean) {
     expect(dangerousCommandVerdict('Bash', { command })?.decision === 'deny').toBe(denied);

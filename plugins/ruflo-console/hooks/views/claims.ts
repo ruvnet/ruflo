@@ -39,7 +39,7 @@ export function claimsView(ctx: Ctx): RenderElement {
 
       rows.push(
         text(ctx, clip(`${isPicked ? '▸' : ' '} ${claim.issueId.padEnd(22)} ${who(claim).padEnd(34)} ${claim.status.padEnd(9)} ${claim.progress ?? 0}%  ${flags}`, ctx.columns), {
-          ...(isPicked ? { bold: true, color: THEME.head } : claim.isStealable ? { color: THEME.warn } : {}),
+          ...(isPicked ? { weight: 'semibold', color: THEME.head } : claim.isStealable ? { color: THEME.warn } : {}),
         }),
       )
     })

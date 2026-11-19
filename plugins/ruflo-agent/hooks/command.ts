@@ -5,7 +5,7 @@ import type { Stats } from './status'
 /** `/agent-mod` is answered locally and takes no model turn. */
 export type CommandDeps = { readonly opts: ModOptions; readonly stats: Stats }
 
-const HELP = ['/agent-mod status', '/agent-mod scan <text>', '/agent-mod guarded'].join('\n')
+const HELP = ['/agent-mod status', '/agent-mod scan <text>', '/agent-mod guarded', '/agent-mod capabilities'].join('\n')
 
 export function answer(args: string, deps: CommandDeps): string {
   const [verb = '', ...rest] = args.trim().split(/\s+/)
@@ -15,7 +15,7 @@ export function answer(args: string, deps: CommandDeps): string {
   if (verb === '' || verb === 'help') return HELP
 
   if (verb === 'status') {
-    return `guard ${opts.guard ? 'on' : 'off'} · calls guarded ${stats.calls} · blocked ${stats.blocked}`
+    return `guard ${opts.guard ? 'on' : 'off'} · calls guarded ${stats.calls} · blocked ${stats.blocked}\nManaged workflow policy ${opts.managedWorkflows ? 'on' : 'off'}; maximum ${opts.maxBudgetCents} US cents; inline ${opts.allowInlineAgents ? 'on' : 'off'}`
   }
 
   if (verb === 'scan') {

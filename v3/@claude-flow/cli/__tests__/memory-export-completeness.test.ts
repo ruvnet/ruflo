@@ -13,6 +13,7 @@ let dir: string;
 let outputPath: string;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'ruflo-export-pages-'));
+  process.env.CLAUDE_FLOW_CWD = dir; // MCP export paths are contained to the project
   outputPath = join(dir, 'backup.json');
   writeFileSync(outputPath, 'existing complete backup');
   layer.listEntries.mockReset();

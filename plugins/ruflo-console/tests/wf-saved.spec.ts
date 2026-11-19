@@ -254,4 +254,30 @@ describe('live: load, restore, write', () => {
     await syncSavedViews(w.state, w.host, 60_000)
     expect(w.writes).toHaveLength(1)
   })
+
+  it('on Windows (host-fs, no rm) forgetting rewrites the file as an empty, valid saved-views document', async () => {
+    const spec = forgetSpec(CWD, 'host-fs')
+
+    expect(spec.write).toMatchObject({ kind: 'replace', path: PATH, hasDir: true })
+    expect(spec).toMatchObject({ declared: 'delete', expect: `${PATH} emptied` })
+    expect(spec.shows).not.toContain('rm ')
+
+    const emptied = decodeSaved(spec.write?.text ?? null)
+
+    expect(emptied.problem).toBeNull()
+    expect(emptied.saved).toMatchObject({ drill: null, search: '', pins: [], filters: {} })
+  })
+
+  it('on Windows the forget is verified by what the file holds: gone or empty passes, a pinned run left in it fails', async () => {
+    const spec = forgetSpec(CWD, 'host-fs')
+    const hostFor = (file: string | undefined) => ({ fs: { stat: async () => (file === undefined ? undefined : { kind: 'file', size: file.length }), read: async () => file ?? '' }, home: async () => undefined }) as never
+    const pinned = encodeSaved(togglePin(emptySaved(), a, 1).saved, 1)
+
+    expect(await spec.verifyLocal?.(hostFor(undefined))).toBe(true)
+    expect(await spec.verifyLocal?.(hostFor(spec.write?.text))).toBe(true)
+    expect(await spec.verifyLocal?.(hostFor(pinned))).toBe(false)
+    // the Linux and macOS form is still the rm, verified by the file being gone
+    expect(forgetSpec(CWD)).toMatchObject({ argv: ['rm', '-f', '--', PATH] })
+    expect(await forgetSpec(CWD).verifyLocal?.(hostFor(spec.write?.text))).toBe(false)
+  })
 })

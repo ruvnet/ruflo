@@ -1,4 +1,5 @@
 import type { RenderElement } from 'claude-code'
+import { managedBudgetRows } from './managed'
 
 import { BUDGET_HELP, BUDGET_PRESETS, canSetBudget, ladderDollars, projectSpend } from '../cost'
 import type { ModelStats } from '../data/cli'
@@ -71,6 +72,7 @@ export function costView(ctx: Ctx): RenderElement {
     rows.push(kv(ctx, 'budget', `${budget.level} · ${used === undefined ? 'n/a' : `$${used.toFixed(2)}`} of $${budget.limit.toFixed(2)} (${used === undefined ? 'n/a' : pct(used / budget.limit)})`, color))
     if (used !== undefined) rows.push(text(ctx, `${' '.repeat(17)}${ladder(used, budget.limit, Math.min(40, ctx.columns - 20))}  50·75·90·100%`, { color }))
   }
+  rows.push(...managedBudgetRows(ctx))
   rows.push(...breakdownRows(ctx))
   rows.push(...providerRows(ctx))
   rows.push(rule(ctx, 'Alert thresholds', 'OK below 50%'))

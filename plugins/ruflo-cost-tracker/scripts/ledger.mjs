@@ -14,6 +14,7 @@ import { collect } from './_ledger.mjs';
 import { priceUsage, bookDate } from './_pricebook.mjs';
 import { parseDurationMs } from './_sessions.mjs';
 import { advise } from './advise.mjs';
+import { pathToFileURL } from 'node:url';
 
 const arg = (name, fallback) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : fallback; };
 
@@ -79,15 +80,17 @@ function isoMs(name) {
   return Date.parse(value);
 }
 
-/** An absolute POSIX path with no control characters or `..`; anything else exits 2. */
+/** An absolute path (POSIX, or drive-lettered on Windows) with no control characters or `..`; anything else exits 2. */
 function absolutePath(name) {
   const value = arg(name);
-  if (typeof value !== 'string' || !value.startsWith('/') || /[\u0000-\u001f\u007f]/.test(value) || value.split('/').includes('..')) bad(`--${name} needs an absolute path with no '..'`);
+  const isWindows = typeof value === 'string' && /^[A-Za-z]:[\\/]/.test(value);
+  if (typeof value !== 'string' || !(value.startsWith('/') || isWindows) || /[\u0000-\u001f\u007f]/.test(value) || value.split(isWindows ? /[\\/]/ : '/').includes('..')) bad(`--${name} needs an absolute path with no '..'`);
 
   return value;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// pathToFileURL, not `file://${argv[1]}`: on Windows import.meta.url is file:///C:/... and argv[1] is C:..., so the string never matched and the script printed nothing.
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const given = name => process.argv.includes(`--${name}`);
   const fromMs = given('from') ? isoMs('from') : null;
   const toMs = given('to') ? isoMs('to') : null;

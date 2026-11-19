@@ -52,6 +52,55 @@ interface AnthropicResponse {
   usage: {
     input_tokens: number;
     output_tokens: number;
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
+}
+
+interface AnthropicPricing {
+  promptCostPer1k: number;
+  completionCostPer1k: number;
+  currency: string;
+}
+
+/**
+ * Anthropic reports cached input separately from input_tokens:
+ * total input = input_tokens + cache_creation + cache_read.
+ * Cached writes cost 1.25x base input (5-minute cache), reads 0.1x.
+ * @internal
+ */
+export function computeAnthropicUsageCost(
+  usage: AnthropicResponse['usage'],
+  pricing: AnthropicPricing,
+): { usage: LLMResponse['usage']; cost: NonNullable<LLMResponse['cost']> } {
+  const cacheCreation = usage.cache_creation_input_tokens ?? 0;
+  const cacheRead = usage.cache_read_input_tokens ?? 0;
+  const promptTokens = usage.input_tokens + cacheCreation + cacheRead;
+  const promptCost = (
+    usage.input_tokens +
+    cacheCreation * 1.25 +
+    cacheRead * 0.1
+  ) / 1000 * pricing.promptCostPer1k;
+  const completionCost = (usage.output_tokens / 1000) * pricing.completionCostPer1k;
+
+  return {
+    usage: {
+      promptTokens,
+      completionTokens: usage.output_tokens,
+      totalTokens: promptTokens + usage.output_tokens,
+      ...(usage.cache_creation_input_tokens !== undefined
+        ? { cacheCreationInputTokens: usage.cache_creation_input_tokens }
+        : {}),
+      ...(usage.cache_read_input_tokens !== undefined
+        ? { cacheReadInputTokens: usage.cache_read_input_tokens }
+        : {}),
+    },
+    cost: {
+      promptCost,
+      completionCost,
+      totalCost: promptCost + completionCost,
+      currency: pricing.currency,
+    },
   };
 }
 
@@ -192,6 +241,8 @@ export class AnthropicProvider extends BaseProvider {
       let buffer = '';
       let totalOutputTokens = 0;
       let inputTokens = 0;
+      let cacheCreationInputTokens = 0;
+      let cacheReadInputTokens = 0;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -218,26 +269,29 @@ export class AnthropicProvider extends BaseProvider {
                 totalOutputTokens = event.usage.output_tokens;
               } else if (event.type === 'message_start' && event.message?.usage) {
                 inputTokens = event.message.usage.input_tokens;
+                cacheCreationInputTokens = event.message.usage.cache_creation_input_tokens ?? 0;
+                cacheReadInputTokens = event.message.usage.cache_read_input_tokens ?? 0;
               } else if (event.type === 'message_stop') {
                 const model = request.model || this.config.model;
                 const pricing = this.capabilities.pricing[model];
-
-                const promptCost = (inputTokens / 1000) * pricing.promptCostPer1k;
-                const completionCost = (totalOutputTokens / 1000) * pricing.completionCostPer1k;
+                const { usage, cost } = computeAnthropicUsageCost(
+                  {
+                    input_tokens: inputTokens,
+                    output_tokens: totalOutputTokens,
+                    ...(cacheCreationInputTokens > 0
+                      ? { cache_creation_input_tokens: cacheCreationInputTokens }
+                      : {}),
+                    ...(cacheReadInputTokens > 0
+                      ? { cache_read_input_tokens: cacheReadInputTokens }
+                      : {}),
+                  },
+                  pricing,
+                );
 
                 yield {
                   type: 'done',
-                  usage: {
-                    promptTokens: inputTokens,
-                    completionTokens: totalOutputTokens,
-                    totalTokens: inputTokens + totalOutputTokens,
-                  },
-                  cost: {
-                    promptCost,
-                    completionCost,
-                    totalCost: promptCost + completionCost,
-                    currency: 'USD',
-                  },
+                  usage,
+                  cost,
                 };
               }
             } catch {
@@ -385,9 +439,7 @@ export class AnthropicProvider extends BaseProvider {
   private transformResponse(data: AnthropicResponse, request: LLMRequest): LLMResponse {
     const model = request.model || this.config.model;
     const pricing = this.capabilities.pricing[model];
-
-    const promptCost = (data.usage.input_tokens / 1000) * pricing.promptCostPer1k;
-    const completionCost = (data.usage.output_tokens / 1000) * pricing.completionCostPer1k;
+    const { usage, cost } = computeAnthropicUsageCost(data.usage, pricing);
 
     // Extract text content
     const textContent = data.content
@@ -413,17 +465,8 @@ export class AnthropicProvider extends BaseProvider {
       provider: 'anthropic',
       content: textContent,
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-      usage: {
-        promptTokens: data.usage.input_tokens,
-        completionTokens: data.usage.output_tokens,
-        totalTokens: data.usage.input_tokens + data.usage.output_tokens,
-      },
-      cost: {
-        promptCost,
-        completionCost,
-        totalCost: promptCost + completionCost,
-        currency: 'USD',
-      },
+      usage,
+      cost,
       finishReason: data.stop_reason === 'end_turn' ? 'stop' : 'length',
     };
   }

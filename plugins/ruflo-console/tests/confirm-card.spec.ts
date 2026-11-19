@@ -59,6 +59,6 @@ describe('the confirm card', () => {
   it('shows a money or model effect in the alarm colour', () => {
     const effect = flat(draw('Spends money on a model turn.')).find(el => el.kind === 'Text' && String(el.props.children).startsWith('Effect:'))
 
-    expect(effect?.props).toMatchObject({ bold: true, color: THEME.bad })
+    expect(effect?.props).toMatchObject({ weight: 'semibold', color: THEME.bad })
   })
 })

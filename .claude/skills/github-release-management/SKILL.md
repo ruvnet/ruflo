@@ -140,12 +140,12 @@ gh release create $(npm pkg get version) \
   }
 
   // Spawn specialized agents
-  mcp__claude-flow__agent_spawn { type: "coordinator", name: "Release Director" }
-  mcp__claude-flow__agent_spawn { type: "coder", name: "Version Manager" }
-  mcp__claude-flow__agent_spawn { type: "tester", name: "QA Engineer" }
-  mcp__claude-flow__agent_spawn { type: "reviewer", name: "Release Reviewer" }
-  mcp__claude-flow__agent_spawn { type: "analyst", name: "Deployment Analyst" }
-  mcp__claude-flow__agent_spawn { type: "researcher", name: "Compatibility Checker" }
+  mcp__claude-flow__agent_spawn { agentType: "coordinator", name: "Release Director" }
+  mcp__claude-flow__agent_spawn { agentType: "coder", name: "Version Manager" }
+  mcp__claude-flow__agent_spawn { agentType: "tester", name: "QA Engineer" }
+  mcp__claude-flow__agent_spawn { agentType: "reviewer", name: "Release Reviewer" }
+  mcp__claude-flow__agent_spawn { agentType: "analyst", name: "Deployment Analyst" }
+  mcp__claude-flow__agent_spawn { agentType: "researcher", name: "Compatibility Checker" }
 ```
 
 #### Coordinated Release Workflow
@@ -155,11 +155,10 @@ gh release create $(npm pkg get version) \
   Bash("gh api repos/:owner/:repo/git/refs --method POST -f ref='refs/heads/release/v2.0.0' -f sha=$(gh api repos/:owner/:repo/git/refs/heads/main --jq '.object.sha')")
 
   // Orchestrate release preparation
-  mcp__claude-flow__task_orchestrate {
-    task: "Prepare release v2.0.0 with comprehensive testing and validation",
-    strategy: "sequential",
-    priority: "critical",
-    maxAgents: 6
+  mcp__claude-flow__task_create {
+    type: "release",
+    description: "Prepare release v2.0.0 with comprehensive testing and validation",
+    priority: "critical"
   }
 
   // Update all release files
@@ -187,8 +186,7 @@ gh release create $(npm pkg get version) \
   ]}
 
   // Store release state
-  mcp__claude-flow__memory_usage {
-    action: "store",
+  mcp__claude-flow__memory_store {
     key: "release/v2.0.0/status",
     value: JSON.stringify({
       version: "2.0.0",
@@ -391,7 +389,7 @@ npx claude-flow github multi-release \
   Bash("gh api repos/org/cli/dispatches --method POST -f event_type='release' -F client_payload[version]=v1.5.0")
 
   // Monitor all releases
-  mcp__claude-flow__swarm_monitor { interval: 5, duration: 300 }
+  mcp__claude-flow__swarm_status {}
 ```
 
 ### Hotfix Emergency Procedures

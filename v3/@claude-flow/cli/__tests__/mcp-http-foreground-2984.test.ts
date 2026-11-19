@@ -74,6 +74,7 @@ describe.skipIf(!CLI_BUILT)('mcp start -t http stays running (#2984, end-to-end)
     const host = '127.0.0.1';
 
     child = spawn('node', [CLI, 'mcp', 'start', '-t', 'http', '--port', String(port), '--host', host], {
+      env: { ...process.env, RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP: '1' },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
