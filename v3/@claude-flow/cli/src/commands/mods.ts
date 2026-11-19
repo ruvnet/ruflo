@@ -55,7 +55,7 @@ const rootOption = { name: 'project-root', description: 'Project root (default: 
 
 const installSub: Command = {
   name: 'install',
-  description: 'Enable the ruflo mod plugins (ruflo-mods, ruflo-swarm, ruflo-console) for this project; classic hooks stay as fallback',
+  description: 'Enable the ruflo mod plugins (ruflo-mods, ruflo-swarm, ruflo-console, ruflo-protector) for this project; classic hooks stay as fallback',
   options: [
     rootOption,
     { name: 'scope', description: 'local (.claude/settings.local.json, default) | project (.claude/settings.json)', type: 'string', default: 'local' },

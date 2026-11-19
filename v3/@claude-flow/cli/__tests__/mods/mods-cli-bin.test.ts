@@ -53,7 +53,7 @@ describe.skipIf(!CLI_BUILT)('ADR-404 mods through the built CLI', () => {
       expect(out).toContain('claude plugin install ruflo-mods@ruflo --scope project');
       expect(out).toContain('with them off, or the rollout switch off, they do nothing and the classic hooks keep every event');
       const shared = JSON.parse(readFileSync(join(t.cwd, '.claude', 'settings.json'), 'utf8'));
-      for (const id of ['ruflo-mods@ruflo', 'ruflo-swarm@ruflo', 'ruflo-console@ruflo']) expect(shared.enabledPlugins[id]).toBe(true);
+      for (const id of ['ruflo-mods@ruflo', 'ruflo-swarm@ruflo', 'ruflo-console@ruflo', 'ruflo-protector@ruflo']) expect(shared.enabledPlugins[id]).toBe(true);
       expect(shared.extraKnownMarketplaces.ruflo.source).toEqual({ source: 'github', repo: 'ruvnet/ruflo' });
       expect(shared.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS).toBe('1');
       // Classic hooks are untouched: still the default and the fallback.

@@ -26,8 +26,8 @@ const BAD_HOOKS = JSON.stringify({ hooks: { SessionStart: [{ hooks: [{ type: 'co
 /** A ruflo marketplace clone carrying the three mod plugins, registered in a temp Claude config dir. */
 function clone(badSwarm: boolean): string {
   const at = join(tmp, 'clone');
-  write('clone/.claude-plugin/marketplace.json', JSON.stringify({ name: 'ruflo', plugins: ['ruflo-mods', 'ruflo-swarm', 'ruflo-console'].map((name) => ({ name, source: `./plugins/${name}` })) }));
-  for (const name of ['ruflo-mods', 'ruflo-swarm', 'ruflo-console']) write(`clone/plugins/${name}/.claude-plugin/plugin.json`, JSON.stringify({ name }));
+  write('clone/.claude-plugin/marketplace.json', JSON.stringify({ name: 'ruflo', plugins: ['ruflo-mods', 'ruflo-swarm', 'ruflo-console', 'ruflo-protector'].map((name) => ({ name, source: `./plugins/${name}` })) }));
+  for (const name of ['ruflo-mods', 'ruflo-swarm', 'ruflo-console', 'ruflo-protector']) write(`clone/plugins/${name}/.claude-plugin/plugin.json`, JSON.stringify({ name }));
   if (badSwarm) write('clone/plugins/ruflo-swarm/hooks/hooks.json', BAD_HOOKS);
   write('cfg/plugins/known_marketplaces.json', JSON.stringify({ ruflo: { installLocation: at, source: { source: 'github', repo: 'ruvnet/ruflo' } } }));
   return at;

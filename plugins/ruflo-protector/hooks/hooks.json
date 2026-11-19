@@ -1,5 +1,5 @@
 {
-  "description": "Project Anatole as a mod (ADR-453): a learning watchdog for unattended agents. Deterministic OWASP-mapped rules (the only thing that can block), a per-project baseline (notify only), /protector, and status.json, alerts.jsonl, baseline.json under .claude-flow/protector-mod/. Default off in every bundle; default mode learn once installed.",
+  "description": "Project Anatole as a mod (ADR-453): a learning watchdog for unattended agents. Deterministic OWASP-mapped rules (the only thing that can block), a per-project baseline (notify only), /protector, and status.json, alerts.jsonl, baseline.json under .claude-flow/protector-mod/. Enabled by ruflo init and ruflo mods install since ruflo 3.79.0; default mode learn, graduates to notify, never to enforce.",
   "modules": [
     "./register.ts"
   ]

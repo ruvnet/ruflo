@@ -112,7 +112,7 @@
     {
       "name": "ruflo-protector",
       "source": "./plugins/ruflo-protector",
-      "description": "Project Anatole: an optional, learning watchdog for unattended agents (OWASP-mapped rules, a per-project baseline, learn / notify / enforce modes). Default off."
+      "description": "Project Anatole: an optional, learning watchdog for unattended agents (OWASP-mapped rules, a per-project baseline, learn / notify / enforce modes). Enabled by ruflo init in learn mode."
     },
     {
       "name": "ruflo-browser",
