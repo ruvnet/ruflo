@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.1.3 — 2026-11-19
+- feat: Project Anatole is on by default: ruflo 3.79.0 adds it to the mod bundle, so `ruflo init` and `ruflo mods install` enable it in `learn` mode (ADR-453 §14.1 amendment); an explicit `false` in `enabledPlugins` is kept
+
 ## 0.1.2 — 2026-10-12
 - fix: the shared text screen now catches `.env` and e-mailed credentials, no longer flags a model's token talk (`--max-tokens`, `/oauth/token`, "token usage"), and no longer flags values that only name where a secret lives (`./service-account.json`, `--set-secrets=NAME=NAME:latest`); every rule stays linear (#4094, thanks @proffesor-for-testing)
 

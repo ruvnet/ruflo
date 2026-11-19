@@ -35,7 +35,7 @@ describe('ADR-404 mods install / uninstall', () => {
     const r = installMod(root, 'local');
     const s = read(join(root, '.claude', 'settings.local.json'));
     for (const id of MOD_PLUGIN_IDS) expect(s.enabledPlugins[id]).toBe(true);
-    expect(MOD_PLUGIN_IDS).toEqual(['ruflo-mods@ruflo', 'ruflo-swarm@ruflo', 'ruflo-console@ruflo']);
+    expect(MOD_PLUGIN_IDS).toEqual(['ruflo-mods@ruflo', 'ruflo-swarm@ruflo', 'ruflo-console@ruflo', 'ruflo-protector@ruflo']);
     expect(s.extraKnownMarketplaces.ruflo.source).toEqual({ source: 'github', repo: 'ruvnet/ruflo' });
     expect(s.env[ENABLE_ENV]).toBe('1');
     expect(r.added).toEqual({ plugins: [...MOD_PLUGIN_IDS], marketplace: true, env: true });
@@ -53,7 +53,7 @@ describe('ADR-404 mods install / uninstall', () => {
     writeFileSync(file, JSON.stringify(before));
     const r = installMod(root, 'project');
     expect(r.backup && existsSync(r.backup)).toBe(true);
-    expect(r.added).toEqual({ plugins: ['ruflo-mods@ruflo', 'ruflo-console@ruflo'], marketplace: false, env: false });
+    expect(r.added).toEqual({ plugins: ['ruflo-mods@ruflo', 'ruflo-console@ruflo', 'ruflo-protector@ruflo'], marketplace: false, env: false });
     const after = read(file);
     expect(after.extraKnownMarketplaces.ruflo.source.source).toBe('directory'); // never replaced
     expect(after.enabledPlugins['ruflo-swarm@ruflo']).toBe(false); // their decision
