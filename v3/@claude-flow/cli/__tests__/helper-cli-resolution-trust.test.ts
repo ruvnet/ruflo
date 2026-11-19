@@ -14,6 +14,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { generateHookHandler, generateRufloHookCjs } from '../src/init/helpers-generator.js';
+import { pinnedVersion } from '../src/init/pinning.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(here, '../../../..');
@@ -175,6 +176,8 @@ describe('ruflo-hook.cjs plugin shims', () => {
   }
 
   it('the generated ruflo-hook.cjs pins its npx fallback to the helper root', () => {
-    expect(generateRufloHookCjs()).toContain("'--prefer-offline', '--yes', '--prefix', path.resolve(__dirname, '..', '..'), 'ruflo@latest'");
+    // ADR-545: pinned to the running CLI's exact version; --channel latest keeps the floating tag.
+    expect(generateRufloHookCjs()).toContain(`'--prefer-offline', '--yes', '--prefix', path.resolve(__dirname, '..', '..'), 'ruflo@${pinnedVersion()}'`);
+    expect(generateRufloHookCjs('latest')).toContain("'--prefer-offline', '--yes', '--prefix', path.resolve(__dirname, '..', '..'), 'ruflo@latest'");
   });
 });

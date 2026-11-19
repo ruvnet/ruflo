@@ -15,6 +15,7 @@ import { createHash } from 'crypto';
 import { ownInstallAncestors } from '../plugins/own-install.js';
 import { checkNativeAddonHeaders } from './doctor-native-addon.js';
 import { checkProjectAutoApproveSettings } from './doctor-auto-approve.js';
+import { checkProvenance } from './doctor-provenance.js';
 import { execSync, exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { decodeKey, isEncryptionEnabled } from '../encryption/vault.js';
@@ -2627,7 +2628,7 @@ export const doctorCommand: Command = {
     {
       name: 'component',
       short: 'c',
-      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, browser, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, mods, headless-plugins, metaharness)',
+      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, browser, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, mods, headless-plugins, provenance, metaharness)',
       type: 'string'
     },
     {
@@ -2656,6 +2657,7 @@ export const doctorCommand: Command = {
     { command: 'claude-flow doctor --json -c node', description: 'Emit machine-readable health checks' },
     { command: 'claude-flow doctor', description: 'Run full health check' },
     { command: 'claude-flow doctor --fix', description: 'Print suggested fix commands (does not auto-apply)' },
+    { command: 'claude-flow doctor -c provenance', description: 'Check SLSA provenance of the pinned ruflo packages (ADR-545)' },
     { command: 'claude-flow doctor --install', description: 'Auto-install missing dependencies' },
     { command: 'claude-flow doctor -c version', description: 'Check for stale npx cache' },
     { command: 'claude-flow doctor -c claude', description: 'Check Claude Code CLI only' },
@@ -2682,6 +2684,8 @@ export const doctorCommand: Command = {
     // on display names or on whether the full or component suite was selected.
     const helperCheck = () => checkHelperIntegrity();
     const nativeAddonCheck = () => checkNativeAddonHeaders();
+    // ADR-545 — network-bound, so only via --component provenance.
+    const provenanceCheck = () => checkProvenance();
 
     // #2677: `--component memory` now runs the whole memory-health suite,
     // not just the existence check. Values can be a single check or an
@@ -2741,6 +2745,7 @@ export const doctorCommand: Command = {
       'learning-loop': checkLearningLoop, // #4581 — verified-outcome learning loop
       'compact-snapshots': checkCompactSnapshots, // ADR-505 — snapshots must be gitignored
       'headless-plugins': checkHeadlessPlugins, // ADR-510 — mods under claude -p (spawns claude; not in bare doctor)
+      'provenance': provenanceCheck, // ADR-545 — registry SLSA provenance (network; not in bare doctor)
     };
 
     if (component !== undefined && !Object.hasOwn(componentMap, component)) {
@@ -2904,7 +2909,7 @@ export const doctorCommand: Command = {
       [checkProxyBindAddress, 'proxy-bind'], [checkAuth, 'auth'],
       [checkTypesafeRouter, 'typesafe'], [checkMods, 'mods'],
       [checkLearningLoop, 'learning-loop'], [checkHeadlessPlugins, 'headless-plugins'],
-      [checkCompactSnapshots, 'compact-snapshots'],
+      [checkCompactSnapshots, 'compact-snapshots'], [provenanceCheck, 'provenance'],
     ]);
     nativeAgentDbChecks.forEach((check, index) => {
       // The path distinguishes simultaneous authority files; normalize separators.

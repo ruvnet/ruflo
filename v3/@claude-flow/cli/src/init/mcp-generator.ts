@@ -5,6 +5,7 @@
  */
 
 import type { InitOptions, MCPConfig } from './types.js';
+import { ourSpec, thirdPartySpec } from './pinning.js';
 
 /**
  * Check if running on Windows
@@ -46,6 +47,7 @@ function createMCPServerEntry(
  */
 export function generateMCPConfig(options: InitOptions): object {
   const config = options.mcp;
+  const channel = options.channel;
   const mcpServers: Record<string, object> = {};
 
   const npmEnv = {
@@ -55,7 +57,8 @@ export function generateMCPConfig(options: InitOptions): object {
   // Ruflo MCP server (core) — the registration KEY is intentionally
   // `claude-flow` (not `ruflo`) because #2206 established that all ~166
   // plugin tool references use `mcp__claude-flow__*`. The invoked binary
-  // is `ruflo@latest` (the post-rename wrapper) — only the registration
+  // is `ruflo@<this CLI's version>` (ADR-545; `ruflo@latest` on
+  // `--channel latest`), the post-rename wrapper — only the registration
   // name stays legacy so plugin tool resolution keeps working.
   // #2612 (duplicate `claude-flow` + `ruflo` registrations after users
   // followed pre-rename setup docs) is healed by `ruflo doctor`, which
@@ -63,7 +66,7 @@ export function generateMCPConfig(options: InitOptions): object {
   // extra `ruflo`-keyed entry — NOT by flipping the canonical key here.
   if (config.claudeFlow) {
     mcpServers['claude-flow'] = createMCPServerEntry(
-      ['ruflo@latest', 'mcp', 'start'],
+      [ourSpec('ruflo', channel), 'mcp', 'start'],
       {
         ...npmEnv,
         CLAUDE_FLOW_MODE: 'v3',
@@ -79,7 +82,7 @@ export function generateMCPConfig(options: InitOptions): object {
   // Ruv-Swarm MCP server (enhanced coordination)
   if (config.ruvSwarm) {
     mcpServers['ruv-swarm'] = createMCPServerEntry(
-      ['ruv-swarm', 'mcp', 'start'],
+      [thirdPartySpec('ruv-swarm', channel), 'mcp', 'start'],
       { ...npmEnv },
       { optional: true }
     );
@@ -88,7 +91,7 @@ export function generateMCPConfig(options: InitOptions): object {
   // Flow Nexus MCP server (cloud features)
   if (config.flowNexus) {
     mcpServers['flow-nexus'] = createMCPServerEntry(
-      ['flow-nexus@latest', 'mcp', 'start'],
+      [thirdPartySpec('flow-nexus', channel), 'mcp', 'start'],
       { ...npmEnv },
       { optional: true, requiresAuth: true }
     );
@@ -111,28 +114,31 @@ export function generateMCPJson(options: InitOptions): string {
 export function generateMCPCommands(options: InitOptions): string[] {
   const commands: string[] = [];
   const config = options.mcp;
+  const ruflo = ourSpec('ruflo', options.channel);
+  const ruvSwarm = thirdPartySpec('ruv-swarm', options.channel);
+  const flowNexus = thirdPartySpec('flow-nexus', options.channel);
 
   if (isWindows()) {
     if (config.claudeFlow) {
       // #2206: registration name must be `claude-flow` to match mcp__claude-flow__* plugin tool references
-      commands.push('claude mcp add claude-flow -- cmd /c npx -y ruflo@latest mcp start');
+      commands.push(`claude mcp add claude-flow -- cmd /c npx -y ${ruflo} mcp start`);
     }
     if (config.ruvSwarm) {
-      commands.push('claude mcp add ruv-swarm -- cmd /c npx -y ruv-swarm mcp start');
+      commands.push(`claude mcp add ruv-swarm -- cmd /c npx -y ${ruvSwarm} mcp start`);
     }
     if (config.flowNexus) {
-      commands.push('claude mcp add flow-nexus -- cmd /c npx -y flow-nexus@latest mcp start');
+      commands.push(`claude mcp add flow-nexus -- cmd /c npx -y ${flowNexus} mcp start`);
     }
   } else {
     if (config.claudeFlow) {
       // #2206: registration name must be `claude-flow` to match mcp__claude-flow__* plugin tool references
-      commands.push("claude mcp add claude-flow -- npx -y ruflo@latest mcp start");
+      commands.push(`claude mcp add claude-flow -- npx -y ${ruflo} mcp start`);
     }
     if (config.ruvSwarm) {
-      commands.push("claude mcp add ruv-swarm -- npx -y ruv-swarm mcp start");
+      commands.push(`claude mcp add ruv-swarm -- npx -y ${ruvSwarm} mcp start`);
     }
     if (config.flowNexus) {
-      commands.push("claude mcp add flow-nexus -- npx -y flow-nexus@latest mcp start");
+      commands.push(`claude mcp add flow-nexus -- npx -y ${flowNexus} mcp start`);
     }
   }
 

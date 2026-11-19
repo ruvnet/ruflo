@@ -5,6 +5,7 @@
 
 import os from 'os';
 import path from 'path';
+import type { ReleaseChannel } from './pinning.js';
 
 /**
  * Components that can be initialized
@@ -378,6 +379,12 @@ export interface InitOptions {
    * No effect when the plugins are absent.
    */
   deferToPlugins?: boolean;
+  /**
+   * ADR-545 — how generated files reference ruflo's own packages. `pinned`
+   * (default) writes the exact version of the running CLI; `latest`
+   * (`--channel latest`) writes the floating `@latest` tag as before.
+   */
+  channel?: ReleaseChannel;
 }
 
 /**

@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-x-gateway`.
 
+## 0.10.6 — 2026-11-19
+- fix(deps): `npm audit fix` plus a `glob ^14.0.2` override under `rimraf` clear 2 high and 11 moderate advisories (0 remaining); needed for the provenance release gate (ADR-545).
+
 ## 0.10.5 — 2026-11-18
 - fix: the WebSocket proxy released its connection slot once per close or error event, so a socket that fired both drove the 500-connection counter below its true value; each connection now releases its slot exactly once (#4752).
 

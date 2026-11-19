@@ -970,6 +970,20 @@ memory_search_unified({ query: "authentication security", limit: 5 })
 
 ### Publishing Rules
 
+- **The train is published from CI only, with SLSA provenance (ADR-545, from 3.79.0).**
+  Dispatch `.github/workflows/stable-npm-release.yml` from `main` with the release
+  tag and `dry_run: false`; it publishes each archive with `--provenance` and moves
+  `latest` only after `scripts/verify-npm-provenance.mjs` confirms a SLSA v1
+  attestation for exactly that archive, built in `ruvnet/ruflo`. A laptop
+  `npm publish` produces no attestation, and `ruflo doctor -c provenance` and every
+  `ruflo init` report it as a failure for 3.79.0 and later — the laptop recipes below
+  are for non-train leaves only until those get a CI path.
+- Rehearse first: `gh workflow run stable-npm-release.yml -f tag=HEAD -f dry_run=true`
+  builds, smoke-tests and packs the dispatched commit without publishing.
+- The release commit must carry a freshly signed `helpers.manifest.json` (sign with the
+  `RUFLO_HELPERS_SIGNING_SECRET` env path and commit it in the release PR); CI only
+  verifies it, so the signing key never reaches CI.
+
 - The normal public release train is exactly THREE packages:
   `@claude-flow/cli`, `claude-flow`, and `ruflo`.
 - **Exactly FOUR `@claude-flow/*` components are bundled** into the public
