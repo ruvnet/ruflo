@@ -2,7 +2,7 @@
 
 <a href="https://cognitum.one/ruPro"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
 
-<a href="https://cognitum.one/rupro"><picture><source media="(max-width: 760px)" srcset="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-workspace-mobile.svg"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-workspace.svg" alt="ruPro workspace tour showing project agents, provider terminals, evidence review and business dashboards" width="100%"></picture></a>
+<a href="https://cognitum.one/rupro"><picture><source media="(max-width: 760px)" srcset="https://raw.githubusercontent.com/ruvnet/ruflo/55b4ced5e672f3af1b2ade42b0584b618b8f93ee/docs/assets/readme/rupro-workspace-mobile.svg"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-workspace.svg" alt="ruPro workspace tour showing project agents, provider terminals, evidence review and business dashboards" width="100%"></picture></a>
 
 <p align="center">
 <a href="https://cognitum.one/rupro"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-explore.svg" alt="Explore ruPro" width="300" height="76"></a>
