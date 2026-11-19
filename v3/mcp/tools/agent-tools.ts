@@ -69,9 +69,9 @@ const agentTypeSchema = z.enum(ALLOWED_AGENT_TYPES).or(
 const spawnAgentSchema = z.object({
   agentType: agentTypeSchema.describe('Type of agent to spawn'),
   id: z.string().optional().describe('Optional agent ID (auto-generated if not provided)'),
-  config: z.record(z.unknown()).optional().describe('Agent-specific configuration'),
+  config: z.record(z.string(), z.unknown()).optional().describe('Agent-specific configuration'),
   priority: z.enum(['low', 'normal', 'high', 'critical']).default('normal'),
-  metadata: z.record(z.unknown()).optional().describe('Additional metadata'),
+  metadata: z.record(z.string(), z.unknown()).optional().describe('Additional metadata'),
 });
 
 const listAgentsSchema = z.object({

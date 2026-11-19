@@ -24,7 +24,7 @@ const storeMemorySchema = z.object({
     .describe('Type of memory'),
   category: z.string().optional().describe('Memory category (e.g., code, documentation, conversation)'),
   tags: z.array(z.string()).optional().describe('Tags for categorization'),
-  metadata: z.record(z.unknown()).optional().describe('Additional metadata'),
+  metadata: z.record(z.string(), z.unknown()).optional().describe('Additional metadata'),
   importance: z.number().min(0).max(1).optional()
     .describe('Importance score (0-1)'),
   ttl: z.number().int().positive().optional()
