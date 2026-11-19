@@ -44,7 +44,7 @@ const saveSessionSchema = z.object({
     .describe('Include swarm coordination state'),
   tags: z.array(z.string()).optional()
     .describe('Tags for categorizing the session'),
-  metadata: z.record(z.unknown()).optional()
+  metadata: z.record(z.string(), z.unknown()).optional()
     .describe('Additional metadata'),
 });
 

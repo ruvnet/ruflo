@@ -1,0 +1,72 @@
+# Intelligence SOTA Report — 2026-11-16
+
+**TL;DR**: Tonight's deep dive is continual learning for AI agents (2026 SOTA), motivated by Ruflo's disclosed-but-unfixed bug: `BalancedMode`'s EWC `gradientAccumulator` never decays, so its EWC anchor (`means`) drifts unboundedly. Research found Ruflo's own upstream Rust dependency, `@ruvector/sona@0.1.11`, already implements the standard fix (EMA Fisher decay, γ≈0.999) one layer down the stack — Ruflo's hand-rolled TS EWC bookkeeping never adopted it. Strong evidence, but an independent architecture review found a disqualifying caveat: `computeEWCPenalty()`'s output is discarded by `learn()`, never reaching a real weight update — fixing the accumulator alone changes no live behavior tonight. A competing SCAN-surface finding — `guidance_brain`'s capability-coverage report always claiming 100% tool classification even when tools silently fall back to an unclassified domain — scored higher (production-reachable, zero caveats) and is tonight's shipped candidate: a disclosed SCAN-override of DEEP=intelligence, same precedent as 2026-10-29/2026-11-10.
+
+## What's New in 2026
+
+| Finding | Source | Confidence |
+|---|---|---|
+| Standard "online EWC" fix for an unbounded Fisher/accumulator is EMA decay (`Fisher_t = γ·Fisher_{t-1} + (1-γ)·grad²`) — established pre-2026 baseline technique, still cited by current literature | Progress & Compress lineage; corroborated via 2026 lit search context | A |
+| Ruflo's own upstream Rust crates already implement this: `ruvector-dag` (docs.rs 2.0.4) defaults Fisher decay to 0.99; `ruvector-sona` (docs.rs 0.1.7) uses EMA Fisher decay 0.999. `@ruvector/sona@0.1.11` is a direct dependency of `@claude-flow/neural` (confirmed by grep of its package.json) | docs.rs primary source + in-repo dependency confirmation | A |
+| "Elastic Weight Consolidation Done Right" (Liu & Chang, arXiv:2603.18596, CVPR 2026, code released) fixes FIM gradient-vanishing via Logits Reversal — real peer-reviewed result, but orthogonal to Ruflo's bug (Ruflo doesn't compute a true FIM; it uses a squared-reward-gradient estimator) | arXiv 2603.18596 | A (paper), not directly applicable |
+| ProCL (arXiv:2605.13162, EMNLP 2026 Findings): continual LoRA using an internal "program memory" instead of an external replay buffer, better retention than other continual-LoRA baselines on text classification/QA | arXiv 2605.13162 | B (single paper, no second-source replication) |
+| "Modular Memory is the Key to Continual Learning Agents" (arXiv:2603.01761): most production agents today rely on frozen weights + externalized context/memory rather than in-weight continual learning | arXiv 2603.01761 (Dagstuhl seminar position paper) | B |
+| Industry-wide pattern confirmed by competitor review below: no major agent framework (LangGraph, AutoGen, CrewAI, OpenAI Agents SDK, Letta, Mem0) updates model weights in production; all push "learning" into externalized, inspectable context | Cross-checked against primary vendor/project sources | B |
+
+**Why the competitor table isn't "None across the board" without explanation**: zero surveyed competitors do in-weight continual learning, but this is a **deliberately-avoided approach**, not an unsolved problem. Letta's Dec-2025 essay ("Continual Learning in Token Space") frames it as a design choice: naive online weight updates on a shared, multi-tenant model reliably degrade existing capability (catastrophic forgetting), so the industry externalizes "learning" into context/memory instead. Ruflo's SONA+EWC++ stack is the only approach surveyed operating in weight space — orthogonal to, not simply ahead of, the field. Open question: does Ruflo's approach have independent, reproduced benchmarks at production multi-tenant scale — the same validation gap already flagged for Flash Attention.
+
+## Ruflo Current Capability
+
+`v3/@claude-flow/neural/src/sona-manager.ts`'s `consolidateEWC()` (lines 568-582) genuinely decays Fisher importance (`fisher[i] *= 0.9`) each cycle — real and wired, driven by `updateEWCConsolidation()` (596-621), which only folds in a per-mode delta snapshot for modes implementing the optional `getConsolidationSnapshot()` hook. `BalancedMode` is the *only* mode that implements it (`modes/balanced.ts:333-367`); `research`/`batch`/`real-time`/`edge` get zero catastrophic-forgetting protection (disclosed 2026-10-27, re-disclosed 2026-11-01 and 2026-11-11 — a 3rd+ disclosure without action, exhausted per this pipeline's duplicate-direction rule).
+
+Independently, `computeEWCPenalty()` (`balanced.ts:284-300`, called from `learn()` at line 158) diffs the **raw, never-decayed `gradientAccumulator`** against `means` — unbounded between consolidations. Unchanged since the file's last real commit (`1b783e0`, 2026-11-01); the 2026-11-12 disclosure (PR #4973, open/unmerged) postdates that commit, so it's genuinely still open. Critically, its result feeds a local `totalGradientNorm` that `learn()` discards — no real weight update today. A reference decay pattern exists at `v3/plugins/cognitive-kernel/src/bridges/sona-bridge.ts::computeFisher()`, but its `consolidate()` is an empty stub — nothing usable to wire from there.
+
+Separately, CLAUDE.md's "MoE gate converges — confidence 0.13→0.88" claim is real and reproducible (`scripts/benchmark-intelligence.mjs::benchMoeGate()`) but benchmarks the wrong file: `q-learning-router.ts` (softmax confidence, no mixture-of-experts structure), not the actual gate at `moe-router.ts` (`MoERouter`, REINFORCE expert-weight updates). A true number with a false label — flagged for a future night, out of scope for tonight's single small patch.
+
+## Competitor Comparison
+
+| Competitor | Mechanism | Continual-learning approach | Grade |
+|---|---|---|---|
+| LangGraph / AutoGen / CrewAI | Graph/conversation orchestration over a frozen foundation model; state = checkpoints, message history, optional vector-store RAG | None update model weights or run consolidation — orchestration + retrieval around a frozen model, not learning | C (taxonomy-inferred, no framework-specific primary doc denying a hidden fine-tune loop) |
+| OpenAI Agents SDK / Assistants API | `Sessions` = conversation-history replay across runs; a reported April-2026 SDK update added cross-session "long-term memory," inspectable/editable like a file | File/context-based persistence, not weight updates; the long-term-memory claim is third-party-only, not confirmed in OpenAI's own release notes | B/C |
+| Letta (formerly MemGPT) | Working/recall/archival memory tiers, context paging; Feb-2026 added git-based versioned "Context Repositories" | Explicitly, publicly rejects weight-space learning — "Continual Learning in Token Space" (Letta's own Dec-2025 essay) names this a deliberate design philosophy, not a gap | A (architecture, primary source) |
+| Mem0 / Zep | Extraction → consolidation (ADD/UPDATE/DELETE/NOOP) → graph/temporal recall over a vector+graph store | Same category as Letta — store-level consolidation, not weight-space regularization; "continual learning agent" framing is a marketing stretch of normal memory-store consolidation | B |
+
+## Hypothesis
+
+> Given `buildCapabilityBrain()`'s coverage report (`v3/@claude-flow/cli/src/mcp-tools/capability-brain.ts`), which feeds the live `guidance_brain` MCP tool, when `coverage.coveragePercent` is computed as `(classifiedToolCount / registeredToolCount) × 100` (with `classifiedToolCount = registeredToolCount − fallbackClassifiedTools.length`) instead of the current hardcoded `100`, then a tool registry containing one or more tools that fall back to the generic `runtime-services` domain should report a `coveragePercent` strictly below 100 and a `classifiedToolCount` below `registeredToolCount`, matching ADR-329's own stated coverage-gate invariant ("the coverage invariant is percentage and exact assignment") — relative to today's baseline, where both fields are structurally incapable of moving regardless of input — subject to: zero change to `fallbackClassifiedTools`'s own reporting (already correct), the existing zero-fallback case still reporting exactly 100, zero regression to the existing `guidance-brain`/`tui-command` test suites, deterministic $0 Vitest evaluation. Frozen before evaluation; not modified after.
+
+## Benchmarks
+
+No agent-task benchmark applies — this is a deterministic metadata-computation correctness fix (a percentage derived from two already-tracked counts), evaluated via discriminating Vitest unit tests against the existing test file, same class as several prior nights' binary/structural fixes (e.g. 2026-10-16, 2026-10-31). `.harness/bench.json` does not exist in this checkout.
+
+## Evaluation
+
+**evaluated: accepted — ACCEPT** (pending this session's independent adversarial critique, run concurrently; see Issue for the final critic verdict).
+
+Real evaluator: Vitest 4.1.8, package `@claude-flow/cli`. 3 new tests in `__tests__/guidance-brain.test.ts` (2 discriminating + 1 control — the 3rd added post-critique, see below). Stash-isolated baseline (`capability-brain.ts` reverted via `git stash`, test file kept): the discriminating test fails exactly as predicted (`classifiedToolCount` returns `2` instead of `1` for a 2-tool registry with one fallback-classified tool); the control (zero-fallback, `coveragePercent === 100`) passes both ways, as it must. Candidate (stash restored, post-critique fix applied): **11/11 pass**. Related-suite check (`tui-command.test.ts`): **13/13 pass** (+3 pre-existing skips), 0 regressions. `tsc --noEmit -p .`: pre-existing unrelated module-resolution errors from unbuilt `@claude-flow/shared`/`@claude-flow/swarm` siblings (same environmental class disclosed nearly every prior night), **zero errors** in either changed file. Full-package `vitest run __tests__/` timed out at 170s — environmental per established precedent (2026-10-26, 2026-11-11); the targeted + related-suite run is the primary evidence.
+
+No reward-hacking: the diff is purely additive/corrective (two hardcoded-`100` expressions replaced with real computations over fields already present in the same object; `fallbackClassifiedTools`'s own reporting is untouched). No existing test, threshold, or gold data was touched. Both new tests are genuinely discriminating/control, not tautological.
+
+**Independent adversarial critique**: a fresh-context critic re-ran the stash-isolation itself (confirmed byte-identical), ran `tui-command.test.ts` itself, traced `guidance_brain`'s live reachability through `mcp-client.ts`/`mcp-tools/index.ts`, and grepped the repo for any other caller with a hardcoded expectation this could break (none found — the two unrelated `coveragePercent` fields in `hooks.ts`/`@claude-flow/swarm` are a different line-coverage metric). It found one real edge case the original fix missed: a **duplicate tool name that also falls back to `runtime-services`** drove `classifiedToolCount`/`coveragePercent` negative, because `fallbackClassifiedTools` counts one entry per loop iteration (including re-occurrences of a duplicate name) while `uniqueToolCount` counts unique names only. **Fixed forward same session**: `classifiedToolCount` now subtracts `new Set(fallbackClassifiedTools).size` instead of the raw array length; a dedicated regression test added (`guidance-brain.test.ts`, duplicate+fallback case, asserts `coveragePercent === 0` rather than negative). Re-verified 11/11 (guidance-brain) + 13/13 (tui-command) after the correction. Critic's verdict: **CONFIRMED**, safe to ship with the forward fix applied.
+
+## Darwin Results
+
+Skipped — this is a binary/structural metadata-computation fix (a percentage derived exactly from two already-tracked integer counts), not a continuous/categorical tunable parameter. Same skip class as nearly every prior ACCEPT of this shape in the ledger.
+
+## SOTA Proof & Witness
+
+Session commit: 3a1479883b55b7f786ef0bf3141478e4dfb9444f
+Candidate commit: c38714a8d9789a57cd3784b28b78a61e52808c5a
+Gist SHA-256 (pre-witness, this block held to the literal text `PENDING`): 338f218d9c2b5c903917e9286288cb78955b0ff5d92271b652fb20e1db88f3f5
+Witness stamp: 634d0afc9f4b4c07d678cd4c9f64c41f855de72497240078c250d2911b628841
+
+Verifier: fetch this file, replace this block's three dynamic values with the literal text `PENDING` (as they were before this computation), SHA-256 the result, concatenate with the Session commit above, SHA-256 again — must equal the Witness stamp.
+
+Evaluation receipt identity: 3 new tests in `guidance-brain.test.ts` (2 discriminating + 1 control, one discriminating test added post-critique), stash-isolated baseline fails the original discriminating test exactly as predicted → 11/11 pass on the candidate; `tui-command.test.ts` 13/13 (+3 skips), 0 regressions; `tsc --noEmit` 0 errors in changed files. Flywheel evidence identity: none (`.claude-flow/flywheel/` does not exist in this checkout, consistent with every prior night). Darwin lineage identity: none (skipped — binary/structural metadata fix).
+
+## Recommended Next Steps
+
+1. **Wire `computeEWCPenalty()`'s output into a real weight update, and/or decay `gradientAccumulator` itself** (`balanced.ts:256-279`, EMA γ≈0.99-0.999, mirroring `@ruvector/sona@0.1.11`'s own already-shipped pattern). Tonight's architecture review scored this 3.60 on this pipeline's own formula — strong research evidence, but disqualified from tonight's slot by a real production-value caveat (the penalty's output is currently discarded, so the fix alone changes no live behavior). This is the single best-evidenced candidate for a near-future intelligence night, provided it's paired with (or explicitly scoped around) the discard-path issue.
+2. **Correct CLAUDE.md's "MoE gate converges — confidence 0.13→0.88" attribution**: the benchmark is real but measures `q-learning-router.ts`, not the actual MoE gate at `moe-router.ts`. A future night should either retarget the benchmark at the real MoE gate or correct the doc's claim — currently a true number with a false label, not a fabricated number.
+3. **EWC++ per-mode wiring gap** (`research`/`batch`/`real-time`/`edge` modes lack `getConsolidationSnapshot()`) is now disclosed a 3rd+ time (2026-10-27, 2026-11-01, 2026-11-11) without action — explicitly exhausted as a candidate direction per this pipeline's own duplicate-direction rule; a future night should either implement the other four modes' snapshot hooks or explicitly accept the risk in writing, not re-disclose it a 4th time.

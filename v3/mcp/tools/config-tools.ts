@@ -62,7 +62,7 @@ const loadConfigSchema = z.object({
 });
 
 const saveConfigSchema = z.object({
-  config: z.record(z.unknown())
+  config: z.record(z.string(), z.unknown())
     .describe('Configuration object to save'),
   path: z.string().optional()
     .describe('Configuration file path (defaults to ./claude-flow.config.json)'),
@@ -75,7 +75,7 @@ const saveConfigSchema = z.object({
 });
 
 const validateConfigSchema = z.object({
-  config: z.record(z.unknown())
+  config: z.record(z.string(), z.unknown())
     .describe('Configuration object to validate'),
   strict: z.boolean().default(true)
     .describe('Enable strict validation (fail on unknown fields)'),

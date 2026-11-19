@@ -99,6 +99,9 @@ export class GossipConsensus extends EventEmitter {
 
   constructor(nodeId: string, config: GossipConfig = {}) {
     super();
+    // awaitConsensus() adds one 'consensus.achieved' listener per in-flight
+    // proposal; uncap so concurrent proposals don't trip MaxListenersExceededWarning.
+    this.setMaxListeners(0);
     this.config = {
       threshold: config.threshold ?? SWARM_CONSTANTS.DEFAULT_CONSENSUS_THRESHOLD,
       timeoutMs: config.timeoutMs ?? SWARM_CONSTANTS.DEFAULT_CONSENSUS_TIMEOUT_MS,

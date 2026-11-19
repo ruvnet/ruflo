@@ -55,6 +55,42 @@ describe('Ruflo capability brain', () => {
     expect(brain.cliCommands).toContain('harness');
   });
 
+  it('drops coveragePercent and classifiedToolCount below 100% when a tool falls back to runtime-services (2026-11-16)', () => {
+    const brain = buildCapabilityBrain([
+      { name: 'memory_search' },
+      { name: 'zzz_unrouted_probe' },
+    ]);
+
+    expect(brain.coverage.registeredToolCount).toBe(2);
+    expect(brain.coverage.fallbackClassifiedTools).toEqual(['zzz_unrouted_probe']);
+    expect(brain.coverage.classifiedToolCount).toBe(1);
+    expect(brain.coverage.coveragePercent).toBe(50);
+  });
+
+  it('never reports a negative coveragePercent when a duplicate tool name falls back to runtime-services (2026-11-16, post-critique)', () => {
+    const brain = buildCapabilityBrain([
+      { name: 'zzz_unrouted_probe' },
+      { name: 'zzz_unrouted_probe' },
+    ]);
+
+    expect(brain.coverage.registeredToolCount).toBe(1);
+    expect(brain.coverage.duplicateToolNames).toEqual(['zzz_unrouted_probe']);
+    expect(brain.coverage.fallbackClassifiedTools).toEqual([
+      'zzz_unrouted_probe',
+      'zzz_unrouted_probe',
+    ]);
+    expect(brain.coverage.classifiedToolCount).toBe(0);
+    expect(brain.coverage.coveragePercent).toBe(0);
+  });
+
+  it('reports 100% coverage only when there truly are zero fallback-classified tools', () => {
+    const brain = buildCapabilityBrain([{ name: 'memory_search' }, { name: 'claims_check' }]);
+
+    expect(brain.coverage.fallbackClassifiedTools).toEqual([]);
+    expect(brain.coverage.classifiedToolCount).toBe(brain.coverage.registeredToolCount);
+    expect(brain.coverage.coveragePercent).toBe(100);
+  });
+
   it('does not confuse registration with runtime health or authorization', () => {
     const brain = buildCapabilityBrain([{ name: 'memory_search' }]);
     const memory = brain.domains.find((domain) => domain.id === 'memory-knowledge')!;

@@ -29,6 +29,7 @@ __export(learning_loop_helper_exports, {
 });
 module.exports = __toCommonJS(learning_loop_helper_exports);
 var import_node_fs = require("node:fs");
+var import_node_os = require("node:os");
 var import_node_path = require("node:path");
 
 // plugins/ruflo-mods/hooks/guidance/screen.ts
@@ -173,6 +174,7 @@ function shellTouches(command) {
 // plugins/ruflo-mods/hooks/loop/record.ts
 var VERIFIED_PATH = ".claude-flow/data/verified-trajectories.jsonl";
 var LESSONS_PATH = ".claude-flow/data/learned-lessons.json";
+var ORIGIN_PATH = ".claude-flow/learning-loop-origin";
 var MAX_LINES = 500;
 var MAX_STEPS = 64;
 var MAX_TASK = 300;
@@ -278,6 +280,7 @@ var WORD = /^[a-z0-9][a-z0-9 _./-]{0,40}$/;
 var AGENT = /^[a-z][a-z0-9-]{0,40}$/;
 var ID = /^L-[a-f0-9]{10}$/;
 var EVIDENCE = /^[A-Za-z0-9 ._:/=@+-]{1,80}$/;
+var ORIGIN = /^[a-f0-9]{32}$/;
 var count = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.min(Math.floor(v), 1e6) : 0;
 function parseLessons(text) {
   const raw = JSON.parse(text);
@@ -296,8 +299,13 @@ function parseLessons(text) {
     const files = l.kind === "lesson" && Array.isArray(l.files) ? l.files.filter((f) => typeof f === "string" && lessonFile(f)).slice(0, MAX_FILES_SHOWN) : [];
     lessons.push({ id: l.id, kind: l.kind, agent: l.agent, keywords, confidence, successes: count(l.successes), failures: count(l.failures), evidence, files });
   }
-  return { gate, lessons, belowGate: count(raw.belowGate) };
+  return { gate, lessons, belowGate: count(raw.belowGate), origin: typeof raw.origin === "string" && ORIGIN.test(raw.origin) ? raw.origin : null };
 }
+function parseOrigin(text) {
+  const id = text?.trim();
+  return id && ORIGIN.test(id) ? id : null;
+}
+var recordedHere = (file, origin) => origin !== null && file.origin === origin;
 var words = (text) => new Set(text.toLowerCase().split(/[\s\-_.,;:!?'"()\[\]{}]+/).filter(Boolean));
 var says = (said, lower, keyword) => said.has(keyword) || /[ /]/.test(keyword) && lower.includes(keyword);
 var MIN_SHARE_OF_BEST = 0.5;
@@ -475,9 +483,11 @@ function replay(text, opts) {
   }
   return { lines, consumed: still.at };
 }
-function lessonsFor(prompt, lessonsText) {
+function lessonsFor(prompt, lessonsText, originText) {
   try {
-    return lessonBlock(pick(parseLessons(lessonsText), prompt)) ?? "";
+    const file = parseLessons(lessonsText);
+    if (!recordedHere(file, parseOrigin(originText))) return "";
+    return lessonBlock(pick(file, prompt)) ?? "";
   } catch {
     return "";
   }
@@ -562,12 +572,18 @@ function recordTurns(opts) {
     return 0;
   }
 }
-function lessonsForPrompt(root, prompt) {
+function lessonsForPrompt(root, prompt, home = (0, import_node_os.homedir)()) {
   try {
     if (typeof prompt !== "string" || prompt.trim() === "" || prompt.trimStart().startsWith("/")) return "";
     const path = (0, import_node_path.join)(root, LESSONS_PATH);
     if ((0, import_node_fs.statSync)(path).size > MAX_LESSONS_FILE) return "";
-    return lessonsFor(prompt, (0, import_node_fs.readFileSync)(path, "utf8"));
+    let origin;
+    try {
+      origin = (0, import_node_fs.readFileSync)((0, import_node_path.join)(home, ORIGIN_PATH), "utf8");
+    } catch {
+      return "";
+    }
+    return lessonsFor(prompt, (0, import_node_fs.readFileSync)(path, "utf8"), origin);
   } catch {
     return "";
   }

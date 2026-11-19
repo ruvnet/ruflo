@@ -4,7 +4,9 @@
  * `.claude-flow/data/learned-lessons.json` is written by the CLI ingest from
  * SONA patterns that verified outcomes trained. It is a project file, so it
  * is untrusted: every field is validated to a fixed shape, and a block that
- * fails the secret or injection screen is dropped whole.
+ * fails the secret or injection screen is dropped whole. A file is shown only
+ * when it carries this machine's origin id (#4747), so one committed to a
+ * cloned repository is never presented as this project's own history.
  */
 
 import { scan } from '../guidance/screen'
@@ -31,18 +33,19 @@ export type Lesson = {
   readonly files: readonly string[]
 }
 
-export type Lessons = { readonly gate: number; readonly lessons: readonly Lesson[]; readonly belowGate: number }
+export type Lessons = { readonly gate: number; readonly lessons: readonly Lesson[]; readonly belowGate: number; readonly origin: string | null }
 
 const WORD = /^[a-z0-9][a-z0-9 _./-]{0,40}$/
 const AGENT = /^[a-z][a-z0-9-]{0,40}$/
 /** The CLI cites a lesson by a hash of its SONA pattern key (`lessonId` in verified-outcomes.ts), never the key itself. */
 const ID = /^L-[a-f0-9]{10}$/
 const EVIDENCE = /^[A-Za-z0-9 ._:/=@+-]{1,80}$/
+const ORIGIN = /^[a-f0-9]{32}$/
 const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(Math.floor(v), 1_000_000) : 0)
 
 /** The file's text, validated. Throws on JSON that is not an object (cachedFile reports it as unreadable). */
 export function parseLessons(text: string): Lessons {
-  const raw = JSON.parse(text) as { version?: unknown; gate?: unknown; lessons?: unknown; belowGate?: unknown }
+  const raw = JSON.parse(text) as { version?: unknown; gate?: unknown; lessons?: unknown; belowGate?: unknown; origin?: unknown }
   if (!raw || typeof raw !== 'object' || raw.version !== 1) throw new Error('learned-lessons.json: not version 1')
   const gate = typeof raw.gate === 'number' && raw.gate >= GATE && raw.gate < 1 ? raw.gate : GATE
   const lessons: Lesson[] = []
@@ -60,8 +63,17 @@ export function parseLessons(text: string): Lessons {
     const files = l.kind === 'lesson' && Array.isArray(l.files) ? l.files.filter((f): f is string => typeof f === 'string' && lessonFile(f)).slice(0, MAX_FILES_SHOWN) : []
     lessons.push({ id: l.id, kind: l.kind, agent: l.agent, keywords, confidence, successes: count(l.successes), failures: count(l.failures), evidence, files })
   }
-  return { gate, lessons, belowGate: count(raw.belowGate) }
+  return { gate, lessons, belowGate: count(raw.belowGate), origin: typeof raw.origin === 'string' && ORIGIN.test(raw.origin) ? raw.origin : null }
 }
+
+/** This machine's origin id from the text of `~/.claude-flow/learning-loop-origin`, or null. */
+export function parseOrigin(text: string | undefined): string | null {
+  const id = text?.trim()
+  return id && ORIGIN.test(id) ? id : null
+}
+
+/** Whether the CLI on this machine wrote the file (#4747): a file without this machine's id is someone else's. */
+export const recordedHere = (file: Lessons, origin: string | null) => origin !== null && file.origin === origin
 
 const words = (text: string) => new Set(text.toLowerCase().split(/[\s\-_.,;:!?'"()\[\]{}]+/).filter(Boolean))
 

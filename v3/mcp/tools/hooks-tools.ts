@@ -83,7 +83,7 @@ const postEditSchema = z.object({
   operation: z.enum(['create', 'modify', 'delete']).default('modify').describe('Type of edit operation'),
   success: z.boolean().describe('Whether the edit was successful'),
   outcome: z.string().optional().describe('Description of the outcome'),
-  metadata: z.record(z.unknown()).optional().describe('Additional metadata'),
+  metadata: z.record(z.string(), z.unknown()).optional().describe('Additional metadata'),
 });
 
 const preCommandSchema = z.object({
@@ -100,14 +100,14 @@ const postCommandSchema = z.object({
   output: z.string().optional().describe('Command output'),
   error: z.string().optional().describe('Error message if failed'),
   executionTime: z.number().positive().optional().describe('Execution time in milliseconds'),
-  metadata: z.record(z.unknown()).optional().describe('Additional metadata'),
+  metadata: z.record(z.string(), z.unknown()).optional().describe('Additional metadata'),
 });
 
 const routeSchema = z.object({
   task: z.string().describe('Task description to route'),
   context: z.string().optional().describe('Additional context about the task'),
   preferredAgents: z.array(z.string()).optional().describe('List of preferred agent types'),
-  constraints: z.record(z.unknown()).optional().describe('Routing constraints'),
+  constraints: z.record(z.string(), z.unknown()).optional().describe('Routing constraints'),
   includeExplanation: z.boolean().default(true).describe('Include routing explanation'),
 });
 

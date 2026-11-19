@@ -3,8 +3,9 @@ import type { On } from 'claude-code'
 import { cachedFile, isMissing } from '../files'
 import { routeTask } from '../route/route-task'
 import { redraw, under, type ModState } from '../state'
-import { lessonBlock, parseLessons, pick } from './lessons'
-import { appendLines, line, LESSONS_PATH, MAX_PENDING, outcomeOf, start, step, VERIFIED_PATH } from './record'
+import { trustHome } from '../trust'
+import { lessonBlock, parseLessons, parseOrigin, pick, recordedHere } from './lessons'
+import { appendLines, line, LESSONS_PATH, MAX_PENDING, ORIGIN_PATH, outcomeOf, start, step, VERIFIED_PATH } from './record'
 import { rememberLessons, rememberOutcome } from './status'
 import { relativePath } from './taint'
 import { classify, verdict } from './verifier'
@@ -20,7 +21,7 @@ const ANY = /^[\s\S]*$/
  * ruflo project (no `.claude-flow/`).
  *
  * - `prompt.submit` opens a trajectory for the main loop's turn and adds at most three cited lessons the CLI learned
- *   from verified outcomes (`learned-lessons.json`, gate 0.6).
+ *   from verified outcomes (`learned-lessons.json`, gate 0.6), only from a file the CLI on this machine wrote (#4747).
  * - `tool.call` records one step per finished call; a recognised test/build/typecheck/lint Bash command records its
  *   exit status as a verifier run.
  * - `turn.complete` closes the trajectory: `verified-success`/`verified-failure` only from verifier runs after the
@@ -47,6 +48,9 @@ export function registerLoop(on: On, state: ModState) {
 
     const read = await lessons({ stat: path => $.fs.stat(path), read: path => $.fs.read(path) })
     if (read.kind !== 'ok') return next(e)
+    const home = trustHome(await $.env.get('HOME').catch(() => undefined), await $.env.get('USERPROFILE').catch(() => undefined))
+    const origin = home ? parseOrigin(await $.fs.read(`${home}/${ORIGIN_PATH}`).catch(() => undefined)) : null
+    if (!recordedHere(read.value, origin)) return next(e)
     loop.belowGate = read.value.belowGate
     const chosen = pick(read.value, text)
     const block = lessonBlock(chosen)

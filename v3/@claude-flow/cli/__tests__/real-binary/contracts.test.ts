@@ -3,7 +3,7 @@
  * with ruflo-mods loaded at its default options.
  *
  * 2. Learning loop: a scripted fix turn (npm test fails, edit, npm test passes) is recorded as one verified-success.
- * 3. Lessons reach the model: with a learned-lessons file present, the request carries the [RUFLO_LESSONS] block.
+ * 3. Lessons reach the model: with a learned-lessons file this machine wrote, the request carries the [RUFLO_LESSONS] block.
  * 4. Guard tightens: a scripted Bash call that deletes the filesystem root is denied before it runs.
  * 5. Route context: the routing block reaches the request.
  *
@@ -77,13 +77,18 @@ describe('real binary: learning loop records a verified outcome (contract 2)', (
   });
 });
 
+/** This run's machine: the origin id the CLI ingest stamps on the lessons files it writes (#4747). */
+const ORIGIN = '0123456789abcdef0123456789abcdef';
+const HOME_FILES = { '.claude-flow/learning-loop-origin': ORIGIN };
+
 /** A lessons file as the CLI ingest writes it (ADR-502 §2.2), with one lesson above the 0.6 gate. */
-function lessonsFile(confidence: number) {
+function lessonsFile(confidence: number, origin: string | undefined = ORIGIN) {
   return JSON.stringify({
     version: 1,
     gate: 0.6,
     belowGate: 0,
     lessons: [{ id: 'L-0123456789', kind: 'lesson', agent: 'coder', keywords: ['add', 'bug', 'fix'], confidence, successes: 4, failures: 0, evidence: 'npm test' }],
+    origin,
   });
 }
 
@@ -91,7 +96,7 @@ describe('real binary: verified lessons reach the model (contract 3)', () => {
   const prompt = 'Fix the bug in the add function.';
 
   it('a lesson above the gate is in the request the model receives', async () => {
-    const r = await run({ prompt, files: { '.claude-flow/data/learned-lessons.json': lessonsFile(0.67) }, script: [say('noted')] });
+    const r = await run({ prompt, files: { '.claude-flow/data/learned-lessons.json': lessonsFile(0.67) }, homeFiles: HOME_FILES, script: [say('noted')] });
     expect(r.exitCode, describeRun(r)).toBe(0);
     expect(r.scripted.length).toBe(1);
     const text = requestText(r.scripted[0]!.body);
@@ -100,7 +105,13 @@ describe('real binary: verified lessons reach the model (contract 3)', () => {
   });
 
   it('negative control: the same lesson below the gate never reaches the model', async () => {
-    const r = await run({ prompt, files: { '.claude-flow/data/learned-lessons.json': lessonsFile(0.4) }, script: [say('noted')] });
+    const r = await run({ prompt, files: { '.claude-flow/data/learned-lessons.json': lessonsFile(0.4) }, homeFiles: HOME_FILES, script: [say('noted')] });
+    expect(r.exitCode, describeRun(r)).toBe(0);
+    expect(requestText(r.scripted[0]!.body)).not.toContain('[RUFLO_LESSONS]');
+  });
+
+  it('negative control (#4747): a lessons file another machine wrote, as a cloned repository carries it, never reaches the model', async () => {
+    const r = await run({ prompt, files: { '.claude-flow/data/learned-lessons.json': lessonsFile(0.67, 'fedcba9876543210fedcba9876543210') }, homeFiles: HOME_FILES, script: [say('noted')] });
     expect(r.exitCode, describeRun(r)).toBe(0);
     expect(requestText(r.scripted[0]!.body)).not.toContain('[RUFLO_LESSONS]');
   });

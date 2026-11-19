@@ -17,6 +17,7 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import { createServer, Server, type IncomingMessage } from 'http';
 import { assertSafeBind, refuseOpenRequest } from './guard.js';
 import { WebSocketServer, WebSocket } from 'ws';
+import { createHash, timingSafeEqual } from 'crypto';
 import cors from 'cors';
 import helmet from 'helmet';
 import {
@@ -103,7 +104,9 @@ export class HttpTransport extends EventEmitter implements ITransport {
     // Create HTTP server
     this.server = createServer(this.app);
 
-    // Create WebSocket server (CORS does not apply to upgrades, so a token-less server checks Host and Origin itself)
+    // Create WebSocket server. With auth enabled the token is checked before the upgrade
+    // (Authorization: Bearer, or ?token= for browsers); CORS does not apply to upgrades,
+    // so a token-less server checks Host and Origin itself.
     this.wss = new WebSocketServer({
       server: this.server,
       path: '/ws',
@@ -112,7 +115,9 @@ export class HttpTransport extends EventEmitter implements ITransport {
           ? this.config.maxMessageSize
           : DEFAULT_MAX_WS_PAYLOAD,
       verifyClient: (info: { req: IncomingMessage }) =>
-        this.config.auth?.enabled === true || refuseOpenRequest(info.req, this.config.host, this.config.corsOrigins) === undefined,
+        this.config.auth?.enabled === true
+          ? this.validateUpgradeAuth(info.req)
+          : refuseOpenRequest(info.req, this.config.host, this.config.corsOrigins) === undefined,
     });
 
     this.setupWebSocketHandlers();
@@ -573,13 +578,41 @@ export class HttpTransport extends EventEmitter implements ITransport {
 
     const token = tokenMatch[1];
 
-    if (this.config.auth?.tokens?.length) {
-      if (!this.config.auth.tokens.includes(token)) {
-        return { valid: false, error: 'Invalid token' };
-      }
+    if (!this.matchesConfiguredToken(token)) {
+      return { valid: false, error: 'Invalid token' };
     }
 
     return { valid: true };
+  }
+
+  /** /ws upgrade: token from `Authorization: Bearer`, else from `?token=`. Never throws. */
+  private validateUpgradeAuth(req: IncomingMessage): boolean {
+    try {
+      const header = req.headers.authorization;
+      const match = typeof header === 'string' ? header.match(/^Bearer\s+(.+)$/i) : null;
+      const fromQuery = new URL(req.url ?? '', 'http://localhost').searchParams.get('token') ?? undefined;
+      return this.matchesConfiguredToken(match?.[1] ?? fromQuery);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Fail closed: auth enabled with no configured token accepts nothing. Unset or
+   * empty entries match nothing. Comparison is constant-time over SHA-256 digests,
+   * with no early exit.
+   */
+  private matchesConfiguredToken(given: string | undefined): boolean {
+    if (!given) return false;
+    const digest = createHash('sha256').update(given, 'utf8').digest();
+    let valid = false;
+    for (const candidate of this.config.auth?.tokens ?? []) {
+      if (typeof candidate !== 'string' || candidate.length === 0) continue;
+      if (timingSafeEqual(digest, createHash('sha256').update(candidate, 'utf8').digest())) {
+        valid = true;
+      }
+    }
+    return valid;
   }
 }
 

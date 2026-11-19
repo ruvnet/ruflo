@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.17.3 — 2026-11-17
+- fix: learning-loop lessons are shown only from a `learned-lessons.json` the CLI on this machine wrote (#4747). The ingest stamps the file with an id kept in `~/.claude-flow/learning-loop-origin`, and the mod and the classic `learning-loop.cjs` helper show nothing from a file without it, so one committed to a cloned repository is never presented as the project's own test and build history. A file written before this version shows nothing until the next ingest rewrites it.
+
 ## 0.17.2 — 2026-11-17
 - fix: the dangerous-command guard reads `$(...)` as a command substitution, as it already read backticks, so `rm -rf "$(echo)"/` is refused, and it skips `$((...))` arithmetic. A parameter's default is a word the shell may use, so `rm -rf ${X:-/}` is refused too, as are `${A[0]:-/}` and `${!X:-/}` (#4742). Same change in both classic `hook-handler.cjs` copies and the generated fallback.
 - fix: a `$(` is closed past `$'...'` escapes and `#` comments, and a command with an rm in it whose `$(` never closes is refused instead of read the old way. A case pattern's `)` is still taken as the close.
