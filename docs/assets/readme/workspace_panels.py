@@ -1,6 +1,5 @@
 """Render README panels using the typography and surfaces of the ruPro hero."""
 from html import escape
-from xml.etree import ElementTree
 
 CHAPTERS = {
     "console": ("Mission", "control.", "Your team. Every decision in view.", "Run inspector", ["Observe activity", "Inspect evidence", "Review controls"]),
@@ -29,11 +28,6 @@ CAPABILITIES = {
     "card-security": ("Security controls","Inspect inputs and tool access.","Keep decisions auditable.","review"),
     "card-plugins": ("Plugin ecosystem","Add plugins, skills and tools.","Build the setup your team needs.","grid"),
     "card-routing": ("Models and routing","Connect model providers.","Route work through your harness.","routing"),
-}
-BADGES = {"first-commit":"history","downloads":"download","claude":"chat","codex":"terminal","claude-directory":"grid","chatgpt":"chat"}
-ACTIONS = {
-    "rupro-explore": ("EARLY ACCESS","Explore ruPro","Agents, projects and evidence","folder"),
-    "rupro-demo": ("WALKTHROUGH","Try the interactive demo","Plan, run and review a change","play"),
 }
 def text(x,y,label,size,fill="#f6f4fc",weight=400,tracking=0,extra=""):
     return f'<text x="{x}" y="{y}" font-size="{size}" font-weight="{weight}" letter-spacing="{tracking}" fill="{fill}" {extra}>{escape(label)}</text>'
@@ -88,28 +82,6 @@ def render_panel(path):
         body+=text(68,100,first,17,"#b3bdcc")+text(68,124,second,17,"#b3bdcc")
         body+='<g class="draw">'+box(68,139,45,2,"#b191ff",radius=1)+'</g>'
         out=chrome(448,155,title,first+" "+second,body)
-    elif n in ACTIONS or (path.parent.name=="badges" and n in BADGES):
-        source=ElementTree.parse(path).getroot()
-        tag=lambda x:"{http://www.w3.org/2000/svg}"+x
-        if n in ACTIONS:
-            category,title,sub,symbol=ACTIONS[n]
-        else:
-            category,title,sub=(e.text for e in source.iter(tag("text")))
-            symbol=BADGES[n]
-        desc=source.findtext(tag("desc")) or sub
-        if n in ACTIONS or n in {"claude","codex","chatgpt"}:
-            desc=title+". "+sub+"."
-        if n=="first-commit":
-            desc=desc.split(" Rotating 3D icon")[0]
-        body=box(.5,.5,299,75,"#0d0c14","#3b304f",11)+icon(12,19,symbol)
-        body+=text(59,19,category,9.4,"#bca6ff",700,1.2)
-        size=18 if len(title)>18 else 21
-        body+=text(58,44,title,size,"url(#heading)",700,-.55)
-        body+=text(59,63,sub,11,"#b3bdcc")
-        if n in ACTIONS:
-            body+='<path class="focus" d="M277 16h10m-4-4 4 4-4 4" fill="none" stroke="#c8afff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
-        body+='<g class="draw">'+box(59,70,32,1.5,"#aa8de1",radius=.75)+'</g>'
-        out=chrome(300,76,title,desc,body)
     else:
         return False
     path.write_text(out)

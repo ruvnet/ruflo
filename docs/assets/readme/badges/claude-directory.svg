@@ -1,7 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="300" height="76" viewBox="0 0 300 76" role="img" aria-labelledby="title desc">
-<title id="title">VIEW IN CLAUDE</title><desc id="desc">Open the supplied Claude plugin listing. This badge does not claim installation or endorsement.</desc>
-<defs><linearGradient id="heading"><stop stop-color="#e0d4ff"/><stop offset=".55" stop-color="#ac8fff"/><stop offset="1" stop-color="#edbaff"/></linearGradient></defs>
-<style>@media(prefers-reduced-motion:no-preference){.draw{animation:draw 5.2s ease-in-out infinite;transform-box:fill-box;transform-origin:left center}.focus{animation:focus 5.2s ease-in-out infinite}@keyframes draw{0%{transform:scaleX(.15)}55%,100%{transform:scaleX(1)}}@keyframes focus{0%,100%{opacity:.6}45%,75%{opacity:1}}}</style>
-<g font-family="Inter,Arial,sans-serif">
-<rect x="0.5" y="0.5" width="299" height="75" rx="11" fill="#0d0c14" stroke="#3b304f"/><rect x="12" y="19" width="36" height="36" rx="9" fill="#191626" stroke="#514067"/><path transform="translate(18 25)" d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z" fill="none" stroke="#d1beff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><text x="59" y="19" font-size="9.4" font-weight="700" letter-spacing="1.2" fill="#bca6ff" >CLAUDE PLUGIN</text><text x="58" y="44" font-size="21" font-weight="700" letter-spacing="-0.55" fill="url(#heading)" >VIEW IN CLAUDE</text><text x="59" y="63" font-size="11" font-weight="400" letter-spacing="0" fill="#b3bdcc" >PLUGIN DIRECTORY</text><g class="draw"><rect x="59" y="70" width="32" height="1.5" rx="0.75" fill="#aa8de1" stroke="none"/></g>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="76" viewBox="0 0 300 76" role="img" aria-labelledby="t d">
+<title id="t">Claude plugin directory</title>
+<desc id="d">Open the supplied Claude plugin listing. This badge does not claim installation or endorsement.</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#241b23"/><stop offset="1" stop-color="#0b111d"/></linearGradient>
+<linearGradient id="line"><stop stop-color="#f7b08a"/><stop offset="1" stop-color="#b79cfa"/></linearGradient></defs>
+<style>text{font-family:Arial,Helvetica,sans-serif}
+.pulse{animation:pulse 3.5s ease-in-out infinite}
+.scan{stroke-dasharray:35 240;animation:scan 7s linear infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes scan{to{stroke-dashoffset:-550}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<rect x=".5" y=".5" width="299" height="75" rx="9" fill="url(#bg)" stroke="#f7b08a" stroke-opacity=".53"/>
+<path d="M57 12V64" stroke="#f7b08a" stroke-opacity=".24"/>
+<g transform="translate(28 37)" fill="none" stroke="#f7b08a" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round">
+<path d="M-12 -5L0 -12L12 -5V9L0 16L-12 9Z"/><path d="M-12 -5L0 3L12 -5M0 3V16"/>
+</g><circle class="pulse" cx="49" cy="15" r="2.2" fill="#f7b08a"/>
+<text x="70" y="20" fill="#e9d7cc" font-size="12" letter-spacing=".7">CLAUDE PLUGIN</text>
+<text x="70" y="46" fill="#f7b08a" font-size="20" font-weight="700">VIEW IN CLAUDE</text>
+<text x="70" y="61" fill="#acb5c4" font-size="10">PLUGIN DIRECTORY</text>
+<path d="M9 70H291" stroke="#f7b08a" stroke-opacity=".17"/>
+<path class="scan" d="M9 70H291" stroke="url(#line)" stroke-width="1.5"/>
+</svg>

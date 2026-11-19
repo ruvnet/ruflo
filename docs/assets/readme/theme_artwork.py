@@ -33,6 +33,9 @@ def embedded_paths():
             yield path
 
 def apply_theme(path):
+    # Product badges use their own palettes and animated icons.
+    if path.parent.name == "badges" or path.stem in {"rupro-explore", "rupro-demo"}:
+        return
     if render_panel(path):
         return
     svg = path.read_text()
