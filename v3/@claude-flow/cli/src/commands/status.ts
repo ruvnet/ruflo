@@ -748,7 +748,7 @@ export const statusCommand: Command = {
     { command: 'claude-flow status --watch', description: 'Watch mode with live updates' },
     { command: 'claude-flow status --watch -i 5', description: 'Watch mode updating every 5 seconds' },
     { command: 'claude-flow status --health-check', description: 'Run health checks' },
-    { command: 'claude-flow status --json', description: 'Output status as JSON' },
+    { command: 'claude-flow status --format json', description: 'Output status as JSON' },
     { command: 'claude-flow status agents', description: 'Show detailed agent status' },
     { command: 'claude-flow status tasks', description: 'Show detailed task status' },
     { command: 'claude-flow status memory', description: 'Show detailed memory status' }

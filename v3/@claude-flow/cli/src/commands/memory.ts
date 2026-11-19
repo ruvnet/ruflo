@@ -190,11 +190,11 @@ const storeCommand: Command = {
     DB_PATH_OPTION
   ],
   examples: [
-    { command: 'claude-flow memory store -k "api/auth" -v "JWT implementation"', description: 'Store text' },
-    { command: 'claude-flow memory store -k "style" -v "tabs" --scope local --agent coder', description: 'Store in the local scope of agent "coder" (#1227)' },
+    { command: 'claude-flow memory store -k "api/auth" --value "JWT implementation"', description: 'Store text' },
+    { command: 'claude-flow memory store -k "style" --value "tabs" --scope local --agent coder', description: 'Store in the local scope of agent "coder" (#1227)' },
     { command: 'claude-flow memory store -k "pattern/singleton" --vector', description: 'Store vector' },
-    { command: 'claude-flow memory store -k "pattern" -v "new" --no-upsert', description: 'Strict insert (fail if key exists)' },
-    { command: 'claude-flow memory store -k "user/goal" -v "ship by Friday" --provenance user_claim', description: 'Store with typed provenance (ADR-323)' }
+    { command: 'claude-flow memory store -k "pattern" --value "new" --no-upsert', description: 'Strict insert (fail if key exists)' },
+    { command: 'claude-flow memory store -k "user/goal" --value "ship by Friday" --provenance user_claim', description: 'Store with typed provenance (ADR-323)' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const key = ctx.flags.key as string;
@@ -2394,7 +2394,7 @@ export const memoryCommand: Command = {
   subcommands: [initMemoryCommand, storeCommand, retrieveCommand, searchCommand, listCommand, deleteCommand, purgeCommand, statsCommand, peekCommand, configureCommand, cleanupCommand, compressCommand, exportCommand, importCommand, distillCommand, backupCommand, classifyCommand, selectOperatorCommand],
   options: [],
   examples: [
-    { command: 'claude-flow memory store -k "key" -v "value"', description: 'Store data' },
+    { command: 'claude-flow memory store -k "key" --value "value"', description: 'Store data' },
     { command: 'claude-flow memory search -q "auth patterns"', description: 'Search memory' },
     { command: 'claude-flow memory stats', description: 'Show statistics' },
     { command: 'claude-flow memory peek', description: 'Read-only: which store files this cwd resolves to, rows, last write' }
