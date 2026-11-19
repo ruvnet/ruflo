@@ -28,7 +28,7 @@ import {
 } from '../src/init/pinning.js';
 import { generateMCPCommands, generateMCPConfig } from '../src/init/mcp-generator.js';
 import { generateClaudeMd } from '../src/init/claudemd-generator.js';
-import { generateAutoMemoryHook, generatePostCommitHook, generateRufloHookCjs } from '../src/init/helpers-generator.js';
+import { generateAutoMemoryHook, generatePostCommitHook, generatePreCommitHook, generateRufloHookCjs } from '../src/init/helpers-generator.js';
 import { executeInit } from '../src/init/executor.js';
 import { autoRefreshHelpersIfStale, HELPERS_STAMP_FILE } from '../src/init/helper-refresh.js';
 import { canonicalManifestBytes, sha256Hex } from '../src/init/helper-signing.js';
@@ -101,6 +101,46 @@ describe('pinning helpers', () => {
   });
 });
 
+describe('untagged runs (npx @claude-flow/cli …) float too', () => {
+  const script = [
+    'npx @claude-flow/cli hooks pre-edit --file "$F"',
+    'npx -y ruflo mcp start',
+    'npm exec --yes claude-flow -- doctor',
+    'npx --prefer-offline --prefix "$ROOT" @claude-flow/cli hooks x',
+    'npx ruflo-extra run',
+    'echo see claude-flow docs',
+  ].join('\n');
+
+  it('are pinned only when asked, and only for an exact target', () => {
+    expect(rewriteOurRefs(script, VERSION).changes).toEqual([]);
+    expect(rewriteOurRefs(script, 'latest', undefined, 'all', true).changes).toEqual([]);
+    const out = rewriteOurRefs(script, VERSION, undefined, 'all', true);
+    expect(out.text.split('\n')).toEqual([
+      `npx @claude-flow/cli@${VERSION} hooks pre-edit --file "$F"`,
+      `npx -y ruflo@${VERSION} mcp start`,
+      `npm exec --yes claude-flow@${VERSION} -- doctor`,
+      'npx --prefer-offline --prefix "$ROOT" @claude-flow/cli hooks x',
+      'npx ruflo-extra run',
+      'echo see claude-flow docs',
+    ]);
+    expect(out.changes.map((c) => c.line)).toEqual([1, 2, 3]);
+    expect(rewriteOurRefs(out.text, VERSION, undefined, 'all', true).changes).toEqual([]);
+  });
+
+  it('copyFilePinned pins them in scripts but not in docs', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'adr545-bare-'));
+    try {
+      writeFileSync(join(dir, 'src'), 'npx @claude-flow/cli hooks notify\n');
+      copyFilePinned(join(dir, 'src'), join(dir, 'script'), 'pinned', true);
+      copyFilePinned(join(dir, 'src'), join(dir, 'doc'));
+      expect(readFileSync(join(dir, 'script'), 'utf-8')).toBe(`npx @claude-flow/cli@${VERSION} hooks notify\n`);
+      expect(readFileSync(join(dir, 'doc'), 'utf-8')).toBe('npx @claude-flow/cli hooks notify\n');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('copyFilePinned (skills, commands, agents, non-signed helpers)', () => {
   it('pins floating tags, keeps historical exact versions, copies binaries verbatim', () => {
     const dir = mkdtempSync(join(tmpdir(), 'adr545-copy-'));
@@ -167,6 +207,8 @@ describe('generators emit pinned refs by default', () => {
       expect(out).not.toMatch(FLOATING_OURS);
     }
     expect(generatePostCommitHook('latest')).toContain('npx ruflo@latest hooks notify');
+    expect(generatePreCommitHook()).toContain(`npx @claude-flow/cli@${VERSION} hooks pre-edit`);
+    expect(generatePreCommitHook('latest')).toContain('npx @claude-flow/cli@latest hooks pre-edit');
   });
 });
 
@@ -227,6 +269,14 @@ describe('executeInit on both channels', () => {
     const setup = join(dir, '.claude', 'helpers', 'setup-mcp.sh');
     expect(existsSync(setup)).toBe(true); // copied from the packaged .claude/helpers
     expect(readFileSync(setup, 'utf-8')).toContain(`@claude-flow/cli@${VERSION} mcp start`);
+  });
+
+  it('no unsigned helper runs one of our packages untagged', async () => {
+    await run();
+    const bare = /\b(?:npx|bunx|npm\s+exec)(?:\s+--?[\w-]+(?:=\S+)?)*\s+(?:@claude-flow\/cli|claude-flow|ruflo)(?=$|[\s"'`;|&)])/m;
+    const helpers = generatedFiles().filter((f) => f.startsWith('.claude/helpers/'));
+    expect(helpers).toContain('.claude/helpers/post-commit');
+    for (const f of helpers) expect(readFileSync(join(dir, f), 'utf-8'), f).not.toMatch(bare);
   });
 
   it('--channel latest keeps the floating refs', async () => {

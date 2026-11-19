@@ -68,7 +68,7 @@ const TOOL_FAILURE_EXPR =
 /**
  * Generate pre-commit hook script
  */
-export function generatePreCommitHook(): string {
+export function generatePreCommitHook(channel: ReleaseChannel = 'pinned'): string {
   return `#!/bin/bash
 # Ruflo Pre-Commit Hook
 # Validates code quality before commit
@@ -84,7 +84,7 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
 for FILE in $STAGED_FILES; do
   if [[ "$FILE" =~ \\.(ts|js|tsx|jsx)$ ]]; then
     echo "  Validating: $FILE"
-    npx @claude-flow/cli hooks pre-edit --file "$FILE" --validate-syntax 2>/dev/null || true
+    npx ${ourSpec('@claude-flow/cli', channel)} hooks pre-edit --file "$FILE" --validate-syntax 2>/dev/null || true
   fi
 done
 
@@ -1817,7 +1817,7 @@ export function generateHelpers(options: InitOptions): Record<string, string> {
 
   if (options.components.helpers) {
     // Unix/macOS shell scripts
-    helpers['pre-commit'] = generatePreCommitHook();
+    helpers['pre-commit'] = generatePreCommitHook(options.channel);
     helpers['post-commit'] = generatePostCommitHook(options.channel);
 
     // Cross-platform Node.js scripts

@@ -1571,7 +1571,7 @@ async function writeHelpers(
 
   // Fall back to generating helpers if source not available
   const helpers: Record<string, string> = {
-    'pre-commit': generatePreCommitHook(),
+    'pre-commit': generatePreCommitHook(options.channel),
     'post-commit': generatePostCommitHook(options.channel),
     'session.cjs': generateSessionManager(),
     'router.cjs': generateAgentRouter(),
@@ -1612,7 +1612,7 @@ async function writeHelpers(
  */
 function copyHelperPinned(sourcePath: string, destPath: string, file: string, options: InitOptions): void {
   if (isSignedHelper(file)) fs.copyFileSync(sourcePath, destPath);
-  else copyFilePinned(sourcePath, destPath, options.channel);
+  else copyFilePinned(sourcePath, destPath, options.channel, true);
 }
 
 /**

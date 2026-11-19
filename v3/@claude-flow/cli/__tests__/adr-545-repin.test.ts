@@ -66,6 +66,16 @@ describe('repinProject', () => {
     writeFileSync(join(dir, '.claude', 'helpers', 'setup-mcp.sh'), '#!/bin/sh\nclaude mcp add claude-flow npx @claude-flow/cli@latest mcp start\n');
     writeFileSync(join(dir, '.claude', 'helpers', 'auto-memory-hook.mjs'), "const l = 'npx ruflo@latest init';\n");
   });
+
+  it('pins untagged runs in helper scripts, not in CLAUDE.md', () => {
+    writeFileSync(join(dir, '.claude', 'helpers', 'pre-commit'), '#!/bin/bash\nnpx @claude-flow/cli hooks pre-edit --file x\n');
+    writeFileSync(join(dir, 'CLAUDE.md'), 'Run `npx ruflo doctor` when stuck.\n');
+    const report = repinProject(dir, { version: V });
+    expect(read('.claude/helpers/pre-commit')).toBe(`#!/bin/bash\nnpx @claude-flow/cli@${V} hooks pre-edit --file x\n`);
+    expect(read('CLAUDE.md')).toBe('Run `npx ruflo doctor` when stuck.\n');
+    expect(report.files.find((f) => f.file === '.claude/helpers/pre-commit')!.changes).toHaveLength(1);
+    expect(repinProject(dir, { version: V }).changedLines).toBe(0);
+  });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
   const read = (rel: string) => readFileSync(join(dir, rel), 'utf-8');

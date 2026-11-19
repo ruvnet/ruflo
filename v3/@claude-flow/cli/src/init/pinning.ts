@@ -162,6 +162,14 @@ export interface RewriteResult {
  */
 const OUR_REF_RE = /(?<![\w@/.-])(@claude-flow\/cli|claude-flow|ruflo)@(latest|alpha|v3alpha|next|beta|\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?![\w.-])/g;
 
+/**
+ * An untagged run of one of our packages (`npx @claude-flow/cli hooks …`,
+ * `npx -y ruflo …`), which npm resolves to whatever is latest. Only plain
+ * flags may sit between the runner and the package, so `--prefix <dir> pkg`
+ * (the signed helpers' local-install form) is not matched.
+ */
+const BARE_RUN_RE = /(\b(?:npx|bunx|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)(?:\s+--?[\w-]+(?:=\S+)?)*\s+)(@claude-flow\/cli|claude-flow|ruflo)(?=$|[\s"'`;|&)])/g;
+
 /** A line that runs a package: npx/npm/pnpm/yarn/bunx or `claude mcp add`. */
 const INVOCATION_RE = /\b(?:npx|npm|pnpm|yarn|bunx)\s|\bclaude\s+mcp\s+add\b/;
 
@@ -179,12 +187,16 @@ const INVOCATION_RE = /\b(?:npx|npm|pnpm|yarn|bunx)\s|\bclaude\s+mcp\s+add\b/;
  *
  * `lineFilter` lets a caller restrict the rewrite to some lines (e.g. JSON
  * string values that are not object keys).
+ *
+ * `pinBareRuns` also pins untagged runs (`npx @claude-flow/cli …`) when
+ * `target` is an exact version — for scripts, where such a line executes.
  */
 export function rewriteOurRefs(
   text: string,
   target: string,
   lineFilter: (line: string, index: number) => boolean = () => true,
   exactVersions: 'all' | 'npx-lines' | 'none' = 'all',
+  pinBareRuns = false,
 ): RewriteResult {
   if (target !== 'latest' && !isExactVersion(target)) {
     throw new Error(`rewriteOurRefs: target must be an exact version or 'latest', got ${JSON.stringify(target)}`);
@@ -195,11 +207,12 @@ export function rewriteOurRefs(
     const line = parts[i];
     if (!line || !lineFilter(line, i / 2)) continue;
     const exactOk = exactVersions === 'all' || (exactVersions === 'npx-lines' && INVOCATION_RE.test(line));
-    const next = line.replace(OUR_REF_RE, (whole, pkg: string, spec: string) => {
+    let next = line.replace(OUR_REF_RE, (whole, pkg: string, spec: string) => {
       if (spec === target) return whole;
       if (isExactVersion(spec) && !exactOk) return whole;
       return `${pkg}@${target}`;
     });
+    if (pinBareRuns && target !== 'latest') next = next.replace(BARE_RUN_RE, (_w, run: string, pkg: string) => `${run}${pkg}@${target}`);
     if (next !== line) {
       changes.push({ line: i / 2 + 1, before: line, after: next });
       parts[i] = next;
@@ -213,9 +226,10 @@ export function rewriteOurRefs(
  * refs to ruflo's own packages are pinned to the running version on the way
  * (skills, commands and agents document `npx @claude-flow/cli@latest …`);
  * otherwise, or for a binary file or one without refs, the bytes are copied
- * unchanged. Never use this for the signed helpers.
+ * unchanged. `script` also pins untagged runs (unsigned helper scripts).
+ * Never use this for the signed helpers.
  */
-export function copyFilePinned(src: string, dest: string, channel: ReleaseChannel = 'pinned'): void {
+export function copyFilePinned(src: string, dest: string, channel: ReleaseChannel = 'pinned', script = false): void {
   const version = pinnedVersion();
   if (channel !== 'pinned' || !version) {
     fs.copyFileSync(src, dest);
@@ -227,7 +241,7 @@ export function copyFilePinned(src: string, dest: string, channel: ReleaseChanne
     return;
   }
   // Package docs name old releases in prose; only floating tags are pinned.
-  const { text, changes } = rewriteOurRefs(raw.toString('utf-8'), version, undefined, 'none');
+  const { text, changes } = rewriteOurRefs(raw.toString('utf-8'), version, undefined, 'none', script);
   if (changes.length === 0) fs.copyFileSync(src, dest);
   else fs.writeFileSync(dest, text, 'utf-8');
 }

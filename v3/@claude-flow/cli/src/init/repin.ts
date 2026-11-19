@@ -136,7 +136,9 @@ function repinFile(targetDir: string, rel: string, target: string, dryRun: boole
   };
 
   // A user's CLAUDE.md may mention old releases in prose; bump exact pins only on invocation lines there.
-  const { text, changes } = rewriteOurRefs(original, target, filter, kind === 'text' && rel === 'CLAUDE.md' ? 'npx-lines' : 'all');
+  // Helper scripts execute their npx lines, so untagged runs float too; pin them there.
+  const isHelper = rel.startsWith('.claude/helpers/');
+  const { text, changes } = rewriteOurRefs(original, target, filter, kind === 'text' && rel === 'CLAUDE.md' ? 'npx-lines' : 'all', isHelper);
   report.changes = changes;
   if (changes.length === 0) return report;
   if (kind !== 'text') {
