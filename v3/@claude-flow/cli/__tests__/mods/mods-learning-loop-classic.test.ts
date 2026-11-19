@@ -152,17 +152,27 @@ describe('offsets: each turn is replayed once, and only when it has finished', (
 });
 
 describe('lessons: the classic hook shows what the mod shows', () => {
+  const ORIGIN = '0123456789abcdef0123456789abcdef';
+  const lessons = (extra: object = { origin: ORIGIN }) => JSON.stringify({ version: 1, gate: 0.6, belowGate: 0, lessons: [
+    { id: 'L-0123456789', kind: 'lesson', agent: 'coder', keywords: ['euro', 'rounding', 'invoice'], confidence: 0.7, successes: 3, failures: 0, evidence: 'npm test', files: ['src/money/half-even.js'] },
+    { id: 'L-abcdefabcd', kind: 'lesson', agent: 'coder', keywords: ['slug', 'accent', 'fold'], confidence: 0.7, successes: 3, failures: 0, evidence: 'npm test' },
+  ], ...extra });
+  const prompt = 'the euro rounding on the invoice is off by a cent';
+
   it('lessonsFor is the mod block for the same file and prompt, and nothing for a bad file', () => {
-    const file = JSON.stringify({ version: 1, gate: 0.6, belowGate: 0, lessons: [
-      { id: 'L-0123456789', kind: 'lesson', agent: 'coder', keywords: ['euro', 'rounding', 'invoice'], confidence: 0.7, successes: 3, failures: 0, evidence: 'npm test', files: ['src/money/half-even.js'] },
-      { id: 'L-abcdefabcd', kind: 'lesson', agent: 'coder', keywords: ['slug', 'accent', 'fold'], confidence: 0.7, successes: 3, failures: 0, evidence: 'npm test' },
-    ] });
-    const prompt = 'the euro rounding on the invoice is off by a cent';
-    const block = lessonsFor(prompt, file);
+    const file = lessons();
+    const block = lessonsFor(prompt, file, `${ORIGIN}\n`);
     expect(block).toBe(lessonBlock(pick(parseLessons(file), prompt)));
     expect(block).toContain('`src/money/half-even.js`');
-    expect(lessonsFor(prompt, '{not json')).toBe('');
-    expect(lessonsFor('write a poem', file)).toBe('');
+    expect(lessonsFor(prompt, '{not json', ORIGIN)).toBe('');
+    expect(lessonsFor('write a poem', file, ORIGIN)).toBe('');
+  });
+
+  it('#4747: nothing from a file this machine did not write, such as one committed to a cloned repository', () => {
+    expect(lessonsFor(prompt, lessons({}), ORIGIN)).toBe('');
+    expect(lessonsFor(prompt, lessons({ origin: 'fedcba9876543210fedcba9876543210' }), ORIGIN)).toBe('');
+    expect(lessonsFor(prompt, lessons(), undefined)).toBe('');
+    expect(lessonsFor(prompt, lessons({ origin: 'not-an-id' }), 'not-an-id')).toBe('');
   });
 });
 
@@ -235,14 +245,23 @@ describe('the classic hooks run the loop (hook-handler.cjs + learning-loop.cjs)'
     }
     expect(records().map((r) => r.outcome)).toEqual(['verified-success', 'verified-success', 'verified-success']);
 
+    const home = join(dir, 'home');
     const sona = new SONAOptimizer({ persistencePath: relative(process.cwd(), join(dir, '.swarm', 'sona-patterns.json')) });
-    const result = await ingestVerifiedOutcomes({ root: dir, sona: sona as unknown as SonaLike, force: true });
+    const result = await ingestVerifiedOutcomes({ root: dir, sona: sona as unknown as SonaLike, force: true, home });
     expect(result.ingested.rejected).toBe(0);
     expect(result.lessons).toBe(1);
 
-    const out = hook('route', { session_id: 'next', transcript_path: join(dir, 'none.jsonl'), prompt: 'money formatting for euros is off again on the invoice' });
+    const again = 'money formatting for euros is off again on the invoice';
+    const out = hook('route', { session_id: 'next', transcript_path: join(dir, 'none.jsonl'), prompt: again }, { HOME: home });
     expect(out).toContain('edited `src/money.js`: look there first');
-    expect(hook('route', { session_id: 'next', prompt: 'write a haiku about autumn' })).not.toContain('look there first');
+    expect(hook('route', { session_id: 'next', prompt: 'write a haiku about autumn' }, { HOME: home })).not.toContain('look there first');
+
+    // #4747: the same file on another machine, as a clone of a repository that committed it, shows nothing.
+    const other = join(dir, 'other-home');
+    mkdirSync(join(other, '.claude-flow'), { recursive: true });
+    writeFileSync(join(other, '.claude-flow', 'learning-loop-origin'), 'fedcba9876543210fedcba9876543210');
+    expect(hook('route', { session_id: 'next', prompt: again }, { HOME: other })).not.toContain('RUFLO_LESSONS');
+    expect(hook('route', { session_id: 'next', prompt: again }, { HOME: join(dir, 'no-home') })).not.toContain('RUFLO_LESSONS');
   });
 });
 

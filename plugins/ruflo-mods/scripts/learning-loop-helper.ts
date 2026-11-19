@@ -8,9 +8,10 @@
  */
 
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import { appendLines, LESSONS_PATH, lessonsFor, replay, VERIFIED_PATH } from '../hooks/loop/transcript'
+import { appendLines, LESSONS_PATH, lessonsFor, ORIGIN_PATH, replay, VERIFIED_PATH } from '../hooks/loop/transcript'
 
 const STATE_PATH = '.claude-flow/data/classic-loop.json'
 const LEDGER_PATH = '.claude-flow/data/verified-ingest.json'
@@ -115,13 +116,19 @@ export function recordTurns(opts: { root: string; transcriptPath: unknown; sessi
   }
 }
 
-/** The lesson block for a prompt, or '' (no lessons file, none fits, or the file is bad). */
-export function lessonsForPrompt(root: string, prompt: unknown): string {
+/** The lesson block for a prompt, or '' (no lessons file, none fits, the file is bad, or another machine wrote it). */
+export function lessonsForPrompt(root: string, prompt: unknown, home: string = homedir()): string {
   try {
     if (typeof prompt !== 'string' || prompt.trim() === '' || prompt.trimStart().startsWith('/')) return ''
     const path = join(root, LESSONS_PATH)
     if (statSync(path).size > MAX_LESSONS_FILE) return ''
-    return lessonsFor(prompt, readFileSync(path, 'utf8'))
+    let origin: string | undefined
+    try {
+      origin = readFileSync(join(home, ORIGIN_PATH), 'utf8')
+    } catch {
+      return ''
+    }
+    return lessonsFor(prompt, readFileSync(path, 'utf8'), origin)
   } catch {
     return ''
   }

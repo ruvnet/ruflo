@@ -11,12 +11,12 @@
  */
 
 import { utf8Bytes } from '../compact-snapshot/snapshot'
-import { lessonBlock, parseLessons, pick } from './lessons'
+import { lessonBlock, parseLessons, parseOrigin, pick, recordedHere } from './lessons'
 import { line, start, step } from './record'
 import { relativePath } from './taint'
 import { classify, verdict } from './verifier'
 
-export { appendLines, LESSONS_PATH, VERIFIED_PATH } from './record'
+export { appendLines, LESSONS_PATH, ORIGIN_PATH, VERIFIED_PATH } from './record'
 
 /** One transcript line, as far as this file reads it. */
 type Entry = {
@@ -141,10 +141,15 @@ export function replay(text: string, opts: { base: number; session: string; root
   return { lines, consumed: still.at }
 }
 
-/** The lesson block for a prompt from the text of `learned-lessons.json`, or '' (none fits, or the file is bad). */
-export function lessonsFor(prompt: string, lessonsText: string): string {
+/**
+ * The lesson block for a prompt from the text of `learned-lessons.json`, or '' (none fits, the file is bad, or this
+ * machine did not write it). `originText` is the text of `~/.claude-flow/learning-loop-origin`.
+ */
+export function lessonsFor(prompt: string, lessonsText: string, originText: string | undefined): string {
   try {
-    return lessonBlock(pick(parseLessons(lessonsText), prompt)) ?? ''
+    const file = parseLessons(lessonsText)
+    if (!recordedHere(file, parseOrigin(originText))) return ''
+    return lessonBlock(pick(file, prompt)) ?? ''
   } catch {
     return ''
   }
