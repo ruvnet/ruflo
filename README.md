@@ -2,7 +2,7 @@
 
 <a href="https://cognitum.one/ruPro"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
 
-<a href="https://cognitum.one/ruPro"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/4531adb1033fffc0354b315a7f122ca73b4991f4/docs/assets/readme/rupro-workspace.svg" alt="ruPro workspace tour showing project agents, provider terminals, evidence review and business dashboards" width="100%"></a>
+<a href="https://cognitum.one/ruPro"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/e5b7773607d6f1a7c909044c8310b25697b5e0d0/docs/assets/readme/rupro-workspace.svg" alt="ruPro workspace tour showing project agents, provider terminals, evidence review and business dashboards" width="100%"></a>
 
 **[Explore ruPro interactive demo](https://cognitum.one/ruPro)** · Manage agents and projects across desktop, mobile, and cloud.
 
