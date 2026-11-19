@@ -114,6 +114,7 @@ plugins/ruflo-core/scripts/command-recording-switch.test.cjs
 tests/regression/oct12-coverage.test.cjs
 plugins/ruflo-adr/scripts/__tests__/adr-status-forms-4126.test.mjs
 scripts/__tests__/probe-mod-guards.test.mjs
+scripts/__tests__/verify-npm-provenance.test.mjs
 plugins/ruflo-core/scripts/witness/__tests__/witness-auth.test.mjs
 v3/@claude-flow/cli/__tests__/real-binary/classic-loop.test.ts
 v3/@claude-flow/cli/__tests__/real-binary/context-delegation.test.ts
