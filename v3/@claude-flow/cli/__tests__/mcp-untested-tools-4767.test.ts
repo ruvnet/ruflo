@@ -10,7 +10,23 @@
  * hermetically in a unit test.
  * `memory_compress` is left out: it needs an initialized memory database.
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// aidefence_stats lazily imports @claude-flow/aidefence and, when that does not
+// resolve, runs a real `npm install` (mcp-tools/auto-install.ts). The repo-root
+// CI install does not resolve it, so the unmocked test tried to install into
+// the checkout and failed. Mock the package: this test covers the tool's output.
+vi.mock('@claude-flow/aidefence', () => ({
+  createAIDefence: () => ({
+    getStats: async () => ({
+      detectionCount: 0,
+      avgDetectionTimeMs: 0,
+      learnedPatterns: 0,
+      mitigationStrategies: 0,
+      avgMitigationEffectiveness: 0,
+    }),
+  }),
+}));
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -211,7 +227,9 @@ describe('memory_compress', () => {
 describe('aidefence_stats', () => {
   it('returns parseable detection statistics', async () => {
     const result = await tool(securityTools, 'aidefence_stats').handler({});
+    expect(result.isError).not.toBe(true);
     const body = JSON.parse(result.content[0].text);
-    expect(body).toBeTypeOf('object');
+    expect(body.detectionCount).toBe(0);
+    expect(body.wrapper).toBeTypeOf('object');
   });
 });
