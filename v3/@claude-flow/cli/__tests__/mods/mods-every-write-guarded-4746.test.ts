@@ -77,9 +77,10 @@ function tree(dir: string): Record<string, string> {
   return out;
 }
 
-async function driveEveryWrite(world: World): Promise<void> {
+/** `create: false` skips engine.create, so the toast writer session.start binds is the one in use (no `$.ruflo` noun beneath). */
+async function driveEveryWrite(world: World, create = true): Promise<void> {
   const mod = loadMod(register, world, OPTIONS);
-  await mod.create();
+  if (create) await mod.create();
   await mod.dispatch('session.start', { cwd: world.root, surface: null, isInteractive: false }, (e: { cwd: string }) => ({ cwd: e.cwd }));
   await mod.dispatch('prompt.submit', { text: 'explore the config and find the retry limit', wait: false, origin: { kind: 'composer' } }, (e: unknown) => e);
   const file = join(world.root, 'src', 'config.ts');
@@ -119,6 +120,15 @@ describe('#4746: every .claude-flow write is link-guarded', () => {
     symlinkSync(outside, join(project, '.claude-flow'), 'dir');
     const before = tree(outside);
     await driveEveryWrite(world);
+    expect(tree(outside)).toEqual(before);
+  });
+
+  it('a symlinked .claude-flow without engine.create (the toast writer session.start binds): nothing outside is written', async () => {
+    const { project, outside, world } = layout();
+    seedState(outside);
+    symlinkSync(outside, join(project, '.claude-flow'), 'dir');
+    const before = tree(outside);
+    await driveEveryWrite(world, false);
     expect(tree(outside)).toEqual(before);
   });
 
