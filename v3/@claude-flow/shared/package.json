@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/shared",
-  "version": "3.0.8",
+  "version": "3.0.9",
   "type": "module",
   "description": "Shared types, event bus, config schemas and validators, MCP transport helpers and resilience utilities used by the Ruflo (claude-flow) V3 packages.",
   "main": "dist/index.js",

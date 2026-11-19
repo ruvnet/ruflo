@@ -118,7 +118,7 @@ importers:
   '@claude-flow/cli':
     dependencies:
       '@claude-flow/cli-core':
-        specifier: 3.7.7
+        specifier: 3.7.8
         version: link:../cli-core
       '@claude-flow/codex':
         specifier: 3.0.8
@@ -136,7 +136,7 @@ importers:
         specifier: 3.0.7
         version: link:../security
       '@claude-flow/shared':
-        specifier: 3.0.8
+        specifier: 3.0.9
         version: link:../shared
       '@electron/asar':
         specifier: ^4.3.1
@@ -214,8 +214,8 @@ importers:
         specifier: ^2.8.0
         version: 2.8.2
       zod:
-        specifier: ^3.22.0
-        version: 3.25.76
+        specifier: ^4.6.7
+        version: 4.6.7
     optionalDependencies:
       '@agntcy/slim-bindings':
         specifier: 2.1.1
@@ -225,7 +225,7 @@ importers:
         version: link:../aidefence
       '@claude-flow/memory':
         specifier: 3.3.3
-        version: 3.3.3(@types/node@20.19.27)(zod@3.25.76)
+        version: 3.3.3(@types/node@20.19.27)(zod@4.6.7)
       '@metaharness/flywheel':
         specifier: ~0.1.10
         version: 0.1.13
@@ -246,7 +246,7 @@ importers:
         version: 0.2.2
       agentdb:
         specifier: ^3.10.0
-        version: 3.10.0(@types/node@20.19.27)(zod@3.25.76)
+        version: 3.10.0(@types/node@20.19.27)(zod@4.6.7)
       better-sqlite3:
         specifier: 12.9.0
         version: 12.9.0
@@ -264,7 +264,7 @@ importers:
         version: 0.1.0
       ruvector:
         specifier: ^0.3.13
-        version: 0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76)
+        version: 0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@4.6.7)
     devDependencies:
       tsx:
         specifier: ^4.19.0
@@ -1038,14 +1038,14 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@claude-flow/memory@3.3.3(@types/node@20.19.27)(zod@3.25.76):
+  /@claude-flow/memory@3.3.3(@types/node@20.19.27)(zod@4.6.7):
     resolution: {integrity: sha512-e1ErfnyIVri5spje1VzpMW8UtF8k9eapckCj6RgGZn/+ZUstyWozqG7IKu++7MHymRmJttq0Vtp+k9hD80VV4w==}
     cpu: [x64, arm64]
     os: [darwin, linux, win32]
     requiresBuild: true
     dependencies:
       '@claude-flow/security': 3.0.7
-      agentdb: 3.10.0(@types/node@20.19.27)(zod@3.25.76)
+      agentdb: 3.10.0(@types/node@20.19.27)(zod@4.6.7)
       sql.js: 1.14.1
     optionalDependencies:
       '@ruvnet/sublinear-core': 1.0.1

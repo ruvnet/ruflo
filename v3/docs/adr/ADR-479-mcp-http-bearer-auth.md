@@ -61,9 +61,10 @@ environment variable `RUFLO_MCP_HTTP_TOKEN`. An unset or empty variable means no
   "message":"Unauthorized"}}`. The header and token are never logged.
 - Fail closed: auth enabled with an empty token list accepts nothing (this was the fail-open fixed with this change).
 - `GET /health` stays public and, when auth is on, answers only `{"status":"ok"}`: no timestamp, no connection count.
-- The WebSocket endpoint on this transport (`/ws`) checks the token in its connection handler, from `Authorization: Bearer` or from a
-  `?token=` query parameter, and closes the socket with 4001 (none) or 4003 (invalid). An HTTP upgrade does not pass through the middleware
-  above, so this handler is the only check on that path.
+- The WebSocket endpoint on this transport (`/ws`) checks the token in `verifyClient`, before the upgrade, from `Authorization: Bearer`
+  or from a `?token=` query parameter (browsers cannot set headers on a WebSocket), and refuses a missing or invalid token with HTTP 401.
+  An HTTP upgrade does not pass through the middleware above, so this is the only check on that path. Frames are capped by
+  `maxMessageSize` (default 10 MiB).
 - Tool calls reach the handler with `transport: 'http'` (or `'websocket'`), which is what ADR-476 uses to classify a caller as remote.
 
 ### 2.4 Behaviour matrix
