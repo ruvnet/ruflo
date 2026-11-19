@@ -846,6 +846,9 @@ jobs:
       - name: Test audit script itself
         run: node scripts/__tests__/audit-supply-chain.test.mjs
 
+      - name: Test release provenance gate (ADR-545)
+        run: node --test scripts/__tests__/verify-npm-provenance.test.mjs
+
   dependency-review:
     # GitHub's official dependency-review-action — runs only on PRs and
     # flags any new vulnerable dependency added by the PR vs the base

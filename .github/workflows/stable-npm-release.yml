@@ -7,6 +7,11 @@ on:
         description: Existing v-prefixed Git tag to publish
         required: true
         type: string
+      dry_run:
+        description: Build, verify and pack only; publish nothing (ADR-545)
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -20,6 +25,11 @@ jobs:
     name: Publish stable package train
     if: github.actor == 'ruvnet'
     runs-on: ubuntu-latest
+    # ADR-545: id-token lets npm mint a SLSA provenance attestation (sigstore,
+    # GitHub OIDC) for each archive. Provenance needs a GitHub-hosted runner.
+    permissions:
+      contents: read
+      id-token: write
     timeout-minutes: 75
 
     steps:
@@ -95,6 +105,12 @@ jobs:
             }
             if (pkg.version !== expected) {
               throw new Error(`${pkg.name}: expected ${expected}, got ${pkg.version}`);
+            }
+            // ADR-545: npm rejects --provenance when repository.url differs from
+            // the repository that built it. Fail here, before anything is published.
+            const repo = typeof pkg.repository === 'string' ? pkg.repository : pkg.repository?.url;
+            if (repo !== 'git+https://github.com/ruvnet/ruflo.git') {
+              throw new Error(`${pkg.name}: repository.url must be git+https://github.com/ruvnet/ruflo.git for provenance, got ${repo}`);
             }
           }
           NODE
@@ -372,6 +388,8 @@ jobs:
           retention-days: 14
 
       - name: Publish the three verified archives
+        # ADR-545: real publishes only from main; a dry run stops after the archives are verified and uploaded.
+        if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
         shell: bash
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -405,7 +423,7 @@ jobs:
             archive="${archives[$index]}"
             if registry_field "$package" "$version" version >/dev/null; then
               echo "${package}@${version} already published"
-            elif ! npm publish "$archive" --ignore-scripts --access public --tag "$candidate_tag" 2>"$RUNNER_TEMP/publish.err"; then
+            elif ! npm publish "$archive" --provenance --ignore-scripts --access public --tag "$candidate_tag" 2>"$RUNNER_TEMP/publish.err"; then
               cat "$RUNNER_TEMP/publish.err" >&2
               # A rerun can start while the first upload is still being processed:
               # the version is not readable yet but the registry refuses it.
@@ -450,14 +468,35 @@ jobs:
             echo "${package}@${version} verified at ${expected_integrity}"
           done
 
-          for package in "${packages[@]}"; do
-            for tag in latest alpha v3alpha; do
-              npm dist-tag add "${package}@${version}" "$tag"
+          # ADR-545: promote only versions that carry a SLSA provenance attestation
+          # for exactly the verified archive, built from ruvnet/ruflo.
+          for index in "${!packages[@]}"; do
+            package="${packages[$index]}"
+            expected_integrity="${integrities[$index]}"
+            attested=false
+            for attempt in {1..30}; do
+              if curl -fsS --max-time 30 -H 'Cache-Control: no-cache' \
+                "https://registry.npmjs.org/-/npm/v1/attestations/${package/\//%2f}@${version}" 2>/dev/null |
+                INTEGRITY="$expected_integrity" node scripts/verify-npm-provenance.mjs; then
+                attested=true
+                break
+              fi
+              sleep 10
             done
+            if [[ "$attested" != true ]]; then
+              echo "::error::${package}@${version} has no matching SLSA provenance; left on ${candidate_tag}, not promoted to latest"
+              exit 1
+            fi
+          done
+
+          # ADR-513: only latest moves. alpha and v3alpha stay frozen.
+          for package in "${packages[@]}"; do
+            npm dist-tag add "${package}@${version}" latest
             npm dist-tag rm "$package" "$candidate_tag" >/dev/null 2>&1 || true
           done
 
       - name: Verify registry deployment
+        if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
         shell: bash
         env:
           RELEASE_TAG: ${{ inputs.tag }}
@@ -473,7 +512,7 @@ jobs:
                 "https://registry.npmjs.org/-/package/${package/\//%2f}/dist-tags" 2>/dev/null || true)"
               if TAGS="$tags" VERSION="$version" node - <<'NODE'
           const tags = JSON.parse(process.env.TAGS || '{}');
-          process.exit(['latest', 'alpha', 'v3alpha'].every((tag) => tags[tag] === process.env.VERSION) ? 0 : 1);
+          process.exit(['latest'].every((tag) => tags[tag] === process.env.VERSION) ? 0 : 1);
           NODE
               then
                 tags_ready=true
@@ -484,7 +523,7 @@ jobs:
             test "$tags_ready" = true
             TAGS="$tags" VERSION="$version" PACKAGE="$package" node - <<'NODE'
           const tags = JSON.parse(process.env.TAGS);
-          for (const tag of ['latest', 'alpha', 'v3alpha']) {
+          for (const tag of ['latest']) {
             if (tags[tag] !== process.env.VERSION) {
               throw new Error(`${process.env.PACKAGE}:${tag}=${tags[tag]}, expected ${process.env.VERSION}`);
             }
