@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 350" width="960" height="350" role="img" aria-labelledby="title desc"><title id="title">Inside ruPro</title><desc id="desc">A workspace tour showing project agents, provider terminals, review evidence and business dashboards.</desc><defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101322"/><stop offset="1" stop-color="#231938"/></linearGradient></defs><style>.scene{opacity:0}.first{opacity:1}@media (prefers-reduced-motion:no-preference){.scene{animation:show 20s infinite both}@keyframes show{0%,23%{opacity:1}25%,98%{opacity:0}100%{opacity:1}}}</style>
+<rect x="0" y="0" width="960" height="350" rx="7" fill="url(#bg)"/>
+<g font-family="system-ui,sans-serif">
+<text x="34" y="46" font-size="28" fill="#fff" font-weight="700">ruPro</text>
+<text x="136" y="44" font-size="12" fill="#b7a0ff" font-weight="700">EARLY ACCESS</text>
+<text x="34" y="105" font-size="42" fill="#fff" font-weight="700">The agentic</text>
+<text x="34" y="151" font-size="42" fill="#d1baff" font-weight="700">engineering</text>
+<text x="34" y="197" font-size="42" fill="#c69aff" font-weight="700">platform.</text>
+<text x="36" y="239" font-size="17" fill="#efeaff" font-weight="400">Projects, providers and evidence</text>
+<text x="36" y="264" font-size="17" fill="#efeaff" font-weight="400">in one shared workspace.</text>
+<text x="36" y="317" font-size="18" fill="#ccb6ff" font-weight="650">Explore ruPro  ↗</text>
+<rect x="390" y="26" width="544" height="298" rx="7" fill="#0d101b"/>
+<text x="414" y="59" font-size="13" fill="#9984c0" font-weight="400">●  ●  ●</text>
+<text x="520" y="60" font-size="16" fill="#acabc2" font-weight="400">ruPro   /   workspace</text>
+<text x="795" y="60" font-size="13" fill="#adabc0" font-weight="400">Sample workspace</text>
+<g class="scene first" style="animation-delay:0s">
+<rect x="413" y="78" width="113" height="32" rx="7" fill="#35284d"/>
+<text x="423" y="100" font-size="16" fill="#e3d5ff" font-weight="400">Agents</text>
+<text x="547" y="100" font-size="16" fill="#9998b0" font-weight="400">Terminal</text>
+<text x="671" y="100" font-size="16" fill="#9998b0" font-weight="400">Review</text>
+<text x="795" y="100" font-size="16" fill="#9998b0" font-weight="400">Analytics</text>
+<text x="415" y="151" font-size="26" fill="#fff" font-weight="650">Agents across projects</text>
+<rect x="412" y="170" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="195" font-size="18" fill="#efeaff" font-weight="400">Platform</text>
+<text x="650" y="195" font-size="16" fill="#c3b2ee" font-weight="400">Running</text>
+<rect x="412" y="215" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="240" font-size="18" fill="#efeaff" font-weight="400">Website</text>
+<text x="650" y="240" font-size="16" fill="#c3b2ee" font-weight="400">In review</text>
+<rect x="412" y="260" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="285" font-size="18" fill="#efeaff" font-weight="400">Mobile</text>
+<text x="650" y="285" font-size="16" fill="#c3b2ee" font-weight="400">Queued</text>
+</g>
+<g class="scene " style="animation-delay:-15s">
+<text x="423" y="100" font-size="16" fill="#9998b0" font-weight="400">Agents</text>
+<rect x="537" y="78" width="113" height="32" rx="7" fill="#35284d"/>
+<text x="547" y="100" font-size="16" fill="#e3d5ff" font-weight="400">Terminal</text>
+<text x="671" y="100" font-size="16" fill="#9998b0" font-weight="400">Review</text>
+<text x="795" y="100" font-size="16" fill="#9998b0" font-weight="400">Analytics</text>
+<text x="415" y="151" font-size="26" fill="#fff" font-weight="650">Provider terminals</text>
+<rect x="412" y="170" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="195" font-size="18" fill="#efeaff" font-weight="400">Claude</text>
+<text x="650" y="195" font-size="16" fill="#c3b2ee" font-weight="400">Plan the release</text>
+<rect x="412" y="215" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="240" font-size="18" fill="#efeaff" font-weight="400">Codex</text>
+<text x="650" y="240" font-size="16" fill="#c3b2ee" font-weight="400">Implement changes</text>
+<rect x="412" y="260" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="285" font-size="18" fill="#efeaff" font-weight="400">Copilot</text>
+<text x="650" y="285" font-size="16" fill="#c3b2ee" font-weight="400">Inspect the diff</text>
+</g>
+<g class="scene " style="animation-delay:-10s">
+<text x="423" y="100" font-size="16" fill="#9998b0" font-weight="400">Agents</text>
+<text x="547" y="100" font-size="16" fill="#9998b0" font-weight="400">Terminal</text>
+<rect x="661" y="78" width="113" height="32" rx="7" fill="#35284d"/>
+<text x="671" y="100" font-size="16" fill="#e3d5ff" font-weight="400">Review</text>
+<text x="795" y="100" font-size="16" fill="#9998b0" font-weight="400">Analytics</text>
+<text x="415" y="151" font-size="26" fill="#fff" font-weight="650">Review the evidence</text>
+<rect x="412" y="170" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="195" font-size="18" fill="#efeaff" font-weight="400">Patch</text>
+<text x="650" y="195" font-size="16" fill="#c3b2ee" font-weight="400">3 files changed</text>
+<rect x="412" y="215" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="240" font-size="18" fill="#efeaff" font-weight="400">Test report</text>
+<text x="650" y="240" font-size="16" fill="#c3b2ee" font-weight="400">12 checks passed</text>
+<rect x="412" y="260" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="285" font-size="18" fill="#efeaff" font-weight="400">Decision</text>
+<text x="650" y="285" font-size="16" fill="#c3b2ee" font-weight="400">Ready for review</text>
+</g>
+<g class="scene " style="animation-delay:-5s">
+<text x="423" y="100" font-size="16" fill="#9998b0" font-weight="400">Agents</text>
+<text x="547" y="100" font-size="16" fill="#9998b0" font-weight="400">Terminal</text>
+<text x="671" y="100" font-size="16" fill="#9998b0" font-weight="400">Review</text>
+<rect x="785" y="78" width="113" height="32" rx="7" fill="#35284d"/>
+<text x="795" y="100" font-size="16" fill="#e3d5ff" font-weight="400">Analytics</text>
+<text x="415" y="151" font-size="26" fill="#fff" font-weight="650">Business dashboards</text>
+<rect x="412" y="170" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="195" font-size="18" fill="#efeaff" font-weight="400">Engineering</text>
+<rect x="650" y="180" width="155" height="17" rx="7" fill="#ad91f7"/>
+<rect x="412" y="215" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="240" font-size="18" fill="#efeaff" font-weight="400">Operations</text>
+<rect x="650" y="225" width="112" height="17" rx="7" fill="#ad91f7"/>
+<rect x="412" y="260" width="500" height="38" rx="7" fill="#191b2a"/>
+<text x="430" y="285" font-size="18" fill="#efeaff" font-weight="400">Support</text>
+<rect x="650" y="270" width="76" height="17" rx="7" fill="#ad91f7"/>
+</g>
+</g></svg>
