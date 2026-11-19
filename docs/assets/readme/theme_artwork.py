@@ -6,6 +6,8 @@ from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
 
+from workspace_panels import render_panel
+
 ROOT = Path(__file__).resolve().parents[3]
 README = ROOT / "README.md"
 VIOLET = "#bd9bf8"
@@ -31,6 +33,8 @@ def embedded_paths():
             yield path
 
 def apply_theme(path):
+    if render_panel(path):
+        return
     svg = path.read_text()
     if 'id="readme-card-trim"' in svg:
         return
