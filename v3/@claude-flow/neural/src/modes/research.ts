@@ -56,6 +56,7 @@ export class ResearchMode extends BaseModeImplementation {
     this.adamM.clear();
     this.adamV.clear();
     this.adamStep = 0;
+    this.lastConsolidationSnapshot.clear();
   }
 
   async cleanup(): Promise<void> {
@@ -65,6 +66,7 @@ export class ResearchMode extends BaseModeImplementation {
     this.checkpoints = [];
     this.adamM.clear();
     this.adamV.clear();
+    this.lastConsolidationSnapshot.clear();
     await super.cleanup();
   }
 
@@ -482,5 +484,70 @@ export class ResearchMode extends BaseModeImplementation {
     }
 
     return lambda * loss * 0.5;
+  }
+
+  // Snapshot of `adamM` as of the last call to getConsolidationSnapshot(),
+  // used to compute a bounded per-cycle delta instead of squaring the
+  // ever-growing EMA directly. Same rationale as BalancedMode's own
+  // `lastConsolidationSnapshot` (see modes/balanced.ts).
+  private lastConsolidationSnapshot: Map<string, Float32Array> = new Map();
+
+  /**
+   * Derive a Fisher-information/means snapshot from the CHANGE in `adamM`
+   * (the Adam first-moment EMA this mode already maintains across every
+   * `processBatch()` call, read back by `computeEWCLoss()`) since the last
+   * consolidation, for EWC consolidation.
+   *
+   * `adamM` is never cleared except in `initialize()`/`cleanup()`, so it
+   * plays the same role here as `gradientAccumulator` does in
+   * `BalancedMode.getConsolidationSnapshot()` — using the delta against the
+   * previous snapshot (rather than squaring the raw EMA value) bounds each
+   * cycle's Fisher contribution to that cycle's own first-moment movement,
+   * matching the already-reviewed Balanced-mode pattern. `means` is the
+   * `adamM` snapshot itself (the EWC anchor), so `computeEWCLoss()`'s
+   * penalty is zero immediately after consolidation.
+   *
+   * Scope: EdgeMode and RealTimeMode are not wired — neither tracks any
+   * per-key gradient-shaped state (Edge uses quantized weights; RealTime
+   * explicitly skips backprop), so a snapshot for either would have to be
+   * fabricated rather than derived. BatchMode is also not wired tonight:
+   * its `accumulatedGradients` map is deliberately zeroed by
+   * `applyAccumulatedGradients()` on its own 4-step flush cadence, so a
+   * delta-since-last-snapshot measured at an arbitrary point relative to
+   * that flush would not have the same "this cycle's movement" meaning it
+   * has here or in Balanced — a dedicated design pass, not a port of this
+   * same pattern, is needed there.
+   */
+  getConsolidationSnapshot(): {
+    fisher: Map<string, Float32Array>;
+    means: Map<string, Float32Array>;
+  } {
+    const fisher = new Map<string, Float32Array>();
+    const means = new Map<string, Float32Array>();
+
+    for (const [key, current] of this.adamM) {
+      const previous = this.lastConsolidationSnapshot.get(key);
+      const delta = new Float32Array(current.length);
+      const snapshot = new Float32Array(current.length);
+
+      for (let i = 0; i < current.length; i++) {
+        const c = current[i];
+        const safe = Number.isFinite(c) ? c : 0;
+        const prevSafe = previous && Number.isFinite(previous[i]) ? previous[i] : 0;
+        delta[i] = safe - prevSafe;
+        snapshot[i] = safe;
+      }
+
+      const f = new Float32Array(delta.length);
+      for (let i = 0; i < delta.length; i++) {
+        f[i] = delta[i] * delta[i];
+      }
+
+      fisher.set(key, f);
+      means.set(key, Float32Array.from(snapshot));
+      this.lastConsolidationSnapshot.set(key, snapshot);
+    }
+
+    return { fisher, means };
   }
 }

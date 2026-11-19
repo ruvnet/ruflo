@@ -127,7 +127,7 @@ importers:
         specifier: 3.1.6
         version: 3.1.6
       '@claude-flow/neural':
-        specifier: 3.0.3
+        specifier: 3.1.0
         version: link:../neural
       '@claude-flow/plugin-agent-federation':
         specifier: 1.0.7
@@ -224,8 +224,8 @@ importers:
         specifier: 3.2.2
         version: link:../aidefence
       '@claude-flow/memory':
-        specifier: 3.3.3
-        version: 3.3.3(@types/node@20.19.27)(zod@4.6.7)
+        specifier: 3.4.0
+        version: link:../memory
       '@metaharness/flywheel':
         specifier: ~0.1.10
         version: 0.1.13

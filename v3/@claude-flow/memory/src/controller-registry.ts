@@ -207,7 +207,15 @@ export const INIT_LEVELS: InitLevel[] = [
   // Level 3: Specialization
   { level: 3, controllers: ['skills', 'explainableRecall', 'reflexion', 'attestationLog', 'batchOperations', 'memoryConsolidation'] },
   // Level 4: Causal & routing
-  { level: 4, controllers: ['causalGraph', 'nightlyLearner', 'learningSystem', 'semanticRouter'] },
+  // causalRecall added 2026-11-13 (Dream Cycle): it has a real createController()
+  // case (dynamic agentdb import + the ADR-514-adapted embedder — same construction
+  // pattern as learningSystem/explainableRecall; causalGraph itself is built
+  // differently, via agentdb's own getController() switch) but was absent from
+  // every level, so initialize() never constructed it and get('causalRecall')
+  // always returned null. agentdb and its .database/.embedder/.vectorBackend are
+  // already populated before this loop runs, so level placement doesn't affect
+  // correctness — grouped here with causalGraph for topical (causal-family) reasons.
+  { level: 4, controllers: ['causalGraph', 'causalRecall', 'nightlyLearner', 'learningSystem', 'semanticRouter'] },
   // Level 5: Advanced services
   { level: 5, controllers: ['graphTransformer', 'sonaTrajectory', 'contextSynthesizer', 'rvfOptimizer', 'mmrDiversityRanker', 'guardedVectorBackend'] },
   // Level 6: Session management

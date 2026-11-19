@@ -139,6 +139,15 @@ export interface Trajectory {
   /** End timestamp (if complete) */
   endTime?: number;
 
+  /**
+   * Set once this trajectory has been included in a `triggerLearning()`
+   * cycle (mode.learn() call). Prevents `SONAManager.triggerLearning()`
+   * from re-feeding the same already-processed trajectory into gradient
+   * accumulation / EWC Fisher updates on every subsequent cycle just
+   * because it survived `pruneTrajectories()`'s quality-based eviction.
+   */
+  learnedFrom?: boolean;
+
   /** Verdict from judgment */
   verdict?: TrajectoryVerdict;
 
@@ -178,6 +187,13 @@ export interface DistilledMemory {
 
   /** Source trajectory ID */
   trajectoryId: string;
+
+  /**
+   * Whether this memory distills a successful trajectory to repeat, or a
+   * failed one to avoid. Consumers that assume a positive exemplar (e.g.
+   * "apply this strategy") must branch on this before acting on `strategy`.
+   */
+  memoryType: 'success' | 'pitfall';
 
   /** Extracted strategy pattern */
   strategy: string;

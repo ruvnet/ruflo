@@ -111,7 +111,7 @@
     "@claude-flow/cli-core": "3.7.8",
     "@claude-flow/codex": "3.0.8",
     "@claude-flow/mcp": "3.1.6",
-    "@claude-flow/neural": "3.0.3",
+    "@claude-flow/neural": "3.1.0",
     "@claude-flow/plugin-agent-federation": "1.0.7",
     "@claude-flow/security": "3.0.7",
     "@claude-flow/shared": "3.0.10",
@@ -137,12 +137,12 @@
     "ws": "^8.21.0",
     "yaml": "^2.8.0",
     "zod": "^4.6.7",
-    "@claude-flow/memory": "3.3.3"
+    "@claude-flow/memory": "3.4.0"
   },
   "optionalDependencies": {
     "@agntcy/slim-bindings": "2.1.1",
     "@claude-flow/aidefence": "3.2.2",
-    "@claude-flow/memory": "3.3.3",
+    "@claude-flow/memory": "3.4.0",
     "@metaharness/flywheel": "~0.1.10",
     "@metaharness/radio": "~0.1.0",
     "@metaharness/turn-credit": "~0.1.0",

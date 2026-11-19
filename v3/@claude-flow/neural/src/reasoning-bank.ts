@@ -461,9 +461,18 @@ export class ReasoningBank {
       await this.judge(trajectory);
     }
 
-    // Only distill successful trajectories
-    if (!trajectory.verdict!.success ||
-        trajectory.qualityScore < this.config.distillationThreshold) {
+    // Distill both outcomes: successful trajectories become a reusable
+    // strategy to repeat, failed ones become a "pitfall" memory to avoid.
+    // A trajectory with no recorded steps carries nothing to distill either
+    // way, matching prior behavior for that one degenerate case.
+    if (trajectory.steps.length === 0) {
+      return null;
+    }
+    const memoryType: 'success' | 'pitfall' = trajectory.verdict!.success ? 'success' : 'pitfall';
+    // Keep the success path exactly as before: a success verdict supplied
+    // without judge() (which already applies this threshold) is still
+    // dropped below distillationThreshold.
+    if (memoryType === 'success' && trajectory.qualityScore < this.config.distillationThreshold) {
       return null;
     }
 
@@ -479,7 +488,8 @@ export class ReasoningBank {
     const memory: DistilledMemory = {
       memoryId: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       trajectoryId: trajectory.trajectoryId,
-      strategy,
+      memoryType,
+      strategy: memoryType === 'pitfall' ? `AVOID: ${strategy}` : strategy,
       keyLearnings,
       embedding,
       quality: trajectory.qualityScore,
@@ -1177,6 +1187,14 @@ export class ReasoningBank {
 
     for (let i = 0; i < entries.length; i++) {
       for (let j = i + 1; j < entries.length; j++) {
+        // A success and a pitfall memory are never duplicates of each other
+        // regardless of embedding similarity — they encode opposite outcomes
+        // for a similar context, which is exactly the signal worth keeping.
+        // Snapshots written before memoryType existed only held successes.
+        if ((entries[i][1].memory.memoryType ?? 'success') !== (entries[j][1].memory.memoryType ?? 'success')) {
+          continue;
+        }
+
         const sim = this.cosineSimilarity(
           entries[i][1].memory.embedding,
           entries[j][1].memory.embedding

@@ -352,8 +352,10 @@ export class NeuralLearningSystem {
       await this.reasoningBank.judge(trajectory);
       const memory = await this.reasoningBank.distill(trajectory);
 
-      // Extract pattern if successful
-      if (memory) {
+      // Only promote a successful distillation into a reusable Pattern — a
+      // 'pitfall' memory (a failure to avoid) must never become a positive
+      // exemplar Pattern regardless of PatternLearner's own quality gate.
+      if (memory && memory.memoryType === 'success') {
         this.patternLearner.extractPattern(trajectory, memory);
       }
     }
@@ -403,6 +405,25 @@ export class NeuralLearningSystem {
     this.sona.addEventListener(listener);
     this.reasoningBank.addEventListener(listener);
     this.patternLearner.addEventListener(listener);
+  }
+
+  /**
+   * Serialize the full learning state (trajectories, patterns, LoRA weights,
+   * EWC state, stats) for persistence across process restarts. Delegates to
+   * SONAManager.serialize() — reasoningBank/patternLearner state is not
+   * included (callers that need it persist those separately).
+   */
+  serialize(): unknown {
+    return this.sona.serialize();
+  }
+
+  /**
+   * Restore previously serialized learning state. Delegates to
+   * SONAManager.deserialize(), which throws on an unsupported schema
+   * version — callers should catch and discard rather than propagate.
+   */
+  deserialize(state: unknown): void {
+    this.sona.deserialize(state);
   }
 
   /**
