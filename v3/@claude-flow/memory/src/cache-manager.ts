@@ -349,6 +349,8 @@ export class CacheManager<T = MemoryEntry> extends EventEmitter {
       lruEnabled: config.lruEnabled !== false,
       maxMemory: config.maxMemory,
       writeThrough: config.writeThrough || false,
+      frequencyWeight: config.frequencyWeight,
+      evictionScanWindow: config.evictionScanWindow,
     };
   }
 
@@ -403,15 +405,60 @@ export class CacheManager<T = MemoryEntry> extends EventEmitter {
   private evictLRU(): void {
     if (!this.tail) return;
 
-    const evictedKey = this.tail.key;
-    const evictedSize = this.tail.size;
+    const victim = this.selectEvictionVictim();
+    const evictedKey = victim.key;
+    const evictedSize = victim.size;
 
-    this.removeNode(this.tail);
+    this.removeNode(victim);
     this.cache.delete(evictedKey);
     this.currentMemory -= evictedSize;
     this.stats.evictions++;
 
     this.emit('cache:eviction', { key: evictedKey });
+  }
+
+  /**
+   * Pick the node to evict. With the default `frequencyWeight` of 0 this is
+   * always the LRU tail (identical to the original pure-LRU behavior). With
+   * `frequencyWeight` > 0, a bounded window of the least-recently-used nodes
+   * is scored by blending recency rank with normalized `accessCount`, so a
+   * historically high-frequency entry sitting near the tail can survive an
+   * eviction that pure recency would otherwise apply to it (the failure mode
+   * HTM-EAR, arXiv:2603.10032, documents for plain LRU under skewed access).
+   */
+  private selectEvictionVictim(): LRUNode<T> {
+    const weight = this.config.frequencyWeight;
+    if (!weight) {
+      return this.tail!;
+    }
+
+    const window = Math.max(1, this.config.evictionScanWindow ?? 32);
+    const candidates: Array<{ node: LRUNode<T>; distanceFromTail: number }> = [];
+    let maxAccessCount = 0;
+    let node: LRUNode<T> | null = this.tail;
+    let distanceFromTail = 0;
+    while (node && distanceFromTail < window) {
+      candidates.push({ node, distanceFromTail });
+      if (node.value.accessCount > maxAccessCount) {
+        maxAccessCount = node.value.accessCount;
+      }
+      node = node.prev;
+      distanceFromTail++;
+    }
+
+    const scaleFactor = candidates.length > 1 ? candidates.length - 1 : 1;
+    let victim = candidates[0].node;
+    let bestScore = Infinity;
+    for (const candidate of candidates) {
+      const normalizedFreq =
+        maxAccessCount > 0 ? candidate.node.value.accessCount / maxAccessCount : 0;
+      const score = (1 - weight) * candidate.distanceFromTail + weight * normalizedFreq * scaleFactor;
+      if (score < bestScore) {
+        bestScore = score;
+        victim = candidate.node;
+      }
+    }
+    return victim;
   }
 
   private startCleanupTimer(): void {
