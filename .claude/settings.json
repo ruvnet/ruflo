@@ -285,7 +285,8 @@
   "enabledPlugins": {
     "ruflo-mods@ruflo": true,
     "ruflo-swarm@ruflo": true,
-    "ruflo-console@ruflo": true
+    "ruflo-console@ruflo": true,
+    "ruflo-protector@ruflo": true
   },
   "extraKnownMarketplaces": {
     "ruflo": { "source": { "source": "github", "repo": "ruvnet/ruflo" } }

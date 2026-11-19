@@ -44,6 +44,7 @@ export const MOD_PLUGINS: readonly ModPlugin[] = [
   { id: MOD_PLUGIN_ID, required: true },
   { id: 'ruflo-swarm@ruflo', required: true },
   { id: 'ruflo-console@ruflo', required: true },
+  { id: 'ruflo-protector@ruflo', required: true },
 ];
 export const MOD_PLUGIN_IDS: readonly string[] = MOD_PLUGINS.map((p) => p.id);
 

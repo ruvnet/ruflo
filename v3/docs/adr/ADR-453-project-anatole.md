@@ -1,6 +1,6 @@
 # ADR 453: Project Anatole: an optional, learning watchdog for unattended agents
 
-Status: Proposed (default off; nothing here is built when this is merged)
+Status: Proposed (default off; nothing here is built when this is merged). Amended 2026-11-19: on by default from ruflo 3.79.0 (see §14.1).
 
 Date: 2026-10-05
 
@@ -179,6 +179,6 @@ The console reads `status.json`, `rules.json` and the tail of `alerts.jsonl` thr
 
 ## 14. Rollout and open items
 
-1. Ship `ruflo-protector` default-off (not in any install bundle), default mode `learn` once installed, `autoGraduate` to `notify` on maturity, never to `enforce`.
+1. Ship `ruflo-protector` default-off (not in any install bundle), default mode `learn` once installed, `autoGraduate` to `notify` on maturity, never to `enforce`. **Amended 2026-11-19 (ruflo 3.79.0):** the protector is now in the mod bundle (`MOD_PLUGINS`), so `ruflo init` and `ruflo mods install` enable it with the other mods. Everything else in this item stands: it starts in `learn`, graduates only to `notify`, and never enables `enforce` by itself. An explicit `"ruflo-protector@ruflo": false` in a settings file is kept on later installs, and `/protector mode off` turns it off per project. Why: an unattended agent is the case the protector exists for, and a watchdog nobody installed watches nothing. The 24 benign-trace corpus gate and the fail-open design keep the default quiet.
 2. After a week of `notify` on real projects, review the acked share per rule and decide which rules deserve `block` by default.
 3. Open: whether to offer an organisation-wide baseline (a shared allow list) without sharing values; whether the protector should also watch the other mods' status files for tampering (T11); and how to reach a person off-machine for a critical alert on a long unattended run (a channel outside the mod sandbox, which mods deliberately do not have).
