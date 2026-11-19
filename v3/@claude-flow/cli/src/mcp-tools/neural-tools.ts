@@ -80,7 +80,7 @@ function activeChampionParams(): Record<string, unknown> {
 // command, because mcp-client statically imports this module. ensureEmbeddings()
 // keeps the exact same tier chain and degraded/fallback semantics, but only
 // pays the cost when a handler actually needs an embedding.
-// Tier 0 (ADR-089): ruvector@0.2.27 bundled ONNX (no sharp dep, fixes ADR-086's
+// Tier 0 (ADR-089): ruvector bundled ONNX (since 0.2.27) (no sharp dep, fixes ADR-086's
 //   silent-fallback bug at source; closes the chain described in ruvnet/ruvector#523).
 // Tier 1: agentic-flow v3 ReasoningBank (was Tier 1 — broken on darwin-arm64 without sharp)
 // Tier 2-3: @claude-flow/embeddings
@@ -117,7 +117,7 @@ function ensureEmbeddings(): Promise<void> {
         }
       } catch { /* not configured — fall through */ }
 
-      // Tier 0: ruvector@0.2.27 — bundled all-MiniLM-L6-v2 + parallel worker pool.
+      // Tier 0: ruvector (CLI dependency) — bundled all-MiniLM-L6-v2 + parallel worker pool.
       // Probe with isOnnxAvailable() and verify an actual embed succeeds (avoids
       // the type-load-success-but-runtime-fails trap from ADR-086). The probe now
       // runs on first embed request instead of at import time.
@@ -139,7 +139,7 @@ function ensureEmbeddings(): Promise<void> {
                 return Array.isArray(v) ? v : Array.from(v as ArrayLike<number>);
               },
             };
-            embeddingServiceName = 'ruvector@0.2.27 (bundled all-MiniLM-L6-v2)';
+            embeddingServiceName = 'ruvector (bundled all-MiniLM-L6-v2)';
           }
         } catch {
           // ruvector embed failed at runtime; fall through to next tier

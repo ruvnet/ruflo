@@ -33,8 +33,11 @@ import {
   loadMcpPolicy,
   evaluateToolCall,
 } from '../dist/src/mcp-tools/policy-enforcer.js';
+// ADR-524: shared MCP revision handling (2026-07-28 + legacy initialize).
+import * as mcpProtocol from '../dist/src/mcp-protocol.js';
 
-const VERSION = '3.0.0';
+const MCP_CAPABILITIES = { tools: { listChanged: true }, resources: {} };
+const VERSION = mcpProtocol.defaultServerIdentity().version;
 const sessionId = `mcp-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
 // Log to stderr (doesn't corrupt stdout for MCP protocol)
@@ -132,27 +135,19 @@ async function handleMessage(message) {
       error: { code: -32600, message: 'Invalid Request: missing method' },
     };
   }
+  const preflight = mcpProtocol.protocolPreflight(message, MCP_CAPABILITIES);
+  if (preflight.response) return preflight.response;
+  const response = await dispatchMessage(message, preflight.context);
+  return mcpProtocol.finalizeResponse(response, message.method, preflight.context);
+}
 
+async function dispatchMessage(message, protocol) {
   const params = message.params || {};
 
   try {
     switch (message.method) {
-      case 'initialize':
-        return {
-          jsonrpc: '2.0',
-          id: message.id,
-          result: {
-            protocolVersion: '2024-11-05',
-            serverInfo: { name: 'ruflo', version: VERSION },
-            capabilities: {
-              tools: { listChanged: true },
-              resources: {},
-            },
-          },
-        };
-
       case 'tools/list': {
-        const tools = listMCPTools();
+        const tools = mcpProtocol.sortToolsDeterministically(listMCPTools());
         return {
           jsonrpc: '2.0',
           id: message.id,
@@ -190,7 +185,7 @@ async function handleMessage(message) {
         }
 
         try {
-          const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio' });
+          const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio', ...mcpProtocol.traceContextFields(protocol) });
           return {
             jsonrpc: '2.0',
             id: message.id,
@@ -216,7 +211,7 @@ async function handleMessage(message) {
         return { jsonrpc: '2.0', id: message.id, result: { resourceTemplates: [] } };
 
       case 'resources/read':
-        return { jsonrpc: '2.0', id: message.id, error: { code: -32002, message: 'Resource not found' } };
+        return { jsonrpc: '2.0', id: message.id, error: { code: mcpProtocol.resourceNotFoundCode(protocol), message: 'Resource not found' } };
 
       case 'notifications/initialized':
         console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] Client initialized`);

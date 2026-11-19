@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.4.0 — 2026-11-05
+- feat: new `ruvllm-runtime` skill: which of `@ruvector/ruvllm-wasm` (the `ruvllm_*` MCP tools), `@ruvector/ruvllm` ^4.1.0 (native SonaCoordinator / LoraAdapter / TrainingPipeline runtime and the `ruvllm` CLI) and `@ruvector/ruvllm-gpu-loop` 1.1.x (GPU experiments, `ruvllm gpu …`) a job needs, how `ruvllm_status` reports each, and how to spot the broken 4.0.x publish
+- fix: the README documents the native runtime install (`@ruvector/ruvllm@^4.1.0`, never 4.0.x) next to the WASM add-on, links the CLI's `lora-learning` skill, and no longer says ruflo-ruvector pins ruvector 0.2.25 (it pins 0.3.12)
+
 ## 0.3.6 — 2026-10-14
 - fix: document the `@ruvector/ruvllm-wasm` add-on that the WASM-backed `ruvllm_*` tools need (README Requirements, `llm-config` and `chat-format` skills); the CLI now returns an install hint instead of a bare ERR_MODULE_NOT_FOUND (#4149)
 

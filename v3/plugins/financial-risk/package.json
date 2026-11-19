@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-financial-risk",
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.4",
   "description": "High-performance financial risk analysis plugin with portfolio risk scoring, anomaly detection, market regime classification, and compliance reporting using RuVector WASM packages.",
   "type": "module",
   "main": "./dist/index.js",
@@ -51,6 +51,7 @@
     "tag": "v3alpha"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
     "plugin",
     "financial-risk",
@@ -69,18 +70,18 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/plugins/financial-risk"
   },
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues"
+    "url": "https://github.com/ruvnet/ruflo/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow/tree/main/v3/plugins/financial-risk#readme",
+  "homepage": "https://ruv.io",
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "zod": "^3.22.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -88,10 +89,6 @@
     "vitest": "^1.0.0"
   },
   "optionalDependencies": {
-    "micro-hnsw-wasm": "^0.2.0",
-    "ruvector-sparse-inference-wasm": "^0.1.0",
-    "ruvector-gnn-wasm": "^0.1.0",
-    "ruvector-economy-wasm": "^0.1.0",
-    "ruvector-learning-wasm": "^0.1.0"
+    "ruvector-gnn-wasm": "^0.1.0"
   }
 }

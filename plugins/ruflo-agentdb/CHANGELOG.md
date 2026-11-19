@@ -2,6 +2,14 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-agentdb`.
 
+## 0.4.13 — 2026-11-06
+- feat: README "AgentDB 3.4 capabilities": exact min cut through `agentdb_graph-pathfinder` `dynamic-mincut` (`@ruvector/mincut-wasm`, cli 3.72.1+), personalized PageRank, the opt-in `AGENTDB_INJECTION_GUARD=warn|block` screen on ReasoningBank/Reflexion/Skill writes, and where RaBitQ lives for ruflo (`embeddings_rabitq_*`; agentdb's own `AGENTDB_QUANTIZED_INDEX` does not apply to ruflo's bridge). Links the `graph-mincut`, `injection-defense` and `vector-quantization` skills from `ruflo init`
+- fix: Compatibility no longer says the CLI bundles `agentdb@^3.0.0-alpha.11` (it is `^3.3.0` through `@claude-flow/memory`) and points at the external `agentdb` plugin for a pinned standalone server; `agentdb-query` documents the pathfinder algorithms
+- chore: advises agentdb >= 3.5.0, the first release on `@ruvector/attention ^2.2.3` (GHSA-p62c-q7fc-qmg9) and `@ruvector/graph-node ^2.1.2` (GHSA-h928-qgv7-pq8g)
+
+## 0.4.12 — 2026-11-06
+- chore: `agentdb-specialist` names the sibling ruflo-ruvector pin as `ruvector@0.3.12`.
+
 ## 0.4.11 — 2026-11-04
 - fix: `agentdb-query` and `agentdb-specialist` use `agentdb_context-synthesize` only for the outcomes of past tasks. It summarizes validated task episodes and answers `no-eligible-episodes` for ordinary memories, which the old guidance ("combine multiple memories") made look like missing data (#4691, thanks @sparkling)
 

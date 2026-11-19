@@ -55,12 +55,14 @@ type LoadedTransport = AgentTransport & {
 import {
   DEFAULT_ENVELOPE_SIGNATURE_MODE,
   JCS_SIGNATURE_PROTOCOL,
+  acceptedSignatureVersionsFor,
   canonicalizeEnvelopeForVerify,
   dispatchInbound,
   selectEnvelopeSignatureVersion,
   type EnvelopeSignatureMode,
 } from './application/inbound-dispatcher.js';
 import { createMcpTools } from './mcp-tools.js';
+import { InboundEnvelopeGuard } from './application/inbound-envelope-guard.js';
 import { createCliCommands } from './cli-commands.js';
 import { FEDERATION_PLUGIN_VERSION } from './version.js';
 // A2A (Agent2Agent, Linux Foundation) Agent Card adapter — cards only.
@@ -92,6 +94,7 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
     const config = context.config;
 
     const nodeId = (config['nodeId'] as string) ?? `node-${Date.now().toString(36)}`;
+    const envelopeGuard = new InboundEnvelopeGuard(nodeId);
     const endpoint = (config['endpoint'] as string) ?? 'ws://localhost:9100';
     const complianceMode = (config['complianceMode'] as ComplianceMode) ?? 'none';
     const staticPeers = (config['staticPeers'] as string[]) ?? [];
@@ -478,8 +481,8 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
           eventBus: context.eventBus,
           logger: context.logger,
           verifyEnvelope,
-          acceptedSignatureVersions:
-            signatureMode === 'require-jcs' ? ['jcs-v1'] : ['legacy-v1', 'jcs-v1'],
+          envelopeGuard,
+          acceptedSignatureVersions: acceptedSignatureVersionsFor(signatureMode),
           authorizationMode,
           authorizeInbound: ({ messageType, peer, messageSizeBytes, sourceNodeId }) =>
             policyEngine.evaluateMessage(

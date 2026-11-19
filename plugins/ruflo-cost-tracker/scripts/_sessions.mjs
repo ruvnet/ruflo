@@ -20,12 +20,21 @@ const CLI_PKG = process.env.CLI_CORE === '1'
   ? '@claude-flow/cli-core@alpha'
   : '@claude-flow/cli@latest';
 
+/** One-line description of a failed CLI call, with its stderr. */
+export function cliFailure(what, r) {
+  const detail = (r.error?.message || String(r.stderr || '')).trim().split('\n').slice(-3).join(' ').slice(0, 300);
+  return `${what} failed (exit ${r.status ?? 'none'})${detail ? `: ${detail}` : ''}`;
+}
+
 export function memoryListAllKeys(namespace) {
   const r = spawnNpxSync([
     CLI_PKG, 'memory', 'list',
     '--namespace', namespace, '--format', 'json',
   ], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf-8', shell: process.platform === 'win32' });
-  if (r.status !== 0) return [];
+  // A fresh namespace lists [] with exit 0, so a non-zero exit is a real
+  // failure (e.g. a broken npx install, #4711). Reporting it as "no data"
+  // made a budget check say "no budget set".
+  if (r.status !== 0) throw new Error(cliFailure('memory list', r));
   const m = /\[[\s\S]*\]/.exec(r.stdout || '');
   if (!m) return [];
   let entries;

@@ -145,7 +145,7 @@ describe('#2545 memory package resolver', () => {
     const hookPath = scaffoldProject(tmp); // NO sidecar, NO installed package
 
     const { stdout, ok } = runHook(hookPath, tmp, 'import');
-    expect(ok).toBe(true); // still exit 0 — loud, but non-fatal
+    expect(ok).toBe(false); // #4963: loud, and exit 1 so the hook runner sees nothing was imported
     // The pre-fix behavior was a dim "skipping" line with no remediation. Now:
     expect(stdout).toContain('self-learning imports are DISABLED');
     expect(stdout).toContain('npm i -D @claude-flow/memory');

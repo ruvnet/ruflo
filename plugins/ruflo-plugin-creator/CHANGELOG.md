@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.4.5 — 2026-11-05
+- chore: create-plugin and validate-plugin require a `repository` field, matching `audit-plugin-manifest` (#4774, #4797)
+
 ## 0.4.4 — 2026-10-29
 - chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
 

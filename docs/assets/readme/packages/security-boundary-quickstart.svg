@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 220" role="img" aria-labelledby="t d"><title id="t">@claude-flow/security boundary quickstart</title><desc id="d">The README recipe run on Node 22: user@example.com passes the email schema, not-an-email is rejected with a ZodError, a bcrypt hash with cost 12 verifies true, and a 48-character ck_live_ API key is generated.</desc>
+<style>text{font-family:Arial,Helvetica,sans-serif}.h{fill:#f2f6ff;font-size:20px;font-weight:700}.s{fill:#b8c7da;font-size:13px}.m{fill:#f2f6ff;font-size:13px}.m text,text.m{font-family:Menlo,Consolas,monospace}.ok{fill:#5cf2c3}.no{fill:#ffbe73}.k{fill:#5cf2c3;font-size:11px;letter-spacing:2px}.wire{fill:none;stroke:#5cf2c3;stroke-width:2;stroke-dasharray:8 7;animation:flow 3s linear infinite}.s1,.s2,.s3,.s4{opacity:0;animation:7s ease-in-out infinite}.s1{animation-name:s1}.s2{animation-name:s2}.s3{animation-name:s3}.s4{animation-name:s4}@keyframes flow{to{stroke-dashoffset:-60}}@keyframes s1{0%{opacity:0}8%,100%{opacity:1}}@keyframes s2{0%,22%{opacity:0}30%,100%{opacity:1}}@keyframes s3{0%,44%{opacity:0}52%,100%{opacity:1}}@keyframes s4{0%,66%{opacity:0}74%,100%{opacity:1}}@media (prefers-reduced-motion:reduce){*{animation:none!important;opacity:1!important}}</style>
+<rect width="880" height="220" rx="14" fill="#0c1324"/>
+<text x="28" y="38" class="k">SECURITY · SYSTEM BOUNDARY</text><text x="28" y="66" class="h">@claude-flow/security</text><text x="28" y="88" class="s">Validate input, hash secrets, mint keys.</text>
+<path class="wire" d="M28 112 H852"/>
+<g class="m"><g class="s1"><text x="28" y="140">validate 'user@example.com'</text><text x="470" y="140" class="ok">ok</text></g>
+<g class="s2"><text x="28" y="162">validate 'not-an-email'</text><text x="470" y="162" class="no">rejected: ZodError</text></g>
+<g class="s3"><text x="28" y="184">bcrypt hash (rounds 12) → $2b$12$…</text><text x="470" y="184" class="ok">verify: true</text></g>
+<g class="s4"><text x="28" y="206">generateApiKey('ck_live_')</text><text x="470" y="206" class="ok">ck_live_… (48 chars)</text></g></g>
+</svg>

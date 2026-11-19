@@ -31,6 +31,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawn } from 'child_process';
+import { isRufloProject, resolveProjectRoot } from './project-root.js';
 
 /** True if a live daemon already holds the project's pidfile. */
 export function isDaemonAlive(projectRoot: string): boolean {
@@ -131,43 +132,10 @@ function autostartDisabled(projectRoot: string): boolean {
 
 /**
  * Return true only when the directory contains a durable Ruflo project marker.
- *
- * A bare `.claude/` is owned by Claude Code, and a bare `.claude-flow/` is not
- * sufficient either: startup-time policy/champion migration can create it
- * before this function runs. Treating that mutation as authorization caused a
- * read-only command in any Claude project to spawn a detached daemon (#2852).
+ * Implementation lives in ./project-root.ts (shared with #2633 state anchoring);
+ * re-exported here for existing importers.
  */
-export function isRufloProject(projectRoot: string): boolean {
-  const root = path.resolve(projectRoot);
-  const directMarkers = [
-    path.join(root, '.claude-flow', 'config.yaml'),
-    path.join(root, '.claude-flow', 'config.yml'),
-    path.join(root, '.claude-flow', 'config.json'),
-    path.join(root, 'claude-flow.config.json'),
-    path.join(root, '.swarm', 'memory.db'),
-  ];
-  if (directMarkers.some((marker) => fs.existsSync(marker))) return true;
-
-  try {
-    const settings = JSON.parse(
-      fs.readFileSync(path.join(root, '.claude', 'settings.json'), 'utf-8'),
-    );
-    if (settings && typeof settings === 'object' && 'claudeFlow' in settings) {
-      return true;
-    }
-  } catch { /* absent/malformed/non-Ruflo settings */ }
-
-  try {
-    const mcp = JSON.parse(fs.readFileSync(path.join(root, '.mcp.json'), 'utf-8'));
-    const servers = mcp?.mcpServers;
-    if (servers && typeof servers === 'object'
-      && ('ruflo' in servers || 'claude-flow' in servers)) {
-      return true;
-    }
-  } catch { /* absent/malformed/non-Ruflo MCP config */ }
-
-  return false;
-}
+export { isRufloProject };
 
 /**
  * #2877: Normalize a working directory to the project root that owns the
@@ -193,15 +161,8 @@ export function isRufloProject(projectRoot: string): boolean {
  * non-Ruflo directory still fails `isRufloProject` and declines autostart.
  */
 export function resolveDaemonProjectRoot(startDir: string): string {
-  const start = path.resolve(startDir);
-  let dir = start;
-  for (;;) {
-    if (isRufloProject(dir)) return dir;
-    if (fs.existsSync(path.join(dir, '.git'))) return start;
-    const parent = path.dirname(dir);
-    if (parent === dir) return start;
-    dir = parent;
-  }
+  // #2633: the walk is shared with durable-state anchoring (./project-root.ts).
+  return resolveProjectRoot(startDir);
 }
 
 export interface EnsureResult { started: boolean; reason?: string }

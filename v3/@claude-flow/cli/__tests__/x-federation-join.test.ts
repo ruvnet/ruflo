@@ -2,6 +2,12 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mkdtempSync, existsSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+const testHome = vi.hoisted(() => ({ value: '' }));
+vi.mock('node:os', async (original) => {
+  const actual = await original<typeof import('node:os')>();
+  return { ...actual, homedir: () => testHome.value || actual.homedir() };
+});
+afterEach(() => { vi.unstubAllEnvs(); testHome.value = ''; });
 import { loadOrCreateKey, nip98Header, xFederationJoinTools } from '../src/mcp-tools/x-federation-join.js';
 // nostr-tools is an optionalDependency of the CLI and is NOT installed by the root `npm ci`
 // (the CLI is a pnpm workspace, not a root npm workspace). The crypto-dependent cases are
@@ -44,6 +50,7 @@ async function localRelay() {
   const server = new WebSocketServer({ port: 0 });
   await new Promise<void>(r => server.once('listening', r));
   const url = `ws://127.0.0.1:${(server.address() as any).port}`;
+  vi.stubEnv('RUFLO_X_RELAY_WS', url);
   server.on('connection', ws => {
     ws.send(JSON.stringify(['AUTH', 'local-test']));
     ws.on('message', bytes => {
@@ -65,7 +72,8 @@ describe.skipIf(!nt)('public self registration', () => {
   });
   for (const lostResponse of [false, true]) {
     it(`joins without an invite with local key ownership (lost response: ${lostResponse})`, async () => {
-      const relay = await localRelay(), dir = mkdtempSync(join(tmpdir(), 'xj-public-')), keyFile = join(dir, 'nostr.key');
+      const relay = await localRelay(), dir = mkdtempSync(join(tmpdir(), 'xj-public-')), keyFile = join(dir, '.ruflo', 'nostr.key');
+      testHome.value = dir;
       const key = loadOrCreateKey(nt, keyFile);
       const f = vi.fn(async (url: string, options: any) => {
         expect(url).toBe('https://x.ruv.io/api/registration'); expect(options.body).toBe('{}'); expect(options.redirect).toBe('error');
@@ -87,18 +95,20 @@ describe.skipIf(!nt)('public self registration', () => {
   }
   it('retains the invite claim path', async () => {
     const relay = await localRelay(), dir = mkdtempSync(join(tmpdir(), 'xj-invite-'));
+    testHome.value = dir;
     vi.stubGlobal('fetch', vi.fn(async (url: string, opts: any) => {
       expect(url).toBe('https://relay.ruv.io/api/invites/claim'); expect(JSON.parse(opts.body).code).toBe('v2.test-invite');
       const ev = JSON.parse(Buffer.from(opts.headers.Authorization.slice(6), 'base64').toString());
       relay.members.add(ev.pubkey); return { ok: true, json: async () => ({ role: 'member' }) };
     }));
-    try { expect((await xFederationJoinTools[0].handler({ code: 'v2.test-invite', relayWs: relay.url, keyFile: join(dir, 'key') }, {} as any) as any).ok).toBe(true); }
+    try { expect((await xFederationJoinTools[0].handler({ code: 'v2.test-invite', relayWs: relay.url, keyFile: join(dir, '.ruflo', 'key') }, {} as any) as any).ok).toBe(true); }
     finally { await relay.close(); rmSync(dir, { recursive: true, force: true }); }
   });
   it('refuses a server success when the relay refuses membership', async () => {
     const relay = await localRelay(), dir = mkdtempSync(join(tmpdir(), 'xj-denied-'));
+    testHome.value = dir;
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ role: 'member' }) })));
-    try { const r: any = await xFederationJoinTools[0].handler({ relayWs: relay.url, keyFile: join(dir, 'key') }, {} as any); expect(r.ok).toBe(false); expect(r.membershipVerified).toBe(false); }
+    try { const r: any = await xFederationJoinTools[0].handler({ relayWs: relay.url, keyFile: join(dir, '.ruflo', 'key') }, {} as any); expect(r.ok).toBe(false); expect(r.membershipVerified).toBe(false); }
     finally { await relay.close(); rmSync(dir, { recursive: true, force: true }); }
   });
   it('rejects an insecure public registration origin before creating a key', async () => {

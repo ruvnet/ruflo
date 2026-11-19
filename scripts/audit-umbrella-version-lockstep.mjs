@@ -94,6 +94,25 @@ if (rufloPkg && cliVersion) {
   }
 }
 
+// The MCP registry entry (ruflo/server.json) must name the same version as
+// the ruflo package it points at, and that package must claim the entry via
+// mcpName: the registry checks both when `mcp-publisher publish` runs.
+const server = readPkg('ruflo/server.json');
+if (server && rufloPkg) {
+  const pkgs = Array.isArray(server.packages) ? server.packages : [];
+  const npmEntry = pkgs.find((p) => p.registryType === 'npm' && p.identifier === 'ruflo');
+  if (server.version !== rufloPkg.version || npmEntry?.version !== rufloPkg.version) {
+    violations.push(
+      `ruflo/server.json version (${server.version}, npm package ${npmEntry?.version}) must equal ruflo ${rufloPkg.version}.\n` +
+      '    Bump both "version" fields in ruflo/server.json with the release.'
+    );
+  } else if (rufloPkg.mcpName !== server.name) {
+    violations.push(`ruflo/package.json mcpName "${rufloPkg.mcpName}" must equal ruflo/server.json name "${server.name}".`);
+  } else {
+    console.log(`  ruflo/server.json ${server.name}@${server.version} matches ✓`);
+  }
+}
+
 if (violations.length === 0) {
   console.log('\n  ok: all three umbrella packages at identical version, ruflo pins cli');
   process.exit(0);

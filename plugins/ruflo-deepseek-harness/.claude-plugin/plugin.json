@@ -2,6 +2,7 @@
   "name": "ruflo-deepseek-harness",
   "description": "DeepSeek model harness for ruflo — agents, commands, scripts, and skills for running and evaluating DeepSeek-backed workflows within the ruflo swarm.",
   "version": "0.2.6",
+  "repository": "https://github.com/ruvnet/ruflo",
   "author": {
     "name": "ruvnet",
     "url": "https://github.com/ruvnet"

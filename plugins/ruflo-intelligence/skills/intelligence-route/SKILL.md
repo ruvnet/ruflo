@@ -21,7 +21,8 @@ Before starting any non-trivial task. Replaces manual agent selection with data-
 4. **Predict outcome** — `mcp__plugin_ruflo-core_ruflo__neural_predict` with the task description for a confidence-scored prediction.
 5. **Spawn the recommended agent** at the recommended model tier.
 6. **(If `--why` was passed)** — call `mcp__plugin_ruflo-core_ruflo__hooks_explain` to surface the routing rationale to the user.
-7. **After task completes** — call `mcp__plugin_ruflo-core_ruflo__hooks_model-outcome` with `{ task, model, outcome: "success"|"failure"|"escalated" }` to train the router.
+7. **(If the centroid router is on, `CLAUDE_FLOW_ROUTER_CENTROID=1`)** — after replacing its artifact (`CLAUDE_FLOW_ROUTER_CENTROID_PATH`), run `npx @claude-flow/cli@latest neural wsp check` via Bash. Exit 1 lists labels that no longer win on their own centroid (near-duplicates or a corrupt file); exit 2 means the optional ruv-FANN WSP packages are not installed.
+8. **After task completes** — call `mcp__plugin_ruflo-core_ruflo__hooks_model-outcome` with `{ task, model, outcome: "success"|"failure"|"escalated" }` to train the router.
 
 ## 3-Tier Model Routing
 

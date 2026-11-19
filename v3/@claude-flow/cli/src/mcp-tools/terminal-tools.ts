@@ -178,6 +178,16 @@ export const terminalTools: MCPTool[] = [
       // Find or create default session
       let session = sessionId ? store.sessions[sessionId] : Object.values(store.sessions).find(s => s.status === 'active');
 
+      // #4730: terminal_close only flips status to "closed". Executing anyway
+      // ran the command and then wrote status back to "active", so a closed
+      // session kept accepting commands. Reject anything that is not active
+      // before the process is spawned and before that status write. When no
+      // sessionId was given, the lookup above already selected an active
+      // session (or we create one below).
+      if (session && session.status !== 'active') {
+        return { success: false, error: `Session is not active (${session.status})` };
+      }
+
       if (!session) {
         // Create default session
         const id = `term-${Date.now()}-${randomBytes(4).toString('hex')}`;

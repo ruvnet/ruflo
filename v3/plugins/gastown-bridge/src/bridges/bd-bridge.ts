@@ -127,7 +127,7 @@ export const BeadSchema = z.object({
   type: BeadTypeSchema,
   content: z.string(),
   timestamp: z.string().datetime().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   parentId: BeadIdSchema.optional(),
   threadId: z.string().optional(),
   agentId: z.string().optional(),

@@ -22,7 +22,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const os = require('os');
 
 // Configuration
@@ -324,7 +324,6 @@ function getLocalAgentDB() {
 
     const memDb = path.join(CWD, '.swarm', 'memory.db');
     if (fs.existsSync(memDb)) {
-      const Q = String.fromCharCode(34);
       // Two INDEPENDENT statements -- do NOT combine into one. Coupling the
       // vector count with the vector_indexes row count in a single statement
       // meant that on a DB missing the vector_indexes table (older/agentdb-
@@ -334,14 +333,12 @@ function getLocalAgentDB() {
       // thousands of real vectors. Split so a missing table can only zero the
       // HNSW flag, never the count. The init self-heal provisions the table so
       // the flag recovers on the next ruflo init / MCP start.
-      const countSql = Q + 'SELECT COUNT(*) FROM memory_entries WHERE embedding IS NOT NULL;' + Q;
-      const vc = safeExec("sqlite3 'file:" + memDb + "?mode=ro' " + countSql, 1500);
+      const vc = safeExecFile('sqlite3', ['-readonly', memDb, 'SELECT COUNT(*) FROM memory_entries WHERE embedding IS NOT NULL;'], 1500);
       if (vc) result.vectorCount = parseInt(vc, 10) || 0;
       // HNSW flag: separate statement. If vector_indexes is absent, sqlite3
-      // exits non-zero and safeExec returns empty -- hasHnsw stays false (exact
+      // exits non-zero and safeExecFile returns empty -- hasHnsw stays false (exact
       // original semantics: at least one index-config row present).
-      const hnswSql = Q + 'SELECT COUNT(*) FROM vector_indexes;' + Q;
-      const hn = safeExec("sqlite3 'file:" + memDb + "?mode=ro' " + hnswSql, 1500);
+      const hn = safeExecFile('sqlite3', ['-readonly', memDb, 'SELECT COUNT(*) FROM vector_indexes;'], 1500);
       if (hn) result.hasHnsw = (parseInt(hn, 10) || 0) > 0;
     }
   } catch { /* ignore */ }
@@ -695,6 +692,26 @@ function safeExec(cmd, timeoutMs) {
   }
 }
 
+// safeExec without a shell: the path in args is never parsed as shell syntax.
+function safeExecFile(file, args, timeoutMs) {
+  try {
+    return execFileSync(file, args, {
+      encoding: 'utf-8',
+      timeout: timeoutMs || 2000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    }).trim();
+  } catch {
+    return '';
+  }
+}
+
+// Strip control characters and bidi overrides so text we print cannot emit
+// its own terminal sequences.
+function stripControlChars(value) {
+  return String(value).replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, '');
+}
+
 // Safe JSON file reader (returns null on failure)
 function readJSON(filePath) {
   try {
@@ -709,7 +726,7 @@ function readJSON(filePath) {
 
 function getGitInfo() {
   const result = {
-    name: path.basename(CWD) || 'project', gitBranch: '', modified: 0, untracked: 0,
+    name: stripControlChars(path.basename(CWD)) || 'project', gitBranch: '', modified: 0, untracked: 0,
     staged: 0, ahead: 0, behind: 0,
   };
 
@@ -732,8 +749,8 @@ function getGitInfo() {
   if (parts.length >= 5) {
     const projectName = path.basename(parts[0] || CWD) || path.basename(CWD) || 'project';
     const authorName = parts[1] || 'user';
-    result.name = CONFIG.identityMode === 'author' ? authorName : projectName;
-    result.gitBranch = parts[2] || '';
+    result.name = stripControlChars(CONFIG.identityMode === 'author' ? authorName : projectName);
+    result.gitBranch = stripControlChars(parts[2] || '');
 
     if (parts[3]) {
       for (const line of parts[3].split('\n')) {
@@ -1168,7 +1185,7 @@ function safeTerminalLink(label, url) {
   try { parsed = new URL(url); } catch { return label; }
   if (parsed.protocol !== 'https:') return label;
   if (!PROMO_LINK_HOSTS.has(parsed.hostname)) return label;
-  const cleanLabel = String(label).replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, '');
+  const cleanLabel = stripControlChars(label);
   if (cleanLabel.length === 0) return label;
   const ESC = '\u001b';
   return ESC + ']8;;' + parsed.href + ESC + '\\' + cleanLabel + ESC + ']8;;' + ESC + '\\';
@@ -1186,9 +1203,7 @@ function getPromoRow(d) {
     // as truncated instead of chopping a word mid-character (was: silent
     // slice(0,100) that could produce output that looked like corrupt data).
     const MAX_LEN = 100;
-    const sanitized = promo.text
-      .replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, '')
-      ;
+    const sanitized = stripControlChars(promo.text);
     const text = (sanitized.length > MAX_LEN ? sanitized.slice(0, MAX_LEN - 1).trimEnd() + '…' : sanitized).trim();
     if (text.length === 0) return null;
     // Split the label from the trailing "· manage: ruflo settings" instruction

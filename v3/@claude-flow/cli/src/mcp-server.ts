@@ -28,6 +28,15 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { trackRequest } from './mcp-tools/request-tracker.js';
 import {
+  defaultServerIdentity,
+  finalizeResponse,
+  protocolPreflight,
+  resourceNotFoundCode,
+  sortToolsDeterministically,
+  traceContextFields,
+  type ProtocolContext,
+} from './mcp-protocol.js';
+import {
   isPolicyEnforcementEnabled,
   loadMcpPolicy,
   evaluateToolCall,
@@ -401,6 +410,12 @@ export function assessMcpSchemaOverhead(
       : 'normal',
   };
 }
+
+/** Capabilities every ruflo stdio server advertises (initialize and server/discover). */
+const MCP_STDIO_CAPABILITIES = {
+  tools: { listChanged: true },
+  resources: {},
+};
 
 /**
  * MCP Server Manager
@@ -789,7 +804,7 @@ export class MCPServerManager extends EventEmitter {
     // Import the tool registry
     const { listMCPTools, callMCPTool, hasTool } = await import('./mcp-client.js');
 
-    const VERSION = '3.0.0';
+    const VERSION = defaultServerIdentity().version;
     const sessionId = `mcp-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
     // Log to stderr to not corrupt stdout
@@ -848,10 +863,7 @@ export class MCPServerManager extends EventEmitter {
         serverInfo: {
           name: 'ruflo',
           version: VERSION,
-          capabilities: {
-            tools: { listChanged: true },
-            resources: {},
-          },
+          capabilities: MCP_STDIO_CAPABILITIES,
         },
       },
     });
@@ -929,9 +941,7 @@ export class MCPServerManager extends EventEmitter {
   private async handleMCPMessage(
     message: { jsonrpc: string; id?: string | number; method?: string; params?: unknown },
     sessionId: string
-  ): Promise<{ jsonrpc: string; id?: string | number; result?: unknown; error?: { code: number; message: string } } | null> {
-    const { listMCPTools, callMCPTool, hasTool } = await import('./mcp-client.js');
-
+  ): Promise<{ jsonrpc: string; id?: string | number | null; result?: unknown; error?: { code: number; message: string } } | null> {
     if (!message.method) {
       return {
         jsonrpc: '2.0',
@@ -939,27 +949,26 @@ export class MCPServerManager extends EventEmitter {
         error: { code: -32600, message: 'Invalid Request: missing method' },
       };
     }
+    // ADR-524: one decision point for which MCP revision this message speaks.
+    const preflight = protocolPreflight(message, MCP_STDIO_CAPABILITIES);
+    if (preflight.response) return preflight.response;
+    const response = await this.dispatchMCPMessage(message as typeof message & { method: string }, sessionId, preflight.context);
+    return finalizeResponse(response as Parameters<typeof finalizeResponse>[0], message.method, preflight.context);
+  }
+
+  private async dispatchMCPMessage(
+    message: { jsonrpc: string; id?: string | number; method: string; params?: unknown },
+    sessionId: string,
+    protocol: ProtocolContext
+  ): Promise<{ jsonrpc: '2.0'; id?: string | number; result?: Record<string, unknown>; error?: { code: number; message: string } } | null> {
+    const { listMCPTools, callMCPTool, hasTool } = await import('./mcp-client.js');
 
     const params = (message.params || {}) as Record<string, unknown>;
 
     try {
       switch (message.method) {
-        case 'initialize':
-          return {
-            jsonrpc: '2.0',
-            id: message.id,
-            result: {
-              protocolVersion: '2024-11-05',
-              serverInfo: { name: 'ruflo', version: '3.0.0' },
-              capabilities: {
-                tools: { listChanged: true },
-                resources: {},
-              },
-            },
-          };
-
         case 'tools/list':
-          const tools = filterAdvertisedMcpTools(listMCPTools(), this.options.tools);
+          const tools = sortToolsDeterministically(filterAdvertisedMcpTools(listMCPTools(), this.options.tools));
           return {
             jsonrpc: '2.0',
             id: message.id,
@@ -997,7 +1006,7 @@ export class MCPServerManager extends EventEmitter {
           }
 
           try {
-            const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio' });
+            const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio', ...traceContextFields(protocol) });
             const isError = hasToolError(result);
             trackRequest(toolName, !isError);
             return {
@@ -1026,7 +1035,7 @@ export class MCPServerManager extends EventEmitter {
           return { jsonrpc: '2.0', id: message.id, result: { resourceTemplates: [] } };
 
         case 'resources/read':
-          return { jsonrpc: '2.0', id: message.id, error: { code: -32002, message: 'Resource not found' } };
+          return { jsonrpc: '2.0', id: message.id, error: { code: resourceNotFoundCode(protocol), message: 'Resource not found' } };
 
         case 'notifications/initialized':
           // Client notification - no response needed

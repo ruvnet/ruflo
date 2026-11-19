@@ -2,6 +2,8 @@ import { FederationNode } from '../entities/federation-node.js';
 import { FederationSession, type SessionMetrics } from '../entities/federation-session.js';
 import { TrustLevel } from '../entities/trust-level.js';
 
+export const HANDSHAKE_SIGNATURE_CONTEXT = 'ruflo:federation:handshake:v1:';
+
 export interface HandshakeChallenge {
   readonly challengeId: string;
   readonly nonce: string;
@@ -29,8 +31,9 @@ export interface HandshakeServiceDeps {
   generateSessionId: () => string;
   generateSessionToken: () => string;
   generateNonce: () => string;
-  signChallenge: (nonce: string) => Promise<string>;
-  verifySignature: (nonce: string, signature: string, publicKey: string) => Promise<boolean>;
+  /** Sign/verify the provided domain-bound bytes without adding another prefix. */
+  signChallenge: (payload: string) => Promise<string>;
+  verifySignature: (payload: string, signature: string, publicKey: string) => Promise<boolean>;
   /** The Ed25519 key (hex) the operator pinned for a node id. Without a pin, a handshake proves nothing about who answered. */
   pinnedKeyFor?: (nodeId: string) => string | undefined;
   getLocalNodeId: () => string;
@@ -83,7 +86,7 @@ export class HandshakeService {
   }
 
   async respondToHandshake(challenge: HandshakeChallenge): Promise<HandshakeChallengeResponse> {
-    const signedNonce = await this.deps.signChallenge(challenge.nonce);
+    const signedNonce = await this.deps.signChallenge(HANDSHAKE_SIGNATURE_CONTEXT + challenge.nonce);
 
     return {
       challengeId: challenge.challengeId,
@@ -123,7 +126,7 @@ export class HandshakeService {
     }
 
     const isValid = await this.deps.verifySignature(
-      pending.challenge.nonce,
+      HANDSHAKE_SIGNATURE_CONTEXT + pending.challenge.nonce,
       response.signedNonce,
       response.publicKey,
     );

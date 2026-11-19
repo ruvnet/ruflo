@@ -1320,7 +1320,7 @@ Ruflo integrates with the upstream `metaharness` / `@metaharness/*` ecosystem as
 
 **Ruflo remains operational if every MetaHarness package is removed.** Four rules:
 1. **Removable**: `npm ls --without @metaharness/*` must still produce a working CLI
-2. **Optional in package.json**: `@metaharness/*` packages MUST be optional peers, never normal dependencies
+2. **Optional in package.json**: `@metaharness/*` packages MUST be optional peers, never normal dependencies. Exception (ADR-526): `@metaharness/darwin` is a regular dependency of `@claude-flow/cli`, used in-process for bench verify and GEPA ops
 3. **Graceful degradation**: every code path that touches MetaHarness catches `MODULE_NOT_FOUND` and falls back
 4. **CI gate**: `.github/workflows/no-metaharness-smoke.yml` enforces all three by static grep + runtime drill on every PR
 

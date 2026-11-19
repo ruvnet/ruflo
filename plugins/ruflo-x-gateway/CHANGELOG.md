@@ -2,6 +2,12 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-x-gateway`.
 
+## 0.10.5 — 2026-11-18
+- fix: the WebSocket proxy released its connection slot once per close or error event, so a socket that fired both drove the 500-connection counter below its true value; each connection now releases its slot exactly once (#4752).
+
+## 0.10.4 — 2026-11-09
+- fix(deps): zod ^4.6.7 (GHSA-mrhx-c7xc-m3w5: zod < 4.6.6 can exhaust memory validating oversized constrained collections).
+
 ## 0.10.3 — 2026-11-04
 - fix: every per-IP limit (MCP rate limit, Seraphina hourly allowance, GitHub hourly allowance) now keys on the trusted end of the forwarding chain, the same address registration uses, instead of the caller-supplied leftmost `X-Forwarded-For` entry. `RUFLO_PROXY_HOPS` (falling back to `RUFLO_REGISTRATION_PROXY_HOPS`) sets the trusted hop count (gateway 0.9.2)
 

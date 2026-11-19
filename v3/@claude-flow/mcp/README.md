@@ -1,5 +1,43 @@
 # @claude-flow/mcp
 
+<!-- adr-356:quickstart:start -->
+![Animated diagram: an MCP client request travels through a transport and the MCPServer to the ToolRegistry and the tool handler](https://raw.githubusercontent.com/ruvnet/ruflo/main/v3/@claude-flow/mcp/assets/mcp-flow.svg)
+
+**@claude-flow/mcp** — A standalone Model Context Protocol server: stdio, HTTP and WebSocket transports, a schema-checked tool registry, resources, prompts and tasks.
+
+**Supported environments:** Node.js 20+ · ESM · Linux, macOS, Windows (pure JavaScript)
+
+## Quickstart
+
+```bash
+npm install @claude-flow/mcp
+```
+
+```js
+import { createToolRegistry, defineTool } from '@claude-flow/mcp';
+
+const logger = { debug() {}, info() {}, warn: console.warn, error: console.error };
+const registry = createToolRegistry(logger);
+registry.register(defineTool('echo', 'Echo the input text', {
+  type: 'object', properties: { text: { type: 'string' } }, required: ['text'],
+}, async ({ text }) => ({ echoed: text })));
+console.log(registry.getToolNames());
+const result = await registry.execute('echo', { text: 'hi' });
+console.log(result.isError ?? false, result.content[0].text);
+```
+
+Expected output:
+
+```text
+[ 'echo' ]
+false {
+  "echoed": "hi"
+}
+```
+
+Used by [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli), which serves the Ruflo tools over this server.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/mcp.svg)](https://www.npmjs.com/package/@claude-flow/mcp)
 [![npm downloads](https://img.shields.io/npm/dm/@claude-flow/mcp.svg)](https://www.npmjs.com/package/@claude-flow/mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -427,3 +465,9 @@ const ErrorCodes = {
 ## License
 
 MIT
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/@claude-flow/mcp)
+<!-- adr-356:footer:end -->

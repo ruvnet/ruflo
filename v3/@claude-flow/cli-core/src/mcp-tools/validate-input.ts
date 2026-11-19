@@ -334,7 +334,7 @@ export async function validateAgentSpawn(input: Record<string, unknown>): Promis
     } catch (zodErr: any) {
       if (zodErr.issues) {
         for (const issue of zodErr.issues) {
-          if (issue.code === 'invalid_enum_value') continue;
+          if (isUnknownAgentTypeIssue(issue, input.agentType)) continue;
           errors.push(`${issue.path.join('.')}: ${issue.message}`);
         }
       }
@@ -342,4 +342,21 @@ export async function validateAgentSpawn(input: Record<string, unknown>): Promis
   }
 
   return { valid: errors.length === 0, errors };
+}
+
+/**
+ * True for the issue SpawnAgentSchema raises when `type` is a string outside
+ * its built-in enum. Custom agent types are allowed, so this issue is ignored.
+ * zod 3 reports it as `invalid_enum_value`; zod 4 as `invalid_value`. zod 4
+ * also uses `invalid_value` for a missing or non-string type (zod 3:
+ * `invalid_type`), which must still be reported, so the submitted value
+ * has to be a string.
+ */
+export function isUnknownAgentTypeIssue(
+  issue: { code?: unknown; path?: unknown[] },
+  agentType: unknown,
+): boolean {
+  if (typeof agentType !== 'string') return false;
+  if (!Array.isArray(issue.path) || issue.path.length !== 1 || issue.path[0] !== 'type') return false;
+  return issue.code === 'invalid_enum_value' || issue.code === 'invalid_value';
 }
