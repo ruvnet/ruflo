@@ -52,6 +52,11 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
 
 ## Quick Start
 
+
+<a href="https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/main/docs/assets/readme/rvf-mcp-search.svg" width="720" alt="Search a portable RVF index locally through stdio MCP"></a>
+
+[Optional recipe: local vector search with RVF and MCP](https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md) · [Ruvnet ecosystem](https://ruv.io)
+
 There are **two different install paths** with very different surface areas. Pick based on what you need (#1744):
 
 | | **Claude Code Plugin** | **CLI install (`npx ruflo init`)** |

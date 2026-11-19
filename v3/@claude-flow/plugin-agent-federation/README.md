@@ -44,6 +44,24 @@ unchanged. Both peers must use this context; raw-nonce handshake responses from
 older peers are rejected, so upgrade federation peers together. This prevents a
 handshake response from also verifying as a signature over bare envelope bytes.
 
+JCS-signed inbound envelopes must target this node, agree with their signed
+ID/type/source/session metadata, and be no older than five minutes or more than
+30 seconds in the future. A replay guard is shared by the plugin's inbound
+callbacks. It retains IDs until the signed timestamp expires, with limits of
+1,024 IDs per peer, 256 peers, 8,192 IDs total and 256 characters per ID.
+Capacity exhaustion rejects new messages instead of evicting live replay history.
+
+Replay history is in memory for one plugin lifecycle; restarting the plugin
+clears it. To close the restart window, a JCS envelope whose signed timestamp is
+earlier than the guard's creation (plugin initialize) is rejected with
+`MESSAGE_PREDATES_REPLAY_HISTORY`, so an envelope captured before a restart cannot
+be replayed into the new lifecycle. Peers whose clocks run behind this node may
+see fresh messages rejected for up to that skew immediately after a restart.
+This is not durable or cross-replica deduplication. The existing
+legacy-v1 heartbeat/status compatibility path cannot authenticate nested envelope
+fields and does not acquire JCS replay guarantees. Signature and policy checks
+still run before a JCS message can reserve an ID or reach the event bus.
+
 325 unit tests covering audit, routing, discovery, plugin lifecycle.
 
 ```bash

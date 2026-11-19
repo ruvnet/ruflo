@@ -28,7 +28,7 @@ const securityErrorMap: z.core.$ZodErrorMap = (issue) => {
     case 'invalid_format':
       if (issue.format === 'email') return 'Invalid email format';
       if (issue.format === 'url') return 'Invalid URL format';
-      if (issue.format === 'uuid') return 'Invalid UUID format';
+      if (issue.format === 'uuid' || issue.format === 'guid') return 'Invalid UUID format';
       return 'Invalid string format';
     default:
       return undefined;
@@ -121,7 +121,9 @@ export const PasswordSchema = z.string()
 /**
  * UUID schema
  */
-export const UUIDSchema = z.string().uuid('Invalid UUID format');
+// z.guid() keeps zod 3's permissive 8-4-4-4-12 hex check; zod 4's uuid() is
+// strict RFC 9562 and rejects nil-like ids such as 00000000-...-000000000001.
+export const UUIDSchema = z.guid('Invalid UUID format');
 
 /**
  * URL schema with HTTPS enforcement

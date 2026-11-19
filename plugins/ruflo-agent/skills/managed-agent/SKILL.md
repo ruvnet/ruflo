@@ -34,14 +34,14 @@ This skill drives the **managed** runtime — Anthropic's [Claude Managed Agents
 
 3. **Inspect** — `mcp__plugin_ruflo-core_ruflo__managed_agent_status` `{ sessionId }` (idle/running/error) · `mcp__plugin_ruflo-core_ruflo__managed_agent_events` `{ sessionId, raw? }` (full transcript: user turns, agent thinking, tool_use, tool_result, status — the cloud counterpart of `wasm_agent_files`).
 
-4. **List** — `mcp__plugin_ruflo-core_ruflo__managed_agent_list` `{ limit? }` — every session on the org (so you can see which are still running / billing).
+4. **List** — `mcp__plugin_ruflo-core_ruflo__managed_agent_list` `{ limit? }` — every session on the org (so you can see which are still running / billing). Listing a session does not let you control it: prompt, status, events and terminate act only on sessions this project created, or ones the host lists in `RUFLO_MANAGED_CONTROL_SESSIONS`.
 
 5. **Terminate** — `mcp__plugin_ruflo-core_ruflo__managed_agent_terminate` `{ sessionId, environmentId? }` — **always do this when done**: running sessions consume runtime and tokens. Pass `environmentId` to also delete the environment ruflo created.
 
 ## Cost & safety
 
 - Managed Agents bill per session (LM tokens + container time) and are rate-limited per org. Estimate before a long run; record completed sessions to the `cost-tracking` namespace.
-- Treat orphaned sessions like leaked resources — `managed_agent_list` then `managed_agent_terminate` anything stale.
+- Treat orphaned sessions like leaked resources: `managed_agent_terminate` every session you created once you are done with it. A stale session it refuses (made by another project, or by a ruflo that did not record its sessions yet) must be added to `RUFLO_MANAGED_CONTROL_SESSIONS` by the host before it can be terminated here.
 - Beta API (`managed-agents-2026-04-01`); dynamic workflows are opt-in beta; outcomes remain outside this adapter.
 
 ## Quick example

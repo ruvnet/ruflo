@@ -50,10 +50,15 @@ export interface AgentTransport {
   close?: () => Promise<void> | void;
   [key: string]: unknown;
 }
+/** Largest inbound frame the fallback WebSocket listener accepts by default. */
+export const DEFAULT_FEDERATION_MAX_PAYLOAD = 4 * 1024 * 1024;
+
 export interface QuicTransportConfig {
   port?: number;
   host?: string;
   serverName?: string;
+  /** Largest inbound WebSocket frame, in bytes (default 4 MiB). */
+  maxPayload?: number;
   [key: string]: unknown;
 }
 
@@ -184,7 +189,9 @@ class WebSocketFallbackTransport implements AgentTransport {
   // host would bind every interface, so it counts as unset.
   async listen(port = Number(this.config.port ?? 0), host = this.config.host || '127.0.0.1'): Promise<void> {
     const { WebSocketServer } = await import('ws');
-    const server = new WebSocketServer({ port, host }) as WebSocketServerLike;
+    // ws defaults to 100 MiB per frame; federation envelopes are small JSON.
+    const maxPayload = Number(this.config.maxPayload) > 0 ? Number(this.config.maxPayload) : DEFAULT_FEDERATION_MAX_PAYLOAD;
+    const server = new WebSocketServer({ port, host, maxPayload }) as WebSocketServerLike;
     this.server = server;
 
     await new Promise<void>((resolve, reject) => {
