@@ -469,6 +469,12 @@ export class ReasoningBank {
       return null;
     }
     const memoryType: 'success' | 'pitfall' = trajectory.verdict!.success ? 'success' : 'pitfall';
+    // Keep the success path exactly as before: a success verdict supplied
+    // without judge() (which already applies this threshold) is still
+    // dropped below distillationThreshold.
+    if (memoryType === 'success' && trajectory.qualityScore < this.config.distillationThreshold) {
+      return null;
+    }
 
     // Extract strategy from trajectory
     const strategy = this.extractStrategy(trajectory);
