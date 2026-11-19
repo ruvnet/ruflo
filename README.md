@@ -133,14 +133,6 @@ User → Ruflo (CLI/MCP) → Router → Swarm → Agents → Memory → LLM prov
 
 > **New to Ruflo?** You don't need to learn 406 MCP tools or 61 CLI commands. After `init`, just use Claude Code normally — the hooks system automatically routes tasks, learns from successful patterns, and coordinates agents in the background.
 
-### An origin you can inspect
-
-[![Claude Flow to Ruflo: founding idea on June 2, 2025, orchestration source on June 10, and the continuing Ruflo lineage.](docs/assets/readme/harness-origins.svg)](docs/harness-origins.md)
-
-**Built by [Reuven Cohen (rUv)](https://github.com/ruvnet), originally as Claude Flow.** The [first commit, June 2, 2025](https://github.com/ruvnet/ruflo/commit/7c1f9402d70e7af56c01a879073cbac92564dc4e), describes a code orchestration layer for recursive agent cycles: Claude writes, edits, tests and improves. The [June 10 source snapshot](https://github.com/ruvnet/ruflo/tree/dba545f012ea92a2375a26332bbf3797495e93c9) adds orchestration, task scheduling, memory and terminal modules.
-
-A harness is the workbench around the model: it organizes tasks, carries context between steps and helps check results. **This establishes Ruflo's lineage, not a universal first across every Claude Code tool.** [See the illustrated explainer, exact commits and earlier ecosystem context](docs/harness-origins.md).
-
 **Grok Build:** `npx ruflo init --grok` writes the project host surface (`.grok/`, the team bus, and the operator guide) and nothing outside the project; add `--dry-run` to preview. Setup, the `spawn_subagent` contract, the optional status row, and what to re-check when Grok updates: [the Grok operator guide](v3/@claude-flow/cli/templates/grok/docs/README.md).
 
 <details>
