@@ -353,14 +353,19 @@ jobs:
           (
             cd "$agentic_v3_install"
             npm init -y >/dev/null
-            npm install "$cli_archive" agentic-flow@3.0.0-alpha.2 \
-              --omit=optional --no-audit --no-fund
+            npm install "$cli_archive" --omit=optional --no-audit --no-fund
+            # ADR-545: the CLI now depends on stable agentic-flow ^3.0.0, whose
+            # transport loader resolves, so a pinned alpha no longer forces the
+            # fallback. Remove agentic-flow outright to prove the plugin-owned
+            # WebSocket fallback still works when the loader is unavailable.
+            find node_modules -type d -name agentic-flow -prune -exec rm -rf {} +
+            test -z "$(find node_modules -type d -name agentic-flow -print -quit)"
             node --input-type=module - <<'NODE'
           const modulePath = './node_modules/@claude-flow/cli/node_modules/@claude-flow/plugin-agent-federation/dist/transport/midstream-aware-loader.js';
           const { loadFederationTransport } = await import(modulePath);
           const loaded = await loadFederationTransport({ host: '127.0.0.1', port: 0 });
           if (loaded.source !== 'websocket-fallback') {
-            throw new Error(`agentic-flow v3 must use validated fallback, got ${loaded.source}`);
+            throw new Error(`without agentic-flow the federation transport must be the validated fallback, got ${loaded.source}`);
           }
           const received = new Promise((resolve, reject) => {
             const timer = setTimeout(() => reject(new Error('federation fallback timed out')), 5000);
