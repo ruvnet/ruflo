@@ -5,7 +5,7 @@
  * - +25% quality improvement
  * - 18ms overhead
  * - Rank-4 LoRA
- * - Pattern caching
+ * - Exact recall over live patterns
  * - Standard learning pipeline
  */
 
@@ -26,11 +26,6 @@ import { BaseModeImplementation } from './base.js';
 export class BalancedMode extends BaseModeImplementation {
   readonly mode = 'balanced';
 
-  // Pattern cache
-  private patternCache: Map<string, PatternMatch[]> = new Map();
-  private cacheHits = 0;
-  private cacheMisses = 0;
-
   // Learning state
   private gradientAccumulator: Map<string, Float32Array> = new Map();
   private momentumBuffers: Map<string, Float32Array> = new Map();
@@ -44,14 +39,12 @@ export class BalancedMode extends BaseModeImplementation {
 
   async initialize(): Promise<void> {
     await super.initialize();
-    this.patternCache.clear();
     this.gradientAccumulator.clear();
     this.momentumBuffers.clear();
     this.lastConsolidationSnapshot.clear();
   }
 
   async cleanup(): Promise<void> {
-    this.patternCache.clear();
     this.gradientAccumulator.clear();
     this.momentumBuffers.clear();
     this.lastConsolidationSnapshot.clear();
@@ -59,7 +52,7 @@ export class BalancedMode extends BaseModeImplementation {
   }
 
   /**
-   * Find patterns using similarity search with caching
+   * Find patterns using exact similarity search
    */
   async findPatterns(
     embedding: Float32Array,
@@ -68,42 +61,39 @@ export class BalancedMode extends BaseModeImplementation {
   ): Promise<PatternMatch[]> {
     const startTime = performance.now();
 
-    // Check cache
-    const cacheKey = this.computeCacheKey(embedding);
-    const cached = this.patternCache.get(cacheKey);
-
-    if (cached && cached.length >= k) {
-      this.cacheHits++;
-      this.totalPatternTime += performance.now() - startTime;
-      this.totalPatternMatches++;
-      return cached.slice(0, k);
-    }
-
-    this.cacheMisses++;
-
-    // Compute similarities for all patterns
+    // Both queries and stored vectors are mutable, including through references
+    // returned by storePattern. A cross-call ranking cannot be reused safely.
     const matches: PatternMatch[] = [];
-
+    const bounded = Number.isInteger(k) && k > 0 && k <= 8;
+    let needsFullSort = !bounded;
     for (const pattern of patterns) {
       const similarity = this.cosineSimilarity(embedding, pattern.embedding);
-      matches.push({
-        pattern,
-        similarity,
-        confidence: similarity * pattern.successRate,
-        latencyMs: 0,
-      });
+      // JS's full sort treats a NaN comparator result as a tie. Preserve its
+      // behavior for non-finite input instead of guessing an insertion rank.
+      if (bounded && Number.isNaN(similarity)) {
+        needsFullSort = true;
+        matches.length = 0;
+        for (const p of patterns) {
+          const score = this.cosineSimilarity(embedding, p.embedding);
+          matches.push({ pattern: p, similarity: score, confidence: score * p.successRate, latencyMs: 0 });
+        }
+        break;
+      }
+      if (bounded && matches.length === k && similarity <= matches[k - 1].similarity) continue;
+      const match = { pattern, similarity, confidence: similarity * pattern.successRate, latencyMs: 0 };
+      if (!bounded) {
+        matches.push(match);
+      } else {
+        // Strict comparison preserves corpus order for tied scores.
+        let i = Math.min(matches.length, k - 1);
+        while (i > 0 && similarity > matches[i - 1].similarity) {
+          matches[i] = matches[i - 1];
+          i--;
+        }
+        matches[i] = match;
+      }
     }
-
-    // Sort by similarity descending
-    matches.sort((a, b) => b.similarity - a.similarity);
-    const topK = matches.slice(0, k);
-
-    // Cache result
-    if (this.patternCache.size > 500) {
-      const firstKey = this.patternCache.keys().next().value;
-      if (firstKey) this.patternCache.delete(firstKey);
-    }
-    this.patternCache.set(cacheKey, topK);
+    const topK = needsFullSort ? matches.sort((a, b) => b.similarity - a.similarity).slice(0, k) : matches;
 
     this.totalPatternTime += performance.now() - startTime;
     this.totalPatternMatches++;
@@ -213,9 +203,7 @@ export class BalancedMode extends BaseModeImplementation {
       : 0;
 
     return {
-      cacheHitRate: this.cacheHits + this.cacheMisses > 0
-        ? this.cacheHits / (this.cacheHits + this.cacheMisses)
-        : 0,
+      cacheHitRate: 0,
       avgPatternMatchMs: this.totalPatternMatches > 0
         ? this.totalPatternTime / this.totalPatternMatches
         : 0,
@@ -223,20 +211,9 @@ export class BalancedMode extends BaseModeImplementation {
         ? this.totalLearnTime / this.learnIterations
         : 0,
       avgImprovement,
-      patternCacheSize: this.patternCache.size,
+      patternCacheSize: 0,
       learnIterations: this.learnIterations,
     };
-  }
-
-  /**
-   * Compute cache key from embedding
-   */
-  private computeCacheKey(embedding: Float32Array): string {
-    const keyParts: string[] = [];
-    for (let i = 0; i < Math.min(16, embedding.length); i++) {
-      keyParts.push(embedding[i].toFixed(2));
-    }
-    return keyParts.join(',');
   }
 
   /**
