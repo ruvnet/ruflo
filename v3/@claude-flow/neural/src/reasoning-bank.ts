@@ -1190,7 +1190,8 @@ export class ReasoningBank {
         // A success and a pitfall memory are never duplicates of each other
         // regardless of embedding similarity — they encode opposite outcomes
         // for a similar context, which is exactly the signal worth keeping.
-        if (entries[i][1].memory.memoryType !== entries[j][1].memory.memoryType) {
+        // Snapshots written before memoryType existed only held successes.
+        if ((entries[i][1].memory.memoryType ?? 'success') !== (entries[j][1].memory.memoryType ?? 'success')) {
           continue;
         }
 
