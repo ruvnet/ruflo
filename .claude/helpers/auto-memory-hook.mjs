@@ -852,6 +852,39 @@ const argvBase = process.argv[2] ? 2 : 1;
 const command = process.argv[2] || (COMMANDS.includes(process.argv[1]) ? process.argv[1] : 'status');
 const commandArgs = process.argv.slice(argvBase + 1);
 
+// #3163: Codex parses a Stop hook's stdout as hook JSON and fails on status
+// prose, which Claude Code shows as ordinary hook feedback. A Codex hook
+// payload carries a turn_id that Claude Code's does not, so under Codex the
+// status lines go to stderr and stdout stays empty (exit 0 with no output is
+// success there). Claude Code and terminal runs are unchanged.
+function readHookPayload() {
+  if (process.stdin.isTTY) return Promise.resolve(null);
+  return new Promise((done) => {
+    let buf = '';
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      process.stdin.removeAllListeners('data');
+      process.stdin.removeAllListeners('end');
+      try { process.stdin.destroy(); } catch (_) {}
+      try { done(JSON.parse(buf)); } catch (_) { done(null); }
+    };
+    const timer = setTimeout(finish, 500);
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => { buf += chunk; if (buf.length > 1048576) finish(); });
+    process.stdin.on('end', finish);
+    process.stdin.on('error', finish);
+  });
+}
+if (command === 'import' || command === 'sync') {
+  const hookPayload = await readHookPayload();
+  if (hookPayload && typeof hookPayload === 'object' && typeof hookPayload.turn_id === 'string') {
+    console.log = (...args) => console.error(...args);
+  }
+}
+
 // Dynamic import() failures can surface as unhandled rejections on a later
 // microtask even when the awaiting call site already caught them, which would
 // otherwise force a non-zero exit. Swallow to keep hooks exit-0, but surface the
