@@ -126,7 +126,7 @@ const MODE_OPTIMIZATIONS: Record<SONAMode, ModeOptimizations> = {
     useMicroLoRA: false,
     gradientCheckpointing: false,
     useHalfPrecision: false,
-    patternCaching: true,
+    patternCaching: false,
     asyncUpdates: false,
   },
   'research': {
@@ -701,7 +701,9 @@ export class SONAManager {
     const modeImpl = this.createModeImplementation(decoded.currentMode);
     this.currentMode = decoded.currentMode;
     this.config = decoded.config;
-    this.optimizations = decoded.optimizations;
+    this.optimizations = decoded.currentMode === 'balanced'
+      ? { ...decoded.optimizations, patternCaching: false }
+      : decoded.optimizations;
     this.modeImpl = modeImpl;
     this.trajectories = decoded.trajectories;
     this.patterns = decoded.patterns;
