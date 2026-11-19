@@ -154,13 +154,12 @@ A harness is the workbench around the model: it organizes tasks, carries context
 
 <p align="center"><img src="docs/assets/readme/console.svg" alt="Mission control: inspect agent work" width="100%"></p>
 
-<p align="center"><a href="https://raw.githubusercontent.com/ruvnet/ruflo/main/docs/assets/ruflo-console-theme-compact.svg"><img src="docs/assets/ruflo-console-theme-compact.svg" width="100%" alt="Ruflo Orbital theme: animated boot checks, block logo, menu icons, rotating globe, swarm routing, six color palettes and responsive Theme Studio"></a></p>
 
 [Open animated demo](https://raw.githubusercontent.com/ruvnet/ruflo/main/docs/assets/ruflo-console-theme-compact.svg) · [Theme Studio guide](plugins/ruflo-console/README.md) · [Workflow demo](docs/assets/ruflo-console-workflows.svg)
 
 <img src="docs/assets/readme/console-icon-workflows.svg" width="28" height="28" alt=""> **Your agent cockpit.** Track workflows, agents, models, tokens and cost beside Claude Code. The 38 second animation shows **Orbital and Theme Studio** through actual renderer frames, including boot checks, six palettes, customization, saved themes, JSON import and resizing. This compact 3.84 MB SVG retains all 456 frames. Native host and AI provider execution are not demonstrated.
 
-<img src="docs/assets/readme/console-icon-inspect.svg" width="28" height="28" alt=""> **Inspect any run.** Open agent logs and results, search, triage failures, replay and compare. Start with `npx ruflo init`, restart Claude Code, then `/ruflo`. [Full console tour](docs/assets/ruflo-console-walkthrough-wide.gif).
+<img src="docs/assets/readme/console-icon-inspect.svg" width="28" height="28" alt=""> **Inspect any run.** Open agent logs and results, search, triage failures, replay and compare. Start with `npx ruflo init`, restart Claude Code, then `/ruflo`.
 
 <img src="docs/assets/readme/console-icon-control.svg" width="28" height="28" alt=""> **Let Claude drive. You set the limits.** Enable **Settings → Claude control** to navigate and run console actions. Choose `read`, `write`, `manage` or `full`, with `ask` or `auto` approval. The current default is **read + ask**; raising the level is your choice. Actions above your permission level are refused, and network, spending and destructive actions require confirmation even in `auto`. Review the live action log or press **Take back control** to stop Claude control. [Details](v3/docs/adr/ADR-444-claude-controls-the-console.md).
 
@@ -168,7 +167,7 @@ A harness is the workbench around the model: it organizes tasks, carries context
 
 ### One task: create a mission with Claude
 
-<img src="docs/assets/readme/console-icon-workflows.svg" width="28" height="28" alt=""> **Watch the recorded console session below.** Claude creates a mission, opens the Learning and Security pages, and reports its actions in Overview.
+<img src="docs/assets/readme/console-icon-workflows.svg" width="28" height="28" alt=""> **[Watch the recorded console session](docs/assets/ruflo-console-claude-control.gif).** Claude creates a mission, opens the Learning and Security pages, and reports its actions in Overview.
 
 1. **Set the boundary.** Install the console using the commands below, open `/ruflo`, then choose **Settings → Claude control → write + ask**.
 2. **Give a concrete request.** Try: “Create a mission to add a dark mode toggle. Show me the mission and its status.”
@@ -179,9 +178,6 @@ A harness is the workbench around the model: it organizes tasks, carries context
 **What the recording demonstrates:** a real Claude Haiku session with `write + auto`, mission creation, page navigation, a refused swarm stop, and control being taken back. The steps above use `ask` so you approve creation yourself. The linked workflow animation uses sample data, while the theme demo replays renderer frames. Neither is evidence of completed swarm work or memory recall.
 
 [Implementation and recorded test findings](v3/docs/adr/ADR-444-claude-controls-the-console.md) · [Reproduction script](plugins/ruflo-console/scripts/e2e-control.sh)
-
-<p align="center"><img src="docs/assets/ruflo-console-claude-control.gif" alt="Claude Code with the ruflo console beside it: Claude sets a mission goal, creates the mission and opens the Learning, Security and Overview pages through the console tools; the Claude control dashboard logs each action; swarm-stop is refused because it needs the full level; the person clicks Take back control and the next request is refused"></p>
-
 
 **Install the mods from the ruflo marketplace** (Claude Code 2.1.287 or later; mods run with your account's permissions and are not sandboxed, so read the code first):
 
