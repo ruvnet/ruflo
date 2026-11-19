@@ -62,6 +62,9 @@ export class ByzantineConsensus extends EventEmitter {
 
   constructor(nodeId: string, config: ByzantineConfig = {}) {
     super();
+    // awaitConsensus() adds one 'consensus.achieved' listener per in-flight
+    // proposal; uncap so concurrent proposals don't trip MaxListenersExceededWarning.
+    this.setMaxListeners(0);
     if (config.maxFaultyNodes !== undefined && (!Number.isSafeInteger(config.maxFaultyNodes) || config.maxFaultyNodes < 0)) {
       throw new RangeError('maxFaultyNodes must be a non-negative safe integer');
     }
