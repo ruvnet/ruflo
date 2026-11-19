@@ -6,9 +6,9 @@
     @keyframes move { to { stroke-dashoffset: -52; } }
     @media (prefers-reduced-motion: reduce) { .trace { animation: none; } }
   </style>
-  <rect x="1" y="1" width="898" height="178" rx="17" fill="#101827" stroke="#405575" stroke-width="2"/>
+  <rect x="1" y="1" width="898" height="178" rx="17" fill="#0d111d" stroke="#584d69" stroke-width="2"/>
   <text x="26" y="36" fill="#edf4ff" font-family="system-ui,sans-serif" font-size="24" font-weight="700">Search a local RVF index</text>
-  <g fill="#182640" stroke="#5b769d" stroke-width="2">
+  <g fill="#142730" stroke="#776487" stroke-width="2">
     <rect x="26" y="64" width="245" height="81" rx="12"/>
     <rect x="327" y="64" width="246" height="81" rx="12"/>
     <rect x="629" y="64" width="245" height="81" rx="12"/>
@@ -23,5 +23,9 @@
     <text x="450" y="123">Local stdio transport</text>
     <text x="751" y="123">Read-only search handle</text>
   </g>
-  <path class="trace" d="M272 104h54m248 0h54" stroke="#61dfcc" stroke-width="4" fill="none"/>
+  <path class="trace" d="M272 104h54m248 0h54" stroke="#85dcea" stroke-width="4" fill="none"/>
+<g id="readme-card-trim"><style>@media(prefers-reduced-motion:no-preference){.readme-trace{animation:readmeTrace 6s linear infinite}@keyframes readmeTrace{to{stroke-dashoffset:-100}}}</style>
+<rect x="1" y="1" width="898" height="178" rx="8" fill="none" stroke="#bd9bf8" stroke-opacity=".48"/>
+<path d="M14 178h872" stroke="#85dcea" stroke-opacity=".18"/>
+<path class="readme-trace" d="M14 178h872" pathLength="100" stroke="#85dcea" stroke-width="1.5" stroke-dasharray="12 88"/></g>
 </svg>

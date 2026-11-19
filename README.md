@@ -2,28 +2,28 @@
 
 <a href="https://cognitum.one/ruPro"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
 
-<a href="https://cognitum.one/rupro"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/689beb336ee838945b1938330b9363503e4aa840/docs/assets/readme/rupro-workspace.svg" alt="ruPro workspace tour showing project agents, provider terminals, evidence review and business dashboards" width="100%"></a>
+<a href="https://cognitum.one/rupro"><picture><source media="(max-width: 760px)" srcset="docs/assets/readme/rupro-workspace-mobile.svg"><img src="docs/assets/readme/rupro-workspace.svg" alt="ruPro workspace tour showing project agents, provider terminals, evidence review and business dashboards" width="100%"></picture></a>
 
 <p align="center">
-<a href="https://cognitum.one/rupro"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/f2b809a41cb81e9287139e6a728cd9335b2f5b5e/docs/assets/readme/rupro-explore.svg" alt="Explore ruPro" width="300" height="76"></a>
-<a href="https://cognitum.one/#demo=welcome"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/f2b809a41cb81e9287139e6a728cd9335b2f5b5e/docs/assets/readme/rupro-demo.svg" alt="Try the interactive demo" width="300" height="76"></a>
+<a href="https://cognitum.one/rupro"><img src="docs/assets/readme/rupro-explore.svg" alt="Explore ruPro" width="300" height="76"></a>
+<a href="https://cognitum.one/#demo=welcome"><img src="docs/assets/readme/rupro-demo.svg" alt="Try the interactive demo" width="300" height="76"></a>
 </p>
 
 **An agent meta-harness for Claude Code and Codex.**
 
 <!-- Try Ruflo — the 3 badges first-time visitors actually act on -->
-[![npm version (ruflo)](https://img.shields.io/npm/v/ruflo?label=npx%20ruflo&style=for-the-badge&logo=npm&color=cb3837)](https://www.npmjs.com/package/ruflo)
-[![MIT License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/ruflo?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/ruflo)
-[![Follow @rUv on X](https://img.shields.io/badge/Follow-@rUv-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/rUv)
+[![npm version (ruflo)](https://img.shields.io/npm/v/ruflo?label=npx%20ruflo&style=for-the-badge&logo=npm&color=bd9bf8&labelColor=211b2e)](https://www.npmjs.com/package/ruflo)
+[![MIT License](https://img.shields.io/badge/License-MIT-85dcea?style=for-the-badge&labelColor=142730)](https://opensource.org/licenses/MIT)
+[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/ruflo?style=for-the-badge&logo=github&color=bd9bf8&labelColor=211b2e)](https://github.com/ruvnet/ruflo)
+[![Follow @rUv on X](https://img.shields.io/badge/Follow-@rUv-000000?style=for-the-badge&logo=x&logoColor=white&color=85dcea&labelColor=142730)](https://x.com/rUv)
 
 <p align="center">
-<a href="docs/harness-origins.md"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/e69e4b95aa08d65ea0f7715489bbf8e62a83a0d2/docs/assets/readme/badges/first-commit.svg" width="300" height="76" alt="Claude Flow lineage: first commit June 2, 2025 by rUv; inspect the evidence"></a>
+<a href="docs/harness-origins.md"><img src="docs/assets/readme/badges/first-commit.svg" width="300" height="76" alt="Claude Flow lineage: first commit June 2, 2025 by rUv; inspect the evidence"></a>
 <a href="https://github.com/ruvnet/ruvnet/blob/main/data/ecosystem-running-totals.json"><img src="docs/assets/readme/badges/downloads.svg" width="300" height="76" alt="120.95 million observed npm download events since October 1, 2025, across 429 packages. Verified November 16, 2026. Lower bound; not unique users or lifetime downloads."></a>
 <br>
-<a href="https://github.com/ruvnet/claude-flow"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/d1e80400bdefe01d3b13e70395f88fffab76bb18/docs/assets/readme/badges/claude.svg" width="300" height="76" alt="Claude Code plugin"></a>
+<a href="https://github.com/ruvnet/claude-flow"><img src="docs/assets/readme/badges/claude.svg" width="300" height="76" alt="Claude Code plugin"></a>
 <a href="https://claude.ai/customize/plugins/id/e74b8927-3c53-4082-b0d9-fe82bf1235ce%40anthropic-plugin-directory"><img src="docs/assets/readme/badges/claude-directory.svg" width="300" height="76" alt="View Claude plugin listing in the Claude plugin directory"></a>
-<a href="https://www.npmjs.com/package/@claude-flow/codex"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/d1e80400bdefe01d3b13e70395f88fffab76bb18/docs/assets/readme/badges/codex.svg" width="300" height="76" alt="Codex plugin"></a>
+<a href="https://www.npmjs.com/package/@claude-flow/codex"><img src="docs/assets/readme/badges/codex.svg" width="300" height="76" alt="Codex plugin"></a>
 <a href="https://chatgpt.com/plugins/plugin_asdk_app_6ab674ff53c48191bb37040c343e31f3"><img src="docs/assets/readme/badges/chatgpt.svg" width="300" height="76" alt="ChatGPT plugin: RuFlo Federation"></a>
 </p>
 
@@ -51,7 +51,7 @@ Use a ruflo swarm to review this repo: find the riskiest module, write tests for
 
 [First useful task, step by step](docs/ruflo-explained.md) · [User guide](docs/USERGUIDE.md) · [Compare install paths](#quick-start)
 
-<a href="https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/main/docs/assets/readme/rvf-mcp-search.svg" width="720" alt="Search a local RVF index from a Ruflo project using the stdio RVF MCP server and a read-only handle"></a>
+<a href="https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md"><img src="docs/assets/readme/rvf-mcp-search.svg" width="720" alt="Search a local RVF index from a Ruflo project using the stdio RVF MCP server and a read-only handle"></a>
 
 [Optional recipe: local vector search with RVF and MCP](https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md) · [Ruvnet ecosystem](https://ruv.io)
 

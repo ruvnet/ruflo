@@ -5,9 +5,9 @@
 .scene{animation:scene 20.8s linear infinite both}.entry{animation:entry 20.8s linear infinite both}
 .up,.across{transform-box:fill-box;transform-origin:left bottom;animation:up 20.8s ease-out infinite both}.across{animation-name:across}
 @keyframes scene{0%,23.8%{opacity:1}25%,99%{opacity:0}100%{opacity:1}}
-@keyframes entry{0%,98.9%{opacity:0}2%,97%{opacity:1}100%{opacity:0}}
-@keyframes up{0%,99%{transform:scaleY(0)}5%,96%{transform:scaleY(1)}}
-@keyframes across{0%,99%{transform:scaleX(0)}5%,96%{transform:scaleX(1)}}
+@keyframes entry{0%{opacity:0}1%,25%{opacity:1}26%,100%{opacity:0}}
+@keyframes up{0%,99%{transform:scaleY(0)}5%,25%{transform:scaleY(1)}26%,98%{transform:scaleY(0)}}
+@keyframes across{0%,99%{transform:scaleX(0)}5%,25%{transform:scaleX(1)}26%,98%{transform:scaleX(0)}}
 .elapsed{transform-box:fill-box;transform-origin:left;animation:elapsed 20.8s linear infinite both}@keyframes elapsed{0%{transform:scaleX(0)}25%,100%{transform:scaleX(1)}}.caret{animation:blink 1s steps(2,end) infinite}@keyframes blink{50%{opacity:.2}}}</style>
 <rect width="1140" height="680" fill="#0c0f14"/>
 <g font-family="Inter,Arial,sans-serif">
@@ -48,7 +48,7 @@
 <rect x="35" y="25.10144927536232" width="6" height="6" rx="3" fill="#c3a66d" stroke="none" />
 <rect x="47" y="25.10144927536232" width="6" height="6" rx="3" fill="#83ae97" stroke="none" />
 <rect x="552" y="25.10144927536232" width="6" height="6" rx="3" fill="#89d8b0" stroke="none" />
-<text x="251" y="36.58212560386473" font-size="13.32" fill="#c6bddd" font-weight="400" font-family="monospace">ruPro  /  workspace</text>
+<text x="197" y="36.58212560386473" font-size="13.32" fill="#c6bddd" font-weight="400" font-family="monospace">ruPro  /  R42  /  Retry policy</text>
 <rect x="9" y="61.18357487922705" width="562" height="1.6400966183574879" rx="0" fill="#22202a" stroke="none" />
 <rect x="145" y="62.82367149758454" width="1" height="575.6739130434783" rx="0" fill="#22202a" stroke="none" />
 <rect x="146" y="118.58695652173913" width="425" height="1.6400966183574879" rx="0" fill="#22202a" stroke="none" />
@@ -65,20 +65,20 @@
 <text x="24" y="359.6811594202899" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
 <rect x="17" y="113.66666666666667" width="119" height="65.60386473429952" rx="7" fill="#241b34" stroke="none" />
 <rect x="24" y="133.34782608695653" width="6" height="6" rx="3" fill="#b191ff" stroke="none" />
-<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
+<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Planning</text>
 <text x="37" y="167.78985507246378" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="202.231884057971" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
+<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Runtime</text>
 <text x="37" y="236.67391304347825" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="271.1159420289855" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
+<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Review</text>
 <text x="37" y="305.55797101449275" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
 <rect x="24" y="395.7632850241546" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
 <text x="37" y="405.6038647342995" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
 <rect x="158" y="139.90821256038646" width="195" height="341.14009661835746" rx="9" fill="#121119" stroke="#282631" />
 <rect x="169" y="159.58937198067633" width="62" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
 <text x="177" y="179.27053140096618" font-size="13.32" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Claude</text>
-<text x="284" y="179.27053140096618" font-size="13.32" fill="#afa4be" font-weight="400" font-family="Arial, sans-serif">project A</text>
+<text x="284" y="179.27053140096618" font-size="13.32" fill="#afa4be" font-weight="400" font-family="Arial, sans-serif">Planning</text>
 <rect x="188" y="205.51207729468598" width="154" height="75.44444444444444" rx="8" fill="#261d39" stroke="none" />
 <rect x="169" y="292.43719806763283" width="164" height="170.57004830917873" rx="8" fill="#1c1b24" stroke="none" />
 <text x="197" y="235.03381642512076" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Plan a safe</text>
@@ -99,7 +99,7 @@
 <rect x="365" y="139.90821256038646" width="195" height="341.14009661835746" rx="9" fill="#121119" stroke="#282631" />
 <rect x="376" y="159.58937198067633" width="62" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
 <text x="384" y="179.27053140096618" font-size="13.32" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Codex</text>
-<text x="491" y="179.27053140096618" font-size="13.32" fill="#afa4be" font-weight="400" font-family="Arial, sans-serif">project B</text>
+<text x="491" y="179.27053140096618" font-size="13.32" fill="#afa4be" font-weight="400" font-family="Arial, sans-serif">Runtime</text>
 <rect x="395" y="205.51207729468598" width="154" height="75.44444444444444" rx="8" fill="#261d39" stroke="none" />
 <rect x="376" y="292.43719806763283" width="164" height="170.57004830917873" rx="8" fill="#1c1b24" stroke="none" />
 <text x="404" y="235.03381642512076" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Implement the</text>
@@ -150,13 +150,13 @@
 <text x="24" y="359.6811594202899" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
 <rect x="17" y="113.66666666666667" width="119" height="65.60386473429952" rx="7" fill="#241b34" stroke="none" />
 <rect x="24" y="133.34782608695653" width="6" height="6" rx="3" fill="#b191ff" stroke="none" />
-<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
+<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Planning</text>
 <text x="37" y="167.78985507246378" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="202.231884057971" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
+<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Runtime</text>
 <text x="37" y="236.67391304347825" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="271.1159420289855" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
+<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Review</text>
 <text x="37" y="305.55797101449275" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
 <rect x="24" y="395.7632850241546" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
 <text x="37" y="405.6038647342995" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
@@ -192,8 +192,8 @@
 <rect x="362" y="623.7367149758454" width="94" height="3.2801932367149758" rx="1" fill="#302a40" stroke="none" />
 <rect x="464" y="623.7367149758454" width="94" height="3.2801932367149758" rx="1" fill="#302a40" stroke="none" />
 <text x="24" y="502.3695652173913" font-size="13.32" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">ACTIVITY</text>
-<text x="24" y="540.0917874396135" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">12 passed</text>
-<text x="24" y="572.8937198067633" font-size="14.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">Exit code 0</text>
+<g class="entry" style="animation-delay:-13.47s"><text x="24" y="540.0917874396135" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">12 passed</text></g>
+<g class="entry" style="animation-delay:-13.47s"><text x="24" y="572.8937198067633" font-size="14.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">Exit code 0</text></g>
 </g>
 <g class="scene review" style="animation-delay:-10.4s">
 <text x="165" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Agents</text>
@@ -204,14 +204,14 @@
 <text x="24" y="98.90579710144928" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">WORKSPACES</text>
 <text x="24" y="359.6811594202899" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
 <rect x="24" y="133.34782608695653" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
+<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Planning</text>
 <text x="37" y="167.78985507246378" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="202.231884057971" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
+<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Runtime</text>
 <text x="37" y="236.67391304347825" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="17" y="251.43478260869566" width="119" height="65.60386473429952" rx="7" fill="#241b34" stroke="none" />
 <rect x="24" y="271.1159420289855" width="6" height="6" rx="3" fill="#b191ff" stroke="none" />
-<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
+<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Review</text>
 <text x="37" y="305.55797101449275" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
 <rect x="24" y="395.7632850241546" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
 <text x="37" y="405.6038647342995" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
@@ -252,8 +252,8 @@
 <rect x="362" y="623.7367149758454" width="94" height="3.2801932367149758" rx="1" fill="#bc9cff" stroke="none" class="elapsed" style="animation-delay:-10.4s"/>
 <rect x="464" y="623.7367149758454" width="94" height="3.2801932367149758" rx="1" fill="#302a40" stroke="none" />
 <text x="24" y="502.3695652173913" font-size="13.32" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">ACTIVITY</text>
-<text x="24" y="540.0917874396135" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">1 approved</text>
-<text x="24" y="572.8937198067633" font-size="14.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">Test log ready</text>
+<g class="entry" style="animation-delay:-7.81s"><text x="24" y="540.0917874396135" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">1 approved</text></g>
+<g class="entry" style="animation-delay:-7.35s"><text x="24" y="572.8937198067633" font-size="14.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">Test log ready</text></g>
 </g>
 <g class="scene analytics" style="animation-delay:-5.2s">
 <text x="165" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Agents</text>
@@ -264,13 +264,13 @@
 <text x="24" y="98.90579710144928" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">WORKSPACES</text>
 <text x="24" y="359.6811594202899" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
 <rect x="24" y="133.34782608695653" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
+<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Planning</text>
 <text x="37" y="167.78985507246378" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="202.231884057971" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
+<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Runtime</text>
 <text x="37" y="236.67391304347825" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="271.1159420289855" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
+<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Review</text>
 <text x="37" y="305.55797101449275" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
 <rect x="17" y="376.0821256038647" width="119" height="47.56280193236715" rx="7" fill="#241b34" stroke="none" />
 <rect x="24" y="395.7632850241546" width="6" height="6" rx="3" fill="#b191ff" stroke="none" />
@@ -369,6 +369,6 @@
 <rect x="464" y="623.7367149758454" width="94" height="3.2801932367149758" rx="1" fill="#bc9cff" stroke="none" class="elapsed" style="animation-delay:-5.2s"/>
 <text x="24" y="502.3695652173913" font-size="13.32" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">ACTIVITY</text>
 <text x="24" y="540.0917874396135" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">3 departments</text>
-<text x="24" y="572.8937198067633" font-size="14.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">1 fix shipped</text>
+<text x="24" y="572.8937198067633" font-size="14.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">1 fix approved</text>
 </g>
 </g></svg>

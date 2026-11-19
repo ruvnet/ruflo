@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="408" viewBox="0 0 360 408" role="img" aria-labelledby="t d"><title id="t">ruPro · Retry policy walkthrough</title><desc id="d">Sample issue R42 moves from agent planning to tests, owner approval and a recorded decision.</desc><style>.panel{opacity:0}.last{opacity:1}@media(prefers-reduced-motion:no-preference){.panel{animation:panel 20.8s steps(1,end) infinite}.row{animation:row 20.8s linear infinite}@keyframes panel{0%,24.99%{opacity:1}25%,100%{opacity:0}}@keyframes row{0%{opacity:0}1%,25%{opacity:1}26%,100%{opacity:0}}}</style>
+<rect x=".7" y=".7" width="358.6" height="406.6" rx="14" fill="#10101a" stroke="#594a69"/>
+<text x="20" y="33" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#cfb9fc">ruPro   /   EARLY ACCESS</text>
+<text x="20" y="85" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700" fill="#f6f5fb">One agent workspace</text>
+<text x="20" y="115" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="400" fill="#b7accb">R42   /   Retry policy</text>
+<path d="M20 139h320" stroke="#41364f"/>
+<g class="panel " style="animation-delay:-20.8s">
+<text x="20" y="171" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#91dfea">1 / 4     Agents</text>
+<text x="20" y="214" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#f6f5fb">Plan the change</text>
+<g class="row" style="animation-delay:-20.45s">
+<circle cx="24" cy="251" r="3" fill="#b69af5"/>
+<text x="38" y="257" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">Claude traces a timeout.</text>
+</g>
+<g class="row" style="animation-delay:-19.60s">
+<circle cx="24" cy="290" r="3" fill="#b69af5"/>
+<text x="38" y="296" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">Set a limit of three attempts.</text>
+</g>
+<g class="row" style="animation-delay:-18.75s">
+<circle cx="24" cy="329" r="3" fill="#b69af5"/>
+<text x="38" y="335" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">Codex implements backoff.</text>
+</g>
+</g>
+<g class="panel " style="animation-delay:-15.6s">
+<text x="20" y="171" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#91dfea">2 / 4     Terminal</text>
+<text x="20" y="214" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#f6f5fb">Test the retry path</text>
+<g class="row" style="animation-delay:-15.25s">
+<circle cx="24" cy="251" r="3" fill="#b69af5"/>
+<text x="38" y="257" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">$ npm test</text>
+</g>
+<g class="row" style="animation-delay:-14.40s">
+<circle cx="24" cy="290" r="3" fill="#b69af5"/>
+<text x="38" y="296" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">Timeout → retry → success</text>
+</g>
+<g class="row" style="animation-delay:-13.55s">
+<circle cx="24" cy="329" r="3" fill="#b69af5"/>
+<text x="38" y="335" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">12 checks passed. Exit code 0.</text>
+</g>
+</g>
+<g class="panel " style="animation-delay:-10.4s">
+<text x="20" y="171" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#91dfea">3 / 4     Review</text>
+<text x="20" y="214" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#f6f5fb">Review the evidence</text>
+<g class="row" style="animation-delay:-10.05s">
+<circle cx="24" cy="251" r="3" fill="#b69af5"/>
+<text x="38" y="257" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">Open the patch and test log.</text>
+</g>
+<g class="row" style="animation-delay:-9.20s">
+<circle cx="24" cy="290" r="3" fill="#b69af5"/>
+<text x="38" y="296" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">Compare 1 attempt with 3.</text>
+</g>
+<g class="row" style="animation-delay:-8.35s">
+<circle cx="24" cy="329" r="3" fill="#b69af5"/>
+<text x="38" y="335" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">Owner approves R42.</text>
+</g>
+</g>
+<g class="panel last" style="animation-delay:-5.2s">
+<text x="20" y="171" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#91dfea">4 / 4     Analytics</text>
+<text x="20" y="214" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#f6f5fb">Record the outcome</text>
+<g class="row" style="animation-delay:-4.85s">
+<circle cx="24" cy="251" r="3" fill="#b69af5"/>
+<text x="38" y="257" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">1 fix approved</text>
+</g>
+<g class="row" style="animation-delay:-4.00s">
+<circle cx="24" cy="290" r="3" fill="#b69af5"/>
+<text x="38" y="296" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">12 passing checks attached</text>
+</g>
+<g class="row" style="animation-delay:-3.15s">
+<circle cx="24" cy="329" r="3" fill="#b69af5"/>
+<text x="38" y="335" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#f6f5fb">Decision saved to R42.</text>
+</g>
+</g>
+<path d="M20 354h320" stroke="#41364f"/>
+<text x="20" y="385" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#b7accb">Simulated workspace</text>
+</svg>

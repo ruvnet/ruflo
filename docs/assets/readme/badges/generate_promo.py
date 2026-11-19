@@ -7,6 +7,9 @@ Run: python3 docs/assets/readme/badges/generate_promo.py
 from pathlib import Path
 from html import escape
 import json
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from theme_artwork import apply_theme
 
 root = Path(__file__).resolve().parents[4]
 badge_dir = Path(__file__).resolve().parent
@@ -65,4 +68,5 @@ plugin = f"""<svg xmlns="http://www.w3.org/2000/svg" width="300" height="76" vie
 """
 for name, svg in [("downloads.svg", downloads), ("claude-directory.svg", plugin)]:
     (badge_dir / name).write_text(svg, encoding="utf-8")
+    apply_theme(badge_dir / name)
     print(f"generated {name}")

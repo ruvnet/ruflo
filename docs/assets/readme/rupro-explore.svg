@@ -32,4 +32,5 @@
 <text x="69" y="61.5" font-family="Arial,Helvetica,sans-serif" font-size="10.8" fill="#bd9bf8">Agents, projects and evidence</text>
 <path d="M8 73.25H292" stroke="#bd9bf8" stroke-opacity=".17"/>
 <path class="signal" d="M8 73.25H292" stroke="#bd9bf8" stroke-width="1.5" stroke-dasharray="36 248" stroke-dashoffset="-211"/>
+<path d="M273 36h12m-5-5 5 5-5 5" fill="none" stroke="#bd9bf8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
