@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 
 import { openIdLines } from '../compact/block'
-import { under, type ModState } from '../state'
+import { projectWrite, under, type ModState } from '../state'
 import { reloadBlock } from './reload'
 import { buildSnapshot, MAX_SNAPSHOTS, pickSlot, slotPath } from './snapshot'
 
@@ -21,7 +21,8 @@ const ANY = /^[\s\S]*$/
  *   `.claude-flow/sessions/compactions/snapshot-<n>.jsonl` (role, text cut to 2,000 characters, tool names and ids;
  *   never tool inputs or outputs; each line screened), at most 400 messages and 2 MiB, ten slots, the oldest
  *   overwritten. The write runs beside the compaction: it is never blocked, delayed or rewritten, and a failed write
- *   is logged to debug and dropped.
+ *   is logged to debug and dropped. The write refuses a link on the way (#4746): a symlinked `.claude-flow` tree
+ *   never steers a snapshot outside the project.
  * - The next main-loop `prompt.submit` (not a slash command) after a compaction that stood gets one
  *   `[RUFLO_AFTER_COMPACT]` context block of at most 2,000 characters, then the flag clears.
  */
@@ -43,7 +44,7 @@ export function registerCompactSnapshot(on: On, state: ModState) {
       writing = Promise.all(stats)
         .then(async mtimes => {
           const path = slotPath(pickSlot(mtimes))
-          await $.fs.write(under(state, path), snap.text)
+          await projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state)(under(state, path), snap.text)
           return path
         })
         .catch((error: unknown) => {

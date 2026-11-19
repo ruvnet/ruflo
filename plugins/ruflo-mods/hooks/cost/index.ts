@@ -2,7 +2,7 @@ import type { On } from 'claude-code'
 
 import { cachedFile, isMissing } from '../files'
 import type { ModOptions } from '../options'
-import { redraw, under, type ModState } from '../state'
+import { projectWrite, redraw, under, type ModState } from '../state'
 import {
   apiErrorText, appendLines, ATTRIBUTION_PATH, attributionLine, createAttribution, isBudgetRefusal, noteCost, noteSpawn, noteTool, resetAttribution,
 } from './attribution'
@@ -125,7 +125,8 @@ export function registerCost(on: On, state: ModState, options: ModOptions) {
 
   on('session.end', { reason: ANY }, async ($, e, next) => {
     try {
-      project ??= await $.fs.stat(under(state, '.claude-flow')).then(stat => stat.kind === 'dir', () => false)
+      // A symlinked .claude-flow reads as its target's kind plus isLink: it is not this project's state (#4746).
+      project ??= await $.fs.stat(under(state, '.claude-flow')).then(stat => stat.kind === 'dir' && stat.isLink !== true, () => false)
       if (project && (attribution.totalUsd > 0 || attribution.refusals > 0)) {
         const line = attributionLine(attribution, String(e.reason), Date.now(), optionLimit === undefined ? fileWindow : { usd: optionLimit, period: 'session' })
         const path = under(state, ATTRIBUTION_PATH)
@@ -133,7 +134,7 @@ export function registerCost(on: On, state: ModState, options: ModOptions) {
           if (isMissing(error)) return ''
           throw error // a file that exists but cannot be read is never overwritten
         })
-        await $.fs.write(path, appendLines(existing, [line]))
+        await projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state)(path, appendLines(existing, [line]))
       }
     } catch {
       // the breakdown is best effort; a session must end whatever happens here

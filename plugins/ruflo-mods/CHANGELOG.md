@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.17.4 — 2026-11-19
+- fix: every file the mod writes under `.claude-flow` refuses a link on the way (#4746): edit records, the learning-loop ledger, guidance observations, context-delegation metrics, cost attribution and the console toast ring, as well as the session heartbeat and compaction snapshots. A symlinked `.claude-flow`, or a symlinked folder below it, can no longer steer a write outside the project; the refused write is dropped like any other failed one.
+- fix: the cost ledger no longer counts a symlinked `.claude-flow` as the project's state.
+
 ## 0.17.3 — 2026-11-17
 - fix: learning-loop lessons are shown only from a `learned-lessons.json` the CLI on this machine wrote (#4747). The ingest stamps the file with an id kept in `~/.claude-flow/learning-loop-origin`, and the mod and the classic `learning-loop.cjs` helper show nothing from a file without it, so one committed to a cloned repository is never presented as the project's own test and build history. A file written before this version shows nothing until the next ingest rewrites it.
 

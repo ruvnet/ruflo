@@ -10,6 +10,7 @@ import { probeLine, probeState, type ProbeState } from './probe'
 import { loopLine, loopSegment, loopState, type LoopState } from './loop/status'
 import { snapshotLine, snapshotState, type SnapshotState } from './compact-snapshot/snapshot'
 import type { RouteResult } from './route/route-task'
+import { writeWithoutLinks, type WriteHost } from './files'
 import { createDelegateState, type ContextDelegateState } from './context-delegate/stats'
 
 /**
@@ -104,6 +105,20 @@ export function createState(): ModState {
 
 /** A path under the session's project root. */
 export const under = (s: ModState, relative: string) => `${s.root}/${relative}`
+
+/**
+ * The one writer for every file the mod keeps under the project (#4746): a
+ * `(path, text)` write of an absolute path under the session's root that
+ * refuses (rejects, writing nothing) when a link stands anywhere on the way,
+ * `.claude-flow` itself included, or when the path leaves the root. Appends
+ * are read-then-rewrite, so they go through here too. The hook builds `fs`
+ * from `$.fs.stat` / `$.fs.write` spelled at the call site; the root is read
+ * at write time, as `session.start` sets it.
+ */
+export const projectWrite =
+  (fs: WriteHost, s: ModState) =>
+  (path: string, text: string): Promise<void> =>
+    writeWithoutLinks(fs, s.root, path, text)
 
 export const MAX_SEGMENTS = 8
 export const MAX_SEGMENT_CHARS = 48

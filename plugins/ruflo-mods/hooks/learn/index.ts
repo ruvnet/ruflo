@@ -2,7 +2,7 @@ import type { EngineInterface, On } from 'claude-code'
 
 import { isMissing } from '../files'
 import type { GuidanceHooks } from '../guidance'
-import { redraw, under, type ModState } from '../state'
+import { projectWrite, redraw, under, type ModState } from '../state'
 import { appendRecords, EDIT_TOOLS, editedFile, MAX_LINES, PENDING_PATH, rufloSessionId, SESSION_PATH } from './insights'
 
 /** Written early once this many edits wait, so a long turn holds little. */
@@ -23,7 +23,7 @@ export async function flushEdits($: EngineInterface, state: ModState): Promise<v
       if (isMissing(error)) return ''
       throw error
     })
-    await $.fs.write(under(state, PENDING_PATH), appendRecords(existing, records.map(r => ({ ...r, sessionId }))))
+    await projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state)(under(state, PENDING_PATH), appendRecords(existing, records.map(r => ({ ...r, sessionId }))))
   } catch (error) {
     state.edits.unshift(...records)
     state.edits.splice(0, Math.max(0, state.edits.length - MAX_LINES))
@@ -65,7 +65,7 @@ export function registerLearn(on: On, state: ModState, guidance?: GuidanceHooks)
     const result = await next(e)
     if (guidance) {
       guidance.complete(e.turnId, e.isAborted)
-      await guidance.flush({ read: path => $.fs.read(path), write: (path, text) => $.fs.write(path, text) })
+      await guidance.flush({ read: path => $.fs.read(path), write: projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state) })
     }
     await flushEdits($, state)
     return result
@@ -74,7 +74,7 @@ export function registerLearn(on: On, state: ModState, guidance?: GuidanceHooks)
   on('session.end', async ($, e, next) => {
     if (guidance) {
       guidance.end()
-      await guidance.flush({ read: path => $.fs.read(path), write: (path, text) => $.fs.write(path, text) })
+      await guidance.flush({ read: path => $.fs.read(path), write: projectWrite({ stat: p => $.fs.stat(p), write: (p, t) => $.fs.write(p, t) }, state) })
     }
     await flushEdits($, state)
     return next(e)

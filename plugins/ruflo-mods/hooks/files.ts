@@ -10,6 +10,15 @@ export type FileHost = {
   readonly read: (path: string) => Promise<string>
 }
 
+/**
+ * The `$.fs` calls a guarded write needs, built the same way: the hook
+ * spells `$.fs.stat` / `$.fs.write` at the call site.
+ */
+export type WriteHost = {
+  readonly stat: (path: string) => Promise<FsStat>
+  readonly write: (path: string, text: string) => Promise<void>
+}
+
 /** Under `$.fs.read`'s own 4 MiB bound, so an oversized file reads as too big. */
 export const MAX_READ_BYTES = 4 * 1024 * 1024
 
@@ -80,4 +89,47 @@ async function readAndParse<T>(fs: FileHost, path: string, parse: (text: string)
   } catch (error) {
     return { kind: 'error', message: messageOf(error) }
   }
+}
+
+const isLinkKind = (kind: string | undefined): boolean => kind === 'symlink' || kind === 'link'
+
+/**
+ * Writes `text` to `path` only when the way from `root` down to the file
+ * holds no link. `$.fs.stat` reports a link (`isLink`, plus the target's
+ * kind) instead of following it silently, but `$.fs.write` follows one, so
+ * a symlinked `.claude-flow` tree in a cloned project could steer a write
+ * outside the project (#4746). Every component below the root that exists
+ * must be a real folder, and an existing target must be a regular file; a
+ * missing component ends the walk, since nothing below it can exist and
+ * the write creates the folders. Only ENOENT is "missing": any other stat
+ * failure refuses the write, as does a path that is not lexically under
+ * the root. The root itself is never statted: it may legitimately be an
+ * alias. Throws on a refusal, naming the component, and writes nothing
+ * then. The check and the write are not atomic — a link planted between
+ * them still wins — but a planted link is the threat here, not a second
+ * writer racing the check.
+ */
+export async function writeWithoutLinks(fs: WriteHost, root: string, path: string, text: string): Promise<void> {
+  const base = root.replace(/\/+$/, '')
+  const prefix = base === '' ? '/' : `${base}/`
+  const outside = `${path} is outside the project: only paths under ${base === '' ? '/' : base} are written`
+  if (!path.startsWith(prefix)) throw new Error(outside)
+  const parts = path.slice(prefix.length).split('/').filter(part => part !== '' && part !== '.')
+  if (parts.length === 0 || parts.includes('..')) throw new Error(outside)
+  let at = base
+  for (const [index, part] of parts.entries()) {
+    at = `${at}/${part}`
+    const last = index === parts.length - 1
+    let stat: FsStat
+    try {
+      stat = await fs.stat(at)
+    } catch (error) {
+      if (!isMissing(error, at)) throw new Error(`${at.slice(base.length)} cannot be checked, so it is not written through`)
+      break
+    }
+    if (stat.isLink === true || isLinkKind(stat.kind)) throw new Error(`${at.slice(base.length)} is a link: it could lead outside the project, so it is not written through`)
+    if (!last && stat.kind !== undefined && stat.kind !== 'dir' && stat.kind !== 'directory') throw new Error(`${at.slice(base.length)} is not a folder, so it is not written through`)
+    if (last && stat.kind !== undefined && stat.kind !== 'file') throw new Error(`${at.slice(base.length)} is not a regular file, so it is not written through`)
+  }
+  await fs.write(path, text)
 }

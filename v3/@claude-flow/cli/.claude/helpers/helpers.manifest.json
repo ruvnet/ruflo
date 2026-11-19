@@ -7,9 +7,11 @@
       "intelligence.cjs": "ffdcfa6d2665a16e417dedd5bc67080c8192820f76265de5013fcb49f668ec71",
       "statusline.cjs": "284b95629ced4340667872b977de3f2beac90fc6bb7ab1a62dd7f7ae75c5e5d1",
       "router.cjs": "16648b3c0d73b6681ac2d8d13def6a68286c57f5a11004de5b19a0fa088c833d",
-      "learning-loop.cjs": "33caa41ce9edacbb0d403a337558f7a77c27b0864e4dfe8f6c2b541188602c1d"
+      "learning-loop.cjs": "33caa41ce9edacbb0d403a337558f7a77c27b0864e4dfe8f6c2b541188602c1d",
+      "session.cjs": "b9972858615343120c7a65092c1c426fc859c6f9c308ce0ff6b4caace8ac6813",
+      "memory.cjs": "2ef989f4640e357c1ac3eae09330242c1f6b037e6ef676a5999b8a7c11d53c33"
     }
   },
-  "signature": "ZC9lNq90ReaIiqKZW9Vr29cbt43aOBvtHmjwWDx1x24GvYhBuyDtXrxipcTw9zMhgy+qF7x3WKO6Z9y2xYj7Cw==",
+  "signature": "ZsIYs6Y+Eub0yrwV0ToKRUP10Q/kKVSn6vVqI7+YkgERKrzFRGskLA4DOfnnlO9pjppxzXA3vXGXDRHcsY5YDw==",
   "algorithm": "ed25519"
 }

@@ -110,6 +110,13 @@ export const CRITICAL_HELPERS = [
   // bundled from the ruflo-mods loop source; here so every install records verified turns
   // and sees lessons on its next `ruflo` command, not only with the mod.
   'learning-loop.cjs',
+  // session.cjs and memory.cjs are required by hook-handler.cjs on every hook,
+  // so they carry the same trust as the rest of this list (#4746): the refresh
+  // verifies them against the signed manifest and heals a tampered copy.
+  // `ruflo init` still generates them from the CLI's own generators; the
+  // signed copy wins on the next refresh.
+  'session.cjs',
+  'memory.cjs',
 ];
 
 function errorCode(error: unknown): string | undefined {

@@ -28,7 +28,7 @@ import {
   generateAutoMemoryHook,
   generateRufloHookCjs,
 } from './helpers-generator.js';
-import { getInstalledCliVersion, HELPERS_STAMP_FILE } from './helper-refresh.js';
+import { findPackageHelpersDir, getInstalledCliVersion, HELPERS_STAMP_FILE } from './helper-refresh.js';
 import { generateClaudeMd } from './claudemd-generator.js';
 import { writeDualClaudeMd } from './dual-instructions.js';
 import { detectRufloPlugins, emptyDedupReport, type PluginDedupReport, type PluginProvided } from './plugin-dedup.js';
@@ -652,7 +652,9 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false,
     // 0. ALWAYS update critical helpers (force overwrite)
     const sourceHelpersForUpgrade = findSourceHelpersDir();
     if (sourceHelpersForUpgrade) {
-      // Keep in sync with helper-refresh.ts:CRITICAL_HELPERS.
+      // Keep in sync with helper-refresh.ts:CRITICAL_HELPERS, except the
+      // companions: ensureCommonJsCompanions(force=true) below owns them
+      // (#4198) and copies the package's signed bytes when it has them.
       const criticalHelpers = ['auto-memory-hook.mjs', 'hook-handler.cjs', 'intelligence.cjs', 'statusline.cjs', 'router.cjs', 'learning-loop.cjs'];
       for (const helperName of criticalHelpers) {
         const targetPath = path.join(targetDir, '.claude', 'helpers', helperName);
@@ -688,12 +690,16 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false,
     }
 
     // #4198: refresh existing companions too, so upgraded hook handlers never
-    // keep obsolete session/memory logic. Generate from the CLI trust root.
+    // keep obsolete session/memory logic. #4746: the companions are signed
+    // critical helpers now, so copy the package's signed bytes (the source the
+    // startup refresh verifies against); a generated copy would differ from
+    // the manifest and read as tampered on every later run. The generators
+    // are the fallback only when the package ships no copy.
     const helpersDir = path.join(targetDir, '.claude', 'helpers');
     const existingCompanions = new Set<string>(COMMONJS_COMPANION_HELPERS.filter(
       (name) => fs.existsSync(path.join(helpersDir, name)),
     ));
-    for (const name of await ensureCommonJsCompanions(helpersDir, true)) {
+    for (const name of await ensureCommonJsCompanions(helpersDir, true, findPackageHelpersDir())) {
       const changes = existingCompanions.has(name)
         ? result.updated : result.created;
       changes.push(`.claude/helpers/${name}`);

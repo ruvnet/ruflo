@@ -8,7 +8,14 @@
  * refresh writes any missing `.cjs` companion from the CLI's own compiled
  * generators (the trust root; no external file to verify). Stale `.js` copies
  * are left in place and ignored. Existing `.cjs` files are preserved during
- * startup refresh; an explicit init upgrade replaces them from the generators.
+ * startup refresh; an explicit init upgrade replaces them.
+ *
+ * Since #4746 both companions are also in the signed critical set, so the
+ * startup integrity check compares them with the package's signed copies. A
+ * caller that has the package's `.claude/helpers` passes it as `sourceDir`:
+ * a companion present there is copied byte-for-byte (what the manifest
+ * signs), and only a companion missing from it comes from the generators,
+ * whose output is not byte-identical to the signed copy.
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -37,7 +44,18 @@ function safeHelpersDirectory(helpersDir: string): boolean {
   } catch { return false; }
 }
 
-export async function ensureCommonJsCompanions(helpersDir: string, force = false): Promise<string[]> {
+/** The package's own copy of a companion, or null when it has none (missing, a link, unreadable). */
+function packagedCompanion(sourceDir: string | null | undefined, name: string): string | null {
+  if (!sourceDir) return null;
+  const source = path.join(sourceDir, name);
+  try {
+    const stat = fs.lstatSync(source);
+    if (!stat.isFile() || stat.isSymbolicLink()) return null;
+    return fs.readFileSync(source, 'utf-8');
+  } catch { return null; }
+}
+
+export async function ensureCommonJsCompanions(helpersDir: string, force = false, sourceDir?: string | null): Promise<string[]> {
   helpersDir = path.resolve(helpersDir);
   if (!safeHelpersDirectory(helpersDir)) return [];
   const missing = COMMONJS_COMPANION_HELPERS.filter((name) => {
@@ -63,7 +81,7 @@ export async function ensureCommonJsCompanions(helpersDir: string, force = false
       const descriptor = fs.openSync(temporary, 'wx', 0o755);
       created = true;
       try {
-        fs.writeFileSync(descriptor, content[name](), { encoding: 'utf-8' });
+        fs.writeFileSync(descriptor, packagedCompanion(sourceDir, name) ?? content[name](), { encoding: 'utf-8' });
         fs.fchmodSync(descriptor, 0o755);
       } finally { fs.closeSync(descriptor); }
       if (!safeHelpersDirectory(helpersDir)) continue;
