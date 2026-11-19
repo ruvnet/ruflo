@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing v-prefixed Git tag to publish
+        description: Existing v-prefixed Git tag to publish, or HEAD to dry-run the dispatched commit (ADR-545)
         required: true
         type: string
       dry_run:
@@ -37,8 +37,14 @@ jobs:
         shell: bash
         env:
           RELEASE_TAG: ${{ inputs.tag }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ "$RELEASE_TAG" == HEAD ]]; then
+            if [[ "$DRY_RUN" != true ]]; then
+              echo "::error::tag HEAD is allowed only with dry_run: true"
+              exit 1
+            fi
+          elif [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::tag must be a stable v-prefixed semantic version"
             exit 1
           fi
@@ -46,7 +52,7 @@ jobs:
       - name: Checkout immutable release tag
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ inputs.tag == 'HEAD' && github.sha || inputs.tag }}
           fetch-depth: 1
 
       - name: Verify immutable tag checkout
@@ -54,8 +60,14 @@ jobs:
         env:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
+          # HEAD (dry run only): release as the version package.json declares.
+          if [[ "$RELEASE_TAG" == HEAD ]]; then
+            echo "RESOLVED_TAG=v$(node -p "require('./package.json').version")" >>"$GITHUB_ENV"
+            exit 0
+          fi
           tag_commit="$(git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}")"
           test "$(git rev-parse HEAD)" = "$tag_commit"
+          echo "RESOLVED_TAG=$RELEASE_TAG" >>"$GITHUB_ENV"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -106,7 +118,7 @@ jobs:
           }
           NODE
         env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ env.RESOLVED_TAG }}
 
       - name: Install and build publishable packages
         working-directory: v3
@@ -185,7 +197,7 @@ jobs:
       - name: Build and smoke-test immutable package archives
         shell: bash
         env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ env.RESOLVED_TAG }}
         run: |
           node --input-type=module - <<'NODE'
           await import('./v3/@claude-flow/cli/dist/src/mcp-tools/capability-brain.js');
@@ -373,7 +385,7 @@ jobs:
       - name: Preserve verified archives and integrity receipts
         uses: actions/upload-artifact@v4
         with:
-          name: verified-${{ inputs.tag }}
+          name: verified-${{ env.RESOLVED_TAG }}
           path: ${{ env.RELEASE_DIR }}
           if-no-files-found: error
           retention-days: 14
@@ -384,7 +396,7 @@ jobs:
         shell: bash
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ env.RESOLVED_TAG }}
         run: |
           version="${RELEASE_TAG#v}"
           candidate_tag="release-${version//./-}"
@@ -490,7 +502,7 @@ jobs:
         if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
         shell: bash
         env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ env.RESOLVED_TAG }}
         run: |
           version="${RELEASE_TAG#v}"
           packages=("@claude-flow/cli" "claude-flow" "ruflo")
