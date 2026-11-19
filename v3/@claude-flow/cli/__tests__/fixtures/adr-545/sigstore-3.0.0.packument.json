@@ -1,0 +1,9 @@
+{
+  "name": "sigstore",
+  "version": "3.0.0",
+  "dist": {
+    "integrity": "sha512-PHMifhh3EN4loMcHCz6l3v/luzgT3za+9f8subGgeMNjbJjzH4Ij/YoX3Gvu+kaouJRIlVdTHHCREADYf+ZteA==",
+    "shasum": "d6eadcc6590185a7f1c16184078ce8a9ef6db937",
+    "tarball": "https://registry.npmjs.org/sigstore/-/sigstore-3.0.0.tgz"
+  }
+}

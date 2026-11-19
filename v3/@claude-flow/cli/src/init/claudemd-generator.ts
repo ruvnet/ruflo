@@ -18,6 +18,7 @@ import {
   sharedCliQuickRef,
   sharedMemoryAndLearning,
 } from './shared-instructions.js';
+import { npxOurs, ourSpec } from './pinning.js';
 
 // --- Section Generators ---
 //
@@ -25,8 +26,11 @@ import {
 // mirror of the codex module that writes them into AGENTS.md). Everything
 // left in this file is Claude-specific, or a template extra.
 
-/** How this file's sections invoke the CLI (single-host CLAUDE.md form). */
-const CLI = 'npx @claude-flow/cli@latest';
+/**
+ * How this file's sections invoke the CLI (single-host CLAUDE.md form).
+ * ADR-545: pinned to the running CLI's exact version unless `--channel latest`.
+ */
+const cliFor = (opts?: Pick<InitOptions, 'channel'>): string => npxOurs('@claude-flow/cli', opts?.channel);
 
 /** Claude-only: the Claude Code Bash tool suggests this trailer; Codex has its own commit rule. */
 const CO_AUTHORED_BY_RULE = '- NEVER add a `Co-Authored-By` trailer to user commits unless this project\'s `.claude/settings.json` has `attribution.commit` set (#2078). The Claude Code Bash tool may suggest one in its default commit-message template — ignore it. `Co-Authored-By` is semantic authorship attribution under git/GitHub convention; the tool is the facilitator, not a co-author.';
@@ -148,31 +152,34 @@ const THREE_TIER_ROUTING = `### 3-Tier Model Routing
 | 3 | Sonnet/Opus | Architecture, security, complex reasoning |`;
 
 function swarmConfig(options: InitOptions): string {
-  return `## Swarm & Routing\n\n${swarmRuntimeConfig(options)}\n\n${swarmRoutingBody(CLI)}\n\n${THREE_TIER_ROUTING}`;
+  return `## Swarm & Routing\n\n${swarmRuntimeConfig(options)}\n\n${swarmRoutingBody(cliFor(options))}\n\n${THREE_TIER_ROUTING}`;
 }
 
-const memoryAndLearning = () => sharedMemoryAndLearning(CLI);
+const memoryAndLearning = (opts?: InitOptions) => sharedMemoryAndLearning(cliFor(opts));
 const agentTypes = sharedAgentTypes;
-const cliQuickRef = () => sharedCliQuickRef(CLI);
+const cliQuickRef = (opts?: InitOptions) => sharedCliQuickRef(cliFor(opts));
 const buildAndTest = sharedBuildAndTest;
 
-function setupAndBoundary(): string {
+function setupAndBoundary(opts?: InitOptions): string {
+  const spec = ourSpec('ruflo', opts?.channel);
+  const ruflo = `npx ${spec}`;
   return `## Setup
 
 \`\`\`bash
-claude mcp add claude-flow -- npx -y ruflo@latest mcp start
-npx ruflo@latest doctor --fix
+claude mcp add claude-flow -- npx -y ${spec} mcp start
+${ruflo} doctor --fix
 \`\`\`
 
 > The background \`daemon\` is optional. It runs interval workers that each spawn
 > a headless \`claude\` session, so it consumes tokens continuously. Start it only
-> if you want those sweeps: \`npx ruflo@latest daemon start\` (self-stops after 12h
+> if you want those sweeps: \`${ruflo} daemon start\` (self-stops after 12h
 > by default; \`--ttl 0\` to disable, \`daemon status --all\` to audit running daemons).
 
 **Agent tool** handles execution (agents, files, code, git). **MCP tools** handle coordination (swarm, memory, hooks). **CLI** is the same via Bash.`;
 }
 
-function securitySection(): string {
+function securitySection(opts?: InitOptions): string {
+  const cli = cliFor(opts);
   return `## Security
 
 - NEVER hardcode secrets in source — use environment variables
@@ -181,14 +188,15 @@ function securitySection(): string {
 - Always use parameterized queries (prevent injection)
 
 \`\`\`bash
-npx @claude-flow/cli@latest security scan --depth deep
-npx @claude-flow/cli@latest security audit --report
+${cli} security scan --depth deep
+${cli} security audit --report
 \`\`\`
 
 Agents: \`security-architect\` (threat modeling), \`security-auditor\` (vulnerability detection)`;
 }
 
-function performanceSection(): string {
+function performanceSection(opts?: InitOptions): string {
+  const cli = cliFor(opts);
   return `## Performance
 
 - Always benchmark before AND after optimization
@@ -196,14 +204,15 @@ function performanceSection(): string {
 - Use HNSW for vector search, Int8 quantization for memory reduction — measure the actual speedup/recall on your own corpus via \`node scripts/benchmark-intelligence.mjs --only=hnsw\` rather than trusting a hardcoded multiplier (recall@10 varies by corpus size — 0.99 at N=5k, 0.92 at N=20k on the reference host, dream-cycle 2026-08-30)
 
 \`\`\`bash
-npx @claude-flow/cli@latest performance benchmark --suite all
-npx @claude-flow/cli@latest performance profile --target "[component]"
+${cli} performance benchmark --suite all
+${cli} performance profile --target "[component]"
 \`\`\`
 
 Agents: \`performance-engineer\` (profiling), \`perf-analyzer\` (bottleneck detection)`;
 }
 
-function hooksRef(): string {
+function hooksRef(opts?: InitOptions): string {
+  const cli = cliFor(opts);
   return `## Hooks
 
 | Hook | Purpose |
@@ -216,11 +225,11 @@ function hooksRef(): string {
 | \`worker\` | Background worker dispatch |
 
 \`\`\`bash
-npx @claude-flow/cli@latest hooks pre-task --description "[task]"
-npx @claude-flow/cli@latest hooks post-task --task-id "[id]" --success true
-npx @claude-flow/cli@latest hooks session-start --session-id "[id]"
-npx @claude-flow/cli@latest hooks route --task "[task]"
-npx @claude-flow/cli@latest hooks worker dispatch --trigger audit
+${cli} hooks pre-task --description "[task]"
+${cli} hooks post-task --task-id "[id]" --success true
+${cli} hooks session-start --session-id "[id]"
+${cli} hooks route --task "[task]"
+${cli} hooks worker dispatch --trigger audit
 \`\`\``;
 }
 
@@ -235,16 +244,17 @@ Pipeline: **RETRIEVE** (vector search) → **JUDGE** (success/failure) → **DIS
 - **Claude Bridge**: Auto-imports \`~/.claude/projects/*/memory/*.md\` into AgentDB`;
 }
 
-function federationRef(): string {
+function federationRef(opts?: InitOptions): string {
+  const cli = cliFor(opts);
   return `## Federation
 
 Cross-installation agent collaboration with zero-trust security.
 
 \`\`\`bash
-npx @claude-flow/cli@latest federation init
-npx @claude-flow/cli@latest federation join wss://peer:8443
-npx @claude-flow/cli@latest federation send --to peer --type task-request --message "..."
-npx @claude-flow/cli@latest federation status
+${cli} federation init
+${cli} federation join wss://peer:8443
+${cli} federation send --to peer --type task-request --message "..."
+${cli} federation status
 \`\`\`
 
 - 5-tier trust: UNTRUSTED → VERIFIED → ATTESTED → TRUSTED → PRIVILEGED
@@ -273,68 +283,68 @@ const TEMPLATE_SECTIONS: Record<ClaudeMdTemplate, Array<(opts: InitOptions) => s
     (_opts) => agentComms(),
     swarmConfig,
     (_opts) => buildAndTest(),
-    (_opts) => cliQuickRef(),
-    (_opts) => setupAndBoundary(),
+    cliQuickRef,
+    setupAndBoundary,
   ],
   standard: [
     behavioralRules,
     (_opts) => policyGovernedWorkflow(),
     (_opts) => agentComms(),
     swarmConfig,
-    (_opts) => memoryAndLearning(),
+    memoryAndLearning,
     (_opts) => agentTypes(),
     (_opts) => buildAndTest(),
-    (_opts) => cliQuickRef(),
-    (_opts) => setupAndBoundary(),
+    cliQuickRef,
+    setupAndBoundary,
   ],
   full: [
     behavioralRules,
     (_opts) => policyGovernedWorkflow(),
     (_opts) => agentComms(),
     swarmConfig,
-    (_opts) => memoryAndLearning(),
+    memoryAndLearning,
     (_opts) => agentTypes(),
-    (_opts) => hooksRef(),
+    hooksRef,
     (_opts) => intelligenceSystem(),
-    (_opts) => federationRef(),
+    federationRef,
     (_opts) => buildAndTest(),
     (_opts) => envVars(),
-    (_opts) => cliQuickRef(),
-    (_opts) => setupAndBoundary(),
+    cliQuickRef,
+    setupAndBoundary,
   ],
   security: [
     behavioralRules,
     (_opts) => policyGovernedWorkflow(),
     (_opts) => agentComms(),
     swarmConfig,
-    (_opts) => securitySection(),
-    (_opts) => memoryAndLearning(),
+    securitySection,
+    memoryAndLearning,
     (_opts) => agentTypes(),
     (_opts) => buildAndTest(),
-    (_opts) => cliQuickRef(),
-    (_opts) => setupAndBoundary(),
+    cliQuickRef,
+    setupAndBoundary,
   ],
   performance: [
     behavioralRules,
     (_opts) => policyGovernedWorkflow(),
     (_opts) => agentComms(),
     swarmConfig,
-    (_opts) => performanceSection(),
-    (_opts) => memoryAndLearning(),
+    performanceSection,
+    memoryAndLearning,
     (_opts) => agentTypes(),
     (_opts) => intelligenceSystem(),
     (_opts) => buildAndTest(),
-    (_opts) => cliQuickRef(),
-    (_opts) => setupAndBoundary(),
+    cliQuickRef,
+    setupAndBoundary,
   ],
   solo: [
     behavioralRules,
     (_opts) => policyGovernedWorkflow(),
     (_opts) => agentComms(),
-    (_opts) => memoryAndLearning(),
+    memoryAndLearning,
     (_opts) => buildAndTest(),
-    (_opts) => cliQuickRef(),
-    (_opts) => setupAndBoundary(),
+    cliQuickRef,
+    setupAndBoundary,
   ],
 };
 
@@ -360,7 +370,7 @@ export function generateMinimalClaudeMd(options: InitOptions): string {
  * with `AGENTS_MD_CLI` they are exactly what the codex generator writes into
  * AGENTS.md.
  */
-export function sharedSectionsForImport(cli: string = CLI): string[] {
+export function sharedSectionsForImport(cli: string = cliFor()): string[] {
   return [
     `## Rules\n\n${SHARED_RULE_LINES.join('\n')}`,
     `## Swarm & Routing\n\n${swarmRoutingBody(cli)}`,
@@ -382,7 +392,7 @@ export const AGENTS_MD_CLI = DEFAULT_CLI;
 export function generateDualClaudeMd(options: InitOptions, template?: ClaudeMdTemplate): string {
   const tmpl = template ?? options.runtime.claudeMdTemplate ?? 'standard';
   const sections = TEMPLATE_SECTIONS[tmpl] ?? TEMPLATE_SECTIONS.standard;
-  const shared = new Set(sharedSectionsForImport());
+  const shared = new Set(sharedSectionsForImport(cliFor(options)));
 
   const body = sections.map((fn) => {
     if (fn === behavioralRules) return `## Claude Code Rules\n\n${CO_AUTHORED_BY_RULE}`;

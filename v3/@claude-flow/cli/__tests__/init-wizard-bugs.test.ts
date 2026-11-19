@@ -19,6 +19,7 @@ import path from 'path';
 import { generateMCPConfig, generateMCPCommands } from '../src/init/mcp-generator.js';
 import type { InitOptions } from '../src/init/types.js';
 import { DEFAULT_INIT_OPTIONS } from '../src/init/types.js';
+import { pinnedVersion } from '../src/init/pinning.js';
 
 function makeMCPOptions(overrides: Partial<InitOptions> = {}): InitOptions {
   return {
@@ -52,10 +53,11 @@ describe('#2206 — mcp-generator server key', () => {
     expect(config.mcpServers).not.toHaveProperty('ruflo');
   });
 
-  it('still invokes ruflo@latest mcp start as the command args', () => {
+  it('invokes ruflo@<this version> mcp start as the command args (ADR-545)', () => {
     const config = generateMCPConfig(makeMCPOptions()) as { mcpServers: Record<string, unknown> };
     const entry = config.mcpServers['claude-flow'] as { command: string; args: string[] };
-    expect(entry.args).toContain('ruflo@latest');
+    expect(entry.args).toContain(`ruflo@${pinnedVersion()}`);
+    expect(entry.args).not.toContain('ruflo@latest');
     expect(entry.args).toContain('mcp');
     expect(entry.args).toContain('start');
   });
@@ -64,7 +66,7 @@ describe('#2206 — mcp-generator server key', () => {
     const cmds = generateMCPCommands(makeMCPOptions());
     expect(cmds.length).toBeGreaterThan(0);
     // Every command that adds the main server must use 'claude-flow', not 'ruflo'
-    const mainCmd = cmds.find(c => c.includes('ruflo@latest'));
+    const mainCmd = cmds.find(c => c.includes(`ruflo@${pinnedVersion()}`));
     expect(mainCmd).toBeDefined();
     expect(mainCmd).toMatch(/claude mcp add claude-flow/);
     expect(mainCmd).not.toMatch(/claude mcp add ruflo\b/);

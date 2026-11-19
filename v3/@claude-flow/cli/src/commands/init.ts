@@ -29,6 +29,8 @@ import {
 } from '../funnel/enrollment.js';
 import { commandExists } from '../services/harness-hosts.js';
 import { riskyModeFromFlags } from '../init/risky-settings-gate.js';
+import { cliDependencySpec, ourSpec, pinnedVersion, type ReleaseChannel } from '../init/pinning.js';
+import { channelFromFlags, repinAction, repinCommand, reportProvenance } from './init-repin.js';
 
 const RISKY_FLAG_OPTIONS = [
   {
@@ -190,11 +192,12 @@ export function readCodexTrustFlag(flags: Record<string, unknown>): 'standard' |
 // package, the current project, or the global npm prefix.
 export function runCodexInitializerCli(
   cwd: string,
-  options: { template: string; force: boolean; dual: boolean; codexTrust?: 'standard' | 'full' },
+  options: { template: string; force: boolean; dual: boolean; codexTrust?: 'standard' | 'full'; channel?: ReleaseChannel },
 ): boolean {
   const npxArgs = [
     '-y',
-    '@claude-flow/codex@latest',
+    // ADR-545: the codex adapter version this CLI declares, not whatever is newest.
+    cliDependencySpec('@claude-flow/codex', options.channel),
     'init',
     '--template',
     options.template,
@@ -598,12 +601,14 @@ async function initCodexAction(
       // #2638: never pass --dual to a fetched adapter of unknown version — an
       // older one rewrites CLAUDE.md with its own stub under --force. Without
       // it, finalizeDualInstructions keeps the full CLAUDE.md.
-      const success = runCodexInitializerCli(ctx.cwd, { template, force, dual: false, codexTrust });
+      const channel = channelFromFlags(ctx.flags);
+      const adapter = cliDependencySpec('@claude-flow/codex', typeof channel === 'string' ? channel : 'pinned');
+      const success = runCodexInitializerCli(ctx.cwd, { template, force, dual: false, codexTrust, channel: typeof channel === 'string' ? channel : 'pinned' });
       if (!success) {
-        output.printError('Codex initialization failed while running @claude-flow/codex@latest.');
+        output.printError(`Codex initialization failed while running ${adapter}.`);
         return { success: false, exitCode: 1 };
       }
-      return { success: true, data: { adapter: '@claude-flow/codex@latest' } };
+      return { success: true, data: { adapter } };
     }
 
     const initializer = new CodexInitializer();
@@ -860,6 +865,14 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
   }
   options.riskySettings = riskyMode;
 
+  // ADR-545 — pinned (default) or latest.
+  const channel = channelFromFlags(ctx.flags);
+  if (typeof channel === 'object') {
+    output.printError(channel.error);
+    return { success: false, exitCode: 1 };
+  }
+  options.channel = channel;
+
   // Create spinner
   const spinner = output.createSpinner({ text: 'Initializing...' });
   spinner.start();
@@ -883,6 +896,13 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     spinner.succeed('RuFlo V3 initialized successfully!');
     reportRiskySettings(result, riskyMode);
     output.writeln();
+
+    // ADR-545 — non-fatal: say whether the pinned version carries provenance.
+    const pinned = pinnedVersion();
+    if (channel === 'pinned' && pinned && ctx.flags.format !== 'json') {
+      await reportProvenance(pinned, 'init');
+      output.writeln();
+    }
 
     // Display summary
     const summary: string[] = [];
@@ -977,7 +997,7 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       // #4770: drop stderr via stdio, not a shell redirect (breaks on cmd.exe).
       // shell on win32 so npx.cmd resolves (#2770); args are fixed literals.
       const runCli = (args: string[]): void => {
-        execFileSync('npx', ['@claude-flow/cli@latest', ...args], {
+        execFileSync('npx', [ourSpec('@claude-flow/cli', channel), ...args], {
           stdio: ['ignore', 'pipe', 'ignore'],
           cwd: ctx.cwd,
           timeout: 30000,
@@ -1069,7 +1089,7 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
         // /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+$/, so no injection risk. If
         // user-controlled args are ever added, escape them before spawn.
         execFileInit('npx', [
-          '@claude-flow/cli@latest', 'embeddings', 'init',
+          ourSpec('@claude-flow/cli', channel), 'embeddings', 'init',
           '--model', embeddingModel,
           '--no-download', '--force',
         ], {
@@ -1154,6 +1174,9 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const dualMode = ctx.flags.dual as boolean;
   const grokMode = ctx.flags.grok as boolean;
 
+  // ADR-545 — upgrade path for an existing project; writes nothing else.
+  if (ctx.flags.repin === true) return repinAction(ctx);
+
   // Grok Build host (ADR-402) — separate surface under .grok/
   if (grokMode) {
     return initGrokAction(ctx, {
@@ -1233,6 +1256,9 @@ const wizardCommand: Command = {
     try {
       // Start with base options
       const options: InitOptions = { ...DEFAULT_INIT_OPTIONS, targetDir: ctx.cwd };
+      // ADR-545 — honour --channel in the wizard too (invalid values fall back to pinned).
+      const wizardChannel = channelFromFlags(ctx.flags);
+      options.channel = typeof wizardChannel === 'string' ? wizardChannel : 'pinned';
 
       // Configuration preset
       const preset = await select({
@@ -1475,7 +1501,7 @@ const wizardCommand: Command = {
           // /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+$/, so no injection risk. If
           // user-controlled args are ever added, escape them before spawn.
           execFileSync('npx', [
-            '@claude-flow/cli@latest', 'embeddings', 'init',
+            ourSpec('@claude-flow/cli', options.channel), 'embeddings', 'init',
             '--model', embeddingModel,
             '--no-download', '--force',
           ], {
@@ -1940,7 +1966,7 @@ const upgradeCommand: Command = {
 export const initCommand: Command = {
   name: 'init',
   description: 'Initialize RuFlo in the current directory',
-  subcommands: [wizardCommand, checkCommand, skillsCommand, hooksCommand, upgradeCommand],
+  subcommands: [wizardCommand, checkCommand, skillsCommand, hooksCommand, upgradeCommand, repinCommand],
   options: [
     ...RISKY_FLAG_OPTIONS,
     {
@@ -2095,6 +2121,17 @@ export const initCommand: Command = {
       type: 'boolean',
       default: false,
     },
+    {
+      name: 'channel',
+      description: 'How generated files reference ruflo packages: pinned (default, this CLI\'s exact version) or latest (floating @latest, the pre-ADR-545 behaviour)',
+      type: 'string',
+    },
+    {
+      name: 'repin',
+      description: 'Rewrite an existing project\'s @latest/@alpha refs to ruflo packages to this CLI\'s version (same as `init repin`; honours --dry-run and --channel)',
+      type: 'boolean',
+      default: false,
+    },
   ],
   examples: [
     { command: 'claude-flow init', description: 'Initialize with default configuration' },
@@ -2124,6 +2161,8 @@ export const initCommand: Command = {
     { command: 'claude-flow init --no-codex-detect', description: 'Skip auto-configuring OpenAI Codex even if it is installed' },
     { command: 'claude-flow init --no-skills-sh', description: 'Skip the post-init skills.sh registration' },
     { command: 'claude-flow init --all-agents', description: 'Install all agent categories (~89 agents; ADR-128 opt-in)' },
+    { command: 'claude-flow init --channel latest', description: 'Write floating @latest refs instead of pinning this version (ADR-545)' },
+    { command: 'claude-flow init --repin --dry-run', description: 'Show which refs in an existing project would be pinned' },
   ],
   action: initAction,
 };

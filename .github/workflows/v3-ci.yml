@@ -2772,8 +2772,8 @@ jobs:
     #
     # #2206: mcp-generator registered the server under key 'ruflo', causing all
     #        33 ruflo plugins to fail with "Unknown tool mcp__claude-flow__*".
-    #        The key must be 'claude-flow'; the command args (ruflo@latest) are
-    #        correct and must NOT change.
+    #        The key must be 'claude-flow'; the command args run the ruflo
+    #        wrapper (pinned per ADR-545, ruflo@latest on --channel latest).
     #
     # #2207: detectExistingRufloMCP only checked for 'ruflo' in mcpServers.
     #        After #2206, the key becomes 'claude-flow', so the detector would
@@ -2819,10 +2819,12 @@ jobs:
             || { echo "::error::mcp-generator writes 'ruflo' server key — breaks mcp__claude-flow__* tool naming (#2206)"; exit 1; }
           echo "ok: bare 'ruflo' server key absent"
 
-          echo "Checking command args still invoke ruflo@latest (must NOT change)..."
-          grep -q "ruflo@latest" v3/@claude-flow/cli/src/init/mcp-generator.ts \
-            || { echo "::error::mcp-generator no longer invokes ruflo@latest — command args must be preserved (#2206)"; exit 1; }
-          echo "ok: ruflo@latest invocation present"
+          # ADR-545: the args run the `ruflo` wrapper pinned to this CLI's
+          # version (ruflo@latest on --channel latest) via ourSpec('ruflo', …).
+          echo "Checking command args still invoke the ruflo wrapper package..."
+          grep -q "ourSpec('ruflo'" v3/@claude-flow/cli/src/init/mcp-generator.ts \
+            || { echo "::error::mcp-generator no longer invokes the ruflo package via ourSpec('ruflo', …) — command args must run the wrapper (#2206, ADR-545)"; exit 1; }
+          echo "ok: ruflo wrapper invocation present"
 
           echo "Guard 1 passed."
 

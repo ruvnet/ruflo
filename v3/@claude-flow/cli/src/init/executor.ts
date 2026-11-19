@@ -29,7 +29,9 @@ import {
   generateRufloHookCjs,
 } from './helpers-generator.js';
 import { findPackageHelpersDir, getInstalledCliVersion, HELPERS_STAMP_FILE } from './helper-refresh.js';
+import { isSignedHelper } from './repin.js';
 import { generateClaudeMd } from './claudemd-generator.js';
+import { copyFilePinned, npxOurs, ourSpec, thirdPartySpec, type ReleaseChannel } from './pinning.js';
 import { writeDualClaudeMd } from './dual-instructions.js';
 import { detectRufloPlugins, emptyDedupReport, type PluginDedupReport, type PluginProvided } from './plugin-dedup.js';
 import { recordMemoryPackagePath } from './memory-package-resolver.js';
@@ -805,7 +807,7 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false,
         cvesFixed: 0,
         totalCves: 0,
         lastScan: null,
-        _note: 'Run: npx @claude-flow/cli@latest security scan'
+        _note: `Run: ${npxOurs('@claude-flow/cli')} security scan`
       };
       fs.writeFileSync(auditPath, JSON.stringify(audit, null, 2), 'utf-8');
       result.created.push('.claude-flow/security/audit-status.json');
@@ -1273,7 +1275,7 @@ async function copySkills(
 
     if (fs.existsSync(sourcePath)) {
       if (!fs.existsSync(targetPath) || options.force) {
-        copyDirRecursive(sourcePath, targetPath);
+        copyDirRecursive(sourcePath, targetPath, options.channel);
         result.created.files.push(`.claude/skills/${skillName}`);
         result.summary.skillsCount++;
       } else {
@@ -1342,16 +1344,16 @@ async function copyCommands(
         if (fs.statSync(sourcePath).isDirectory()) {
           if (provided) {
             // #2640: leave out the commands an installed plugin already ships.
-            const copied = copyDirSkipping(sourcePath, targetPath, provided.commands, dedup?.skipped.commands ?? []);
+            const copied = copyDirSkipping(sourcePath, targetPath, provided.commands, dedup?.skipped.commands ?? [], options.channel);
             if (copied === 0) continue;
           } else {
-            copyDirRecursive(sourcePath, targetPath);
+            copyDirRecursive(sourcePath, targetPath, options.channel);
           }
         } else if (provided?.commands.has(path.basename(cmdName))) {
           dedup?.skipped.commands.push(cmdName);
           continue;
         } else {
-          fs.copyFileSync(sourcePath, targetPath);
+          copyFilePinned(sourcePath, targetPath, options.channel);
         }
         result.created.files.push(`.claude/commands/${cmdName}`);
         result.summary.commandsCount++;
@@ -1413,10 +1415,10 @@ async function copyAgents(
         let mdFiles: number;
         if (provided) {
           // #2640: leave out the agents an installed plugin already ships.
-          mdFiles = copyDirSkipping(sourcePath, targetPath, provided.agents, dedup?.skipped.agents ?? []);
+          mdFiles = copyDirSkipping(sourcePath, targetPath, provided.agents, dedup?.skipped.agents ?? [], options.channel);
           if (mdFiles === 0) continue;
         } else {
-          copyDirRecursive(sourcePath, targetPath);
+          copyDirRecursive(sourcePath, targetPath, options.channel);
           // Count agent files (.md only — .yaml agents were migrated to .md)
           mdFiles = countFiles(sourcePath, '.md');
         }
@@ -1536,7 +1538,7 @@ async function writeHelpers(
       if (!fs.statSync(sourcePath).isFile()) continue;
 
       if (!fs.existsSync(destPath) || options.force) {
-        fs.copyFileSync(sourcePath, destPath);
+        copyHelperPinned(sourcePath, destPath, file, options);
 
         // Make shell scripts and mjs files executable
         if (file.endsWith('.sh') || file.endsWith('.mjs')) {
@@ -1556,7 +1558,7 @@ async function writeHelpers(
     // always be present so Windows users can use the node-based shim.
     const rufloHookDest = path.join(helpersDir, 'ruflo-hook.cjs');
     if (!fs.existsSync(rufloHookDest) || options.force) {
-      fs.writeFileSync(rufloHookDest, generateRufloHookCjs(), 'utf-8');
+      fs.writeFileSync(rufloHookDest, generateRufloHookCjs(options.channel), 'utf-8');
       result.created.files.push('.claude/helpers/ruflo-hook.cjs');
     } else {
       result.skipped.push('.claude/helpers/ruflo-hook.cjs');
@@ -1569,18 +1571,18 @@ async function writeHelpers(
 
   // Fall back to generating helpers if source not available
   const helpers: Record<string, string> = {
-    'pre-commit': generatePreCommitHook(),
-    'post-commit': generatePostCommitHook(),
+    'pre-commit': generatePreCommitHook(options.channel),
+    'post-commit': generatePostCommitHook(options.channel),
     'session.cjs': generateSessionManager(),
     'router.cjs': generateAgentRouter(),
     'memory.cjs': generateMemoryHelper(),
     'hook-handler.cjs': generateHookHandler(),
     'intelligence.cjs': generateIntelligenceStub(),
-    'auto-memory-hook.mjs': generateAutoMemoryHook(),
+    'auto-memory-hook.mjs': generateAutoMemoryHook(options.channel),
     // #2132: cross-platform Node.js port of ruflo-hook.sh — always deployed so
     // Windows users have a working shim even if the plugin's hooks.json bash
     // commands are overridden via settings.json.
-    'ruflo-hook.cjs': generateRufloHookCjs(),
+    'ruflo-hook.cjs': generateRufloHookCjs(options.channel),
   };
 
   for (const [name, content] of Object.entries(helpers)) {
@@ -1599,6 +1601,18 @@ async function writeHelpers(
       result.skipped.push(`.claude/helpers/${name}`);
     }
   }
+}
+
+/**
+ * ADR-545 — copy one packaged helper. The signed critical helpers are copied
+ * byte for byte: their hashes are in helpers.manifest.json, and a rewritten
+ * copy would be flagged as tampered and re-copied by helper-refresh. Every
+ * other helper (setup-mcp.sh, quick-start.sh, …) gets its refs to ruflo's own
+ * packages pinned to this CLI's version on the pinned channel.
+ */
+function copyHelperPinned(sourcePath: string, destPath: string, file: string, options: InitOptions): void {
+  if (isSignedHelper(file)) fs.copyFileSync(sourcePath, destPath);
+  else copyFilePinned(sourcePath, destPath, options.channel, true);
 }
 
 /**
@@ -1854,7 +1868,7 @@ async function writeInitialMetrics(
         patternsLearned: 0,
         sessionsCompleted: 0
       },
-      _note: 'Metrics will update as you use Ruflo. Run: npx ruflo@latest daemon start'
+      _note: `Metrics will update as you use Ruflo. Run: ${npxOurs('ruflo', options.channel)} daemon start`
     };
     fs.writeFileSync(progressPath, JSON.stringify(progress, null, 2), 'utf-8');
     result.created.files.push('.claude-flow/metrics/v3-progress.json');
@@ -1918,7 +1932,7 @@ async function writeInitialMetrics(
       cvesFixed: 0,
       totalCves: 0,
       lastScan: null,
-      _note: 'Run: npx @claude-flow/cli@latest security scan'
+      _note: `Run: ${npxOurs('@claude-flow/cli', options.channel)} security scan`
     };
     fs.writeFileSync(auditPath, JSON.stringify(audit, null, 2), 'utf-8');
     result.created.files.push('.claude-flow/security/audit-status.json');
@@ -1940,6 +1954,9 @@ async function writeCapabilitiesDoc(
     return;
   }
 
+  const cli = npxOurs('@claude-flow/cli', options.channel);
+  const ruflo = npxOurs('ruflo', options.channel);
+  const rufloSpec = ourSpec('ruflo', options.channel);
   const capabilities = `# RuFlo V3 - Complete Capabilities Reference
 > Generated: ${new Date().toISOString()}
 > Full documentation: https://github.com/ruvnet/claude-flow
@@ -2002,13 +2019,13 @@ RuFlo V3 is a domain-driven design architecture for multi-agent AI coordination 
 ### Quick Commands
 \`\`\`bash
 # Initialize swarm
-npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --strategy specialized
+${cli} swarm init --topology hierarchical --max-agents 8 --strategy specialized
 
 # Check status
-npx @claude-flow/cli@latest swarm status
+${cli} swarm status
 
 # Monitor activity
-npx @claude-flow/cli@latest swarm monitor
+${cli} swarm monitor
 \`\`\`
 
 ---
@@ -2092,17 +2109,17 @@ npx @claude-flow/cli@latest swarm monitor
 ### Example Commands
 \`\`\`bash
 # Initialize
-npx @claude-flow/cli@latest init --wizard
+${cli} init --wizard
 
 # Spawn agent
-npx @claude-flow/cli@latest agent spawn -t coder --name my-coder
+${cli} agent spawn -t coder --name my-coder
 
 # Memory operations
-npx @claude-flow/cli@latest memory store --key "pattern" --value "data" --namespace patterns
-npx @claude-flow/cli@latest memory search --query "authentication"
+${cli} memory store --key "pattern" --value "data" --namespace patterns
+${cli} memory search --query "authentication"
 
 # Diagnostics
-npx @claude-flow/cli@latest doctor --fix
+${cli} doctor --fix
 \`\`\`
 
 ---
@@ -2201,16 +2218,16 @@ High-confidence insights (>0.8) can transfer between agents.
 ### Memory Commands
 \`\`\`bash
 # Store pattern
-npx @claude-flow/cli@latest memory store --key "name" --value "data" --namespace patterns
+${cli} memory store --key "name" --value "data" --namespace patterns
 
 # Semantic search
-npx @claude-flow/cli@latest memory search --query "authentication"
+${cli} memory search --query "authentication"
 
 # List entries
-npx @claude-flow/cli@latest memory list --namespace patterns
+${cli} memory list --namespace patterns
 
 # Initialize database
-npx @claude-flow/cli@latest memory init --force
+${cli} memory init --force
 \`\`\`
 
 ---
@@ -2239,16 +2256,16 @@ npx @claude-flow/cli@latest memory init --force
 ### Hive-Mind Commands
 \`\`\`bash
 # Initialize
-npx @claude-flow/cli@latest hive-mind init --queen-type strategic
+${cli} hive-mind init --queen-type strategic
 
 # Status
-npx @claude-flow/cli@latest hive-mind status
+${cli} hive-mind status
 
 # Spawn workers
-npx @claude-flow/cli@latest hive-mind spawn --count 5 --type worker
+${cli} hive-mind spawn --count 5 --type worker
 
 # Consensus
-npx @claude-flow/cli@latest hive-mind consensus --propose "task"
+${cli} hive-mind consensus --propose "task"
 \`\`\`
 
 ---
@@ -2285,18 +2302,18 @@ npx @claude-flow/cli@latest hive-mind consensus --propose "task"
 ### Optional Integrations
 | Package | Command |
 |---------|---------|
-| ruv-swarm | \`npx ruv-swarm mcp start\` |
-| flow-nexus | \`npx flow-nexus@latest mcp start\` |
-| agentic-jujutsu | \`npx agentic-jujutsu@latest\` |
+| ruv-swarm | \`npx ${thirdPartySpec('ruv-swarm', options.channel)} mcp start\` |
+| flow-nexus | \`npx ${thirdPartySpec('flow-nexus', options.channel)} mcp start\` |
+| agentic-jujutsu | \`npx ${thirdPartySpec('agentic-jujutsu', options.channel)}\` |
 
 ### MCP Server Setup
 \`\`\`bash
 # Add Ruflo MCP
-claude mcp add ruflo -- npx -y ruflo@latest mcp start
+claude mcp add ruflo -- npx -y ${rufloSpec} mcp start
 
 # Optional servers
-claude mcp add ruv-swarm -- npx -y ruv-swarm mcp start
-claude mcp add flow-nexus -- npx -y flow-nexus@latest mcp start
+claude mcp add ruv-swarm -- npx -y ${thirdPartySpec('ruv-swarm', options.channel)} mcp start
+claude mcp add flow-nexus -- npx -y ${thirdPartySpec('flow-nexus', options.channel)} mcp start
 \`\`\`
 
 ---
@@ -2306,24 +2323,24 @@ claude mcp add flow-nexus -- npx -y flow-nexus@latest mcp start
 ### Essential Commands
 \`\`\`bash
 # Setup
-npx ruflo@latest init --wizard
-npx ruflo@latest daemon start
-npx ruflo@latest doctor --fix
+${ruflo} init --wizard
+${ruflo} daemon start
+${ruflo} doctor --fix
 
 # Swarm
-npx ruflo@latest swarm init --topology hierarchical --max-agents 8
-npx ruflo@latest swarm status
+${ruflo} swarm init --topology hierarchical --max-agents 8
+${ruflo} swarm status
 
 # Agents
-npx ruflo@latest agent spawn -t coder
-npx ruflo@latest agent list
+${ruflo} agent spawn -t coder
+${ruflo} agent list
 
 # Memory
-npx ruflo@latest memory search --query "patterns"
+${ruflo} memory search --query "patterns"
 
 # Hooks
-npx ruflo@latest hooks pre-task --description "task"
-npx ruflo@latest hooks worker dispatch --trigger optimize
+${ruflo} hooks pre-task --description "task"
+${ruflo} hooks worker dispatch --trigger optimize
 \`\`\`
 
 ### File Structure
@@ -2492,7 +2509,7 @@ function findSourceDir(type: 'skills' | 'commands' | 'agents', sourceBaseDir?: s
 /**
  * Copy directory recursively
  */
-function copyDirRecursive(src: string, dest: string): void {
+function copyDirRecursive(src: string, dest: string, channel: ReleaseChannel = 'pinned'): void {
   fs.mkdirSync(dest, { recursive: true });
 
   const entries = fs.readdirSync(src, { withFileTypes: true });
@@ -2502,9 +2519,10 @@ function copyDirRecursive(src: string, dest: string): void {
     const destPath = path.join(dest, entry.name);
 
     if (entry.isDirectory()) {
-      copyDirRecursive(srcPath, destPath);
+      copyDirRecursive(srcPath, destPath, channel);
     } else {
-      fs.copyFileSync(srcPath, destPath);
+      // ADR-545: docs copied from the package get ruflo refs pinned.
+      copyFilePinned(srcPath, destPath, channel);
     }
   }
 }
@@ -2514,7 +2532,7 @@ function copyDirRecursive(src: string, dest: string): void {
  * installed plugin provides. Returns the number of agent/command `.md` files
  * copied (README.md excluded); writes nothing at all when that is zero.
  */
-function copyDirSkipping(src: string, dest: string, provided: Map<string, string>, skipped: string[]): number {
+function copyDirSkipping(src: string, dest: string, provided: Map<string, string>, skipped: string[], channel: ReleaseChannel = 'pinned'): number {
   const plan: Array<[string, string]> = [];
   let kept = 0;
   const walk = (from: string, to: string) => {
@@ -2535,7 +2553,7 @@ function copyDirSkipping(src: string, dest: string, provided: Map<string, string
   if (kept === 0) return 0;
   for (const [from, to] of plan) {
     fs.mkdirSync(path.dirname(to), { recursive: true });
-    fs.copyFileSync(from, to);
+    copyFilePinned(from, to, channel);
   }
   return kept;
 }
