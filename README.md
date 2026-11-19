@@ -5,8 +5,8 @@
 <a href="https://cognitum.one/rupro"><picture><source media="(max-width: 760px)" srcset="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-workspace-mobile.svg"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-workspace.svg" alt="ruPro workspace tour showing project agents, provider terminals, evidence review and business dashboards" width="100%"></picture></a>
 
 <p align="center">
-<a href="https://cognitum.one/rupro"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-explore.svg" alt="Explore ruPro" width="300" height="76"></a>
-<a href="https://cognitum.one/#demo=welcome"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-demo.svg" alt="Try the interactive demo" width="300" height="76"></a>
+<a href="https://cognitum.one/rupro"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/ebb9e4a5cb4f12103fb2c3198fc77ac281fc0588/docs/assets/readme/rupro-explore.svg" alt="Explore ruPro" width="300" height="76"></a>
+<a href="https://cognitum.one/#demo=welcome"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/ebb9e4a5cb4f12103fb2c3198fc77ac281fc0588/docs/assets/readme/rupro-demo.svg" alt="Try the interactive demo" width="300" height="76"></a>
 </p>
 
 **An agent meta-harness for Claude Code and Codex.**
@@ -18,12 +18,12 @@
 [![Follow @rUv on X](https://img.shields.io/badge/Follow-@rUv-000000?style=for-the-badge&logo=x&logoColor=white&color=85dcea&labelColor=142730)](https://x.com/rUv)
 
 <p align="center">
-<a href="docs/harness-origins.md"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/badges/first-commit.svg" width="300" height="76" alt="Claude Flow lineage: first commit June 2, 2025 by rUv; inspect the evidence"></a>
+<a href="docs/harness-origins.md"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/ebb9e4a5cb4f12103fb2c3198fc77ac281fc0588/docs/assets/readme/badges/first-commit.svg" width="300" height="76" alt="Claude Flow lineage: first commit June 2, 2025 by rUv; inspect the evidence"></a>
 <a href="https://github.com/ruvnet/ruvnet/blob/main/data/ecosystem-running-totals.json"><img src="docs/assets/readme/badges/downloads.svg" width="300" height="76" alt="120.95 million observed npm download events since October 1, 2025, across 429 packages. Verified November 16, 2026. Lower bound; not unique users or lifetime downloads."></a>
 <br>
-<a href="https://github.com/ruvnet/claude-flow"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/badges/claude.svg" width="300" height="76" alt="Claude Code plugin"></a>
+<a href="https://github.com/ruvnet/claude-flow"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/ebb9e4a5cb4f12103fb2c3198fc77ac281fc0588/docs/assets/readme/badges/claude.svg" width="300" height="76" alt="Claude Code plugin"></a>
 <a href="https://claude.ai/customize/plugins/id/e74b8927-3c53-4082-b0d9-fe82bf1235ce%40anthropic-plugin-directory"><img src="docs/assets/readme/badges/claude-directory.svg" width="300" height="76" alt="View Claude plugin listing in the Claude plugin directory"></a>
-<a href="https://www.npmjs.com/package/@claude-flow/codex"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/badges/codex.svg" width="300" height="76" alt="Codex plugin"></a>
+<a href="https://www.npmjs.com/package/@claude-flow/codex"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/ebb9e4a5cb4f12103fb2c3198fc77ac281fc0588/docs/assets/readme/badges/codex.svg" width="300" height="76" alt="Codex plugin"></a>
 <a href="https://chatgpt.com/plugins/plugin_asdk_app_6ab674ff53c48191bb37040c343e31f3"><img src="docs/assets/readme/badges/chatgpt.svg" width="300" height="76" alt="ChatGPT plugin: RuFlo Federation"></a>
 </p>
 
