@@ -30,8 +30,10 @@
 </div>
 
 <a id="start-here"></a>
+<a id="quick-start"></a>
+<a id="get-started-in-one-command"></a>
 
-## <img src="docs/assets/readme/icons/terminal.svg" width="32" height="32" alt=""> Get started in one command
+## Run your first task
 
 Run this in your project folder:
 
@@ -47,14 +49,26 @@ Use a ruflo swarm to review this repo: find the riskiest module, write tests for
 
 `init` adds ruflo's agents, hooks, memory and MCP server to the project, and Claude Code picks them up on its next start. Codex and other MCP clients work too: point them at `npx -y ruflo@latest mcp start`.
 
+**Check the result.** Ask the agent to name the module it chose, show the test it added, and report the test command and result. Review the diff in your project.
+
 <p align="center"><img src="docs/assets/ruflo-console-tour.gif" width="720" alt="Looping recording of the ruflo console: overview, swarm view and missions in a sample project"></p>
 
-[First useful task, step by step](docs/ruflo-explained.md) · [User guide](docs/USERGUIDE.md) · [Compare install paths](#quick-start)
+[First task walkthrough](docs/ruflo-explained.md) · [Inspect a run in Mission Control](#mission-control) · [Other ways to install](#install-options)
 
-[Optional recipe: local vector search with RVF and MCP](https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md) · [Ruvnet ecosystem](https://ruv.io)
+<a id="install-options"></a>
 
 <details>
-<summary><b>Other ways to install</b> (Claude Code plugins only, MCP-only clients, terminal UI)</summary>
+<summary>Other ways to install</summary>
+
+There are **two different install paths** with very different surface areas. Pick based on what you need (#1744):
+
+| | **Claude Code Plugin** | **CLI install (`npx ruflo init`)** |
+|---|---|---|
+| What it gives you | Slash commands + a few skills + agent definitions per-plugin | Full Ruflo loop — 98 agents, 60+ commands, 30 skills, MCP server, hooks, daemon |
+| Files in your workspace | **Zero** | `.claude/`, `.claude-flow/`, `CLAUDE.md`, helpers, settings |
+| MCP server registered | Only if `ruflo-core` is installed (it ships its own `.mcp.json`) — most other plugins don't | Yes |
+| Hooks installed | No | Yes |
+| Best for | Try a single plugin's commands without committing to the full install | Production use — everything works as documented |
 
 **Claude Code plugins only.** This route installs core tools, the visual console and runtime mods, with no files added to your project. It needs Claude Code **2.1.287 or later**. Run inside Claude Code:
 
@@ -75,78 +89,54 @@ From a terminal, on Claude Code 2.1.292 or later: `claude plugin install ruflo-c
 
 <p align="center"><img src="docs/assets/ruflo-tui-compact.svg" width="640" alt="Looping recording of the optional ruflo terminal UI with its pictures: Overview in the Classic BBS look, the Orbital look with its moving globe, and the Swarm graph, in a sample project"></p>
 
-</details>
+`ruflo-core` registers its own MCP server. Its tools use the `mcp__plugin_ruflo-core_ruflo__` prefix.
 
-<div align="center">
+### <img src="docs/assets/readme/icons/terminal.svg" width="28" height="28" alt=""> CLI Install
 
-
-### Optional: ruOS Desktop
-
-<a href="https://ruos.cognitum.one"><img src="ruflo/assets/ruos-animated.svg" alt="ruOS — A desktop that runs itself" width="100%"></a>
-
-**Connect ruOS to ChatGPT or Claude via MCP:**
-
-```text
-https://ruos.cognitum.one/mcp
-```
-
-
-
-<!-- RuVector promo -->
-<a href="https://github.com/ruvnet/ruvector"><img src="docs/assets/readme/ruvector-promo-depth.svg" width="100%" alt="RuVector: Give your agents memory. Local vector search, persistent context, graph relationships and feedback learning. Explore RuVector."></a>
+**macOS / Linux / WSL / Git-Bash:**
 
 ```bash
-npx ruvector
+# One-line install (POSIX shells only — see Windows note below)
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/ruflo@main/scripts/install.sh | bash
 ```
 
+**All platforms (including native Windows PowerShell / cmd):**
 
+```bash
+# Interactive setup wizard — runs identically on every platform
+npx ruflo@latest init wizard
 
+# Quick non-interactive init
+# npx ruflo@latest init
 
-# Ruflo
+# Or install globally
+npm install -g ruflo@latest
+```
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+> 💡 **Windows users:** the `curl ... | bash` form needs a POSIX shell (Git-Bash, WSL, MSYS). The `npx ruflo@latest init wizard` line works natively in PowerShell and cmd. If you hit an `'bash' is not recognized` error, use the `npx` line instead — both end up running the same init flow.
 
+### <img src="docs/assets/readme/icons/network.svg" width="28" height="28" alt=""> MCP Server
 
-[![RuFlo Explained — build an AI team that plans, remembers, tests, and improves](docs/assets/ruflo-explained/ch14.jpg)](docs/ruflo-explained.md)
+```bash
+# Add Ruflo as an MCP server in Claude Code
+claude mcp add claude-flow -- npx ruflo@latest mcp start
+```
 
-**[📖 RuFlo Explained — Build an AI Team That Plans, Remembers, Tests, and Improves](docs/ruflo-explained.md)**
-A 14-chapter guide: from the basic idea to a first useful task, then memory, agent teams, plugins, cost and verification.
+For static inspection of local applications and binaries, see the [ruRE plugin guide](plugins/ruflo-rure/README.md).
 
-</div>
-
-> **Agent = Model + Harness.** The model writes; the harness gives it tools, memory, loops, sandboxes, and controls so it can actually work. **Ruflo is the harness** — the execution layer around Claude Code and Codex that adds 100+ specialized agents, coordinated swarms, self-learning memory, federated comms across machines, and enterprise security guardrails. So agents don't just run, they collaborate.
-
-One `npx ruflo init` gives Claude Code a nervous system: agents self-organize into swarms, learn from every task, remember across sessions, and — with federation — securely talk to agents on other machines without leaking data. You keep writing code. Ruflo handles the coordination.
-
-<p align="center"><img src="docs/assets/readme/learning-cinematic-compact.svg" width="100%" alt="Ruflo trajectory learning: branching memory paths, outcome feedback, contrastive AI and local learning. No LLM required for local vector retrieval and contrastive updates; agent execution may still use an LLM."></p>
-
-<sub>Conceptual learning loop. Local vector retrieval and contrastive updates can run without an LLM; embeddings and configured learning modules are still required. See the <a href="v3/@claude-flow/cli/src/services/ruvector-training.ts">RuVector training integration</a> and <a href="v3/@claude-flow/neural/src/modes/balanced.ts">trajectory contrastive learning</a>.</sub>
-
-<details>
-<summary>Architecture in text</summary>
-
-User → Ruflo (CLI/MCP) → Router → Swarm → Agents → Memory → LLM providers. Memory feeds useful experience back into routing. This is a conceptual flow, not a live execution trace.
-
-</details>
-
-> **New to Ruflo?** You don't need to learn 406 MCP tools or 61 CLI commands. After `init`, just use Claude Code normally — the hooks system automatically routes tasks, learns from successful patterns, and coordinates agents in the background.
+---
 
 **Grok Build:** `npx ruflo init --grok` writes the project host surface (`.grok/`, the team bus, and the operator guide) and nothing outside the project; add `--dry-run` to preview. Setup, the `spawn_subagent` contract, the optional status row, and what to re-check when Grok updates: [the Grok operator guide](v3/@claude-flow/cli/templates/grok/docs/README.md).
 
-<details>
-<summary><strong>📖 Background — where the name comes from</strong></summary>
-
-> Claude Flow is now Ruflo — named by [`rUv`](https://ruv.io), who loves Rust, flow states, and building things that feel inevitable. The "Ru" is the rUv. The "flo" is working until 3am. Underneath, powered by [`Cognitum.One`](https://cognitum.one/?RuFlo) agentic architecture, running a supercharged Rust-based AI engine, embeddings, memory, and plugin system.
-
 </details>
-
----
 
 ## Mission Control
 
 <p align="center"><img src="docs/assets/readme/console.svg" alt="Mission Control console overview" width="100%"></p>
 
 Open `/ruflo` in Claude Code to monitor agent work, inspect a run, or give Claude permission to operate the console.
+
+If you use the console, open the agent’s log and compare its actions with the diff and test result from your first task.
 
 | Task | What you can do |
 | --- | --- |
@@ -195,34 +185,34 @@ The default is **read + ask**. Available levels are `read`, `write`, `manage`, a
 
 [Watch the recorded Claude Haiku session](docs/assets/ruflo-console-claude-control.gif) to see mission creation, page navigation, a refused swarm stop, and control being taken back. The recording uses `write + auto`. Step 1 uses `ask` so you can approve creation yourself. [Recorded test findings](v3/docs/adr/ADR-444-claude-controls-the-console.md) · [Reproduction script](plugins/ruflo-console/scripts/e2e-control.sh)
 
-## Quick Start
+<a id="what-you-get"></a>
 
-<p align="center"><img src="docs/assets/readme/quick-start.svg" alt="Start building with Ruflo" width="100%"></p>
+## Choose your next capability
 
-There are **two different install paths** with very different surface areas. Pick based on what you need (#1744):
+<table>
+<tr><td width="50%"><a href="plugins/ruflo-swarm/README.md"><img src="docs/assets/readme/card-swarm.svg" width="100%" alt="Agent teams"></a></td><td width="50%"><a href="plugins/ruflo-rag-memory/README.md"><img src="docs/assets/readme/card-memory.svg" width="100%" alt="Persistent memory"></a></td></tr>
+<tr><td width="50%"><a href="plugins/ruflo-intelligence/README.md"><img src="docs/assets/readme/card-learning.svg" width="100%" alt="Learning loops"></a></td><td width="50%"><a href="plugins/ruflo-security-audit/README.md"><img src="docs/assets/readme/card-security.svg" width="100%" alt="Security controls"></a></td></tr>
+<tr><td width="50%"><a href="https://ruvnet.github.io/ruflo"><img src="docs/assets/readme/card-plugins.svg" width="100%" alt="Plugin marketplace"></a></td><td width="50%"><a href="plugins/ruflo-ruvllm/README.md"><img src="docs/assets/readme/card-routing.svg" width="100%" alt="Models and routing"></a></td></tr>
+</table>
 
-| | **Claude Code Plugin** | **CLI install (`npx ruflo init`)** |
-|---|---|---|
-| What it gives you | Slash commands + a few skills + agent definitions per-plugin | Full Ruflo loop — 98 agents, 60+ commands, 30 skills, MCP server, hooks, daemon |
-| Files in your workspace | **Zero** | `.claude/`, `.claude-flow/`, `CLAUDE.md`, helpers, settings |
-| MCP server registered | Only if `ruflo-core` is installed (it ships its own `.mcp.json`) — most other plugins don't | Yes |
-| Hooks installed | No | Yes |
-| Best for | Try a single plugin's commands without committing to the full install | Production use — everything works as documented |
+<details>
+<summary>Capability counts and implementation details</summary>
 
-### Path A — Claude Code Plugins (lite, slash commands only)
+| Capability | Description |
+|------------|-------------|
+| <img src="docs/assets/readme/icons/agents.svg" width="28" height="28" alt=""> **100+ Agents** | Specialized agents for coding, testing, security, docs, architecture |
+| <img src="docs/assets/readme/icons/network.svg" width="28" height="28" alt=""> **Comms Layer** | Zero-trust federation — agents across machines/orgs discover, authenticate, and exchange work securely |
+| <img src="docs/assets/readme/icons/swarm.svg" width="28" height="28" alt=""> **Swarm Coordination** | Hierarchical, mesh, and adaptive topologies with consensus |
+| <img src="docs/assets/readme/icons/learning.svg" width="28" height="28" alt=""> **Self-Learning** | SONA neural patterns, ReasoningBank, trajectory learning |
+| <img src="docs/assets/readme/icons/memory.svg" width="28" height="28" alt=""> **Vector Memory** | HNSW-indexed AgentDB — measured ~1.9x faster at N=20k, ~3.2x–4.7x at N=5k vs brute force (recall@10 ~0.99); ANN wins above the crossover, ties/loses at small N. See [audit](docs/reviews/intelligence-system-audit-2026-05-29.md) + [`scripts/benchmark-intelligence.mjs`](scripts/benchmark-intelligence.mjs) |
+| <img src="docs/assets/readme/icons/workers.svg" width="28" height="28" alt=""> **Background Workers** | 12 auto-triggered workers (audit, optimize, testgaps, etc.) |
+| <img src="docs/assets/readme/icons/plugins.svg" width="28" height="28" alt=""> **Plugin Marketplace** | 48 native Claude Code plugins + 14 in-tree npm plugins |
+| <img src="docs/assets/readme/icons/routing.svg" width="28" height="28" alt=""> **Multi-Provider** | Claude, GPT, Gemini, Cohere, Ollama with smart routing |
+| <img src="docs/assets/readme/icons/security.svg" width="28" height="28" alt=""> **Security** | AIDefence, input validation, CVE remediation, path traversal prevention |
+| <img src="docs/assets/readme/icons/federation.svg" width="28" height="28" alt=""> **Agent Federation** | Cross-installation agent collaboration with zero-trust security |
+| <img src="docs/assets/readme/icons/audit.svg" width="28" height="28" alt=""> **[MetaHarness](docs/metaharness-user-guide.md)** | Audit your AI agent setup before you ship. Grade readiness (1-100), scan tool configs for security issues, snapshot the whole project to catch regressions over time, and find templates that match your repo. `ruflo eject` turns a ruflo project into a standalone agent toolkit with its own name. [Full guide](docs/metaharness-user-guide.md). |
 
-```bash
-# Add the marketplace
-/plugin marketplace add ruvnet/ruflo
-
-# Install core + any plugins you need
-/plugin install ruflo-core@ruflo
-/plugin install ruflo-swarm@ruflo
-/plugin install ruflo-rag-memory@ruflo
-/plugin install ruflo-neural-trader@ruflo
-```
-
-This adds slash commands and agent definitions. `ruflo-core` (installed above) does register its own MCP server on install — its tools are callable as `mcp__plugin_ruflo-core_ruflo__*` (e.g. `mcp__plugin_ruflo-core_ruflo__memory_store`), not the bare `memory_store`/`swarm_init`/`agent_spawn` names the CLI-track scaffold uses. Other plugins generally don't ship their own MCP server. For the full loop with the CLI-track tool names, use Path B below.
+</details>
 
 <details>
 <summary><strong>🔌 All 48 plugins</strong> (plus 3 external)</summary>
@@ -325,74 +315,23 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 
 </details>
 
-### <img src="docs/assets/readme/icons/terminal.svg" width="28" height="28" alt=""> CLI Install
+## How Ruflo works
 
-**macOS / Linux / WSL / Git-Bash:**
+> **Agent = Model + Harness.** The model writes; the harness gives it tools, memory, loops, sandboxes, and controls so it can actually work. **Ruflo is the harness** — the execution layer around Claude Code and Codex that adds 100+ specialized agents, coordinated swarms, self-learning memory, federated comms across machines, and enterprise security guardrails. So agents don't just run, they collaborate.
 
-```bash
-# One-line install (POSIX shells only — see Windows note below)
-curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/ruflo@main/scripts/install.sh | bash
-```
-
-**All platforms (including native Windows PowerShell / cmd):**
-
-```bash
-# Interactive setup wizard — runs identically on every platform
-npx ruflo@latest init wizard
-
-# Quick non-interactive init
-# npx ruflo@latest init
-
-# Or install globally
-npm install -g ruflo@latest
-```
-
-> 💡 **Windows users:** the `curl ... | bash` form needs a POSIX shell (Git-Bash, WSL, MSYS). The `npx ruflo@latest init wizard` line works natively in PowerShell and cmd. If you hit an `'bash' is not recognized` error, use the `npx` line instead — both end up running the same init flow.
-
-### <img src="docs/assets/readme/icons/network.svg" width="28" height="28" alt=""> MCP Server
-
-```bash
-# Add Ruflo as an MCP server in Claude Code
-claude mcp add claude-flow -- npx ruflo@latest mcp start
-```
-
-For static inspection of local applications and binaries, see the [ruRE plugin guide](plugins/ruflo-rure/README.md).
-
----
-
-## What You Get
-
-<p align="center"><img src="docs/assets/readme/capabilities.svg" alt="Your agent toolkit" width="100%"></p>
-
-<table>
-<tr><td width="50%"><a href="plugins/ruflo-swarm/README.md"><img src="docs/assets/readme/card-swarm.svg" width="100%" alt="Agent teams"></a></td><td width="50%"><a href="plugins/ruflo-rag-memory/README.md"><img src="docs/assets/readme/card-memory.svg" width="100%" alt="Persistent memory"></a></td></tr>
-<tr><td width="50%"><a href="plugins/ruflo-intelligence/README.md"><img src="docs/assets/readme/card-learning.svg" width="100%" alt="Learning loops"></a></td><td width="50%"><a href="plugins/ruflo-security-audit/README.md"><img src="docs/assets/readme/card-security.svg" width="100%" alt="Security controls"></a></td></tr>
-<tr><td width="50%"><a href="https://ruvnet.github.io/ruflo"><img src="docs/assets/readme/card-plugins.svg" width="100%" alt="Plugin marketplace"></a></td><td width="50%"><a href="plugins/ruflo-ruvllm/README.md"><img src="docs/assets/readme/card-routing.svg" width="100%" alt="Models and routing"></a></td></tr>
-</table>
-
-| Capability | Description |
-|------------|-------------|
-| <img src="docs/assets/readme/icons/agents.svg" width="28" height="28" alt=""> **100+ Agents** | Specialized agents for coding, testing, security, docs, architecture |
-| <img src="docs/assets/readme/icons/network.svg" width="28" height="28" alt=""> **Comms Layer** | Zero-trust federation — agents across machines/orgs discover, authenticate, and exchange work securely |
-| <img src="docs/assets/readme/icons/swarm.svg" width="28" height="28" alt=""> **Swarm Coordination** | Hierarchical, mesh, and adaptive topologies with consensus |
-| <img src="docs/assets/readme/icons/learning.svg" width="28" height="28" alt=""> **Self-Learning** | SONA neural patterns, ReasoningBank, trajectory learning |
-| <img src="docs/assets/readme/icons/memory.svg" width="28" height="28" alt=""> **Vector Memory** | HNSW-indexed AgentDB — measured ~1.9x faster at N=20k, ~3.2x–4.7x at N=5k vs brute force (recall@10 ~0.99); ANN wins above the crossover, ties/loses at small N. See [audit](docs/reviews/intelligence-system-audit-2026-05-29.md) + [`scripts/benchmark-intelligence.mjs`](scripts/benchmark-intelligence.mjs) |
-| <img src="docs/assets/readme/icons/workers.svg" width="28" height="28" alt=""> **Background Workers** | 12 auto-triggered workers (audit, optimize, testgaps, etc.) |
-| <img src="docs/assets/readme/icons/plugins.svg" width="28" height="28" alt=""> **Plugin Marketplace** | 48 native Claude Code plugins + 14 in-tree npm plugins |
-| <img src="docs/assets/readme/icons/routing.svg" width="28" height="28" alt=""> **Multi-Provider** | Claude, GPT, Gemini, Cohere, Ollama with smart routing |
-| <img src="docs/assets/readme/icons/security.svg" width="28" height="28" alt=""> **Security** | AIDefence, input validation, CVE remediation, path traversal prevention |
-| <img src="docs/assets/readme/icons/federation.svg" width="28" height="28" alt=""> **Agent Federation** | Cross-installation agent collaboration with zero-trust security |
-| <img src="docs/assets/readme/icons/audit.svg" width="28" height="28" alt=""> **[MetaHarness](docs/metaharness-user-guide.md)** | Audit your AI agent setup before you ship. Grade readiness (1-100), scan tool configs for security issues, snapshot the whole project to catch regressions over time, and find templates that match your repo. `ruflo eject` turns a ruflo project into a standalone agent toolkit with its own name. [Full guide](docs/metaharness-user-guide.md). |
-
-### <img src="docs/assets/readme/icons/learning.svg" width="28" height="28" alt=""> Learning from experience
+### What can the next run reuse?
 
 <p align="center"><img src="docs/assets/readme/learning-flow.svg" width="100%" alt="Recall, execute, evaluate, store, adapt and reuse: an illustrative agent learning cycle."></p>
 
 Useful trajectories and task feedback can inform future work. Results depend on the configured memory, learning components and quality of feedback. [Learning plugin](plugins/ruflo-intelligence/README.md).
 
-### Agent Federation — Slack for Agents
+[Watch the learning walkthrough](docs/assets/readme/learning-cinematic-compact.svg) · [Local RVF search recipe](docs/recipes/rvf-mcp-search.md)
 
-<p align="center"><img src="docs/assets/readme/federation.svg" alt="Connected intelligence across machines" width="100%"></p>
+<sub>Conceptual learning loop. Local vector retrieval and contrastive updates can run without an LLM; embeddings and configured learning modules are still required. See the <a href="v3/@claude-flow/cli/src/services/ruvector-training.ts">RuVector training integration</a> and <a href="v3/@claude-flow/neural/src/modes/balanced.ts">trajectory contrastive learning</a>.</sub>
+
+<a id="agent-federation--slack-for-agents"></a>
+
+### How do two teams exchange work?
 
 <p align="center"><img src="docs/assets/readme/federation-flow.svg" width="100%" alt="Outbound agent, data filtering, signing and encryption, identity verification, input checks and receiving agent."></p>
 
@@ -492,13 +431,24 @@ User --> Claude Code / CLI
 
 </details>
 
----
+## Explore the ecosystem
+
+| Project | What it adds | Get started |
+| --- | --- | --- |
+| [ruOS](https://ruos.cognitum.one) | A desktop that connects to Claude or ChatGPT through MCP. | Connect to `https://ruos.cognitum.one/mcp` |
+| [RuVector](https://github.com/ruvnet/ruvector) | Local vector search and persistent context for agents. | Run `npx ruvector` |
+| [Cognitum](https://cognitum.one) | Edge infrastructure for ambient intelligence. | [Explore Cognitum One](https://cognitum.one) |
+
+[See the ruOS desktop](ruflo/assets/ruos-animated.svg) · [Watch the RuVector overview](docs/assets/readme/ruvector-promo-depth.svg) · [Ruvnet ecosystem](https://ruv.io)
 
 ## Documentation
 
 <p align="center"><img src="docs/assets/readme/documentation.svg" alt="Guides, architecture and verification" width="100%"></p>
 
-Four docs for four audiences:
+[English](README.md) · [简体中文](README.zh-CN.md)
+
+**[📖 RuFlo Explained — Build an AI Team That Plans, Remembers, Tests, and Improves](docs/ruflo-explained.md)**
+A 14-chapter guide: from the basic idea to a first useful task, then memory, agent teams, plugins, cost and verification.
 
 | Doc | When to read it |
 |-----|-----------------|
@@ -512,10 +462,12 @@ Four docs for four audiences:
 
 Benchmark internals (for reproduction): [`sota-workload-spec.md`](https://github.com/ruvnet/ruflo/blob/perf/sota-comparator-benchmarks/docs/benchmarks/sota-workload-spec.md) · [`SOTA-PROGRESS.md`](https://github.com/ruvnet/ruflo/blob/perf/sota-comparator-benchmarks/docs/benchmarks/SOTA-PROGRESS.md) · [raw matrix JSON: darwin](https://github.com/ruvnet/ruflo/blob/perf/sota-comparator-benchmarks/docs/benchmarks/sota-matrix.json) · [linux](https://github.com/ruvnet/ruflo/blob/perf/sota-comparator-benchmarks/docs/benchmarks/sota-matrix-linux.json)
 
-User Guide section index:
+<details>
+<summary>User Guide section index</summary>
 
-| Section | Topics |
-|---------|--------|
+| Guide section | Topics |
+| --- | --- |
+
 | [Quick Start](docs/USERGUIDE.md#quick-start) | Installation, prerequisites, install profiles |
 | [Core Features](docs/USERGUIDE.md#-core-features) | MCP tools, agents, memory, neural learning |
 | [Intelligence & Learning](docs/USERGUIDE.md#-intelligence--learning) | Hooks, workers, SONA, model routing |
@@ -525,7 +477,14 @@ User Guide section index:
 | [Configuration](docs/USERGUIDE.md#%EF%B8%8F-configuration--reference) | Environment variables, config schema |
 | [Plugin Marketplace](https://ruvnet.github.io/ruflo) | Browse and install plugins |
 
----
+</details>
+
+<details>
+<summary><strong>📖 Background — where the name comes from</strong></summary>
+
+> Claude Flow is now Ruflo — named by [`rUv`](https://ruv.io), who loves Rust, flow states, and building things that feel inevitable. The "Ru" is the rUv. The "flo" is working until 3am. Underneath, powered by [`Cognitum.One`](https://cognitum.one/?RuFlo) agentic architecture, running a supercharged Rust-based AI engine, embeddings, memory, and plugin system.
+
+</details>
 
 ## Support
 
@@ -539,10 +498,6 @@ User Guide section index:
 | Community | [Agentics Foundation Discord](https://discord.com/invite/dfxmpwkG2D) |
 | Powered by | [Cognitum.one](https://cognitum.one) |
 
-<p align="center"><img src="docs/assets/readme/signal-divider.svg" alt="Ruflo" width="100%"></p>
-
 ## License
 
 MIT - [RuvNet](https://github.com/ruvnet)
-
-<a href="https://cognitum.one"><img src="docs/assets/readme/cognitum-banner-v2.svg" width="100%" alt="Cognitum One: Ambient Intelligence at the edge of the Physical World. Explore cognitum.one."></a>
