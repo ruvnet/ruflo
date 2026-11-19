@@ -1,6 +1,11 @@
 <div align="center">
 
-<a href="https://cognitum.one/agentic-engineering"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
+<a href="https://cognitum.one/ruPro"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
+
+<a href="https://cognitum.one/ruPro"><img src="docs/assets/readme/rupro-workspace-all-platforms.webp" alt="ruPro workspace for agents across desktop, mobile, and cloud" width="100%"></a>
+
+**[Explore ruPro interactive demo](https://cognitum.one/ruPro)** · Manage agents and projects across desktop, mobile, and cloud.
+
 
 **An agent meta-harness for Claude Code and Codex.**
 
@@ -12,9 +17,10 @@
 
 <p align="center">
 <a href="docs/harness-origins.md"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/e69e4b95aa08d65ea0f7715489bbf8e62a83a0d2/docs/assets/readme/badges/first-commit.svg" width="300" height="76" alt="Claude Flow lineage: first commit June 2, 2025 by rUv; inspect the evidence"></a>
-<a href="data/npm-downloads.latest.json"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/275aff65a198af758923669acff36f03d1f41623/docs/assets/readme/badges/downloads.svg" width="300" height="76" alt="Illustrative download counter starts at 98,000,000 and adds varied amounts each second in a 30 second loop. Verified dataset: 97,022,120 download events."></a>
+<a href="https://github.com/ruvnet/ruvnet/blob/main/data/ecosystem-running-totals.json"><img src="docs/assets/readme/badges/downloads.svg" width="300" height="76" alt="120.95 million observed npm download events since October 1, 2025, across 429 packages. Verified November 16, 2026. Lower bound; not unique users or lifetime downloads."></a>
 <br>
 <a href="https://github.com/ruvnet/claude-flow"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/d1e80400bdefe01d3b13e70395f88fffab76bb18/docs/assets/readme/badges/claude.svg" width="300" height="76" alt="Claude Code plugin"></a>
+<a href="https://claude.ai/customize/plugins/id/e74b8927-3c53-4082-b0d9-fe82bf1235ce%40anthropic-plugin-directory"><img src="docs/assets/readme/badges/claude-directory.svg" width="300" height="76" alt="View Claude plugin listing in the Claude plugin directory"></a>
 <a href="https://www.npmjs.com/package/@claude-flow/codex"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/d1e80400bdefe01d3b13e70395f88fffab76bb18/docs/assets/readme/badges/codex.svg" width="300" height="76" alt="Codex plugin"></a>
 <a href="https://chatgpt.com/plugins/plugin_asdk_app_6ab674ff53c48191bb37040c343e31f3"><img src="docs/assets/readme/badges/chatgpt.svg" width="300" height="76" alt="ChatGPT plugin: RuFlo Federation"></a>
 </p>
@@ -42,6 +48,10 @@ Use a ruflo swarm to review this repo: find the riskiest module, write tests for
 <p align="center"><img src="docs/assets/ruflo-console-tour.gif" width="720" alt="Looping recording of the ruflo console: overview, swarm view and missions in a sample project"></p>
 
 [First useful task, step by step](docs/ruflo-explained.md) · [User guide](docs/USERGUIDE.md) · [Compare install paths](#quick-start)
+
+<a href="https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/main/docs/assets/readme/rvf-mcp-search.svg" width="720" alt="Search a local RVF index from a Ruflo project using the stdio RVF MCP server and a read-only handle"></a>
+
+[Optional recipe: local vector search with RVF and MCP](https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md) · [Ruvnet ecosystem](https://ruv.io)
 
 <details>
 <summary><b>Other ways to install</b> (Claude Code plugins only, MCP-only clients, terminal UI)</summary>

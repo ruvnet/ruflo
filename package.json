@@ -1,6 +1,6 @@
 {
   "name": "claude-flow",
-  "version": "3.77.1",
+  "version": "3.77.2",
   "workspaces": [
     "v3/@claude-flow/codex",
     "v3/@claude-flow/mcp",
@@ -13,9 +13,9 @@
   "bin": {
     "claude-flow": "bin/cli.js"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow#readme",
+  "homepage": "https://ruv.io",
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues",
+    "url": "https://github.com/ruvnet/ruflo/issues",
     "email": "support@ruv.io"
   },
   "funding": {
@@ -69,13 +69,13 @@
     "v3:security": "npm run security:audit && npm run security:test"
   },
   "dependencies": {
-    "@claude-flow/cli-core": "3.7.7",
+    "@claude-flow/cli-core": "3.7.8",
     "@claude-flow/codex": "3.0.8",
     "@claude-flow/mcp": "3.1.6",
     "@claude-flow/neural": "3.0.3",
     "@claude-flow/plugin-agent-federation": "1.0.7",
     "@claude-flow/security": "3.0.7",
-    "@claude-flow/shared": "3.0.8",
+    "@claude-flow/shared": "3.0.9",
     "@electron/asar": "^4.3.1",
     "@iarna/toml": "^2.2.5",
     "@noble/ed25519": "2.3.0",
@@ -175,7 +175,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ruvnet/claude-flow.git"
+    "url": "git+https://github.com/ruvnet/ruflo.git"
   },
   "keywords": [
     "ruvflow",
@@ -210,7 +210,10 @@
     "hive-mind",
     "distributed-systems",
     "consensus",
-    "self-learning"
+    "self-learning",
+    "local-vector-search",
+    "rvf",
+    "mcp-server"
   ],
   "author": "RuvNet <ruv@ruv.io> (https://ruv.io)",
   "license": "MIT",

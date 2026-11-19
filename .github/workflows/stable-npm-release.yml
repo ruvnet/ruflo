@@ -113,7 +113,8 @@ jobs:
           pnpm --dir @claude-flow/cli exec vitest run \
             __tests__/guidance-brain.test.ts \
             __tests__/mcp-client-guardrail.test.ts \
-            __tests__/x-federation-join.test.ts
+            __tests__/x-federation-join.test.ts \
+            __tests__/watermark-canonical-source-4959.test.ts
           pnpm --dir @claude-flow/codex exec vitest run
           pnpm --dir @claude-flow/security exec vitest run
           pnpm --dir @claude-flow/plugin-agent-federation exec vitest run

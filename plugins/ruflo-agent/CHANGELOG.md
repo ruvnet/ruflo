@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.4.3 — 2026-11-17
+- fix: the managed-agent skill no longer says to terminate stale sessions found with `managed_agent_list`. The managed tools act only on sessions this project created (#4751), so a session made elsewhere needs a host `RUFLO_MANAGED_CONTROL_SESSIONS` entry first.
+
 ## 0.4.2 — 2026-11-04
 - feat: `nested-leaf` and `nested-queen-leaf` run with `effort: low` and `omitClaudeMd: true`. Their prompts are self-contained, so they no longer load user, project and local CLAUDE.md files; managed policy files still load. On Claude Code 2.1.318 this measured about 64k fewer input tokens per leaf spawn in this repository, and a one-leaf run cost $0.081 instead of $0.153
 
