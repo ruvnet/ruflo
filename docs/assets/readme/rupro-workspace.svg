@@ -18,218 +18,218 @@
 <rect x="35" y="25.10144927536232" width="6" height="6" rx="3" fill="#c3a66d" stroke="none" />
 <rect x="47" y="25.10144927536232" width="6" height="6" rx="3" fill="#83ae97" stroke="none" />
 <rect x="552" y="25.10144927536232" width="6" height="6" rx="3" fill="#89d8b0" stroke="none" />
-<text x="251" y="36.58212560386473" font-size="9.72" fill="#c6bddd" font-weight="400" font-family="monospace">ruPro  /  workspace</text>
+<text x="251" y="36.58212560386473" font-size="13.32" fill="#c6bddd" font-weight="400" font-family="monospace">ruPro  /  workspace</text>
 <rect x="9" y="61.18357487922705" width="562" height="1.6400966183574879" rx="0" fill="#22202a" stroke="none" />
 <rect x="145" y="62.82367149758454" width="1" height="575.6739130434783" rx="0" fill="#22202a" stroke="none" />
 <rect x="146" y="118.58695652173913" width="425" height="1.6400966183574879" rx="0" fill="#22202a" stroke="none" />
 <rect x="9" y="638.4975845410628" width="562" height="1.6400966183574879" rx="0" fill="#22202a" stroke="none" />
-<text x="23" y="664.7391304347826" font-size="8.64" fill="#a29ab4" font-weight="400" font-family="monospace">Sample data · native actions simulated</text>
-<text x="427" y="664.7391304347826" font-size="8.64" fill="#a29ab4" font-weight="400" font-family="monospace">Claude · Codex · Copilot</text>
+<text x="23" y="664.7391304347826" font-size="11.84" fill="#a29ab4" font-weight="400" font-family="monospace">Sample data · native actions simulated</text>
+<text x="387" y="664.7391304347826" font-size="11.84" fill="#a29ab4" font-weight="400" font-family="monospace">Claude · Codex · Copilot</text>
 <g class="scene agents" style="animation-delay:-20.8s">
-<text x="165" y="100.54589371980677" font-size="10.8" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Agents</text>
+<text x="165" y="100.54589371980677" font-size="14.8" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Agents</text>
 <rect x="163" y="116.94685990338164" width="38" height="3.2801932367149758" rx="0" fill="#bb9dff" stroke="none" />
-<text x="218" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Terminal</text>
-<text x="280" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Review</text>
-<text x="334" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Analytics</text>
-<text x="24" y="98.90579710144928" font-size="8.64" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">W O R K S P A C E S</text>
-<text x="24" y="359.6811594202899" font-size="8.64" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
+<text x="238" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Terminal</text>
+<text x="327" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Review</text>
+<text x="405" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Analytics</text>
+<text x="24" y="98.90579710144928" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">WORKSPACES</text>
+<text x="24" y="359.6811594202899" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
 <rect x="17" y="113.66666666666667" width="119" height="65.60386473429952" rx="7" fill="#241b34" stroke="none" />
 <rect x="24" y="133.34782608695653" width="6" height="6" rx="3" fill="#b191ff" stroke="none" />
-<text x="37" y="143.18840579710144" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
-<text x="37" y="167.78985507246378" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
+<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
+<text x="37" y="167.78985507246378" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="202.231884057971" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="212.07246376811594" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
-<text x="37" y="236.67391304347825" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
+<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
+<text x="37" y="236.67391304347825" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="271.1159420289855" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="280.95652173913044" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
-<text x="37" y="305.55797101449275" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
+<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
+<text x="37" y="305.55797101449275" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
 <rect x="24" y="395.7632850241546" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="405.6038647342995" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
+<text x="37" y="405.6038647342995" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
 <rect x="158" y="139.90821256038646" width="195" height="341.14009661835746" rx="9" fill="#121119" stroke="#282631" />
-<rect x="169" y="159.58937198067633" width="47" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
-<text x="177" y="179.27053140096618" font-size="9.72" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Claude</text>
-<text x="304" y="179.27053140096618" font-size="9.72" fill="#afa4be" font-weight="400" font-family="Arial, sans-serif">project A</text>
+<rect x="169" y="159.58937198067633" width="62" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
+<text x="177" y="179.27053140096618" font-size="13.32" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Claude</text>
+<text x="284" y="179.27053140096618" font-size="13.32" fill="#afa4be" font-weight="400" font-family="Arial, sans-serif">project A</text>
 <rect x="188" y="205.51207729468598" width="154" height="75.44444444444444" rx="8" fill="#261d39" stroke="none" />
 <rect x="169" y="292.43719806763283" width="164" height="170.57004830917873" rx="8" fill="#1c1b24" stroke="none" />
-<text x="197" y="235.03381642512076" font-size="11.88" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Plan the next step for this</text>
-<text x="197" y="261.27536231884056" font-size="11.88" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">mission.</text>
+<text x="197" y="235.03381642512076" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Plan the next</text>
+<text x="197" y="261.27536231884056" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">mission step.</text>
 <g class="entry" style="animation-delay:-20.24s">
-<text x="178" y="325.2391304347826" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Reading the project context…</text>
+<text x="178" y="325.2391304347826" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Reading context…</text>
 </g>
 <g class="entry" style="animation-delay:-19.96s">
-<text x="178" y="353.1207729468599" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Plan: tests first, then the</text>
+<text x="178" y="353.1207729468599" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Write tests first.</text>
 </g>
 <g class="entry" style="animation-delay:-19.68s">
-<text x="178" y="381.0024154589372" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">change.</text>
+<text x="178" y="381.0024154589372" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Apply the change.</text>
 </g>
 <g class="entry" style="animation-delay:-19.40s">
-<text x="178" y="408.8840579710145" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Ready for your review.</text>
+<text x="178" y="408.8840579710145" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Ready for review.</text>
 </g>
 <rect x="178" y="431.84541062801935" width="6" height="19.681159420289855" rx="0" fill="#b397ff" stroke="none" class="caret"/>
 <rect x="365" y="139.90821256038646" width="195" height="341.14009661835746" rx="9" fill="#121119" stroke="#282631" />
-<rect x="376" y="159.58937198067633" width="47" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
-<text x="384" y="179.27053140096618" font-size="9.72" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Codex</text>
-<text x="511" y="179.27053140096618" font-size="9.72" fill="#afa4be" font-weight="400" font-family="Arial, sans-serif">project B</text>
+<rect x="376" y="159.58937198067633" width="62" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
+<text x="384" y="179.27053140096618" font-size="13.32" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Codex</text>
+<text x="491" y="179.27053140096618" font-size="13.32" fill="#afa4be" font-weight="400" font-family="Arial, sans-serif">project B</text>
 <rect x="395" y="205.51207729468598" width="154" height="75.44444444444444" rx="8" fill="#261d39" stroke="none" />
 <rect x="376" y="292.43719806763283" width="164" height="170.57004830917873" rx="8" fill="#1c1b24" stroke="none" />
-<text x="404" y="235.03381642512076" font-size="11.88" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Draft the change from the</text>
-<text x="404" y="261.27536231884056" font-size="11.88" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">plan.</text>
+<text x="404" y="235.03381642512076" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Draft the change</text>
+<text x="404" y="261.27536231884056" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">from the plan.</text>
 <g class="entry" style="animation-delay:-20.24s">
-<text x="385" y="325.2391304347826" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Working in the project</text>
+<text x="385" y="325.2391304347826" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Working on the</text>
 </g>
 <g class="entry" style="animation-delay:-19.96s">
-<text x="385" y="353.1207729468599" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">branch…</text>
+<text x="385" y="353.1207729468599" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">branch…</text>
 </g>
 <g class="entry" style="animation-delay:-19.68s">
-<text x="385" y="381.0024154589372" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Draft prepared with notes.</text>
+<text x="385" y="381.0024154589372" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Draft with notes.</text>
 </g>
 <g class="entry" style="animation-delay:-19.40s">
-<text x="385" y="408.8840579710145" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Waiting on owner decision.</text>
+<text x="385" y="408.8840579710145" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Awaiting review.</text>
 </g>
 <rect x="385" y="431.84541062801935" width="6" height="19.681159420289855" rx="0" fill="#b397ff" stroke="none" class="caret"/>
 <rect x="158" y="500.7294685990338" width="401" height="114.80676328502416" rx="9" fill="#121119" stroke="#282631" />
-<text x="171" y="535.171497584541" font-size="12.96" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Project handoff</text>
+<text x="171" y="535.171497584541" font-size="17.759999999999998" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Project handoff</text>
 <g class="entry" style="animation-delay:-20.24s">
 <rect x="172" y="551.572463768116" width="111" height="42.64251207729468" rx="6" fill="#241c34" stroke="none" />
-<text x="181" y="581.0942028985507" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Claude · plan</text>
+<text x="181" y="581.0942028985507" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Claude · plan</text>
 </g>
 <g class="entry" style="animation-delay:-19.96s">
 <rect x="301" y="551.572463768116" width="111" height="42.64251207729468" rx="6" fill="#241c34" stroke="none" />
-<text x="310" y="581.0942028985507" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Codex · patch</text>
+<text x="310" y="581.0942028985507" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Codex · patch</text>
 </g>
 <g class="entry" style="animation-delay:-19.68s">
 <rect x="436" y="551.572463768116" width="111" height="42.64251207729468" rx="6" fill="#241c34" stroke="none" />
-<text x="445" y="581.0942028985507" font-size="10.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Owner · review</text>
+<text x="445" y="581.0942028985507" font-size="14.8" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Owner · review</text>
 </g>
-<text x="24" y="502.3695652173913" font-size="9.72" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">PROJECT ACTIVITY</text>
-<text x="24" y="540.0917874396135" font-size="11.88" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">2 agents running</text>
-<text x="24" y="572.8937198067633" font-size="10.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">1 review queued</text>
+<text x="24" y="502.3695652173913" font-size="13.32" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">ACTIVITY</text>
+<text x="24" y="540.0917874396135" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">2 active agents</text>
+<text x="24" y="572.8937198067633" font-size="14.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">1 in review</text>
 </g>
 <g class="scene terminal" style="animation-delay:-15.6s">
-<text x="165" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Agents</text>
-<text x="218" y="100.54589371980677" font-size="10.8" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Terminal</text>
-<rect x="216" y="116.94685990338164" width="43" height="3.2801932367149758" rx="0" fill="#bb9dff" stroke="none" />
-<text x="280" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Review</text>
-<text x="334" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Analytics</text>
-<text x="24" y="98.90579710144928" font-size="8.64" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">W O R K S P A C E S</text>
-<text x="24" y="359.6811594202899" font-size="8.64" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
+<text x="165" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Agents</text>
+<text x="238" y="100.54589371980677" font-size="14.8" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Terminal</text>
+<rect x="236" y="116.94685990338164" width="43" height="3.2801932367149758" rx="0" fill="#bb9dff" stroke="none" />
+<text x="327" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Review</text>
+<text x="405" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Analytics</text>
+<text x="24" y="98.90579710144928" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">WORKSPACES</text>
+<text x="24" y="359.6811594202899" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
 <rect x="17" y="113.66666666666667" width="119" height="65.60386473429952" rx="7" fill="#241b34" stroke="none" />
 <rect x="24" y="133.34782608695653" width="6" height="6" rx="3" fill="#b191ff" stroke="none" />
-<text x="37" y="143.18840579710144" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
-<text x="37" y="167.78985507246378" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
+<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
+<text x="37" y="167.78985507246378" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="202.231884057971" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="212.07246376811594" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
-<text x="37" y="236.67391304347825" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
+<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
+<text x="37" y="236.67391304347825" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="271.1159420289855" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="280.95652173913044" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
-<text x="37" y="305.55797101449275" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
+<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
+<text x="37" y="305.55797101449275" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
 <rect x="24" y="395.7632850241546" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="405.6038647342995" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
+<text x="37" y="405.6038647342995" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
 <rect x="158" y="139.90821256038646" width="401" height="460.8671497584541" rx="9" fill="#121119" stroke="#282631" />
-<rect x="170" y="159.58937198067633" width="63" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
-<text x="178" y="179.27053140096618" font-size="9.72" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Terminal</text>
-<text x="247" y="180.91062801932367" font-size="10.8" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">project A · simulated session</text>
+<rect x="170" y="159.58937198067633" width="75" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
+<text x="178" y="179.27053140096618" font-size="13.32" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Terminal</text>
+<text x="254" y="180.91062801932367" font-size="14.8" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">project A · simulated session</text>
 <g class="entry" style="animation-delay:-15.32s">
-<text x="175" y="241.59420289855072" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="monospace">$ git status</text>
+<text x="175" y="241.59420289855072" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="monospace">$ git status</text>
 </g>
 <g class="entry" style="animation-delay:-15.04s">
-<text x="175" y="289.15700483091786" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="monospace">on branch feature/mission</text>
+<text x="175" y="289.15700483091786" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="monospace">on branch feature/mission</text>
 </g>
 <g class="entry" style="animation-delay:-14.76s">
-<text x="175" y="336.719806763285" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="monospace">$ npm test</text>
+<text x="175" y="336.719806763285" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="monospace">$ npm test</text>
 </g>
 <g class="entry" style="animation-delay:-14.48s">
-<text x="175" y="384.2826086956522" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="monospace">running the project tests…</text>
+<text x="175" y="384.2826086956522" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="monospace">running the project tests…</text>
 </g>
 <g class="entry" style="animation-delay:-14.20s">
-<text x="175" y="431.84541062801935" font-size="11.88" fill="#a7dbc2" font-weight="400" font-family="monospace">✓ 12 checks passed · 0 failed</text>
+<text x="175" y="431.84541062801935" font-size="16.28" fill="#a7dbc2" font-weight="400" font-family="monospace">✓ 12 checks passed · 0 failed</text>
 </g>
 <g class="entry" style="animation-delay:-13.92s">
-<text x="175" y="479.40821256038646" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="monospace">$ git push</text>
+<text x="175" y="479.40821256038646" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="monospace">$ git push</text>
 </g>
 <g class="entry" style="animation-delay:-13.64s">
-<text x="175" y="526.9710144927536" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="monospace">branch ready for review</text>
+<text x="175" y="526.9710144927536" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="monospace">branch ready for review</text>
 </g>
-<text x="24" y="502.3695652173913" font-size="9.72" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">PROJECT ACTIVITY</text>
-<text x="24" y="540.0917874396135" font-size="11.88" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">12 checks passed</text>
-<text x="24" y="572.8937198067633" font-size="10.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">Exit code 0</text>
+<text x="24" y="502.3695652173913" font-size="13.32" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">ACTIVITY</text>
+<text x="24" y="540.0917874396135" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">12 passed</text>
+<text x="24" y="572.8937198067633" font-size="14.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">Exit code 0</text>
 </g>
 <g class="scene review" style="animation-delay:-10.4s">
-<text x="165" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Agents</text>
-<text x="218" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Terminal</text>
-<text x="280" y="100.54589371980677" font-size="10.8" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Review</text>
-<rect x="278" y="116.94685990338164" width="36" height="3.2801932367149758" rx="0" fill="#bb9dff" stroke="none" />
-<text x="334" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Analytics</text>
-<text x="24" y="98.90579710144928" font-size="8.64" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">W O R K S P A C E S</text>
-<text x="24" y="359.6811594202899" font-size="8.64" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
+<text x="165" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Agents</text>
+<text x="238" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Terminal</text>
+<text x="327" y="100.54589371980677" font-size="14.8" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Review</text>
+<rect x="325" y="116.94685990338164" width="36" height="3.2801932367149758" rx="0" fill="#bb9dff" stroke="none" />
+<text x="405" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Analytics</text>
+<text x="24" y="98.90579710144928" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">WORKSPACES</text>
+<text x="24" y="359.6811594202899" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
 <rect x="24" y="133.34782608695653" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="143.18840579710144" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
-<text x="37" y="167.78985507246378" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
+<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
+<text x="37" y="167.78985507246378" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="202.231884057971" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="212.07246376811594" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
-<text x="37" y="236.67391304347825" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
+<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
+<text x="37" y="236.67391304347825" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="17" y="251.43478260869566" width="119" height="65.60386473429952" rx="7" fill="#241b34" stroke="none" />
 <rect x="24" y="271.1159420289855" width="6" height="6" rx="3" fill="#b191ff" stroke="none" />
-<text x="37" y="280.95652173913044" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
-<text x="37" y="305.55797101449275" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
+<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
+<text x="37" y="305.55797101449275" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
 <rect x="24" y="395.7632850241546" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="405.6038647342995" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
+<text x="37" y="405.6038647342995" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
 <rect x="158" y="139.90821256038646" width="401" height="460.8671497584541" rx="9" fill="#121119" stroke="#282631" />
-<rect x="170" y="159.58937198067633" width="63" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
-<text x="178" y="179.27053140096618" font-size="9.72" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Review</text>
-<text x="247" y="180.91062801932367" font-size="10.8" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">Review before applying</text>
+<rect x="170" y="159.58937198067633" width="75" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
+<text x="178" y="179.27053140096618" font-size="13.32" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Review</text>
+<text x="254" y="180.91062801932367" font-size="14.8" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">Review before applying</text>
 <g class="entry" style="animation-delay:-10.12s">
-<text x="175" y="241.59420289855072" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="Arial, sans-serif">Codex · project C</text>
+<text x="175" y="241.59420289855072" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="Arial, sans-serif">Codex · project C</text>
 </g>
 <g class="entry" style="animation-delay:-9.84s">
-<text x="175" y="289.15700483091786" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="Arial, sans-serif">Draft prepared with notes. Waiting on owner decision.</text>
+<text x="175" y="289.15700483091786" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="Arial, sans-serif">Draft with notes. Awaiting review.</text>
 </g>
 <g class="entry" style="animation-delay:-9.56s">
-<text x="175" y="336.719806763285" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="Arial, sans-serif">− retry: none</text>
+<text x="175" y="336.719806763285" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="Arial, sans-serif">− retry: none</text>
 </g>
 <g class="entry" style="animation-delay:-9.28s">
-<text x="175" y="384.2826086956522" font-size="11.88" fill="#a7dbc2" font-weight="400" font-family="Arial, sans-serif">+ retry: with backoff</text>
+<text x="175" y="384.2826086956522" font-size="16.28" fill="#a7dbc2" font-weight="400" font-family="Arial, sans-serif">+ retry: with backoff</text>
 </g>
 <g class="entry" style="animation-delay:-9.00s">
-<text x="175" y="431.84541062801935" font-size="11.88" fill="#a7dbc2" font-weight="400" font-family="Arial, sans-serif">+ test: covers the retry path</text>
+<text x="175" y="431.84541062801935" font-size="16.28" fill="#a7dbc2" font-weight="400" font-family="Arial, sans-serif">+ test: covers the retry path</text>
 </g>
 <g class="entry" style="animation-delay:-8.72s">
-<text x="175" y="479.40821256038646" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="Arial, sans-serif">Owner decision     ✓ Approve</text>
+<text x="175" y="479.40821256038646" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="Arial, sans-serif">Owner decision     ✓ Approve</text>
 </g>
 <g class="entry" style="animation-delay:-8.44s">
-<text x="175" y="526.9710144927536" font-size="11.88" fill="#d8cee9" font-weight="400" font-family="Arial, sans-serif">Evidence attached: patch, test log, owner decision</text>
+<text x="175" y="526.9710144927536" font-size="16.28" fill="#d8cee9" font-weight="400" font-family="Arial, sans-serif">Evidence: patch, test log and decision</text>
 </g>
-<text x="24" y="502.3695652173913" font-size="9.72" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">PROJECT ACTIVITY</text>
-<text x="24" y="540.0917874396135" font-size="11.88" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">1 decision pending</text>
-<text x="24" y="572.8937198067633" font-size="10.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">Test log attached</text>
+<text x="24" y="502.3695652173913" font-size="13.32" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">ACTIVITY</text>
+<text x="24" y="540.0917874396135" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">1 open review</text>
+<text x="24" y="572.8937198067633" font-size="14.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">Test log ready</text>
 </g>
 <g class="scene analytics" style="animation-delay:-5.2s">
-<text x="165" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Agents</text>
-<text x="218" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Terminal</text>
-<text x="280" y="100.54589371980677" font-size="10.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Review</text>
-<text x="334" y="100.54589371980677" font-size="10.8" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Analytics</text>
-<rect x="332" y="116.94685990338164" width="48" height="3.2801932367149758" rx="0" fill="#bb9dff" stroke="none" />
-<text x="24" y="98.90579710144928" font-size="8.64" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">W O R K S P A C E S</text>
-<text x="24" y="359.6811594202899" font-size="8.64" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
+<text x="165" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Agents</text>
+<text x="238" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Terminal</text>
+<text x="327" y="100.54589371980677" font-size="14.8" fill="#aaa3b9" font-weight="400" font-family="Arial, sans-serif">Review</text>
+<text x="405" y="100.54589371980677" font-size="14.8" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Analytics</text>
+<rect x="403" y="116.94685990338164" width="48" height="3.2801932367149758" rx="0" fill="#bb9dff" stroke="none" />
+<text x="24" y="98.90579710144928" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">WORKSPACES</text>
+<text x="24" y="359.6811594202899" font-size="11.84" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">V I E W S</text>
 <rect x="24" y="133.34782608695653" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="143.18840579710144" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
-<text x="37" y="167.78985507246378" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
+<text x="37" y="143.18840579710144" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project A</text>
+<text x="37" y="167.78985507246378" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="202.231884057971" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="212.07246376811594" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
-<text x="37" y="236.67391304347825" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
+<text x="37" y="212.07246376811594" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project B</text>
+<text x="37" y="236.67391304347825" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">agents running</text>
 <rect x="24" y="271.1159420289855" width="6" height="6" rx="3" fill="#5a506d" stroke="none" />
-<text x="37" y="280.95652173913044" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
-<text x="37" y="305.55797101449275" font-size="8.64" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
+<text x="37" y="280.95652173913044" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">project C</text>
+<text x="37" y="305.55797101449275" font-size="11.84" fill="#aaa2b8" font-weight="400" font-family="Arial, sans-serif">in review</text>
 <rect x="17" y="376.0821256038647" width="119" height="47.56280193236715" rx="7" fill="#241b34" stroke="none" />
 <rect x="24" y="395.7632850241546" width="6" height="6" rx="3" fill="#b191ff" stroke="none" />
-<text x="37" y="405.6038647342995" font-size="10.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
-<rect x="158" y="139.90821256038646" width="99" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
-<text x="166" y="159.58937198067633" font-size="9.72" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Business analytics</text>
-<rect x="456" y="139.90821256038646" width="103" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
-<text x="464" y="159.58937198067633" font-size="9.72" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Planning simulation</text>
+<text x="37" y="405.6038647342995" font-size="14.8" fill="#f8f6ff" font-weight="700" font-family="Arial, sans-serif">Dashboards</text>
+<rect x="158" y="139.90821256038646" width="145" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
+<text x="166" y="159.58937198067633" font-size="13.32" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Business analytics</text>
+<rect x="409" y="139.90821256038646" width="150" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
+<text x="417" y="159.58937198067633" font-size="13.32" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Planning simulation</text>
 <rect x="158" y="185.83091787439614" width="401" height="201.731884057971" rx="9" fill="#121119" stroke="#282631" />
-<text x="170" y="221.91304347826087" font-size="11.88" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Operating performance</text>
-<text x="474" y="221.91304347826087" font-size="10.8" fill="#b7afc6" font-weight="400" font-family="Arial, sans-serif">Past 7 days</text>
+<text x="170" y="221.91304347826087" font-size="16.28" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Operating performance</text>
+<text x="470" y="221.91304347826087" font-size="14.8" fill="#b7afc6" font-weight="400" font-family="Arial, sans-serif">Past 7 days</text>
 <rect x="170" y="282.5966183574879" width="47" height="52.48309178743961" rx="2" fill="#292831" stroke="none" />
 <rect x="180" y="295.7173913043478" width="26" height="39.36231884057971" rx="2" fill="url(#violet)" stroke="none" class="up" style="animation-delay:-5.20s"/>
 <rect x="225" y="277.67632850241546" width="47" height="57.40338164251208" rx="2" fill="#292831" stroke="none" />
@@ -245,26 +245,26 @@
 <rect x="500" y="249.79468599033817" width="47" height="85.28502415458937" rx="2" fill="#292831" stroke="none" />
 <rect x="510" y="254.71497584541063" width="26" height="80.36473429951691" rx="2" fill="url(#violet)" stroke="none" class="up" style="animation-delay:-4.54s"/>
 <rect x="170" y="351.4806763285024" width="7" height="7" rx="2" fill="#b198ff" stroke="none" />
-<text x="181" y="362.96135265700485" font-size="8.64" fill="#b7afc6" font-weight="400" font-family="Arial, sans-serif">Completed</text>
-<rect x="237" y="351.4806763285024" width="7" height="7" rx="2" fill="#494750" stroke="none" />
-<text x="248" y="362.96135265700485" font-size="8.64" fill="#b7afc6" font-weight="400" font-family="Arial, sans-serif">Requested</text>
+<text x="181" y="362.96135265700485" font-size="11.84" fill="#b7afc6" font-weight="400" font-family="Arial, sans-serif">Completed</text>
+<rect x="267" y="351.4806763285024" width="7" height="7" rx="2" fill="#494750" stroke="none" />
+<text x="278" y="362.96135265700485" font-size="11.84" fill="#b7afc6" font-weight="400" font-family="Arial, sans-serif">Requested</text>
 <rect x="158" y="400.6835748792271" width="195" height="218.1328502415459" rx="9" fill="#121119" stroke="#282631" />
-<text x="169" y="438.40579710144925" font-size="11.88" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Execution mix</text>
-<text x="169" y="472.8478260869565" font-size="9.72" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Operations</text>
+<text x="169" y="438.40579710144925" font-size="16.28" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Execution mix</text>
+<text x="169" y="472.8478260869565" font-size="13.32" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Operations</text>
 <rect x="250" y="463.0072463768116" width="93" height="9.840579710144928" rx="3" fill="#292730" stroke="none" />
 <g class="entry" style="animation-delay:-4.64s">
 <rect x="250" y="463.0072463768116" width="28" height="9.840579710144928" rx="2" fill="#828b9f" stroke="none" />
 <rect x="278" y="463.0072463768116" width="65" height="9.840579710144928" rx="2" fill="#ab8bfc" stroke="none" />
 <rect x="325" y="463.0072463768116" width="18" height="9.840579710144928" rx="2" fill="#edabf8" stroke="none" />
 </g>
-<text x="169" y="504.0096618357488" font-size="9.72" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Engineering</text>
+<text x="169" y="504.0096618357488" font-size="13.32" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Engineering</text>
 <rect x="250" y="494.1690821256039" width="93" height="9.840579710144928" rx="3" fill="#292730" stroke="none" />
 <g class="entry" style="animation-delay:-4.36s">
 <rect x="250" y="494.1690821256039" width="23" height="9.840579710144928" rx="2" fill="#828b9f" stroke="none" />
 <rect x="273" y="494.1690821256039" width="70" height="9.840579710144928" rx="2" fill="#ab8bfc" stroke="none" />
 <rect x="325" y="494.1690821256039" width="18" height="9.840579710144928" rx="2" fill="#edabf8" stroke="none" />
 </g>
-<text x="169" y="535.171497584541" font-size="9.72" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Customer</text>
+<text x="169" y="535.171497584541" font-size="13.32" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Customer</text>
 <rect x="250" y="525.3309178743962" width="93" height="9.840579710144928" rx="3" fill="#292730" stroke="none" />
 <g class="entry" style="animation-delay:-4.08s">
 <rect x="250" y="525.3309178743962" width="37" height="9.840579710144928" rx="2" fill="#828b9f" stroke="none" />
@@ -272,22 +272,22 @@
 <rect x="325" y="525.3309178743962" width="18" height="9.840579710144928" rx="2" fill="#edabf8" stroke="none" />
 </g>
 <rect x="363" y="400.6835748792271" width="195" height="218.1328502415459" rx="9" fill="#121119" stroke="#282631" />
-<text x="374" y="438.40579710144925" font-size="11.88" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Department scorecard</text>
-<text x="374" y="472.8478260869565" font-size="9.72" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Operations</text>
+<text x="374" y="438.40579710144925" font-size="16.28" fill="#fff" font-weight="700" font-family="Arial, sans-serif">Department scorecard</text>
+<text x="374" y="472.8478260869565" font-size="13.32" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Operations</text>
 <rect x="455" y="463.0072463768116" width="93" height="9.840579710144928" rx="3" fill="#292730" stroke="none" />
 <rect x="455" y="463.0072463768116" width="67" height="9.840579710144928" rx="2" fill="url(#violet)" stroke="none" class="across" style="animation-delay:-4.65s"/>
-<text x="374" y="504.0096618357488" font-size="9.72" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Engineering</text>
+<text x="374" y="504.0096618357488" font-size="13.32" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Engineering</text>
 <rect x="455" y="494.1690821256039" width="93" height="9.840579710144928" rx="3" fill="#292730" stroke="none" />
 <rect x="455" y="494.1690821256039" width="60" height="9.840579710144928" rx="2" fill="url(#violet)" stroke="none" class="across" style="animation-delay:-4.54s"/>
-<text x="374" y="535.171497584541" font-size="9.72" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Customer</text>
+<text x="374" y="535.171497584541" font-size="13.32" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">Customer</text>
 <rect x="455" y="525.3309178743962" width="93" height="9.840579710144928" rx="3" fill="#292730" stroke="none" />
 <rect x="455" y="525.3309178743962" width="80" height="9.840579710144928" rx="2" fill="url(#violet)" stroke="none" class="across" style="animation-delay:-4.43s"/>
-<text x="170" y="569.6135265700483" font-size="9.72" fill="#b5aace" font-weight="400" font-family="Arial, sans-serif">■ Human led     ■ AI assisted</text>
-<text x="170" y="597.4951690821256" font-size="9.72" fill="#e4b3f4" font-weight="400" font-family="Arial, sans-serif">■ Delegated</text>
-<rect x="374" y="553.2125603864735" width="88" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
-<text x="382" y="572.8937198067633" font-size="9.72" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Demand pressure</text>
-<text x="24" y="502.3695652173913" font-size="9.72" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">PROJECT ACTIVITY</text>
-<text x="24" y="540.0917874396135" font-size="11.88" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">3 departments</text>
-<text x="24" y="572.8937198067633" font-size="10.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">Weekly view</text>
+<text x="170" y="569.6135265700483" font-size="13.32" fill="#b5aace" font-weight="400" font-family="Arial, sans-serif">■ Human    ■ AI</text>
+<text x="170" y="597.4951690821256" font-size="13.32" fill="#e4b3f4" font-weight="400" font-family="Arial, sans-serif">■ Delegated</text>
+<rect x="374" y="553.2125603864735" width="144" height="29.52173913043478" rx="9" fill="#261d39" stroke="none" />
+<text x="382" y="572.8937198067633" font-size="13.32" fill="#f2ebff" font-weight="700" font-family="Arial, sans-serif">Demand pressure</text>
+<text x="24" y="502.3695652173913" font-size="13.32" fill="#a49ab8" font-weight="400" font-family="Arial, sans-serif">ACTIVITY</text>
+<text x="24" y="540.0917874396135" font-size="16.28" fill="#ebe8fa" font-weight="400" font-family="Arial, sans-serif">3 departments</text>
+<text x="24" y="572.8937198067633" font-size="14.8" fill="#b4abc8" font-weight="400" font-family="Arial, sans-serif">Weekly view</text>
 </g>
 </g></svg>
