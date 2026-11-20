@@ -12,6 +12,7 @@ Every frame is a real terminal session:
 | [<img src="posters/codex-reviewer.jpg" width="240" alt="Codex as reviewer">](codex-reviewer.mp4) | [**Codex as reviewer**](codex-reviewer.mp4) | 2:18 | A ruflo issue is claimed, then handed to Codex for review. Codex runs a real `codex review --base main` and catches a bug where stacked discounts make a cart total negative. The decision is stored in ruflo memory and read back. |
 | [<img src="posters/codex-drafts.jpg" width="240" alt="Codex drafts with team memory">](codex-drafts.mp4) | [**Codex drafts with team memory**](codex-drafts.mp4) | 2:38 | A team convention is saved with `ruflo memory store`. Codex checks ruflo memory before drafting a setup script, you review the draft, and Codex writes the file only after you say "looks good". |
 | [<img src="posters/codex-parallel-worktrees.jpg" width="240" alt="Two issues in parallel worktrees">](codex-parallel-worktrees.mp4) | [**Two issues in parallel worktrees**](codex-parallel-worktrees.mp4) | 2:04 | For each issue, a start script claims it with `ruflo issues claim`, creates a git worktree, runs setup, and launches `codex exec`. Two Codex runs work side by side in tmux, each commits its own fix, and `ruflo issues board` shows both issues claimed. |
+| [<img src="posters/cc-console-swarm.jpg" width="240" alt="Set up a swarm for Claude Code and Codex">](cc-console-swarm.mp4) | [**Set up a swarm for Claude Code and Codex**](cc-console-swarm.mp4) | 2:17 | `ruflo init --dual` and a hierarchical `swarm init`, then three agents are spawned (planner, builder, codex-reviewer) and a shared release plan is stored in memory. ruflo is wired into Claude Code and Codex, and each shows the server connected. `ruflo mcp tools` lists the swarm and agent tools, followed by `swarm status` and a memory search. |
 
 ## Commands shown
 
@@ -44,6 +45,20 @@ scripts/start-issue.sh 12   # ruflo issues claim 12 → git worktree add → set
 scripts/start-issue.sh 13   # same, in a second tmux pane, running at the same time
 git worktree list
 npx ruflo@latest issues board
+```
+
+**Set up a swarm for Claude Code and Codex**
+```bash
+npx ruflo@latest init --dual --minimal
+npx ruflo@latest swarm init --topology hierarchical --max-agents 6 --strategy specialized
+npx ruflo@latest agent spawn -t architect --name planner   # also: coder/builder, reviewer/codex-reviewer
+npx ruflo@latest agent list
+npx ruflo@latest memory store --key release-plan --value "Ship v0.2: ..."
+claude mcp add ruflo -- npx -y ruflo@latest mcp start && claude mcp list
+codex mcp list && codex mcp get ruflo
+npx ruflo@latest mcp tools
+npx ruflo@latest swarm status
+npx ruflo@latest memory search --query "who reviews the release"
 ```
 
 ## Known limits shown honestly in the videos
