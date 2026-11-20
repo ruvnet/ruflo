@@ -51,6 +51,7 @@ import {
   verifyFlywheelLedger,
 } from '../services/flywheel-transaction.js';
 import { evaluatePolicyRequest } from '../services/policy-runtime.js';
+import { runSimIngestCommand } from '../metaharness/sim-ingest-cli.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -85,6 +86,8 @@ const SUBCOMMANDS: Record<string, string> = {
   bench: 'bench.mjs',
   // ADR-322 evaluation receipt + atomic promotion loop; handled in-process.
   flywheel: '__internal__',
+  // metaharness#524 opt-in signed SIM handoff ingestion; handled in-process.
+  'sim-ingest': '__internal__',
 };
 
 function flywheelFlag<T>(flags: Record<string, unknown>, name: string, fallback?: T): T | undefined {
@@ -261,7 +264,7 @@ export const metaharnessCommand: Command = {
       // iter 73 — list reflects all dispatchable subcommands (was
       // stale at the iter-3 list of 5). Keep this synced with the
       // SUBCOMMANDS map above.
-      description: 'One of: score | genome | mcp-scan | threat-model | oia-audit | audit-list | audit-trend | similarity | drift-from-history | mint | redblue | learn | gepa | evolve | bench | flywheel',
+      description: 'One of: score | genome | mcp-scan | threat-model | oia-audit | audit-list | audit-trend | similarity | drift-from-history | mint | redblue | learn | gepa | evolve | bench | flywheel | sim-ingest',
       type: 'string' as const,
     },
   ],
@@ -325,6 +328,7 @@ export const metaharnessCommand: Command = {
       output.writeln('  evolve        Darwin candidate evolution');
       output.writeln('  bench         create or verify a stable benchmark suite');
       output.writeln('  flywheel      receipt loop: run | status | receipts | history | promote | evidence-reset');
+      output.writeln('  sim-ingest    opt-in signed SIM handoff ingestion: status | ingest | query | revoke-event | revoke-key | audit');
       output.writeln('');
       output.writeln('Each subcommand accepts --format json|table and --help.');
       output.writeln('');
@@ -340,6 +344,10 @@ export const metaharnessCommand: Command = {
 
     if (subcommand === 'flywheel') {
       return dispatchFlywheel(positionalRest[0], positionalRest.slice(1), ctxFlags);
+    }
+
+    if (subcommand === 'sim-ingest') {
+      return runSimIngestCommand(positionalRest[0], ctxFlags);
     }
 
     const scriptDir = locatePluginScripts(SUBCOMMANDS[subcommand]);

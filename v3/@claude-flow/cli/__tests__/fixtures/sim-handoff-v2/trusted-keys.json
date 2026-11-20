@@ -1,0 +1,20 @@
+{
+  "note": "Public keys only. Private keys were discarded after signing. Verify with now = 2026-11-20T01:00:00.000Z.",
+  "verifyAt": "2026-11-20T01:00:00.000Z",
+  "keys": [
+    {
+      "keyId": "ed25519:6395e9e96eddca58d44058cddde6f1c0",
+      "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAJZX1xjShGob8rid+n1PDanZhNC4oqJ4LJ9Bz3crdD70=\n-----END PUBLIC KEY-----\n",
+      "tenants": [
+        "tenant-a/ruvnet/metaharness"
+      ]
+    },
+    {
+      "keyId": "ed25519:d76276326508e75d4c462448c9ee4305",
+      "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAZmxFyKPNGbY9wUsFuCi75n4dqRulPUoD5ieJYssgXJk=\n-----END PUBLIC KEY-----\n",
+      "tenants": [
+        "tenant-b/ruvnet/metaharness"
+      ]
+    }
+  ]
+}

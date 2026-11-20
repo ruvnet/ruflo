@@ -1,0 +1,96 @@
+{
+  "payload": {
+    "schema": "metaharness.sim.handoff.v2",
+    "eventId": "sim-evt-687dd299eb60b61239fcbc3b61f004826d17c026",
+    "keyId": "ed25519:6395e9e96eddca58d44058cddde6f1c0",
+    "tenant": {
+      "owner": "tenant-a",
+      "repo": "ruvnet/metaharness"
+    },
+    "createdAt": "2026-11-20T00:00:00.000Z",
+    "expiresAt": "2026-12-20T00:00:00.000Z",
+    "consent": {
+      "purpose": "harness_optimizer",
+      "sharing": "none",
+      "promotion": "manual_review_only"
+    },
+    "retention": {
+      "days": 30
+    },
+    "handoff": {
+      "schema": "metaharness.sim.handoff.v1",
+      "audience": "harness_optimizer",
+      "trust": "untrusted_evidence_only",
+      "scope": {
+        "ownerId": "tenant-a",
+        "repoId": "ruvnet/metaharness",
+        "interfaceId": "darwin-v1",
+        "modelId": "fixture-model",
+        "benchmarkId": "public-training-suite-v1",
+        "harnessVersion": "0.14.0"
+      },
+      "retrieval": "full",
+      "estimatedTokens": 194,
+      "attempts": [
+        {
+          "createdAt": "2026-11-19T12:00:00.000Z",
+          "scope": {
+            "ownerId": "tenant-a",
+            "repoId": "ruvnet/metaharness",
+            "interfaceId": "darwin-v1",
+            "modelId": "fixture-model",
+            "benchmarkId": "public-training-suite-v1",
+            "harnessVersion": "0.14.0"
+          },
+          "problemKey": "retry-loop",
+          "diagnosis": "Retried a failing tool call without changing inputs",
+          "parentId": "baseline",
+          "mutationSurface": "retryPolicy",
+          "predictedDelta": null,
+          "evidenceIds": [
+            "archive:a-v2"
+          ],
+          "id": "a-win",
+          "variantId": "a-v2",
+          "rationale": "Change inputs before retrying",
+          "observedDelta": 0.04,
+          "finalScore": 0.5,
+          "promoted": true,
+          "previousHash": "337ce2e646229dab742bed728444bac7ac7b8f391a62d2032edc8ee01e4bacbc",
+          "hash": "da64cc4bbde0219b41a4160c6fe9b1204d08815a7eb13db27610055d5c300bd2"
+        },
+        {
+          "createdAt": "2026-11-19T12:00:00.000Z",
+          "scope": {
+            "ownerId": "tenant-a",
+            "repoId": "ruvnet/metaharness",
+            "interfaceId": "darwin-v1",
+            "modelId": "fixture-model",
+            "benchmarkId": "public-training-suite-v1",
+            "harnessVersion": "0.14.0"
+          },
+          "problemKey": "retry-loop",
+          "diagnosis": "Retried a failing tool call without changing inputs",
+          "parentId": "baseline",
+          "mutationSurface": "retryPolicy",
+          "predictedDelta": null,
+          "evidenceIds": [
+            "archive:a-v1"
+          ],
+          "id": "a-fail",
+          "variantId": "a-v1",
+          "rationale": "First attempt regressed",
+          "observedDelta": -0.05,
+          "finalScore": 0.41,
+          "promoted": false,
+          "previousHash": null,
+          "hash": "337ce2e646229dab742bed728444bac7ac7b8f391a62d2032edc8ee01e4bacbc"
+        }
+      ]
+    }
+  },
+  "signature": {
+    "alg": "ed25519",
+    "value": "Nzjn/N8J+rPZhSpsmGg7H+kHW0A3lw1LzsARHIgA36a2PoqrJcpHfhzxStLh4ufKpSslZiPHaz3uKgsxIg+OCQ=="
+  }
+}
