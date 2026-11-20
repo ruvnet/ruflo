@@ -602,7 +602,8 @@ are kept in lockstep by a signed fixture committed to both repositories
   task-agent `memory search` cannot see optimizer memory. Isolation is
   enforced by the adapter at namespace level; the store has no ACLs.
 - **Idempotency and revocation:** the event id is content-derived and
-  verified, so redelivery writes once. Revoking an event leaves a tombstone,
+  verified, so redelivery writes once. Retention runs from the producer's
+  `createdAt`, so a replay after it elapses is rejected. Revoking an event leaves a tombstone,
   and revoking a key deletes its events. Reads re-verify each row against
   the current key set. Decisions are appended to
   `.claude-flow/sim/audit.jsonl` (ids and hashes only).

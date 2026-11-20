@@ -28,17 +28,19 @@ class MemoryStore implements SimEvidenceStore {
   rows = new Map<string, { value: string; tags: string[] }>();
   calls = 0;
   writes = 0;
+  /** Simulates a backend whose tag filter is ignored, to prove deletes confirm the signer. */
+  ignoreTagFilter = false;
   private id = (ns: string, key: string) => ns + '\u0000' + key;
   async get(ns: string, key: string) { this.calls++; return this.rows.get(this.id(ns, key))?.value ?? null; }
-  async put(ns: string, key: string, value: string, tags: string[]) {
+  async put(ns: string, key: string, value: string, tags: string[], _ttl: number, replace = false) {
     this.calls++; this.writes++;
-    if (this.rows.has(this.id(ns, key))) throw new Error('UNIQUE constraint failed');
+    if (!replace && this.rows.has(this.id(ns, key))) throw new Error('UNIQUE constraint failed');
     this.rows.set(this.id(ns, key), { value, tags });
   }
   async delete(ns: string, key: string) { this.calls++; this.writes++; return this.rows.delete(this.id(ns, key)); }
   async list(ns: string, tag?: string) {
     this.calls++;
-    return [...this.rows].filter(([k, r]) => k.startsWith(ns + '\u0000') && (!tag || r.tags.includes(tag)))
+    return [...this.rows].filter(([k, r]) => k.startsWith(ns + '\u0000') && (!tag || this.ignoreTagFilter || r.tags.includes(tag)))
       .map(([k, r]) => ({ key: k.slice(ns.length + 1), content: r.value }));
   }
 }
@@ -223,6 +225,30 @@ describe('revocation and audit', () => {
     expect(await ingestor.query(TENANT_A)).toEqual([]);
     expect(await ingestor.query(TENANT_B)).toHaveLength(1);
     expect(await ingestor.ingest(envA)).toMatchObject({ reason: 'revoked_key' });
+  });
+
+  it("revoking one key of a tenant keeps the other key's events, even if the tag filter is ignored", async () => {
+    const { publicKey, privateKey } = keyPair();
+    const { store, ingestor } = setup(enabled([...clone(trustedFile.keys), trust(publicKey, [TENANT_A])]));
+    store.ignoreTagFilter = true;
+    await ingestor.ingest(envA);
+    const other = resign(envA, privateKey, publicKey, (p) => {
+      p.handoff.attempts[0].rationale = 'a different, second-key experience';
+      p.eventId = simEventId(p.tenant, p.handoff);
+    });
+    expect((await ingestor.ingest(other)).status).toBe('ingested');
+    expect(await ingestor.revokeKey(envA.payload.keyId)).toMatchObject({ status: 'revoked', deleted: 1 });
+    const left = await ingestor.query(TENANT_A) as any[];
+    expect(left.map((r) => r.provenance.keyId)).toEqual([simKeyId(publicKey)]);
+  });
+
+  it('retention runs from createdAt: a replay after retention elapsed is not re-stored', async () => {
+    const { publicKey, privateKey } = keyPair();
+    const short = resign(envA, privateKey, publicKey, (p) => { p.retention.days = 1; });
+    const late = new Date(Date.parse(envA.payload.createdAt) + 2 * 86_400_000);
+    const { store, ingestor } = setup(enabled([trust(publicKey, [TENANT_A])]), late);
+    expect(await ingestor.ingest(short)).toMatchObject({ status: 'rejected', reason: 'retention_elapsed' });
+    expect(store.writes).toBe(0);
   });
 
   it('query re-verifies stored rows, so a key removed from config hides its evidence', async () => {

@@ -40,8 +40,12 @@ export interface SimStoredRow { key: string; content: string }
 /** Minimal contract over the memory store; the default implementation is the real CLI store. */
 export interface SimEvidenceStore {
   get(namespace: string, key: string): Promise<string | null>;
-  /** Must not overwrite an existing key. */
-  put(namespace: string, key: string, value: string, tags: string[], ttlSeconds: number): Promise<void>;
+  /**
+   * Must not overwrite a LIVE key unless replace=true. replace is only used
+   * after get() reported the key absent, to reclaim a soft-deleted or
+   * TTL-expired row that a plain insert would collide with.
+   */
+  put(namespace: string, key: string, value: string, tags: string[], ttlSeconds: number, replace?: boolean): Promise<void>;
   delete(namespace: string, key: string): Promise<boolean>;
   list(namespace: string, tag?: string): Promise<SimStoredRow[]>;
 }
@@ -72,7 +76,7 @@ export interface SimEvidenceRecord {
 export type SimIngestResult =
   | { status: 'disabled' }
   | { status: 'ingested' | 'duplicate'; eventId: string; tenant: string; namespace: string; keyId: string }
-  | { status: 'rejected'; reason: SimVerifyFailure | 'revoked_event'; detail?: string };
+  | { status: 'rejected'; reason: SimVerifyFailure | 'revoked_event' | 'retention_elapsed'; detail?: string };
 
 const EVENT_PREFIX = 'event:';
 const TOMBSTONE_PREFIX = 'tombstone:';
@@ -120,6 +124,14 @@ export class SimHandoffIngestor {
       this.record({ action: 'ingest', status: 'rejected', reason: 'revoked_event', ...base });
       return { status: 'rejected', reason: 'revoked_event' };
     }
+    // Retention runs from the producer's createdAt, not from delivery: a replay
+    // after retention has elapsed must not re-store the evidence.
+    const retentionEnd = Date.parse(result.payload.createdAt) + result.payload.retention.days * 86_400_000;
+    const ttlSeconds = Math.ceil((retentionEnd - verifiedAt.getTime()) / 1000);
+    if (ttlSeconds <= 0) {
+      this.record({ action: 'ingest', status: 'rejected', reason: 'retention_elapsed', ...base });
+      return { status: 'rejected', reason: 'retention_elapsed' };
+    }
     const done = { eventId: result.eventId, tenant: result.tenant, namespace, keyId: result.keyId };
     if (await this.options.store.get(namespace, EVENT_PREFIX + result.eventId) !== null) {
       this.record({ action: 'ingest', status: 'duplicate', ...base });
@@ -133,14 +145,17 @@ export class SimHandoffIngestor {
     const value = JSON.stringify({ provenance, payload: result.payload } satisfies SimEvidenceRecord);
     const tags = ['sim-handoff', 'sim-key:' + result.keyId, 'sim-event:' + result.eventId];
     try {
-      await this.options.store.put(namespace, EVENT_PREFIX + result.eventId, value, tags, result.payload.retention.days * 86_400);
+      await this.options.store.put(namespace, EVENT_PREFIX + result.eventId, value, tags, ttlSeconds);
     } catch (error) {
       // A concurrent delivery of the same event may win the insert race.
       if (await this.options.store.get(namespace, EVENT_PREFIX + result.eventId) !== null) {
         this.record({ action: 'ingest', status: 'duplicate', ...base });
         return { status: 'duplicate', ...done };
       }
-      throw error;
+      // Not live, yet the insert collided: a soft-deleted (revoked-key) or
+      // expired row still holds the key. The tombstone check above already
+      // ran, so reclaiming it is safe.
+      await this.options.store.put(namespace, EVENT_PREFIX + result.eventId, value, tags, ttlSeconds, true);
     }
     this.record({ action: 'ingest', status: 'ingested', ...base });
     return { status: 'ingested', ...done };
@@ -194,7 +209,11 @@ export class SimHandoffIngestor {
     for (const tenant of key.tenants) {
       const namespace = simNamespace(tenant);
       for (const row of await this.options.store.list(namespace, 'sim-key:' + keyId)) {
-        if (row.key.startsWith(EVENT_PREFIX) && await this.options.store.delete(namespace, row.key)) deleted++;
+        if (!row.key.startsWith(EVENT_PREFIX)) continue;
+        // Do not trust the store's tag filter alone: confirm the signer.
+        let signer: unknown;
+        try { signer = (JSON.parse(row.content) as SimEvidenceRecord).provenance?.keyId; } catch { continue; }
+        if (signer === keyId && await this.options.store.delete(namespace, row.key)) deleted++;
       }
     }
     const config: SimIngestConfig = {
@@ -256,9 +275,9 @@ export function memoryInitializerStore(dbPath: string): SimEvidenceStore {
       const r = await (await load()).getEntry({ key, namespace, dbPath });
       return r.found && r.entry ? r.entry.content : null;
     },
-    async put(namespace, key, value, tags, ttlSeconds) {
+    async put(namespace, key, value, tags, ttlSeconds, replace = false) {
       const r = await (await load()).storeEntry({
-        key, value, namespace, tags, dbPath, upsert: false, generateEmbeddingFlag: false,
+        key, value, namespace, tags, dbPath, upsert: replace, generateEmbeddingFlag: false,
         provenanceType: 'tool_result', ...(ttlSeconds > 0 ? { ttl: ttlSeconds } : {}),
       });
       if (!r.success) throw new Error('sim-ingest: store failed: ' + (r.error ?? 'unknown'));
