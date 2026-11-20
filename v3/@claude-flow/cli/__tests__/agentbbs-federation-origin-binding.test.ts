@@ -72,6 +72,7 @@ describe('origin binding', () => {
     const r = await mergeEnvelopes(dirB, ROOM, [own, relayed], a.publicKey, { peerNodeId: a.nodeId, pinned });
     expect(r.merged).toBe(2);
     expect(r.acceptedMaxSeq).toBe(5);
+    expect({ ...r.acceptedByOrigin }).toEqual({ [a.nodeId]: 3, [c.nodeId]: 5 });
   });
 
   it('does not count unverified envelopes towards the sync cursor', async () => {
@@ -83,5 +84,24 @@ describe('origin binding', () => {
     const r = await mergeEnvelopes(dirB, ROOM, [good, forged, tampered], a.publicKey, { peerNodeId: a.nodeId, pinned: new Map([[a.nodeId, a.publicKey]]) });
     expect(r.merged).toBe(1);
     expect(r.acceptedMaxSeq).toBe(2);
+    expect({ ...r.acceptedByOrigin }).toEqual({ [a.nodeId]: 2 });
+  });
+
+  it('does not let a duplicate envelope move another origin cursor', async () => {
+    const a = await getNodeIdentity(dirA);
+    const b = await getNodeIdentity(dirB);
+    const a1 = await signEnvelope(dirA, envelope({ envelopeId: 'same-id', seq: 10 }));
+    await mergeEnvelopes(dirB, ROOM, [a1], a.publicKey, { peerNodeId: a.nodeId, pinned: new Map([[a.nodeId, a.publicKey]]) });
+
+    // A duplicate is skipped before verification; its claimed origin must not
+    // replace the origin of the envelope already stored under this id.
+    const spoofed = await signEnvelope(dirB, envelope({ envelopeId: 'same-id', seq: 10, payload: { evil: true } }));
+    const r = await mergeEnvelopes(dirB, ROOM, [spoofed], b.publicKey, {
+      peerNodeId: b.nodeId,
+      pinned: new Map([[a.nodeId, a.publicKey], [b.nodeId, b.publicKey]]),
+    });
+    expect(r.merged).toBe(0);
+    expect(r.skippedDuplicate).toBe(1);
+    expect({ ...r.acceptedByOrigin }).toEqual({ [a.nodeId]: 10 });
   });
 });
