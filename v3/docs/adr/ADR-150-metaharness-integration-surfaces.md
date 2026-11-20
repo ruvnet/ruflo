@@ -581,6 +581,35 @@ workflow continually enforces this with both a static grep (every
 package.json) and a runtime drill (each skill against an unresolvable
 npm registry, asserting graceful degradation).
 
+### Signed SIM handoff ingestion (metaharness#524)
+
+`ruflo metaharness sim-ingest status|ingest|query|revoke-event|revoke-key|audit`
+consumes `metaharness.sim.handoff.v2` envelopes produced by
+`@metaharness/darwin` (`signSimHandoff`, upstream ADR-325). It honours the
+invariant above: verification (`src/metaharness/sim-handoff-verify.ts`) is an
+independent Node-crypto implementation, not an import, and the two sides
+are kept in lockstep by a signed fixture committed to both repositories
+(`__tests__/fixtures/sim-handoff-v2`, public keys only).
+
+- **Opt-in:** without `.claude-flow/sim/trusted-keys.json` containing
+  `"enabled": true`, every operation reports `disabled` and writes nothing.
+- **Trust:** a payload is accepted only if its Ed25519 key is listed in
+  that file AND bound there to the tenant the payload names. The envelope's
+  own tenant claim authorizes nothing. Unsigned, malformed, unknown-key,
+  revoked, expired and tampered payloads are rejected with a typed reason.
+- **Isolation:** evidence goes to namespace `sim:<owner>/<repo>` in a
+  dedicated `.claude-flow/sim/sim-memory.db`, never `.swarm/memory.db`, so
+  task-agent `memory search` cannot see optimizer memory. Isolation is
+  enforced by the adapter at namespace level; the store has no ACLs.
+- **Idempotency and revocation:** the event id is content-derived and
+  verified, so redelivery writes once. Retention runs from the producer's
+  `createdAt`, so a replay after it elapses is rejected. Revoking an event leaves a tombstone,
+  and revoking a key deletes its events. Reads re-verify each row against
+  the current key set. Decisions are appended to
+  `.claude-flow/sim/audit.jsonl` (ids and hashes only).
+- **No promotion:** nothing is forwarded anywhere. Core Memory promotion
+  is a manual issue/PR workflow (ruvnet/core-memory#227).
+
 ## References
 
 - [Research dossier (gist)](https://gist.github.com/ruvnet/19d166ff9acf368c9da4172d91ac9113) — full graded-evidence sourcing.

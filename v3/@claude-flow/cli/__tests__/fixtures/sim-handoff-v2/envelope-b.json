@@ -1,0 +1,96 @@
+{
+  "payload": {
+    "schema": "metaharness.sim.handoff.v2",
+    "eventId": "sim-evt-23b03490de3493af380fa715a6a033e8d63fac1d",
+    "keyId": "ed25519:d76276326508e75d4c462448c9ee4305",
+    "tenant": {
+      "owner": "tenant-b",
+      "repo": "ruvnet/metaharness"
+    },
+    "createdAt": "2026-11-20T00:00:00.000Z",
+    "expiresAt": "2026-12-20T00:00:00.000Z",
+    "consent": {
+      "purpose": "harness_optimizer",
+      "sharing": "none",
+      "promotion": "manual_review_only"
+    },
+    "retention": {
+      "days": 30
+    },
+    "handoff": {
+      "schema": "metaharness.sim.handoff.v1",
+      "audience": "harness_optimizer",
+      "trust": "untrusted_evidence_only",
+      "scope": {
+        "ownerId": "tenant-b",
+        "repoId": "ruvnet/metaharness",
+        "interfaceId": "darwin-v1",
+        "modelId": "fixture-model",
+        "benchmarkId": "public-training-suite-v1",
+        "harnessVersion": "0.14.0"
+      },
+      "retrieval": "full",
+      "estimatedTokens": 192,
+      "attempts": [
+        {
+          "createdAt": "2026-11-19T12:00:00.000Z",
+          "scope": {
+            "ownerId": "tenant-b",
+            "repoId": "ruvnet/metaharness",
+            "interfaceId": "darwin-v1",
+            "modelId": "fixture-model",
+            "benchmarkId": "public-training-suite-v1",
+            "harnessVersion": "0.14.0"
+          },
+          "problemKey": "early-stop",
+          "diagnosis": "Stopped before running the verification command",
+          "parentId": "baseline",
+          "mutationSurface": "retryPolicy",
+          "predictedDelta": null,
+          "evidenceIds": [
+            "archive:b-v2"
+          ],
+          "id": "b-win",
+          "variantId": "b-v2",
+          "rationale": "Change inputs before retrying",
+          "observedDelta": 0.04,
+          "finalScore": 0.5,
+          "promoted": true,
+          "previousHash": "101ee578ed437c371144b983855e991007b710c76f5c730097db01db6906cac4",
+          "hash": "34dce16f7fe00378eaf9ef6a65fca536930c55149222eca7d9e301ff50a56dc0"
+        },
+        {
+          "createdAt": "2026-11-19T12:00:00.000Z",
+          "scope": {
+            "ownerId": "tenant-b",
+            "repoId": "ruvnet/metaharness",
+            "interfaceId": "darwin-v1",
+            "modelId": "fixture-model",
+            "benchmarkId": "public-training-suite-v1",
+            "harnessVersion": "0.14.0"
+          },
+          "problemKey": "early-stop",
+          "diagnosis": "Stopped before running the verification command",
+          "parentId": "baseline",
+          "mutationSurface": "retryPolicy",
+          "predictedDelta": null,
+          "evidenceIds": [
+            "archive:b-v1"
+          ],
+          "id": "b-fail",
+          "variantId": "b-v1",
+          "rationale": "First attempt regressed",
+          "observedDelta": -0.05,
+          "finalScore": 0.41,
+          "promoted": false,
+          "previousHash": null,
+          "hash": "101ee578ed437c371144b983855e991007b710c76f5c730097db01db6906cac4"
+        }
+      ]
+    }
+  },
+  "signature": {
+    "alg": "ed25519",
+    "value": "JuPkPSLwV2YCCDDLh4G+gWR6wnnoSc7zxV5uVg3EjDR+/2CRff153sueR0ASeepxGLVDefKIP5o4AlfKrtlRCQ=="
+  }
+}
