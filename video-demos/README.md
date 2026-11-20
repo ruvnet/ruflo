@@ -9,6 +9,7 @@ Every frame is a real terminal session:
 
 | | Video | Length | What it shows |
 |---|---|---|---|
+| [<img src="posters/codex-first-session.jpg" width="240" alt="Your first session with ruflo and Codex CLI">](codex-first-session.mp4) | [**Your first session with ruflo and Codex CLI**](codex-first-session.mp4) | 2:02 | `ruflo init --codex` and the approval and sandbox settings it writes, then Codex's folder and hook trust prompts and `/mcp` showing ruflo connected. Codex saves a fact to ruflo memory and finds it again, asking before each command. The same memory search is run again from the shell. |
 | [<img src="posters/codex-reviewer.jpg" width="240" alt="Codex as reviewer">](codex-reviewer.mp4) | [**Codex as reviewer**](codex-reviewer.mp4) | 2:18 | A ruflo issue is claimed, then handed to Codex for review. Codex runs a real `codex review --base main` and catches a bug where stacked discounts make a cart total negative. The decision is stored in ruflo memory and read back. |
 | [<img src="posters/codex-drafts.jpg" width="240" alt="Codex drafts with team memory">](codex-drafts.mp4) | [**Codex drafts with team memory**](codex-drafts.mp4) | 2:38 | A team convention is saved with `ruflo memory store`. Codex checks ruflo memory before drafting a setup script, you review the draft, and Codex writes the file only after you say "looks good". |
 | [<img src="posters/codex-parallel-worktrees.jpg" width="240" alt="Two issues in parallel worktrees">](codex-parallel-worktrees.mp4) | [**Two issues in parallel worktrees**](codex-parallel-worktrees.mp4) | 2:04 | For each issue, a start script claims it with `ruflo issues claim`, creates a git worktree, runs setup, and launches `codex exec`. Two Codex runs work side by side in tmux, each commits its own fix, and `ruflo issues board` shows both issues claimed. |
@@ -17,6 +18,16 @@ Every frame is a real terminal session:
 | [<img src="posters/claude-codex-handoff.jpg" width="240" alt="Claude builds, Codex reviews">](claude-codex-handoff.mp4) | [**Claude builds, Codex reviews**](claude-codex-handoff.mp4) | 2:26 | A ruflo swarm with two agents (claude-builder, codex-reviewer), and ruflo's MCP server added to both Claude Code and Codex. Claude adds `applyDiscount` with tests and stores a handoff note with the ruflo `memory_store` tool. Codex reads the note, runs the diff and tests, and records APPROVE with `ruflo memory store`. You read the verdict and commit. |
 
 ## Commands shown
+
+**Your first session with ruflo and Codex CLI**
+```bash
+npx -y ruflo@latest init --codex
+codex mcp list
+grep -E '^(approval|sandbox)' .codex/config.toml
+codex            # trust folder + hooks, /mcp → ruflo connected
+# prompt: "Use ruflo to remember that acme-app uses pnpm (namespace acme), then search ruflo memory to confirm it was saved."
+npx -y ruflo@latest memory search --query "acme-app package manager pnpm" --namespace acme
+```
 
 **Codex as reviewer**
 ```bash
