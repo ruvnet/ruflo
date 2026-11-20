@@ -186,12 +186,19 @@ jobs:
           NODE
           node - <<'NODE'
           const fs = require('node:fs');
-          fs.copyFileSync('README.md', 'v3/@claude-flow/cli/README.md');
           const target = 'v3/@claude-flow/cli/plugins/ruflo-metaharness';
           fs.rmSync(target, { recursive: true, force: true });
           fs.mkdirSync('v3/@claude-flow/cli/plugins', { recursive: true });
           fs.cpSync('plugins/ruflo-metaharness', target, { recursive: true });
-          fs.copyFileSync('README.md', 'ruflo/README.md');
+          NODE
+          # npm resolves relative README URLs against repository.directory, so the
+          # cli and ruflo pages need absolute URLs pinned to this commit.
+          node --input-type=module - <<'NODE'
+          import { stageReadme } from "./scripts/readme-absolute-urls.mjs";
+          for (const dir of ["v3/@claude-flow/cli", "ruflo"]) {
+            const ref = await stageReadme(".", "README.md", `${dir}/README.md`);
+            console.log(`staged ${dir}/README.md with URLs pinned to ${ref}`);
+          }
           NODE
 
       - name: Build and smoke-test immutable package archives

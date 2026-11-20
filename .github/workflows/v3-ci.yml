@@ -849,6 +849,9 @@ jobs:
       - name: Test release provenance gate (ADR-545)
         run: node --test scripts/__tests__/verify-npm-provenance.test.mjs
 
+      - name: Test npm README URL rewrite
+        run: node scripts/__tests__/readme-absolute-urls.test.mjs
+
   dependency-review:
     # GitHub's official dependency-review-action — runs only on PRs and
     # flags any new vulnerable dependency added by the PR vs the base

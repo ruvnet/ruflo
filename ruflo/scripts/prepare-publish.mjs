@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 
-import { copyFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stageReadme } from '../../scripts/readme-absolute-urls.mjs';
 
 const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-await copyFile(resolve(packageDir, '..', 'README.md'), resolve(packageDir, 'README.md'));
+const repoRoot = resolve(packageDir, '..');
+// npm resolves relative README URLs against repository.directory ("ruflo"),
+// so stage the root README with absolute, commit-pinned URLs.
+await stageReadme(repoRoot, resolve(repoRoot, 'README.md'), resolve(packageDir, 'README.md'));
