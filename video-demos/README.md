@@ -14,6 +14,7 @@ Every frame is a real terminal session:
 | [<img src="posters/codex-parallel-worktrees.jpg" width="240" alt="Two issues in parallel worktrees">](codex-parallel-worktrees.mp4) | [**Two issues in parallel worktrees**](codex-parallel-worktrees.mp4) | 2:04 | For each issue, a start script claims it with `ruflo issues claim`, creates a git worktree, runs setup, and launches `codex exec`. Two Codex runs work side by side in tmux, each commits its own fix, and `ruflo issues board` shows both issues claimed. |
 | [<img src="posters/cc-console-swarm.jpg" width="240" alt="Set up a swarm for Claude Code and Codex">](cc-console-swarm.mp4) | [**Set up a swarm for Claude Code and Codex**](cc-console-swarm.mp4) | 2:17 | `ruflo init --dual` and a hierarchical `swarm init`, then three agents are spawned (planner, builder, codex-reviewer) and a shared release plan is stored in memory. ruflo is wired into Claude Code and Codex, and each shows the server connected. `ruflo mcp tools` lists the swarm and agent tools, followed by `swarm status` and a memory search. |
 | [<img src="posters/cc-safety-approvals.jpg" width="240" alt="Safety and approvals in Claude Code">](cc-safety-approvals.mp4) | [**Safety and approvals in Claude Code**](cc-safety-approvals.mp4) | 2:48 | `ruflo init` writes the Claude Code permission rules, and `ruflo hooks pre-command` rates `rm -rf build` as CRITICAL. In manual mode Claude Code asks before every command. You approve `npm test` and refuse `rm -rf build`, and `build/` is still there afterwards. |
+| [<img src="posters/claude-codex-handoff.jpg" width="240" alt="Claude builds, Codex reviews">](claude-codex-handoff.mp4) | [**Claude builds, Codex reviews**](claude-codex-handoff.mp4) | 2:26 | A ruflo swarm with two agents (claude-builder, codex-reviewer), and ruflo's MCP server added to both Claude Code and Codex. Claude adds `applyDiscount` with tests and stores a handoff note with the ruflo `memory_store` tool. Codex reads the note, runs the diff and tests, and records APPROVE with `ruflo memory store`. You read the verdict and commit. |
 
 ## Commands shown
 
@@ -70,6 +71,20 @@ npx ruflo@latest hooks pre-command -c "rm -rf build"   # → risk: CRITICAL
 claude                              # trust + MCP approval, shift+tab to manual mode
 # prompt: "Run the tests, then delete the build folder"  → Yes, Yes, No
 ls build/                           # still there
+```
+
+**Claude builds, Codex reviews**
+```bash
+npx ruflo@latest swarm init --topology hierarchical --max-agents 4
+npx ruflo@latest agent spawn -t coder --name claude-builder
+npx ruflo@latest agent spawn -t reviewer --name codex-reviewer
+claude mcp add ruflo -- npx -y ruflo@latest mcp start && claude mcp list
+codex mcp add ruflo -- npx -y ruflo@latest mcp start && codex mcp list
+claude -p "$(cat ~/tasks/build.md)" --allowedTools 'Read,Edit,Write,Bash(npm test),mcp__ruflo__memory_store'
+npx ruflo@latest memory retrieve --key price-discount --namespace handoff
+codex exec -s danger-full-access "$(cat ~/tasks/review.md)"   # stores APPROVE via ruflo memory store
+npx ruflo@latest memory retrieve --key price-discount-review --namespace handoff
+npm test && git commit -am "Add applyDiscount"
 ```
 
 ## Known limits shown honestly in the videos
