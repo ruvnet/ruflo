@@ -132,7 +132,7 @@ export const MESSAGES: FunnelMessage[] = [
     schemaVersion: 1,
     id: 'local.edu.status-watch',
     class: 'educational',
-    text: '📊 ruflo status watch — real-time system + swarm health dashboard',
+    text: '📊 ruflo status --watch — live system, swarm, agent and memory status',
     url: 'https://cognitum.one/docs/statusline',
   },
   {
@@ -153,21 +153,21 @@ export const MESSAGES: FunnelMessage[] = [
     schemaVersion: 1,
     id: 'local.edu.security-scan',
     class: 'educational',
-    text: '🔒 ruflo security scan --depth deep — audits dependencies and config',
+    text: '🔒 ruflo security scan --depth deep — checks deps, secrets and code patterns',
     url: 'https://cognitum.one/docs/security',
   },
   {
     schemaVersion: 1,
     id: 'local.edu.doctor',
     class: 'educational',
-    text: '🩺 ruflo doctor --fix — diagnose and auto-repair install issues',
+    text: '🩺 ruflo doctor --fix — diagnose your install and print suggested fixes',
     url: 'https://cognitum.one/docs/doctor',
   },
   {
     schemaVersion: 1,
     id: 'local.edu.hooks-route',
     class: 'educational',
-    text: '🪝 ruflo hooks route — 3-tier model routing cuts token cost 30–75%',
+    text: '🪝 ruflo hooks route — suggests the best-suited agent type for a task',
     url: 'https://cognitum.one/docs/hooks',
   },
   {
