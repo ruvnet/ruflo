@@ -117,7 +117,7 @@
     "@claude-flow/security": "3.0.7",
     "@claude-flow/shared": "3.0.10",
     "@iarna/toml": "^2.2.5",
-    "@metaharness/darwin": "~0.14.0",
+    "@metaharness/darwin": "~0.16.0",
     "@noble/ed25519": "2.3.0",
     "@ruvector/rabitq-wasm": "0.1.2",
     "agentic-flow": "^3.0.0",

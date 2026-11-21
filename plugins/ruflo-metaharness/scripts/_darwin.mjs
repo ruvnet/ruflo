@@ -2,7 +2,7 @@
 //
 // Mirrors `_harness.mjs` for the umbrella `metaharness` / `harness` binaries,
 // but targets the separate darwin binary (`metaharness-darwin`) which is
-// published as its own npm package (`@metaharness/darwin@~0.14.0`).
+// published as its own npm package (`@metaharness/darwin@~0.16.0`).
 //
 // Shared plumbing (degraded classification, --json injection, trailing-JSON
 // parse, degraded emitter) lives in `_invoke.mjs`. What stays here is the
@@ -68,7 +68,7 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 // gepa cache fallback installs; scripts/check-metaharness-pins.mjs now fails
 // when it no longer covers the declared range.
 const DARWIN_PKG = '@metaharness/darwin';
-const DARWIN_PIN_VERSION = '~0.14.0';
+const DARWIN_PIN_VERSION = '~0.16.0';
 const DARWIN_PIN = `${DARWIN_PKG}@${DARWIN_PIN_VERSION}`;
 
 const REASON_PREFIX = 'metaharness-darwin';

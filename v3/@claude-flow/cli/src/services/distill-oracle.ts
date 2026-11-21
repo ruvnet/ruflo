@@ -53,7 +53,7 @@ import {
 // lock-step with the optionalDependencies pin in package.json and the plugin
 // darwin cache (versioned by the plugin's own `~0.14.0` pin in _darwin.mjs;
 // both are checked by scripts/check-metaharness-pins.mjs — #3366).
-export const MH_DARWIN_PIN = '0.14.0';
+export const MH_DARWIN_PIN = '0.16.0';
 
 // ── Provenance ─────────────────────────────────────────────────────────────
 
