@@ -151,6 +151,11 @@ function unhex(s: string): Uint8Array {
  *
  * `hops` is deliberately excluded — it is mutated in transit by design, so
  * including it would invalidate the signature at the first relay.
+ *
+ * A payload object with an own `__proto__` key (which `JSON.parse` creates) is
+ * refused: assigning that key on a plain object sets the prototype instead, so
+ * the key and its subtree would silently drop out of the signed bytes while
+ * still being stored and served as the origin's content.
  */
 export function canonicalEnvelopeBytes(env: SignedEnvelope): Uint8Array {
   const canon = (v: unknown): unknown => {
@@ -158,6 +163,7 @@ export function canonicalEnvelopeBytes(env: SignedEnvelope): Uint8Array {
     if (Array.isArray(v)) return v.map(canon);
     const out: Record<string, unknown> = {};
     for (const k of Object.keys(v as Record<string, unknown>).sort()) {
+      if (k === '__proto__') throw new Error('envelope payload must not contain a __proto__ key');
       out[k] = canon((v as Record<string, unknown>)[k]);
     }
     return out;
@@ -475,7 +481,14 @@ export async function mergeEnvelopes(
     }
     if (!(await verifyEnvelope(env, signerKey))) { result.skippedUnverified++; continue; }
 
-    appendFileSync(logPath, JSON.stringify({ ...env, hops: (env.hops ?? 0) + 1 }) + '\n');
+    // Store only what the signature covers (plus the signature and hop count),
+    // so a relay cannot attach unsigned fields to another origin's envelope.
+    const stored: SignedEnvelope = {
+      envelopeId: env.envelopeId, roomId: env.roomId, seq: env.seq, msgType: env.msgType,
+      payload: env.payload, timestamp: env.timestamp, origin: env.origin,
+      hops: (env.hops ?? 0) + 1, signature: env.signature,
+    };
+    appendFileSync(logPath, JSON.stringify(stored) + '\n');
     const seq = Number(env.seq) || 0;
     seen.set(env.envelopeId, { seq, origin: originOf(env) });
     noteAccepted(originOf(env), seq);
