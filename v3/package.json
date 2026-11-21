@@ -11,6 +11,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "vitest run",
+    "test:event-gateway": "bash scripts/verify-event-intelligence.sh",
     "test:unit": "vitest run __tests__/unit",
     "test:integration": "vitest run __tests__/integration",
     "test:integration:watch": "vitest watch __tests__/integration",
