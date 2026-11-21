@@ -145,8 +145,8 @@ importers:
         specifier: ^2.2.5
         version: 2.2.5
       '@metaharness/darwin':
-        specifier: ~0.14.0
-        version: 0.14.0
+        specifier: ~0.16.0
+        version: 0.16.0
       '@metaharness/router':
         specifier: ^0.4.0
         version: 0.4.0(@ruvector/tiny-dancer@0.1.22)
@@ -2183,13 +2183,16 @@ packages:
     dependencies:
       '@babel/parser': 7.29.13
 
-  /@metaharness/darwin@0.14.0:
-    resolution: {integrity: sha512-rkn+HI4/fFJo2R+2UaNAUFEG6vJYg52siD/izwteQ6zJDPrLPrWeJK4U1pukjeCZ1VndtUsMbGbELJpsctUAXQ==}
+  /@metaharness/darwin@0.16.0:
+    resolution: {integrity: sha512-qZxwvnSIgOKX1t6XXkicXeptE5LiL+ZjZpgZ7vhfRULk/z1WHBtew9XfcqDIgOOefKhOewH6jXjkIJVPMWMJoA==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     peerDependencies:
+      '@ruvector/rvf': '>=0.2.0'
       ruv-fann: 0.1.2
     peerDependenciesMeta:
+      '@ruvector/rvf':
+        optional: true
       ruv-fann:
         optional: true
     dependencies:
