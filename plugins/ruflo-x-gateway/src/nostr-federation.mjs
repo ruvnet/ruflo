@@ -128,8 +128,14 @@ function relayRound(ws, resolve, reject, { subIds, collected, timeoutMs = 12000 
 
 // Fetch recent swarm coordination messages (verified). Optional type filter.
 export async function fetchRecent(relayUrl, sk, { sinceSeconds = 3600, limit = 100, type, timeoutMs } = {}) {
+  return fetchWindow(relayUrl, sk, { since: Math.floor(Date.now() / 1000) - sinceSeconds, limit, type, timeoutMs });
+}
+
+// One REQ over an absolute created_at window; NIP-01 `since`/`until` are both inclusive.
+export async function fetchWindow(relayUrl, sk, { since, until, limit = 100, type, timeoutMs } = {}) {
   const ws = await connectAuthed(relayUrl, sk);
-  const filter = { kinds: [SWARM_KIND], '#t': [SWARM_TAG], since: Math.floor(Date.now() / 1000) - sinceSeconds, limit };
+  const filter = { kinds: [SWARM_KIND], '#t': [SWARM_TAG], since, limit };
+  if (until !== undefined) filter.until = until;
   if (type) filter['#k'] = [String(type)];
   const out = [];
   return new Promise((resolve, reject) => {
@@ -148,6 +154,30 @@ export async function fetchRecent(relayUrl, sk, { sinceSeconds = 3600, limit = 1
     });
     ws.send(JSON.stringify(['REQ', 'ruflo-sync', filter]));
   });
+}
+
+// Every swarm event with created_at >= lo, for the federation_sync cursor (#5030).
+// A NIP-01 `limit` keeps the NEWEST matches, so a full page means older events
+// were cut off. Narrow `until` by bisection until a window [lo, until] comes back
+// short of a full page: that window is complete, and reading it oldest-first
+// leaves no gap. Returns { events, coveredTo }, where coveredTo is the last second
+// known complete (Infinity when the read reached the end); { partial } when the
+// relay timed out, so nothing can be trusted as complete; or { saturated } when a
+// single second holds a full page and cannot be split.
+// SYNC_PAGE must not exceed the relay's NIP-11 max_limit (buzz-relay: 1000), or a
+// silently clamped page would look short and therefore complete.
+export const SYNC_PAGE = 500;
+export async function fetchCovering(relayUrl, sk, { lo, type, now = Math.floor(Date.now() / 1000), page = SYNC_PAGE, maxRounds = 24, timeoutMs } = {}) {
+  let until, hi = now;
+  for (let round = 0; round < maxRounds; round++) {
+    const evs = await fetchWindow(relayUrl, sk, { since: lo, until, limit: page, type, timeoutMs });
+    if (evs.partial) return { partial: true, relayNotice: evs.relayNotice };
+    if (evs.length < page) return { events: evs, coveredTo: until === undefined ? Infinity : until };
+    if (until !== undefined) hi = until - 1;
+    if (hi < lo) break;
+    until = lo + Math.floor((hi - lo) / 2);
+  }
+  return { saturated: true };
 }
 
 // Run several REQs over ONE authenticated connection (one NIP-42 handshake instead of N).

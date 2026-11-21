@@ -134,8 +134,8 @@ export const xFederationTools: MCPTool[] = [
   {
     name: 'x_federation_sync',
     description:
-      'Fetch recent signature-verified coordination messages from the open x.ruv.io swarm federation (Nostr, #t=ruflo-swarm). Use when you need to see what other ruflo nodes across the internet have posted (PeerHello/Status/Task/Result/Claim*). Reading the relay directly is wrong because you would have to do NIP-42 auth yourself; the gateway does it and only returns events whose signatures verify.',
-    inputSchema: { type: 'object', properties: { ...gatewayArg, sinceSeconds: { type: 'number', description: 'Look-back window (default 3600).' }, limit: { type: 'number', description: 'Max messages (default 100).' }, type: { type: 'string', description: 'Optional message type filter, e.g. Task.' } } },
+      'Fetch recent signature-verified coordination messages from the open x.ruv.io swarm federation (Nostr, #t=ruflo-swarm). Use when you need to see what other ruflo nodes across the internet have posted (PeerHello/Status/Task/Result/Claim*). Reading the relay directly is wrong because you would have to do NIP-42 auth yourself; the gateway does it and only returns events whose signatures verify. Every result carries next_cursor; pass it back as since_cursor to receive each later message exactly once, oldest first, even when several share a created_at second.',
+    inputSchema: { type: 'object', properties: { ...gatewayArg, sinceSeconds: { type: 'number', description: 'Look-back window (default 3600). Ignored when since_cursor is set.' }, limit: { type: 'number', description: 'Max messages (default 100).' }, type: { type: 'string', description: 'Optional message type filter, e.g. Task. A cursor is bound to the filter it was issued for.' }, since_cursor: { type: 'string', description: 'Opaque next_cursor from the previous x_federation_sync result.' } } },
     handler: async (input) => gatewayTool('federation_sync', input as Record<string, unknown>),
   },
   {
@@ -172,11 +172,21 @@ export const xFederationTools: MCPTool[] = [
   {
     name: 'x_federation_invite_mint',
     description:
-      'Mint a use-limited, expiring invite code so a new ruflo user can self-join the open federation with THEIR OWN key. Requires RUFLO_X_ADMIN_TOKEN. Use when onboarding someone. Sharing the relay owner key instead is wrong because invites are revocable, hashed at rest, and bind membership to the claimant\'s key; the code is a bearer secret — hand it over privately.',
-    inputSchema: { type: 'object', properties: { ...gatewayArg, ttlSecs: { type: 'number', description: 'Validity (default 7 days).' }, maxUses: { type: 'number', description: 'Redemptions (default 25).' } } },
+      'Mint a use-limited, expiring invite code so a new ruflo user can self-join the open federation with THEIR OWN key. Requires RUFLO_X_ADMIN_TOKEN. Use when onboarding someone. Sharing the relay owner key instead is wrong because invites are revocable (x_federation_invite_revoke), hashed at rest, and bind membership to the claimant\'s key; the code is a bearer secret — hand it over privately.',
+    inputSchema: { type: 'object', properties: { ...gatewayArg, ttlSecs: { type: 'number', description: 'Validity (default 7 days).' }, maxUses: { type: 'number', description: 'Redemptions (default 1).' } } },
     handler: async (input) => {
       const t = adminToken(); if (!t) throw new Error('RUFLO_X_ADMIN_TOKEN is not set (invite minting is admin-gated)');
       return gatewayTool('federation_invite_mint', { ...(input as Record<string, unknown>), adminToken: t });
+    },
+  },
+  {
+    name: 'x_federation_invite_revoke',
+    description:
+      'Revoke an invite code (or its relay id) so the relay refuses any further claim; members who already joined stay. Requires RUFLO_X_ADMIN_TOKEN. Use when a code leaked, was sent to the wrong person, or is no longer needed. Waiting for the invite to expire instead is wrong because a leaked code keeps admitting holders until then. The relay must support POST /api/invites/revoke; an older relay answers that revocation is unsupported.',
+    inputSchema: { type: 'object', properties: { ...gatewayArg, code: { type: 'string', description: 'The v2 invite code to revoke.' }, id: { type: 'string', description: 'The invite uuid, instead of the code.' } } },
+    handler: async (input) => {
+      const t = adminToken(); if (!t) throw new Error('RUFLO_X_ADMIN_TOKEN is not set (invite revocation is admin-gated)');
+      return gatewayTool('federation_invite_revoke', { ...(input as Record<string, unknown>), adminToken: t });
     },
   },
   {

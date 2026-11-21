@@ -27,6 +27,7 @@ entities part of one bounded private workspace.
 
 The legacy `/mcp` endpoint additionally exposes operator-only membership tools.
 Those tools also declare all four hints explicitly: invite minting is
-`false/false/false/false`; direct admission is `false/true/false/true` because it
+`false/false/false/false`; invite revocation is `false/true/true/false` because it
+removes a way into the relay and a repeat returns the first revocation; direct admission is `false/true/false/true` because it
 grants an arbitrary external key access, has no matching revoke tool, and emits a
 new administrative event on every call.
