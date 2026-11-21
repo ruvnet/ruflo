@@ -2846,9 +2846,9 @@ export async function bridgeSearchPatterns(options: {
       let results: any;
       try {
         if (typeof reasoningBank.searchPatterns === 'function') {
-          results = await reasoningBank.searchPatterns({ task: options.query, k: options.topK || 5, threshold: options.minConfidence || 0.3 });
+          results = await reasoningBank.searchPatterns({ task: options.query, k: options.topK || 5, threshold: options.minConfidence ?? 0.3 });
         } else {
-          results = await reasoningBank.search(options.query, { topK: options.topK || 5, minScore: options.minConfidence || 0.3 });
+          results = await reasoningBank.search(options.query, { topK: options.topK || 5, minScore: options.minConfidence ?? 0.3 });
         }
       } catch (err) {
         // #4714 — report the failure with the result instead of a bare null,
@@ -2934,7 +2934,7 @@ export async function bridgeSearchPatterns(options: {
       query: options.query,
       namespace: 'pattern',
       limit: options.topK || 5,
-      threshold: options.minConfidence || 0.3,
+      threshold: options.minConfidence ?? 0.3,
       dbPath: options.dbPath,
     });
 
