@@ -22,6 +22,7 @@ const DEFAULT_PATH_ASSETS = [
   'assets/model-router/seed-router.calibrator.med.json',
   'assets/model-router/seed-router.calibrator.high.json',
   'assets/model-router/seed-rows.json',
+  'assets/model-router/openrouter-alts.json', // #4957
   'assets/agent-router/centroids.minilm.json',
 ];
 
