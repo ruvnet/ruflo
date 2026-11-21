@@ -10,7 +10,7 @@
  * matching the metaharness / agenticow / testgen contract.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readFileSync, appendFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, appendFileSync, writeFileSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
@@ -44,6 +44,23 @@ try {
   });
   havePkg = true;
 } catch { havePkg = false; }
+
+describe.skipIf(process.platform === 'win32')('state-file symlink safety', () => {
+  it('refuses a symlinked room log before reading its seq', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'agentbbs-sym-'));
+    try {
+      const victim = join(dir, 'victim.txt');
+      writeFileSync(victim, 'keep');
+      const log = join(dir, 'room-x.jsonl');
+      symlinkSync(victim, log);
+
+      expect(() => nextSeq(log)).toThrow(/regular file/);
+      expect(readFileSync(victim, 'utf8')).toBe('keep');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
 
 describe('agentbbs MCP tools — structural contract', () => {
   it('exposes the Phase 1 room surface plus the Phase 2 federation surface', () => {

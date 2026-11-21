@@ -35,7 +35,7 @@
  * @module @claude-flow/cli/mcp-tools/agentbbs
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, statSync, openSync, readSync, closeSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, appendFileSync, statSync, openSync, readSync, closeSync } from 'node:fs';
 import { resolve, isAbsolute, join, relative } from 'node:path';
 import { randomBytes, createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -48,6 +48,8 @@ import {
   readPeers,
   syncRoomFromPeer,
   serveFederation,
+  ensureAgentbbsDir,
+  assertRegularStateFile,
   validateRoomId as fedValidateRoomId,
   MAX_PEERS,
   MAX_HOPS,
@@ -124,7 +126,7 @@ function validateRoomId(roomId: string): string {
 }
 
 function ensureDir(dir: string): void {
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  ensureAgentbbsDir(dir);
 }
 
 function roomIdFromLabel(label: string): string {
@@ -159,6 +161,7 @@ interface BbsEnvelope {
 }
 
 function readEnvelopes(path: string): BbsEnvelope[] {
+  assertRegularStateFile(path, 'room log');
   if (!existsSync(path)) return [];
   const raw = readFileSync(path, 'utf-8');
   const out: BbsEnvelope[] = [];
@@ -177,6 +180,7 @@ const SEQ_TAIL_BYTES = 65536;
 
 /** Last envelope's seq by scanning only the file tail; full-read fallback keeps it exact. */
 export function nextSeq(path: string): number {
+  assertRegularStateFile(path, 'room log');
   if (!existsSync(path)) return 1;
   try {
     const size = statSync(path).size;
@@ -322,6 +326,7 @@ export const agentbbsTools: MCPTool[] = [
 
       const roomId = roomIdFromLabel(roomLabel);
       const registryPath = roomsRegistryPath(basePath);
+      assertRegularStateFile(registryPath, 'rooms.json');
       const registry: Record<string, { roomId: string; roomLabel: string; registeredAt: string; trustLevel: string }> =
         existsSync(registryPath) ? JSON.parse(readFileSync(registryPath, 'utf-8')) : {};
 
@@ -334,6 +339,7 @@ export const agentbbsTools: MCPTool[] = [
         trustLevel: 'attested',
       };
       registry[roomId] = entry;
+      assertRegularStateFile(registryPath, 'rooms.json');
       writeFileSync(registryPath, JSON.stringify(registry, null, 2));
 
       // Emit a PeerHello only when it carries information: a genuinely new
@@ -355,6 +361,7 @@ export const agentbbsTools: MCPTool[] = [
           payload: { roomLabel, trustLevel: 'attested' },
           timestamp: entry.registeredAt,
         };
+        assertRegularStateFile(logPath, 'room log');
         appendFileSync(logPath, JSON.stringify(env) + '\n');
       }
 
@@ -434,6 +441,7 @@ export const agentbbsTools: MCPTool[] = [
       const env: BbsEnvelope = input.signature
         ? { ...base, signature: String(input.signature) }
         : (await signEnvelope(basePath, base as any)) as any;
+      assertRegularStateFile(logPath, 'room log');
       appendFileSync(logPath, JSON.stringify(env) + '\n');
 
       // Phase 1: recipientHopCount is always 0 (single-node). Phase 4+ will

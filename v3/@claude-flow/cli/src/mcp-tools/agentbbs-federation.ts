@@ -51,10 +51,14 @@
  * an untrusted peer is a memory-exhaustion primitive, so limits are enforced on
  * the *receiving* side where they cannot be negotiated away by the sender.
  *
+ * Every state path (`node-identity.json`, `peers.json`, `rooms.json`, room logs)
+ * is lstat-checked and must be a regular file. A cloned repository can ship any
+ * of them as a symlink; following one would read or write outside the project.
+ *
  * @module @claude-flow/cli/mcp-tools/agentbbs-federation
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, chmodSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, chmodSync, lstatSync, renameSync, unlinkSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
@@ -129,7 +133,53 @@ async function loadEd25519(): Promise<any> {
 }
 
 function ensureDir(dir: string): void {
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  ensureAgentbbsDir(dir);
+}
+
+function errorCode(error: unknown): string | undefined {
+  return typeof error === 'object' && error !== null && 'code' in error
+    ? String((error as { code?: unknown }).code)
+    : undefined;
+}
+
+/**
+ * Create the AgentBBS state directory, refusing a symlink in its place.
+ *
+ * `.agentbbs` is project-local and can be committed by a cloned repository.
+ * Following a symlinked directory would move every identity, peer pin and room
+ * log write outside the project.
+ */
+export function ensureAgentbbsDir(dir: string): void {
+  try {
+    const stat = lstatSync(dir);
+    if (stat.isSymbolicLink() || !stat.isDirectory()) {
+      throw new Error('AgentBBS basePath must be a real directory (symlink or non-directory refused)');
+    }
+    return;
+  } catch (error) {
+    if (errorCode(error) !== 'ENOENT') throw error;
+  }
+  mkdirSync(dir, { recursive: true });
+}
+
+/**
+ * Refuse to read or write a state path that is a symlink or a special file.
+ *
+ * A cloned repository can ship `.agentbbs/peers.json`, `node-identity.json` or
+ * a `room-*.jsonl` entry as a symlink. Following it would read or overwrite a
+ * file outside the project, so every state path goes through this check first.
+ * A missing path is allowed: the caller creates it with an exclusive write.
+ */
+export function assertRegularStateFile(target: string, label: string): void {
+  try {
+    const stat = lstatSync(target);
+    if (stat.isSymbolicLink() || !stat.isFile()) {
+      throw new Error(`${label} must be a regular file (symlink or special file refused)`);
+    }
+  } catch (error) {
+    if (errorCode(error) === 'ENOENT') return;
+    throw error;
+  }
 }
 
 function hex(buf: Uint8Array): string {
@@ -202,6 +252,7 @@ function roomLogPath(basePath: string, roomId: string): string {
 export async function getNodeIdentity(basePath: string): Promise<NodeIdentity> {
   ensureDir(basePath);
   const p = identityPath(basePath);
+  assertRegularStateFile(p, 'node-identity.json');
   if (existsSync(p)) {
     const parsed = JSON.parse(readFileSync(p, 'utf-8')) as NodeIdentity;
     if (!NODE_ID_RE.test(parsed.nodeId ?? '') || !HEX64_RE.test(parsed.publicKey ?? '')) {
@@ -219,7 +270,19 @@ export async function getNodeIdentity(basePath: string): Promise<NodeIdentity> {
     privateKey: hex(priv),
     createdAt: new Date().toISOString(),
   };
-  writeFileSync(p, JSON.stringify(identity, null, 2) + '\n', { mode: 0o600 });
+  try {
+    // `wx` refuses an existing path, including a dangling symlink, without
+    // following it. A concurrent creator is handled by re-reading the winner.
+    writeFileSync(p, JSON.stringify(identity, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
+  } catch (error) {
+    if (errorCode(error) !== 'EEXIST') throw error;
+    assertRegularStateFile(p, 'node-identity.json');
+    const parsed = JSON.parse(readFileSync(p, 'utf-8')) as NodeIdentity;
+    if (!NODE_ID_RE.test(parsed.nodeId ?? '') || !HEX64_RE.test(parsed.publicKey ?? '')) {
+      throw new Error('node-identity.json is malformed');
+    }
+    return parsed;
+  }
   try { chmodSync(p, 0o600); } catch { /* best effort on filesystems without modes */ }
   return identity;
 }
@@ -252,6 +315,7 @@ export async function verifyEnvelope(env: SignedEnvelope, publicKeyHex: string):
 
 export function readPeers(basePath: string): FederationPeer[] {
   const p = peersPath(basePath);
+  assertRegularStateFile(p, 'peers.json');
   if (!existsSync(p)) return [];
   try {
     const parsed = JSON.parse(readFileSync(p, 'utf-8'));
@@ -263,7 +327,18 @@ export function readPeers(basePath: string): FederationPeer[] {
 
 function writePeers(basePath: string, peers: FederationPeer[]): void {
   ensureDir(basePath);
-  writeFileSync(peersPath(basePath), JSON.stringify(peers, null, 2) + '\n');
+  const target = peersPath(basePath);
+  assertRegularStateFile(target, 'peers.json');
+  const temp = `${target}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  try {
+    // Write beside the target and rename, so a crash cannot leave a truncated
+    // peer registry (which readPeers would treat as an empty, unpinned list).
+    writeFileSync(temp, JSON.stringify(peers, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+    assertRegularStateFile(target, 'peers.json');
+    renameSync(temp, target);
+  } finally {
+    try { unlinkSync(temp); } catch { /* already renamed or never created */ }
+  }
 }
 
 /**
@@ -329,6 +404,7 @@ export function removePeer(basePath: string, nodeId: string): boolean {
 
 export function readEnvelopes(basePath: string, roomId: string): SignedEnvelope[] {
   const p = roomLogPath(basePath, roomId);
+  assertRegularStateFile(p, 'room log');
   if (!existsSync(p)) return [];
   const out: SignedEnvelope[] = [];
   for (const line of readFileSync(p, 'utf-8').split(/\r?\n/)) {
@@ -450,6 +526,7 @@ export async function mergeEnvelopes(
   const existing = readEnvelopes(basePath, roomId);
   const seen = new Map(existing.map(e => [e.envelopeId, { seq: Number(e.seq) || 0, origin: originOf(e) }] as const));
   const logPath = roomLogPath(basePath, roomId);
+  assertRegularStateFile(logPath, 'room log');
 
   const batch = incoming.slice(0, MAX_ENVELOPES_PER_SYNC);
   for (const env of batch) {
