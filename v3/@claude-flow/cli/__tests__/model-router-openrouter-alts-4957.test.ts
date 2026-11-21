@@ -29,7 +29,8 @@ describe('openrouter-alts.json resolves from the package, not the cwd (#4957)', 
     rmSync(outside, { recursive: true, force: true });
   });
 
-  it('routes an OpenRouter user to the bundled per-tier alternate with cwd outside the repo', async () => {
+  it('routes an OpenRouter user to the bundled per-tier alternate with cwd outside the repo when opted in', async () => {
+    vi.stubEnv('CLAUDE_FLOW_ROUTER_OPENROUTER_ALTS', 'bundled');
     expect(process.cwd()).toBe(outside);
     const { createModelRouter } = await import('../src/ruvector/model-router.js');
     const router = createModelRouter({ statePath: join(outside, 'state.json'), autoSaveInterval: 1_000_000 });
@@ -38,11 +39,11 @@ describe('openrouter-alts.json resolves from the package, not the cwd (#4957)', 
     expect(result.openrouterModel).toBe(ALTS.tiers[result.model].openrouter_alt);
   });
 
-  it('an explicit CLAUDE_FLOW_ROUTER_OPENROUTER_ALTS that does not exist still falls back to the bundled file', async () => {
-    vi.stubEnv('CLAUDE_FLOW_ROUTER_OPENROUTER_ALTS', join(outside, 'missing.json'));
+  it('leaves npm installs on no alternate by default (opt-in until a maintainer decides)', async () => {
     const { createModelRouter } = await import('../src/ruvector/model-router.js');
     const router = createModelRouter({ statePath: join(outside, 'state.json'), autoSaveInterval: 1_000_000 });
     const result = await router.route('fix a typo in the readme');
-    expect(result.openrouterModel).toBe(ALTS.tiers[result.model].openrouter_alt);
+    expect(result.provider).toBe('openrouter');
+    expect(result.openrouterModel).toBeUndefined();
   });
 });

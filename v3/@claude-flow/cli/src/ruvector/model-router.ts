@@ -94,14 +94,16 @@ function loadOpenRouterAlts(): OpenRouterAlts | null {
   if (_altsProbeDone) return _altsCache;
   _altsProbeDone = true;
   try {
-    // Probe candidate paths: explicit env override, then the copy bundled with
-    // this package, then cwd-relative paths for a repo checkout.
+    // Probe candidate paths: explicit env override (or the bundled copy), then
+    // cwd-relative paths for a repo checkout.
+    // #4957: the copy bundled with the package is opt-in for now
+    // (CLAUDE_FLOW_ROUTER_OPENROUTER_ALTS=bundled). Loading it by default would
+    // change which OpenRouter models npm users are billed for, so that default
+    // waits for a maintainer decision. Any other value is a path to the file.
     const explicit = process.env.CLAUDE_FLOW_ROUTER_OPENROUTER_ALTS;
     const candidates: string[] = [];
-    if (explicit) candidates.push(explicit);
-    // #4957: resolve package-relative, as neural-router.ts does. Probing only
-    // process.cwd() meant an npm install never found the file.
-    candidates.push(...packageAltsPaths());
+    if (explicit?.trim().toLowerCase() === 'bundled') candidates.push(...packageAltsPaths());
+    else if (explicit) candidates.push(explicit);
     candidates.push(join(process.cwd(), 'v3', '@claude-flow', 'cli', 'assets', 'model-router', 'openrouter-alts.json'));
     candidates.push(join(process.cwd(), 'assets', 'model-router', 'openrouter-alts.json'));
     for (const p of candidates) {
