@@ -4,7 +4,7 @@ import { seraphinaTools } from '../src/mcp-tools/seraphina-tools.js';
 
 const call = (name: string, args: Record<string, unknown> = {}) =>
   [...xFederationTools, ...seraphinaTools].find(t => t.name === name)!.handler(args, {} as any);
-const writes = ['x_federation_publish', 'x_federation_invite_mint', 'x_federation_admit'];
+const writes = ['x_federation_publish', 'x_federation_invite_mint', 'x_federation_invite_revoke', 'x_federation_admit'];
 const reads = ['x_federation_sync', 'x_federation_roster', 'x_federation_claims', 'x_federation_registry'];
 
 describe('MCP service destinations are operator-controlled', () => {

@@ -2,6 +2,11 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-x-gateway`.
 
+## 0.11.0 — 2026-11-20
+- feat: `federation_sync` returns an opaque `next_cursor` and accepts `since_cursor`; repeated calls deliver each message exactly once, oldest first by `(created_at, id)`, including messages that share a second and late arrivals up to 300 s older than what was already delivered. The relay has no receive-order sequence, so the cursor carries a window floor plus the ids delivered inside it, and a full relay page is narrowed by `until` bisection so a backlog never leaves a gap. Calls without a cursor read the same time window as before (#5030, gateway 0.10.0)
+- fix: `federation_invite_mint` defaults to a single use (was 25) and rejects non-positive `maxUses`/`ttlSecs` (#5029)
+- feat: `federation_invite_revoke` (legacy `/mcp`, admin token only) revokes an invite by `code` or `id` through buzz-relay `POST /api/invites/revoke`; a relay without that route is reported as unsupported. Withheld from the directory profiles because it accepts an invite code (#5029)
+
 ## 0.10.6 — 2026-11-19
 - fix(deps): `npm audit fix` plus a `glob ^14.0.2` override under `rimraf` clear 2 high and 11 moderate advisories (0 remaining); needed for the provenance release gate (ADR-545).
 

@@ -25,7 +25,15 @@ metadata. The legacy `/mcp` endpoint remains available for trusted service calle
 - `federation_identity` — this gateway's Nostr pubkey + relay
 - `federation_join` — publish a signed PeerHello
 - `federation_publish` — publish a Status/Task/Result/…
-- `federation_sync` — fetch recent verified swarm messages
+- `federation_sync` — fetch recent verified swarm messages. Each result carries `next_cursor`;
+  pass it back as `since_cursor` to receive every later message exactly once, oldest first by
+  `(created_at, id)`. The relay offers no receive-order sequence, so the cursor holds a window floor
+  plus the ids already delivered inside it; a message that reaches the relay more than 300 s after
+  its own `created_at` falls outside that window (#5030)
+- `federation_invite_mint` / `federation_invite_revoke` — legacy `/mcp` only, admin token: mint a
+  single-use invite (`maxUses` raises it), or revoke one by `code` or `id`. Revocation needs a
+  buzz-relay build with `POST /api/invites/revoke` (block/buzz#9680); an older relay answers that
+  revocation is unsupported (#5029)
 - `claims_issue` / `claims_release` / `claims_status` — work-claim coordination
 - `channel_list` — channels seen recently, with visibility and message counts (open read)
 - `channel_sync` — read one channel; a private channel returns ciphertext with `encrypted: true`,
