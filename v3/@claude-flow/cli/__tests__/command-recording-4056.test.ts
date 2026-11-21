@@ -55,6 +55,12 @@ describe('commandRecordingDisabled', () => {
 describe('redactCommandForStorage', () => {
   const GH = 'ghp_' + 'a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8';
   const OAI = 'sk-' + 'proj-abcdefghijklmnopqrstuvwxyz0123456789';
+  // Google API key shape: "AIza" + 35 chars. Built by concatenation so secret scanners skip the fixture.
+  const GOOG = 'AI' + 'za' + 'SyA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q';
+  const COG = 'cog_' + 'e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9';
+  const SIGNUP_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?';
+  const CB_TOKEN = 'tok_' + 'abcdef0123456789';
+  const GOOG_HEADER = 'X-Goog-' + 'Api-Key';
 
   it('leaves an ordinary command alone', () => {
     expect(redactCommandForStorage('npm test -- --run src/foo.test.ts')).toBe('npm test -- --run src/foo.test.ts');
@@ -71,6 +77,15 @@ describe('redactCommandForStorage', () => {
     [`git clone https://${GH}@github.com/o/r.git`, GH],
     [`curl -s https://api.openai.com -d x -H "x-key: ${OAI}"`, OAI],
     ['psql postgres://admin:s3cretpass@db.internal/app', 's3cretpass'],
+    // Provider keys that travel outside an Authorization header.
+    ['wget -qO- "' + SIGNUP_URL + 'key=' + GOOG + '"', GOOG],
+    ['http GET https://generativelanguage.googleapis.com/v1/models "' + GOOG_HEADER + ': ' + GOOG + '"', GOOG],
+    [`echo ${GOOG} | wc -c`, GOOG],
+    [`http GET https://api.example.test/v1/usage "x-api-key: ${COG}"`, COG],
+    [`wget --header='X-API-Key: plainvalue0123456789' https://x.test`, 'plainvalue0123456789'],
+    [`echo ${COG} > /dev/null`, COG],
+    ['curl "https://x.test/v1/items?limit=5&api_key=abcdef0123456789xyz&page=2"', 'abcdef0123456789xyz'],
+    ['curl "https://x.test/cb?access' + '_token=' + CB_TOKEN + '"', CB_TOKEN],
   ])('redacts the secret in: %s', (cmd, secret) => {
     const out = redactCommandForStorage(cmd);
     expect(out).not.toContain(secret);
@@ -96,6 +111,10 @@ describe('redactCommandForStorage', () => {
       'A=b '.repeat(50_000),
       'Authorization: '.repeat(20_000),
       '://'.repeat(60_000),
+      'x-api-key: '.repeat(20_000),
+      '?key='.repeat(40_000),
+      '&api_key=a'.repeat(30_000),
+      'AIza'.repeat(50_000),
     ]) {
       const t0 = Date.now();
       redactCommandForStorage(hostile);

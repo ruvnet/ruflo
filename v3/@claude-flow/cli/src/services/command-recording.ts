@@ -63,6 +63,10 @@ const QUOTED_OR_BARE = `"[^"]{0,512}"|'[^']{0,512}'|[^\\s"']{1,512}`;
 const RULES: Array<[RegExp, string]> = [
   // Authorization: Bearer xyz   /   authorization=Basic xyz
   [/(authorization["']?\s*[:=]\s*)(?:(?:bearer|basic|token)\s+)?[^\s"']{1,512}/gi, '$1[redacted]'],
+  // x-api-key: xyz   /   X-Goog-Api-Key: xyz   /   x-auth-token: xyz   (header-carried keys)
+  [/(\bx-(?:goog-)?api-key["']?\s*:\s*|\bx-auth-token["']?\s*:\s*)[^\s"']{1,512}/gi, '$1[redacted]'],
+  // ?key=xyz  &api_key=xyz  ?access_token=xyz   (query-string credentials)
+  [/([?&](?:key|api[-_]?key|access[-_]?token|auth[-_]?token|token)=)[^\s&#"']{1,512}/gi, '$1[redacted]'],
   // --password x / --token=x / --api-key "x" / -token x
   [new RegExp(`(--?(?:password|passwd|pwd|token|secret|api[-_]?key|access[-_]?token|auth[-_]?token|client[-_]?secret)(?:=|\\s+))(?:${QUOTED_OR_BARE})`, 'gi'), '$1[redacted]'],
   // NPM_TOKEN=x  AWS_SECRET_ACCESS_KEY=x  DB_PASSWORD=x
@@ -70,7 +74,7 @@ const RULES: Array<[RegExp, string]> = [
   // user:password@host in a URL
   [/(:\/\/[^\s:@/]{1,128}:)[^\s@/]{1,256}(@)/g, '$1[redacted]$2'],
   // well-known token shapes
-  [/\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|npm_[A-Za-z0-9]{20,}|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,})/g, '[redacted]'],
+  [/\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|cog_[A-Za-z0-9]{24,}|npm_[A-Za-z0-9]{20,}|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,})/g, '[redacted]'],
 ];
 
 /**
