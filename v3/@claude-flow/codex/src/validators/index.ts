@@ -778,10 +778,13 @@ function parseYamlFrontmatter(content: string): YamlFrontmatterResult {
  * Parse TOML content (simplified parser)
  */
 function parseToml(content: string): TomlParseResult {
+  // Null-prototype maps: section names and keys come from an untrusted
+  // config.toml, so `[__proto__]` must create an own entry, never resolve to
+  // (and then write onto) Object.prototype.
   const result: TomlParseResult = {
     valid: true,
     errors: [],
-    data: {},
+    data: Object.create(null) as Record<string, unknown>,
   };
 
   const lines = content.split('\n');
@@ -856,8 +859,11 @@ function parseToml(content: string): TomlParseResult {
 
     // Store in nested structure
     if (currentSection) {
-      if (!result.data[currentSection]) {
-        result.data[currentSection] = {};
+      const existing = Object.prototype.hasOwnProperty.call(result.data, currentSection)
+        ? result.data[currentSection]
+        : undefined;
+      if (typeof existing !== 'object' || existing === null) {
+        result.data[currentSection] = Object.create(null) as Record<string, unknown>;
       }
       (result.data[currentSection] as Record<string, unknown>)[key] = value;
     } else {
