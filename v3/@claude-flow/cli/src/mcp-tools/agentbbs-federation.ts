@@ -30,7 +30,10 @@
  * ## Transport
  *
  * Pull-based HTTP. A node serves `GET /agentbbs/v1/rooms/:roomId/envelopes?since=N`
- * and peers poll it. Pull is deliberate: it needs no inbound connectivity from
+ * and peers poll it. `N` is the legacy room-wide cursor; this client sends a
+ * JSON object of per-origin high-water marks instead, which the server also
+ * accepts, because a single `seq` cannot order envelopes from different origins.
+ * Pull is deliberate: it needs no inbound connectivity from
  * the peer's side, survives a node being offline (it just catches up later),
  * and gives the *receiver* control over how much it ingests. Push would invert
  * that and make every node an unauthenticated write target.
@@ -75,6 +78,8 @@ export const MAX_PEERS = 256;
 export const MAX_HOPS = 8;
 /** Per-request timeout when pulling from a peer. */
 export const SYNC_TIMEOUT_MS = 15_000;
+/** Max origins tracked in one per-room sync cursor (pinned peers plus the legacy empty origin). */
+const MAX_CURSOR_ORIGINS = MAX_PEERS + 1;
 
 const ROOM_ID_RE = /^[A-Za-z0-9_.\-:/@#]+$/;
 const NODE_ID_RE = /^[0-9a-f]{16}$/;
@@ -94,7 +99,15 @@ export interface FederationPeer {
   label?: string;
   addedAt: string;
   lastSyncedAt?: string;
+  /** Legacy single cursor per room; kept for peers written by older versions. */
   lastSeq?: Record<string, number>;
+  /**
+   * Per-room, per-origin high-water marks. A room-wide `seq` cannot be a
+   * cursor: each origin numbers its own envelopes, so after a merge the max
+   * `seq` can belong to one origin while another origin's next envelope has a
+   * lower `seq`. Pulling with `since=max` then skips it.
+   */
+  lastSeqByOrigin?: Record<string, Record<string, number>>;
 }
 
 export interface SignedEnvelope {
@@ -335,6 +348,49 @@ export function validateRoomId(roomId: string): string {
   return roomId;
 }
 
+/** Per-origin high-water marks for one room: `{ [origin]: lastAcceptedSeq }`. */
+export type SyncCursor = Record<string, number>;
+
+/**
+ * Parse the `since` query value.
+ *
+ * A plain number is the legacy room-wide cursor. A JSON object is the
+ * per-origin cursor written by this client; unknown origins are treated as
+ * having no mark, so a newly joined origin's first envelope is never skipped.
+ * Returns null for malformed or oversized input so the caller can reject it.
+ */
+export function parseSinceCursor(raw: string | null): { cursor: SyncCursor | null; since: number } | null {
+  const value = (raw ?? '0').trim();
+  if (!value.startsWith('{')) {
+    const parsed = Number(value);
+    return { cursor: null, since: Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0 };
+  }
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const entries = Object.entries(parsed as Record<string, unknown>);
+    if (entries.length > MAX_CURSOR_ORIGINS) return null;
+    const cursor: SyncCursor = Object.create(null) as SyncCursor;
+    for (const [origin, seq] of entries) {
+      if (origin === '__proto__' || origin === 'constructor' || origin === 'prototype') return null;
+      if (origin.length > 64) return null;
+      if (typeof seq !== 'number' || !Number.isSafeInteger(seq) || seq < 0) return null;
+      cursor[origin] = seq;
+    }
+    return { cursor, since: 0 };
+  } catch {
+    return null;
+  }
+}
+
+function envelopeAfterCursor(env: SignedEnvelope, cursor: SyncCursor | null, since: number): boolean {
+  const seq = Number(env.seq) || 0;
+  if (!cursor) return seq > since;
+  const origin = typeof env.origin === 'string' ? env.origin : '';
+  const mark = Object.prototype.hasOwnProperty.call(cursor, origin) ? cursor[origin] : -1;
+  return seq > mark;
+}
+
 export interface MergeResult {
   merged: number;
   skippedDuplicate: number;
@@ -345,6 +401,8 @@ export interface MergeResult {
   skippedForeignOrigin: number;
   /** Highest `seq` among envelopes merged or already held; the next sync starts after it. */
   acceptedMaxSeq: number;
+  /** Highest accepted `seq` per origin; the next sync starts after these. */
+  acceptedByOrigin: Record<string, number>;
 }
 
 /**
@@ -380,11 +438,17 @@ export async function mergeEnvelopes(
 
   const result: MergeResult = {
     merged: 0, skippedDuplicate: 0, skippedUnverified: 0, skippedOversize: 0, skippedHopLimit: 0,
-    skippedForeignOrigin: 0, acceptedMaxSeq: 0,
+    skippedForeignOrigin: 0, acceptedMaxSeq: 0, acceptedByOrigin: Object.create(null) as Record<string, number>,
   };
 
+  const noteAccepted = (origin: string, seq: number): void => {
+    result.acceptedByOrigin[origin] = Math.max(result.acceptedByOrigin[origin] ?? 0, seq);
+    result.acceptedMaxSeq = Math.max(result.acceptedMaxSeq, seq);
+  };
+  const originOf = (env: SignedEnvelope): string => typeof env.origin === 'string' ? env.origin : '';
+
   const existing = readEnvelopes(basePath, roomId);
-  const seen = new Map(existing.map(e => [e.envelopeId, Number(e.seq) || 0] as const));
+  const seen = new Map(existing.map(e => [e.envelopeId, { seq: Number(e.seq) || 0, origin: originOf(e) }] as const));
   const logPath = roomLogPath(basePath, roomId);
 
   const batch = incoming.slice(0, MAX_ENVELOPES_PER_SYNC);
@@ -394,8 +458,11 @@ export async function mergeEnvelopes(
     }
     if (env.roomId !== roomId) { result.skippedUnverified++; continue; }
     if (seen.has(env.envelopeId)) {
+      const prior = seen.get(env.envelopeId)!;
       result.skippedDuplicate++;
-      result.acceptedMaxSeq = Math.max(result.acceptedMaxSeq, seen.get(env.envelopeId) ?? 0);
+      // Use the stored envelope's origin/seq: a duplicate is skipped before
+      // verification, so an incoming origin must not move another origin's cursor.
+      noteAccepted(prior.origin, prior.seq);
       continue;
     }
     if (JSON.stringify(env).length > MAX_ENVELOPE_BYTES) { result.skippedOversize++; continue; }
@@ -409,8 +476,9 @@ export async function mergeEnvelopes(
     if (!(await verifyEnvelope(env, signerKey))) { result.skippedUnverified++; continue; }
 
     appendFileSync(logPath, JSON.stringify({ ...env, hops: (env.hops ?? 0) + 1 }) + '\n');
-    seen.set(env.envelopeId, Number(env.seq) || 0);
-    result.acceptedMaxSeq = Math.max(result.acceptedMaxSeq, Number(env.seq) || 0);
+    const seq = Number(env.seq) || 0;
+    seen.set(env.envelopeId, { seq, origin: originOf(env) });
+    noteAccepted(originOf(env), seq);
     result.merged++;
   }
   return result;
@@ -456,8 +524,15 @@ export async function syncRoomFromPeer(
   fetchImpl: typeof fetch = fetch,
 ): Promise<MergeResult & { peerNodeId: string; roomId: string }> {
   validateRoomId(roomId);
-  const since = peer.lastSeq?.[roomId] ?? 0;
-  const url = `${peer.url}/agentbbs/v1/rooms/${encodeURIComponent(roomId)}/envelopes?since=${since}`;
+  const current = readPeers(basePath).find(p => p.nodeId === peer.nodeId) ?? peer;
+  const cursor = current.lastSeqByOrigin?.[roomId];
+  // A per-origin cursor is a JSON object. With no cursor (first sync, or a
+  // peer written by an older version), start from 0: a legacy room-wide
+  // cursor may already have skipped envelopes, so it is not a safe baseline.
+  const sinceParam = cursor && Object.keys(cursor).length > 0
+    ? encodeURIComponent(JSON.stringify(cursor))
+    : '0';
+  const url = `${peer.url}/agentbbs/v1/rooms/${encodeURIComponent(roomId)}/envelopes?since=${sinceParam}`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS);
@@ -479,9 +554,16 @@ export async function syncRoomFromPeer(
   const rec = peers.find(p => p.nodeId === peer.nodeId);
   if (rec) {
     rec.lastSyncedAt = new Date().toISOString();
-    rec.lastSeq = rec.lastSeq ?? {};
     // Advance only past envelopes that verified; an unverifiable batch must not skip the cursor forward.
-    rec.lastSeq[roomId] = Math.max(since, merged.acceptedMaxSeq);
+    rec.lastSeqByOrigin = rec.lastSeqByOrigin ?? {};
+    const roomCursor = { ...(rec.lastSeqByOrigin[roomId] ?? {}) };
+    for (const [origin, seq] of Object.entries(merged.acceptedByOrigin)) {
+      roomCursor[origin] = Math.max(roomCursor[origin] ?? 0, seq);
+    }
+    if (Object.keys(roomCursor).length > 0) rec.lastSeqByOrigin[roomId] = roomCursor;
+    // Keep the legacy field for older readers and for peers that never write a cursor.
+    rec.lastSeq = rec.lastSeq ?? {};
+    rec.lastSeq[roomId] = Math.max(rec.lastSeq[roomId] ?? 0, merged.acceptedMaxSeq, ...Object.values(roomCursor));
     writePeers(basePath, peers);
   }
   return { ...merged, peerNodeId: peer.nodeId, roomId };
@@ -523,10 +605,13 @@ export function serveFederation(
         let roomId: string;
         try { roomId = validateRoomId(decodeURIComponent(m[1])); }
         catch (e) { return send(400, { error: (e as Error).message }); }
-        const since = Math.max(0, Math.trunc(Number(u.searchParams.get('since') ?? 0)) || 0);
+        const parsedSince = parseSinceCursor(u.searchParams.get('since'));
+        if (!parsedSince) return send(400, { error: 'invalid-since' });
         const all = readEnvelopes(basePath, roomId);
-        const out = all.filter(e => (Number(e.seq) || 0) > since).slice(0, MAX_ENVELOPES_PER_SYNC);
-        return send(200, { roomId, since, count: out.length, envelopes: out });
+        const out = all
+          .filter(e => envelopeAfterCursor(e, parsedSince.cursor, parsedSince.since))
+          .slice(0, MAX_ENVELOPES_PER_SYNC);
+        return send(200, { roomId, since: parsedSince.cursor ?? parsedSince.since, count: out.length, envelopes: out });
       }
       return send(404, { error: 'not-found' });
     } catch (e) {

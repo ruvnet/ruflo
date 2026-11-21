@@ -28,6 +28,7 @@ import {
   mergeEnvelopes,
   syncRoomFromPeer,
   serveFederation,
+  parseSinceCursor,
   validatePeerUrl,
   validateRoomId,
   MAX_HOPS,
@@ -357,6 +358,103 @@ describe('http transport (two real nodes)', () => {
     const idB = await getNodeIdentity(dirB);
     addPeer(dirA, { nodeId: idB.nodeId, url: 'http://127.0.0.1:1', publicKey: idB.publicKey });
     await expect(syncRoomFromPeer(dirA, readPeers(dirA)[0], 'sales-dd6531eb')).rejects.toThrow();
+  });
+});
+
+describe('per-origin sync cursor (#5031)', () => {
+  const room = 'sales-dd6531eb';
+
+  it('parses a per-origin cursor and rejects unsafe or malformed marks', () => {
+    const parsed = parseSinceCursor('{"0123456789abcdef":2,"":1}');
+    expect(parsed?.since).toBe(0);
+    expect({ ...parsed!.cursor }).toEqual({ '0123456789abcdef': 2, '': 1 });
+    expect(parseSinceCursor('3')).toEqual({ cursor: null, since: 3 });
+    expect(parseSinceCursor('{"__proto__":1}')).toBeNull();
+    expect(parseSinceCursor('{"a":-1}')).toBeNull();
+    expect(parseSinceCursor('{"a":1.5}')).toBeNull();
+    expect(parseSinceCursor('{"a":"1"}')).toBeNull();
+  });
+
+  it('advances per origin so a lower seq from another origin is not skipped', async () => {
+    const dirC = tmp('abbs-c-');
+    try {
+      const idA = await getNodeIdentity(dirA);
+      const idB = await getNodeIdentity(dirB);
+      const idC = await getNodeIdentity(dirC);
+      const a1 = await signEnvelope(dirA, envelope({ seq: 1, payload: { from: 'A1' } }));
+      const c1 = await signEnvelope(dirC, envelope({ seq: 1, payload: { from: 'C1' } }));
+      const a2 = await signEnvelope(dirA, envelope({ seq: 2, payload: { from: 'A2' } }));
+      appendFileSync(join(dirB, `room-${room}.jsonl`), [a1, c1, a2].map(e => JSON.stringify(e)).join('\n') + '\n');
+
+      const { server, port } = await serveFederation(dirB, { port: 0 });
+      servers.push(server);
+      addPeer(dirA, { nodeId: idB.nodeId, url: `http://127.0.0.1:${port}`, publicKey: idB.publicKey });
+      addPeer(dirA, { nodeId: idA.nodeId, url: 'http://127.0.0.1:1', publicKey: idA.publicKey });
+      addPeer(dirA, { nodeId: idC.nodeId, url: 'http://127.0.0.1:1', publicKey: idC.publicKey });
+
+      const first = await syncRoomFromPeer(dirA, readPeers(dirA)[0], room);
+      expect(first.merged).toBe(3);
+      expect(readPeers(dirA).find(p => p.nodeId === idB.nodeId)?.lastSeqByOrigin?.[room])
+        .toEqual({ [idA.nodeId]: 2, [idC.nodeId]: 1 });
+
+      // C's second envelope has the same seq as the old room-wide max (2).
+      const c2 = await signEnvelope(dirC, envelope({ seq: 2, payload: { from: 'C2' } }));
+      appendFileSync(join(dirB, `room-${room}.jsonl`), JSON.stringify(c2) + '\n');
+      const second = await syncRoomFromPeer(dirA, readPeers(dirA).find(p => p.nodeId === idB.nodeId)!, room);
+      expect(second.merged).toBe(1);
+      expect(readEnvelopes(dirA, room).map(e => e.envelopeId).sort())
+        .toEqual([a1, c1, a2, c2].map(e => e.envelopeId).sort());
+    } finally {
+      rmSync(dirC, { recursive: true, force: true });
+    }
+  });
+
+  it('does not skip a new origin that has no cursor entry', async () => {
+    const dirC = tmp('abbs-c-');
+    try {
+      const idA = await getNodeIdentity(dirA);
+      const idB = await getNodeIdentity(dirB);
+      const idC = await getNodeIdentity(dirC);
+      const a1 = await signEnvelope(dirA, envelope({ seq: 5, payload: { from: 'A5' } }));
+      appendFileSync(join(dirB, `room-${room}.jsonl`), JSON.stringify(a1) + '\n');
+
+      const { server, port } = await serveFederation(dirB, { port: 0 });
+      servers.push(server);
+      addPeer(dirA, { nodeId: idB.nodeId, url: `http://127.0.0.1:${port}`, publicKey: idB.publicKey });
+      addPeer(dirA, { nodeId: idA.nodeId, url: 'http://127.0.0.1:1', publicKey: idA.publicKey });
+      addPeer(dirA, { nodeId: idC.nodeId, url: 'http://127.0.0.1:1', publicKey: idC.publicKey });
+
+      await syncRoomFromPeer(dirA, readPeers(dirA)[0], room);
+      expect(readPeers(dirA).find(p => p.nodeId === idB.nodeId)?.lastSeqByOrigin?.[room])
+        .toEqual({ [idA.nodeId]: 5 });
+
+      const c1 = await signEnvelope(dirC, envelope({ seq: 1, payload: { from: 'C1' } }));
+      appendFileSync(join(dirB, `room-${room}.jsonl`), JSON.stringify(c1) + '\n');
+      const second = await syncRoomFromPeer(dirA, readPeers(dirA).find(p => p.nodeId === idB.nodeId)!, room);
+      expect(second.merged).toBe(1);
+      expect(readEnvelopes(dirA, room).map(e => e.envelopeId).sort())
+        .toEqual([a1, c1].map(e => e.envelopeId).sort());
+    } finally {
+      rmSync(dirC, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps the numeric since cursor for older clients and rejects malformed JSON', async () => {
+    const e1 = await signEnvelope(dirB, envelope({ seq: 1 }));
+    const e2 = await signEnvelope(dirB, envelope({ seq: 2 }));
+    appendFileSync(join(dirB, `room-${room}.jsonl`), [e1, e2].map(e => JSON.stringify(e)).join('\n') + '\n');
+    const { server, port } = await serveFederation(dirB, { port: 0 });
+    servers.push(server);
+
+    const numeric = await fetch(`http://127.0.0.1:${port}/agentbbs/v1/rooms/${encodeURIComponent(room)}/envelopes?since=1`);
+    expect(numeric.status).toBe(200);
+    const body = await numeric.json() as { envelopes: SignedEnvelope[] };
+    expect(body.envelopes.map(e => e.envelopeId)).toEqual([e2.envelopeId]);
+
+    const malformed = await fetch(
+      `http://127.0.0.1:${port}/agentbbs/v1/rooms/${encodeURIComponent(room)}/envelopes?since=${encodeURIComponent('{"a":-1}')}`,
+    );
+    expect(malformed.status).toBe(400);
   });
 });
 
