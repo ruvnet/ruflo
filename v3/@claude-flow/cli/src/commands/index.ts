@@ -86,6 +86,8 @@ const commandLoaders: Record<string, CommandLoader> = {
   'gaia-bench': () => import('./gaia-bench.js'),
   // MetaHarness integration (ADR-150) — dispatcher over plugins/ruflo-metaharness/
   metaharness: () => import('./metaharness.js'),
+  // ADR-532: read-only adaptive execution planner and paired benchmark
+  adaptive: () => import('./adaptive.js'),
   // Eject (ADR-150 Phase 2) — lift ruflo project into a renamed standalone harness
   eject: () => import('./eject.js'),
   // Cognitum lifecycle funnel controls (ADR-301/305/309)
@@ -282,10 +284,10 @@ export async function getCommandsByCategory(): Promise<Record<string, Command[]>
     daemonCmd, doctorCmd, embeddingsCmd, neuralCmd,
     performanceCmd, securityCmd, ruvectorCmd, hiveMindCmd,
     configCmd, completionsCmd, migrateCmd, workflowCmd,
-    analyzeCmd, routeCmd, progressCmd, providersCmd,
+    analyzeCmd, routeCmd, progressCmd, adaptiveCmd, providersCmd,
     pluginsCmd, deploymentCmd, claimsCmd, issuesCmd,
     updateCmd, processCmd, guidanceCmd, applianceCmd,
-    cleanupCmd, autopilotCmd, policyCmd, pairCmd,
+    cleanupCmd, autopilotCmd, policyCmd, pairCmd, adaptiveCmd,
   ] = await Promise.all([
     loadCommand('daemon'), loadCommand('doctor'), loadCommand('embeddings'), loadCommand('neural'),
     loadCommand('performance'), loadCommand('security'), loadCommand('ruvector'), loadCommand('hive-mind'),
@@ -293,7 +295,7 @@ export async function getCommandsByCategory(): Promise<Record<string, Command[]>
     loadCommand('analyze'), loadCommand('route'), loadCommand('progress'), loadCommand('providers'),
     loadCommand('plugins'), loadCommand('deployment'), loadCommand('claims'), loadCommand('issues'),
     loadCommand('update'), loadCommand('process'), loadCommand('guidance'), loadCommand('appliance'),
-    loadCommand('cleanup'), loadCommand('autopilot'), loadCommand('policy'), loadCommand('pair'),
+    loadCommand('cleanup'), loadCommand('autopilot'), loadCommand('policy'), loadCommand('pair'), loadCommand('adaptive'),
   ]);
 
   return {
