@@ -429,9 +429,14 @@ describe('Plugin Manager NPM Injection', () => {
 // ============================================================================
 describe('Doctor Command Safety', () => {
   it('should use hardcoded commands only (no user input in shell)', () => {
-    // doctor.ts runs system commands but they should all be hardcoded
-    const doctorPath = path.join(__dirname, '..', 'src', 'commands', 'doctor.ts');
-    const content = fs.readFileSync(doctorPath, 'utf-8');
+    // doctor runs system commands but they should all be hardcoded; its checks
+    // live in commands/doctor-checks/ (#4773)
+    const commandsDir = path.join(__dirname, '..', 'src', 'commands');
+    const checksDir = path.join(commandsDir, 'doctor-checks');
+    const content = [
+      path.join(commandsDir, 'doctor.ts'),
+      ...fs.readdirSync(checksDir).filter(f => f.endsWith('.ts')).map(f => path.join(checksDir, f)),
+    ].map(f => fs.readFileSync(f, 'utf-8')).join('\n');
 
     // Find actual invocations of runCommand (not the function definition)
     // The function is defined as: async function runCommand(command: string, ...)
