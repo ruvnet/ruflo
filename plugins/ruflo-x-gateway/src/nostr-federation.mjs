@@ -132,16 +132,25 @@ export async function fetchRecent(relayUrl, sk, { sinceSeconds = 3600, limit = 1
 }
 
 // One REQ over an absolute created_at window; NIP-01 `since`/`until` are both inclusive.
-export async function fetchWindow(relayUrl, sk, { since, until, limit = 100, type, timeoutMs } = {}) {
+// `localTags` sends only kinds/since/until/limit and applies the #t/#k match here
+// instead; the result then carries a non-enumerable `rawCount` of every EVENT the
+// relay sent, which is what tells a complete page from a truncated one (see fetchCovering).
+export async function fetchWindow(relayUrl, sk, { since, until, limit = 100, type, timeoutMs, localTags = false } = {}) {
   const ws = await connectAuthed(relayUrl, sk);
-  const filter = { kinds: [SWARM_KIND], '#t': [SWARM_TAG], since, limit };
+  const filter = { kinds: [SWARM_KIND], since, limit };
+  if (!localTags) filter['#t'] = [SWARM_TAG];
   if (until !== undefined) filter.until = until;
-  if (type) filter['#k'] = [String(type)];
+  if (type && !localTags) filter['#k'] = [String(type)];
+  const tagged = (e, k, v) => Array.isArray(e.tags) && e.tags.some((t) => Array.isArray(t) && t[0] === k && t[1] === v);
   const out = [];
+  let rawCount = 0;
+  if (localTags) Object.defineProperty(out, 'rawCount', { get: () => rawCount });
   return new Promise((resolve, reject) => {
     const round = relayRound(ws, resolve, reject, { subIds: ['ruflo-sync'], collected: out, timeoutMs });
     ws.on('message', (data) => {
       const m = round.frame(data); if (!m) return;
+      if (m[0] === 'EVENT') rawCount++;
+      if (m[0] === 'EVENT' && localTags && !(tagged(m[2], 't', SWARM_TAG) && (!type || tagged(m[2], 'k', String(type))))) return;
       if (m[0] === 'EVENT' && verifyEvent(m[2])) {
         let body; try { body = JSON.parse(m[2].content); } catch { body = { raw: m[2].content }; }
         // Verified envelope fields MUST win over anything the publisher put in
@@ -160,7 +169,12 @@ export async function fetchWindow(relayUrl, sk, { since, until, limit = 100, typ
 // A NIP-01 `limit` keeps the NEWEST matches, so a full page means older events
 // were cut off. Narrow `until` by bisection until a window [lo, until] comes back
 // short of a full page: that window is complete, and reading it oldest-first
-// leaves no gap. Returns { events, coveredTo }, where coveredTo is the last second
+// leaves no gap.
+// buzz-relay pushes kinds/since/until (and channel access) into SQL before its
+// ORDER BY created_at DESC LIMIT, but matches #t and #k in Rust AFTER the limit
+// (handlers/req.rs filter_fully_pushable). A short page of a #t-filtered REQ
+// therefore proves nothing. So these REQs carry only kinds/since/until/limit, the
+// swarm/type match is applied here, and completeness is judged on the raw count. Returns { events, coveredTo }, where coveredTo is the last second
 // known complete (Infinity when the read reached the end); { partial } when the
 // relay timed out, so nothing can be trusted as complete; or { saturated } when a
 // single second holds a full page and cannot be split.
@@ -170,9 +184,9 @@ export const SYNC_PAGE = 500;
 export async function fetchCovering(relayUrl, sk, { lo, type, now = Math.floor(Date.now() / 1000), page = SYNC_PAGE, maxRounds = 24, timeoutMs } = {}) {
   let until, hi = now;
   for (let round = 0; round < maxRounds; round++) {
-    const evs = await fetchWindow(relayUrl, sk, { since: lo, until, limit: page, type, timeoutMs });
+    const evs = await fetchWindow(relayUrl, sk, { since: lo, until, limit: page, type, timeoutMs, localTags: true });
     if (evs.partial) return { partial: true, relayNotice: evs.relayNotice };
-    if (evs.length < page) return { events: evs, coveredTo: until === undefined ? Infinity : until };
+    if (evs.rawCount < page) return { events: evs, coveredTo: until === undefined ? Infinity : until };
     if (until !== undefined) hi = until - 1;
     if (hi < lo) break;
     until = lo + Math.floor((hi - lo) / 2);

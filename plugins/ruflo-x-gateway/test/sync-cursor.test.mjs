@@ -1,8 +1,8 @@
 // federation_sync cursor (#5030). The relay has no receive-order sequence, so the
 // cursor is (window floor + delivered ids). These tests drive it against a fake
 // relay that honours NIP-01 since/until/limit the way buzz-relay does — `limit`
-// keeps the NEWEST matches — because a relay that ignored them would let a
-// cursor that skips events pass.
+// keeps the NEWEST matches, and is applied in SQL BEFORE #t/#k are matched — because
+// a relay that ignored either would let a cursor that skips events pass.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { WebSocketServer } from 'ws';
@@ -16,8 +16,11 @@ const nowS = () => Math.floor(Date.now() / 1000);
 let seq = 0;
 const ev = (created_at, type = 'Status') =>
   finalizeEvent({ kind: 1, created_at, tags: [['t', 'ruflo-swarm'], ['k', type]], content: JSON.stringify({ type, n: seq++ }) }, author);
+// Other kind-1 traffic on the same relay: no swarm tag.
+const noise = (created_at) => finalizeEvent({ kind: 1, created_at, tags: [], content: 'hello ' + seq++ }, author);
 
-/** NIP-42 relay stand-in over a mutable store, honouring kinds/#t/#k/since/until/limit. */
+/** NIP-42 relay stand-in over a mutable store. Like buzz-relay, kinds/since/until and
+ *  limit select rows first (newest first), and #t/#k are matched on what is left. */
 async function storeRelay() {
   const store = [];
   const wss = new WebSocketServer({ port: 0 });
@@ -30,14 +33,15 @@ async function storeRelay() {
       if (m[0] !== 'REQ') return;
       stats.reqs++;
       const f = m[2];
-      const hit = store.filter((e) => (!f.kinds || f.kinds.includes(e.kind))
-        && (!f['#t'] || e.tags.some((t) => t[0] === 't' && f['#t'].includes(t[1])))
-        && (!f['#k'] || e.tags.some((t) => t[0] === 'k' && f['#k'].includes(t[1])))
+      const rows = store.filter((e) => (!f.kinds || f.kinds.includes(e.kind))
         && (f.since === undefined || e.created_at >= f.since)
         && (f.until === undefined || e.created_at <= f.until));
       // buzz-relay order: newest first, then id; `limit` keeps the head.
-      hit.sort((a, b) => (b.created_at - a.created_at) || (a.id < b.id ? -1 : 1));
-      for (const e of hit.slice(0, f.limit ?? 500)) sock.send(JSON.stringify(['EVENT', m[1], e]));
+      rows.sort((a, b) => (b.created_at - a.created_at) || (a.id < b.id ? -1 : 1));
+      const hit = rows.slice(0, f.limit ?? 500).filter((e) =>
+        (!f['#t'] || e.tags.some((t) => t[0] === 't' && f['#t'].includes(t[1])))
+        && (!f['#k'] || e.tags.some((t) => t[0] === 'k' && f['#k'].includes(t[1]))));
+      for (const e of hit) sock.send(JSON.stringify(['EVENT', m[1], e]));
       sock.send(JSON.stringify(['EOSE', m[1]]));
     });
   });
@@ -123,17 +127,21 @@ test('cursor: a backlog bigger than the relay page and the call limit drains gap
     const base = nowS() - 3000;
     // 1200 events over 40 seconds: 30 per second, so every page boundary splits a second.
     for (let i = 0; i < 1200; i++) relay.store.push(ev(base + (i % 40) * 60));
+    // Non-swarm notes interleaved, more of them than a page: they fill the relay's
+    // LIMIT before its #t match, so a short filtered page is not a complete one.
+    for (let i = 0; i < 1500; i++) relay.store.push(noise(base + (i % 50) * 60 + 1));
     const first = await gw.call({ sinceSeconds: 3600, limit: 100 }); // newest 100 only
     const seen = [...ids(first.messages)];
     let cursor = first.next_cursor, more = true, calls = 0;
-    while (more && calls++ < 40) {
-      const r = await gw.call({ since_cursor: cursor, limit: 250 });
+    while (more && calls++ < 120) {
+      // 45 is not a multiple of 30, so the call limit also splits seconds.
+      const r = await gw.call({ since_cursor: cursor, limit: 45 });
       assertAscending(r.messages);
       seen.push(...ids(r.messages)); cursor = r.next_cursor; more = r.more;
     }
     assert.equal(more, false, 'the backlog drains');
     assert.equal(seen.length, 1200, 'each event exactly once');
-    assert.deepEqual(new Set(seen), new Set(ids(relay.store)));
+    assert.deepEqual(new Set(seen), new Set(ids(relay.store.filter((e) => e.tags.length))));
   } finally { gw.close(); relay.close(); }
 });
 
@@ -149,6 +157,35 @@ test('cursor: the type filter is bound into the cursor', async () => {
     const wrong = await gw.call({ type: 'Status', since_cursor: a.next_cursor });
     assert.match(wrong.error, /different type filter/);
   } finally { gw.close(); relay.close(); }
+});
+
+test('cursor: any type string the tool accepts yields a cursor the tool accepts back', async () => {
+  const relay = await storeRelay(); const gw = await gatewayOn(relay.url);
+  try {
+    for (const type of ['a.b', '', 'Task with spaces']) {
+      const a = await gw.call(type === '' ? { type } : { type });
+      assert.ok(a.next_cursor, JSON.stringify(a));
+      const b = await gw.call({ type, since_cursor: a.next_cursor });
+      assert.equal(b.error, undefined, `type ${JSON.stringify(type)}: ${b.error}`);
+    }
+  } finally { gw.close(); relay.close(); }
+});
+
+test('cursor: the largest cursor the gateway can emit fits the schema cap and decodes', () => {
+  const now = nowS();
+  const lo = now - 30 * 86400;
+  // Worst case: MAX_SEEN deliveries, each in its own second, spread over the full lookback.
+  const seen = new Map();
+  for (let i = 0; i < 2000; i++) seen.set(i.toString(16).padStart(12, '0'), lo + i * 1296);
+  const c = encodeCursor({ lo, seen, type: 'x'.repeat(256) });
+  assert.ok(c.length <= MAX_CURSOR_CHARS, `cursor is ${c.length} chars`);
+  assert.equal(decodeCursor(c, { now, type: 'x'.repeat(256) }).seen.size, 2000);
+  // And through advance: a full limit on top of a full carried set stays bounded.
+  const fetched = Array.from({ length: 1000 }, (_, i) => ({ id: (i + 5000).toString(16).padStart(64, '0'), created_at: now - 299 + (i % 290) }));
+  const step = advance({ lo: now - 300, seen: new Map([...seen].map(([p], i) => [p, now - 300 + (i % 300)])), type: undefined }, fetched, { limit: 1000, now });
+  const c2 = encodeCursor(step.state);
+  assert.ok(c2.length <= MAX_CURSOR_CHARS);
+  assert.ok(decodeCursor(c2, { now }).seen.size <= 2000);
 });
 
 test('cursor: no cursor keeps the old window read and its relay filter', async () => {
@@ -182,15 +219,16 @@ test('fetchCovering: a full page is narrowed until the window is complete', asyn
 test('decodeCursor: malformed, oversized, wrong-version and wrong-shape cursors are refused without echo', () => {
   const now = nowS();
   const enc = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
-  for (const bad of ['', '!!!', 'a'.repeat(MAX_CURSOR_CHARS + 1), enc([]), enc({ v: 2, lo: now, k: null, s: {} }),
-    enc({ v: 1, lo: -1, k: null, s: {} }), enc({ v: 1, lo: 1.5, k: null, s: {} }), enc({ v: 1, lo: now, k: 'bad type!', s: {} }),
-    enc({ v: 1, lo: now, k: null, s: [] }), enc({ v: 1, lo: now, k: null, s: { [now]: 'xyz' } }),
-    enc({ v: 1, lo: now, k: null, s: { abc: 'aaaaaaaaaaaa' } }), Buffer.from('not json').toString('base64url')]) {
+  for (const bad of ['', '!!!', 'a'.repeat(MAX_CURSOR_CHARS + 1), enc([]), enc({ v: 2, lo: now, k: null, s: '' }),
+    enc({ v: 1, lo: -1, k: null, s: '' }), enc({ v: 1, lo: 1.5, k: null, s: '' }), enc({ v: 1, lo: now, k: 'x'.repeat(257), s: '' }),
+    enc({ v: 1, lo: now, k: null, s: [] }), enc({ v: 1, lo: now, k: null, s: {} }), enc({ v: 1, lo: now, k: null, s: '0:xyz' }),
+    enc({ v: 1, lo: now, k: null, s: '-1:aaaaaaaaaaaa' }), enc({ v: 1, lo: now, k: null, s: '0:aaaaaaaaaaaa,,' }), enc({ v: 1, lo: now, k: '', s: '' }),
+    enc({ v: 1, lo: now, k: null, s: Array.from({ length: 2001 }, () => '1:aaaaaaaaaaaa').join(',') }), Buffer.from('not json').toString('base64url')]) {
     assert.throws(() => decodeCursor(bad, { now }), (e) => e instanceof CursorError && !e.message.includes(bad || '\u0000'));
   }
   // Lookback is clamped to the sinceSeconds bound, and never ahead of now.
-  assert.equal(decodeCursor(enc({ v: 1, lo: 0, k: null, s: {} }), { now }).lo, now - 30 * 86400);
-  assert.equal(decodeCursor(enc({ v: 1, lo: now + 9999, k: null, s: {} }), { now }).lo, now);
+  assert.equal(decodeCursor(enc({ v: 1, lo: 0, k: null, s: '' }), { now }).lo, now - 30 * 86400);
+  assert.equal(decodeCursor(enc({ v: 1, lo: now + 9999, k: null, s: '' }), { now }).lo, now);
 });
 
 test('advance: a future-dated event cannot drag the window floor past real traffic', () => {
