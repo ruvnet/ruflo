@@ -59,18 +59,44 @@ export function commandRecordingDisabled(
 
 const QUOTED_OR_BARE = `"[^"]{0,512}"|'[^']{0,512}'|[^\\s"']{1,512}`;
 
-// Order matters little; each rule only ever shortens the text.
+// Header names whose value is a credential. Matched only when followed by `:`,
+// so `grep -rn x-api-key src` is left alone.
+const HEADER_NAMES =
+  'x-api-key|x-goog-api-key|x-auth-token|x-auth-key|x-access-token|apikey|api-key|ocp-apim-subscription-key|private-token';
+
+// Key names in a JSON / object literal (`{"apiKey":"..."}`, `{'access_token': '...'}`).
+const LITERAL_NAMES = 'api[-_]?key|x-api-key|x-goog-api-key|access[-_]?token|auth[-_]?token';
+
+// Each rule only ever shortens the text, but order still matters in one place:
+// the flag rule must not fire inside a header name (`x-api-key :v`), which is
+// why it requires a non-word, non-dash character before its leading dash.
 const RULES: Array<[RegExp, string]> = [
-  // Authorization: Bearer xyz   /   authorization=Basic xyz
-  [/(authorization["']?\s*[:=]\s*)(?:(?:bearer|basic|token)\s+)?[^\s"']{1,512}/gi, '$1[redacted]'],
+  // Authorization: Bearer xyz  /  authorization=Basic xyz  /  {"authorization":"Bearer xyz"}
+  [/(authorization["']?\s*[:=]\s*["']?)(?:(?:bearer|basic|token)\s+)?[^\s"']{1,512}/gi, '$1[redacted]'],
+  // x-api-key: xyz  /  {"X-Goog-Api-Key":"xyz"}  /  Private-Token: xyz  /  x-access-token: token xyz
+  [new RegExp(`(\\b(?:${HEADER_NAMES})["']?\\s*:\\s*["']?)(?:(?:bearer|basic|token)\\s+)?[^\\s"']{1,512}`, 'gi'), '$1[redacted]'],
+  // {"api_key":"xyz"}  {apiKey: 'xyz'}  and a quoted bare key: params={'key': 'xyz'}
+  [new RegExp(`((?:["']?(?:${LITERAL_NAMES})["']?|["']key["'])\\s*:\\s*["'])[^"']{1,512}(?=["'])`, 'gi'), '$1[redacted]'],
+  // ?key=xyz  &api_key=xyz  ?access_token=xyz   (query-string credentials)
+  // Bare `?key=` is kept on purpose: Google / Firebase API keys travel that way, so a
+  // harmless `?key=` parameter is redacted too. Bare `?token=` is NOT matched: it is
+  // usually a pagination cursor.
+  [/([?&](?:key|api[-_]?key|access[-_]?token|auth[-_]?token)=)[^\s&#"']{1,512}/gi, '$1[redacted]'],
+  // form bodies: -d "api_key=xyz"  apikey=xyz
+  [/((?<![^\s"'])api[-_]?key=)[^\s&#"']{1,512}/gi, '$1[redacted]'],
+  // form bodies, bare key: -d key=xyz  --data-urlencode "key=xyz"
+  [/((?<![\w-])(?:-d|--data(?:-[a-z]{1,16})?)(?:\s{1,16}|=)["']?key=)[^\s&#"']{1,512}/gi, '$1[redacted]'],
   // --password x / --token=x / --api-key "x" / -token x
-  [new RegExp(`(--?(?:password|passwd|pwd|token|secret|api[-_]?key|access[-_]?token|auth[-_]?token|client[-_]?secret)(?:=|\\s+))(?:${QUOTED_OR_BARE})`, 'gi'), '$1[redacted]'],
+  [new RegExp(`((?<![\\w-])--?(?:password|passwd|pwd|token|secret|api[-_]?key|access[-_]?token|auth[-_]?token|client[-_]?secret)(?:=|\\s+))(?:${QUOTED_OR_BARE})`, 'gi'), '$1[redacted]'],
   // NPM_TOKEN=x  AWS_SECRET_ACCESS_KEY=x  DB_PASSWORD=x
   [new RegExp(`\\b([A-Za-z_][A-Za-z0-9_]{0,63}(?:TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|ACCESS_?KEY|PRIVATE_?KEY|CREDENTIALS?))=(?:${QUOTED_OR_BARE})`, 'gi'), '$1=[redacted]'],
   // user:password@host in a URL
   [/(:\/\/[^\s:@/]{1,128}:)[^\s@/]{1,256}(@)/g, '$1[redacted]$2'],
   // well-known token shapes
-  [/\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|npm_[A-Za-z0-9]{20,}|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,})/g, '[redacted]'],
+  [/\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|npm_[A-Za-z0-9]{20,}|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,})/g, '[redacted]'],
+  // Cognitum keys: `cog_` + 64 lowercase hex. Hex lookarounds instead of \b so that
+  // `prefix_cog_<hex>` is caught and identifiers such as `cog_SomeMetricName` are not.
+  [/(?<![0-9a-f])cog_[0-9a-f]{64}(?![0-9a-f])/g, '[redacted]'],
 ];
 
 /**
