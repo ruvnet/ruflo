@@ -1,0 +1,47 @@
+name: Managed learning independent proof
+on:
+  pull_request:
+    paths:
+      - 'v3/@claude-flow/cli/src/services/managed-proof*'
+      - 'v3/@claude-flow/cli/src/services/managed-proof/**'
+      - 'v3/@claude-flow/cli/src/services/managed-learning*'
+      - 'scripts/*managed-proof*'
+      - 'scripts/managed-proof/**'
+      - '.github/workflows/managed-learning-proof.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['20', '22']
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install isolated compiler without lifecycle scripts
+        run: |
+          npm install --prefix "$RUNNER_TEMP/proof-tools" --ignore-scripts --no-audit --no-fund typescript@5.9.3 @types/node@22
+          ln -s "$RUNNER_TEMP/proof-tools/node_modules" node_modules
+      - name: Verify pinned rGi source provenance
+        run: printf '%s\n' '151fc23d209129a0fb5bd746fc3338831feb3017e208dae5d969ec3b2d42cf6e  v3/@claude-flow/cli/src/services/managed-proof/rgi-evaluation.ts' | sha256sum --check
+      - name: Compile strict proof boundaries
+        run: node node_modules/typescript/lib/tsc.js --target es2022 --module nodenext --moduleResolution nodenext --strict --skipLibCheck --types node --outDir "$RUNNER_TEMP/proof-build" scripts/test-managed-proof.mts scripts/e2e-managed-proof.mts scripts/managed-proof-worker.mts
+      - name: Protocol, provenance and independent workload checks
+        run: |
+          node "$RUNNER_TEMP/proof-build/scripts/test-managed-proof.mjs"
+          node "$RUNNER_TEMP/proof-build/scripts/e2e-managed-proof.mjs" > "$RUNNER_TEMP/managed-proof-result.json"
+          cat "$RUNNER_TEMP/managed-proof-result.json"
+      - name: Offline actor and oracle hardening regressions
+        run: |
+          python3 -m unittest discover -s scripts/managed-proof -p 'test_*.py'
+          python3 scripts/managed-proof/booster-transfer/test_transfer.py
+          node --check scripts/managed-proof/booster-transfer/booster_apply.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: managed-proof-node-${{ matrix.node }}
+          path: ${{ runner.temp }}/managed-proof-result.json

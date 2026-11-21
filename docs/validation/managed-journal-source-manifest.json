@@ -1,0 +1,32 @@
+{
+  "sourceManifest": {
+    "files": {
+      "scripts/managed-proof/README.md": "60deb0d254ebe05c3f285cb55c986f3ef027f36c31a52fcddcc58489a5d17bbb",
+      "scripts/managed-proof/actor_pilot.py": "bc57bf393a8df26b08938572d771f3e4968ff704bd83b7d60bdcd5fd9fccd628",
+      "scripts/managed-proof/actor_pilot_v1.py": "a2ce770a5db3d3f6bfc12e3278b478dae9c9cf9428a74644de581f455bd8f4d3",
+      "scripts/managed-proof/actor_pilot_v2.py": "6b8d50b2f9c0f8fe63d480d866d755775e8ef5ab2ff0d2898c3c0cec34bfbcb2",
+      "scripts/managed-proof/analyze_actor_pilot.py": "bc94e18c018047014bbf3ea5f5937d0c4e96a28092b7e0884668cdcd57a3298d",
+      "scripts/managed-proof/booster-transfer/README.md": "ddf776d59cb1c6206b471ff56712869d94e8ebc29577e8be0dee19b8e3e536eb",
+      "scripts/managed-proof/booster-transfer/booster_apply.mjs": "3ffc4dfc8b0fae31bc0d56ba874089c065b2cdb157c0d83cded5c01a0d0b51ea",
+      "scripts/managed-proof/booster-transfer/edit_ablation.py": "e6177f19940b3cc66b076890fdee5c4e2a118fffa77b94dbceccda7dd2007c9d",
+      "scripts/managed-proof/booster-transfer/openrouter_client.py": "8ca15a749b66b799a6ca724b5b544e591d666b5c4ee66a6dbb2a927018043903",
+      "scripts/managed-proof/booster-transfer/test_transfer.py": "0f8f7a0288a5bfe00134318e6818b41d59ac5a4df4db8321538745a04a813aac",
+      "scripts/managed-proof/booster-transfer/transfer_pilot.py": "7e4a6529acf9fe35fd5a8349d28fa1169c0cf9becc5c6f33272bb70d9a5c8e45",
+      "scripts/managed-proof/cost_endpoint.py": "a424859c3618004407cf0f759e084fd4c32d92387839e1670725085fa5dfec2e",
+      "scripts/managed-proof/cost_endpoint_v2.py": "a424859c3618004407cf0f759e084fd4c32d92387839e1670725085fa5dfec2e",
+      "scripts/managed-proof/effect_journal.py": "08a1271089fe631bf64b129dfbe639a0b13194d145c9f964b4f5bf8aae57f37a",
+      "scripts/managed-proof/journaled_openrouter.py": "298f03b052030ee0ca4d676b07514baaf7448a013afdea80fd0be4b4913b3c6c",
+      "scripts/managed-proof/ruos_credential.py": "5f9537682e709d69f5189f1223deda4a1f147f93fe1732734caa6f491c0a7c0c",
+      "scripts/managed-proof/test_actor_analysis.py": "fab02e0834e5ca2b0cee2975ea540a481287124f8df733be0a6cffec3ee2a05c",
+      "scripts/managed-proof/test_actor_pilot.py": "0549eddc40cae76f455d1ebc34decf8816afb3f54c8887505910a48d84adbf95",
+      "scripts/managed-proof/test_cost_endpoint.py": "7b5c6fa9ee4cea1d1798724a689fe4afde4a1d46a6d06d028ac71098940f109b",
+      "scripts/managed-proof/test_effect_journal.py": "1e675565731524db90c7646df9300c42c81dabcbfb29e68ab6aca82ca8e37951",
+      "scripts/managed-proof/test_journaled_openrouter.py": "c347163fc29e5ef6e3f041a58439b155d1afed8a71cbc5bfaf18300edcbe391c",
+      "scripts/managed-proof/test_ruos_credential.py": "67938d4c31be15edd8daedc71f31cf39fdc88c5b8ad12c2c251bc5ebf0b2be9d"
+    },
+    "purpose": "Next journal-aware fixed provider caller and future transfer/edit adapters; not the source used by earlier actual campaigns"
+  },
+  "archiveSha256": "6728ad1a8e42163503d0720938d98ce9baa1de7acb9139ab32fe435b05d36789",
+  "archiveFile": "managed-journal-v4-source.tar.gz",
+  "scope": "Exact tiny actual journal canary source; not the original 98-call transfer experiment or later guard wiring."
+}

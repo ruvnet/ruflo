@@ -1,0 +1,65 @@
+{
+  "schema": "ruflo.kimi-transfer-analysis/v1",
+  "actualModel": "moonshotai/kimi-k3.1-pro",
+  "calls": 98,
+  "uniqueGenerationIds": 98,
+  "meteringMatchesProviderReceipts": true,
+  "reasoningTokensZero": true,
+  "summary": {
+    "untuned": {
+      "passed": 30,
+      "total": 30,
+      "observed": 30,
+      "costUSD": "0.08276202",
+      "p95Ms": 11950
+    },
+    "transferred": {
+      "passed": 30,
+      "total": 30,
+      "observed": 30,
+      "costUSD": "0.040676328",
+      "p95Ms": 6687
+    },
+    "target_native": {
+      "passed": 30,
+      "total": 30,
+      "observed": 30,
+      "costUSD": "0.037344780",
+      "p95Ms": 7136
+    }
+  },
+  "targetTrainingCostUSD": "0.01062666",
+  "marginalTransferAuditReductionVsUntuned": "0.5085145577645398215268307854",
+  "sourceAndTargetSelectedPolicyEquivalent": true,
+  "allThirtyPairedRequestDigestsIdenticalForTransferredAndTargetNative": true,
+  "nativeLabelMeans": "Python target-trained global prompt, not native Ruflo MCP learning",
+  "economics": {
+    "sourcePolicyCreationTrainingUSD": "0.0374632",
+    "sourceTrainingPlusFirstTransferredBatchUSD": "0.078139528",
+    "firstBatchReductionIncludingSourceTraining": "0.0558528175121873535711187330",
+    "targetTrainingPlusTargetAuditUSD": "0.047971440",
+    "scope": "Descriptive provider metering, not invoices or a forecast; source policy creation may be amortized only if already available. Experiment control arms and VM costs are additional."
+  },
+  "interruptedAttempt": {
+    "status": "interrupted",
+    "knownCompletedCalls": 49,
+    "knownProviderCostUSD": 0.086435118,
+    "lastInFlightStatus": "unknown",
+    "unknownSpendPlanningReserveUSD": 0.03,
+    "observedVMStartUTC": "2026-10-25T02:38:49Z",
+    "proofEligible": false,
+    "originalRowsPreserved": true,
+    "newIndependentDiagnosticRoot": "transfer-run-002",
+    "note": "No terminal result exists. Planning reserve is not a provider billing audit; no partial rows are merged into the replacement run."
+  },
+  "freshConfirmation": false,
+  "transferProven": false,
+  "weightsUpdated": false,
+  "limitations": [
+    "The corpus was explicitly reused diagnostically; source/target compact policies are identical.",
+    "Removing an extra explanation field saves code-only output cost, not reasoning or full feature equivalence.",
+    "Shared cache and randomized order do not eliminate provider cache/interference effects.",
+    "Same-prompt cost differences are sampling/cache variation, not adaptive policy benefit.",
+    "Native cent precision and causal native selection remain unqualified."
+  ]
+}
