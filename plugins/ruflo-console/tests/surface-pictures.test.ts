@@ -31,12 +31,18 @@ for (const look of ['bbs', 'plain', 'orbital'] as const) {
 
         const drawn: Record<'terminal' | 'desktop', unknown> = { terminal: null, desktop: null }
 
-        for (const surface of ['terminal', 'desktop'] as const) {
-          const pane = await $.ui.mount({ ...paneAt(110, 60, true, surface), plugin: PLUGIN })
+        // Views animate from the real clock (mock.clock does not hold Date.now; the learning pipeline marker steps every 700 ms),
+        // so a tick can land between the two draws and change a single glyph. Draw the pair again, at most three times in all:
+        // a real difference between the surfaces repeats on every attempt and still fails the comparison below.
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          for (const surface of ['terminal', 'desktop'] as const) {
+            const pane = await $.ui.mount({ ...paneAt(110, 60, true, surface), plugin: PLUGIN })
 
-          expect(pane.surface).toBe(surface)
-          drawn[surface] = await pane.drawn()
-          await pane.unmount()
+            expect(pane.surface).toBe(surface)
+            drawn[surface] = await pane.drawn()
+            await pane.unmount()
+          }
+          if (textOf(drawn.desktop as never) === textOf(drawn.terminal as never)) break
         }
 
         const rasters = elementsOf(drawn.terminal as never, 'Raster')

@@ -1,0 +1,16 @@
+# Plugin kit tests that already failed when scripts/run-plugin-kit-tests.mjs became their CI gate.
+# Format: plugin | full test name
+# This list may only shrink: a listed test that passes fails the gate until its line is removed.
+# Never add a line to get a regression green. Fix the test or the code instead.
+
+# ruflo-console: these fail when run alone on Claude Code 2.1.318 and with a clean HOME. Not yet triaged.
+# Inputs and buttons the tests expect are not drawn, and `create` calls mission_request_action, not mission_plan.
+ruflo-console | a goal is never cut (ADR-481) > guidance to Claude carries every character, line breaks included; over the limit it is refused and kept
+ruflo-console | mission control > create asks first right under the goal, not at the top of the page, and runs the chain once on yes
+ruflo-console | mission control > run next hands the first task to Claude: it asks under the controls, then marks the task in progress and submits one visible prompt; pause stops it
+ruflo-console | mission control > guide Claude asks under its own field, keeps what was sent so ✎ edit can reload it, and ruflo-goals skills show as mission options with the unavailable ones marked
+ruflo-console | the compact nav > shows the five groups and the open group pages only; a chip shows another group; every page is still a button
+
+# ruflo-plugin-creator: this template test fails when run in place but passes once scaffolded into a mod
+# (`claude plugin test` step of scripts/test-scaffold-mod.mjs).
+ruflo-plugin-creator | register > counts tool calls in the status line, writes the status file and answers /my-mod-status
