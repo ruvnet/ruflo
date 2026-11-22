@@ -4,6 +4,15 @@ import { DEFAULT_CONFIG, checkSinglePackage, checkForUpdates } from '../src/upda
 vi.mock('node:module', () => ({
   createRequire: () => Object.assign(() => ({ version: '1.0.0' }), { resolve: () => 'fixture-package.json' }),
 }));
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...actual,
+    readFileSync: ((file: unknown, ...rest: unknown[]) => file === 'fixture-package.json'
+      ? JSON.stringify({ version: '1.0.0' })
+      : (actual.readFileSync as (...a: unknown[]) => unknown)(file, ...rest)) as typeof actual.readFileSync,
+  };
+});
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('package patch updates require opt-in regardless of priority', () => {

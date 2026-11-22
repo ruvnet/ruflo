@@ -5,6 +5,7 @@
 
 import * as semver from 'semver';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 import { shouldCheckForUpdates, recordCheck, getCachedVersions } from './rate-limiter.js';
 
 export interface UpdateCheckResult {
@@ -135,10 +136,14 @@ export function getInstalledVersion(packageName: string): string | null {
 
     for (const modulePath of possiblePaths) {
       try {
-        // Use createRequire for ESM-compatible package.json loading
+        // Resolve from this CLI's own install only, never the working directory, and read the
+        // file as JSON instead of require()-ing it: a package's `exports` map can point
+        // `./package.json` at a .js file, so a node_modules folder committed to a cloned
+        // repository would otherwise run inside the CLI on every startup update check.
         const esmRequire = createRequire(import.meta.url);
-        const resolved = esmRequire.resolve(modulePath, { paths: [process.cwd()] });
-        const pkg = esmRequire(resolved);
+        const resolved = esmRequire.resolve(modulePath);
+        const pkg = JSON.parse(readFileSync(resolved, 'utf8'));
+        if (typeof pkg?.version !== 'string') continue;
         return pkg.version;
       } catch {
         continue;
