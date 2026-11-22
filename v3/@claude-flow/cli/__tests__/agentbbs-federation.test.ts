@@ -11,7 +11,7 @@
  * this exercises the actual transport rather than a mocked one.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readFileSync, statSync, appendFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, statSync, appendFileSync, writeFileSync, symlinkSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { Server } from 'node:http';
@@ -179,6 +179,50 @@ describe('peer registry', () => {
     expect(() => validateRoomId('a/../../b')).toThrow(/\.\./);
     expect(() => validateRoomId('')).toThrow();
     expect(() => validateRoomId('x'.repeat(129))).toThrow(/128/);
+  });
+});
+
+describe.skipIf(process.platform === 'win32')('state-file symlink safety', () => {
+  it('refuses a symlinked peers.json and leaves the target untouched', () => {
+    const victim = join(dirA, 'victim.txt');
+    writeFileSync(victim, 'keep');
+    symlinkSync(victim, join(dirA, 'peers.json'));
+
+    expect(() => addPeer(dirA, {
+      nodeId: '0123456789abcdef',
+      url: 'http://127.0.0.1:1',
+      publicKey: 'a'.repeat(64),
+    })).toThrow(/regular file/);
+    expect(readFileSync(victim, 'utf8')).toBe('keep');
+  });
+
+  it('refuses a dangling symlinked node-identity.json without creating its target', async () => {
+    const target = join(dirA, 'created-elsewhere');
+    symlinkSync(target, join(dirA, 'node-identity.json'));
+
+    await expect(getNodeIdentity(dirA)).rejects.toThrow(/regular file/);
+    expect(existsSync(target)).toBe(false);
+  });
+
+  it('refuses a symlinked room log and leaves the target untouched', async () => {
+    const room = 'sales-dd6531eb';
+    const victim = join(dirA, 'victim.jsonl');
+    writeFileSync(victim, 'keep\n');
+    symlinkSync(victim, join(dirA, `room-${room}.jsonl`));
+
+    const idB = await getNodeIdentity(dirB);
+    const env = await signEnvelope(dirB, envelope({ roomId: room }));
+    await expect(mergeEnvelopes(dirA, room, [env], idB.publicKey)).rejects.toThrow(/regular file/);
+    expect(readFileSync(victim, 'utf8')).toBe('keep\n');
+  });
+
+  it('refuses a symlinked basePath directory', async () => {
+    const real = join(dirA, 'real-state');
+    mkdirSync(real);
+    const link = join(dirA, '.agentbbs');
+    symlinkSync(real, link);
+
+    await expect(getNodeIdentity(link)).rejects.toThrow(/real directory/);
   });
 });
 
