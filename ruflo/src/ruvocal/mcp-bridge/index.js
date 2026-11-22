@@ -2055,7 +2055,7 @@ async function main() {
 
 // Errors from asyncRoute handlers land here: log, never echo internals.
 app.use((err, req, res, _next) => {
-  console.error(`Route error [${req.method} ${req.path}]:`, err);
+  console.error("Route error:", req.method, req.path, err);
   if (res.headersSent) return res.end();
   res.status(err.status === 400 ? 400 : 500).json({ error: { message: err.status === 400 ? "Bad request" : "Internal error" } });
 });
