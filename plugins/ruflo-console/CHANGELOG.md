@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.50.3 — 2026-11-22
+- fix: the nav's `auto` style always spells every page's whole name (Missions, MetaHarness, Learning Lab). Before, it fell back to three-letter codes (Msn, Ovr, Wfl) below about 90 columns and to bare icons below about 70, which left the nav unreadable at the widths a dock usually has. A row that does not fit now wraps instead, shared out evenly over its lines so one page is not left alone on the last. The `brief` and `icons` styles are unchanged and still chosen in Settings.
+
 ## 0.50.2 — 2026-11-17
 - fix: the POSIX append script (`dd … >> "$1"`) now passes `conv=notrunc`. uutils dd, the default coreutils on Ubuntu 26.04, truncates its stdout to its own offset after writing (`lseek` then `ftruncate`), so concurrent appenders lost whole batches; with the flag, eight writers keep all 2400 lines. Linux still runs the GNU argv; this script is the macOS/BSD path, and `conv=notrunc` is POSIX dd (#4978)
 
