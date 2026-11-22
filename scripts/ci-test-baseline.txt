@@ -140,6 +140,8 @@ plugins/ruflo-x-gateway/test/relay-robustness.test.mjs
 plugins/ruflo-x-gateway/test/registration-compat.test.mjs
 plugins/ruflo-x-gateway/test/client-ip.test.mjs
 plugins/ruflo-x-gateway/test/ws-proxy.test.mjs
+plugins/ruflo-x-gateway/test/invite-admin.test.mjs
+plugins/ruflo-x-gateway/test/sync-cursor.test.mjs
 
 # ruflo-chatgpt-federation: same pattern — plugin-local deps (jose, nostr-tools/pure) not resolvable from root vitest
 plugins/ruflo-chatgpt-federation/test/oauth.test.mjs
