@@ -25,6 +25,7 @@ import { selfCheckResults } from './self-check'
 import { kitForSurface, type Kit } from './views/common'
 import { createToaster, type Digest, type ToastLevel, type ToastPrefs } from './toast-policy'
 import { picturesOf } from './views/frames'
+import { vectorsOf } from './views/vector-art'
 import { withClearing } from './views/clearing'
 import { NARROW, paneView } from './views/pane'
 import { hasTextWeight, withTextWeight } from './text-weight'
@@ -324,7 +325,9 @@ export const register: Register = (on, raw: PluginOptions) => {
     state.pictured = pictures.size
     control.animate()
 
-    const tree = paneView({ kit: withClearing(kit, state, control.actions.clearField, { columns, repaint: () => host?.invalidate() }), state, nowMs: Date.now(), columns, pictures, act: control.actions })
+    // ADR-546: where the surface draws Svg, the pictures with a native vector form are drawn as one (the setting says whether).
+    const vectors = isNarrow || kit.Svg === undefined ? undefined : vectorsOf(state, columns, Date.now())
+    const tree = paneView({ kit: withClearing(kit, state, control.actions.clearField, { columns, repaint: () => host?.invalidate() }), state, nowMs: Date.now(), columns, pictures, ...(vectors !== undefined && { vectors }), act: control.actions })
 
     state.stats.renders.push(Date.now() - started)
     if (state.stats.renders.length > 200) state.stats.renders.shift()

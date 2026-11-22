@@ -123,3 +123,4 @@ v3/@claude-flow/cli/__tests__/real-binary/contracts.test.ts
 v3/@claude-flow/cli/__tests__/real-binary/external-plugins.test.ts
 v3/@claude-flow/cli/__tests__/real-binary/loads.test.ts
 v3/@claude-flow/cli/__tests__/real-binary/route-judge.test.ts
+plugins/ruflo-console/tests/desktop-rich.test.ts

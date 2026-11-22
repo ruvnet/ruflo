@@ -11,6 +11,7 @@ import { askActions } from './ask-claude'
 import { loopActions } from './loops'
 import { optimizerActions } from './optimizer'
 import { navActions } from './nav-state'
+import { setDesktopArt } from './desktop-art'
 import { roomActions } from './room'
 import { roomPages } from './views/room'
 import { watchActions } from './watch'
@@ -125,6 +126,7 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
       void host.storeSet(NAV_KEY, style).catch(() => undefined)
       host.invalidate()
     },
+    desktopArt: mode => setDesktopArt(state, host, mode),
     updates: mode => {
       state.updates = mode
       void host.storeSet(UPDATES_KEY, mode).catch(() => undefined)

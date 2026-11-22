@@ -1,4 +1,5 @@
 /** What the controller reads back from host storage when the pane opens: theme, AI terminal prefs, remembered answers and the mission ledger. */
+import { loadDesktopArt } from './desktop-art'
 import type { Host } from './host'
 import { loadLedger } from './mission-control'
 import { loadAllowed } from './remember'
@@ -15,6 +16,7 @@ export function loadSaved(state: State, host: Host): void {
   void loadAiPrefs(state, host)
   void loadAllowed(state, host)
   void loadLedger(state, host)
+  void loadDesktopArt(state, host)
 }
 
 /**
