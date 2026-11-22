@@ -85,6 +85,8 @@ export async function buildRabitqIndex(options?: {
   dbPath?: string;
   dimensions?: number;
   force?: boolean;
+  /** Write rabitq.meta.json (default true). #5065: a search builds in memory only. */
+  persistMeta?: boolean;
 }): Promise<{
   success: boolean;
   vectorCount: number;
@@ -192,7 +194,7 @@ export async function buildRabitqIndex(options?: {
     };
 
     // Persist metadata for fast reload hint
-    try {
+    if (options?.persistMeta !== false) try {
       const metaPath = path.join(swarmDir, 'rabitq.meta.json');
       fs.writeFileSync(metaPath, JSON.stringify({
         vectorCount: entries.length,
@@ -378,6 +380,8 @@ async function countIndexableEntries(options?: { dbPath?: string; dimensions?: n
 export async function ensureRabitqIndex(options?: {
   dbPath?: string;
   dimensions?: number;
+  /** Passed to buildRabitqIndex. */
+  persistMeta?: boolean;
 }): Promise<boolean> {
   if (autoBuildDisabled || rabitqInitializing) return isRabitqUsable(options);
 
@@ -402,7 +406,7 @@ export async function ensureRabitqIndex(options?: {
   }
   // Either the index is stale for this store/width, or the entry count drifted.
 
-  const result = await buildRabitqIndex({ dbPath: options?.dbPath, dimensions });
+  const result = await buildRabitqIndex({ dbPath: options?.dbPath, dimensions, persistMeta: options?.persistMeta });
   if (!result.success && result.error === RABITQ_UNAVAILABLE_ERROR) autoBuildDisabled = true;
   return isRabitqUsable(options);
 }

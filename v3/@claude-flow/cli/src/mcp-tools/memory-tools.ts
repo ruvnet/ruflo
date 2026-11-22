@@ -1663,7 +1663,7 @@ export const memoryTools: MCPTool[] = [
         // Dynamic enumeration — list all entries and collect distinct namespaces.
         // Cap entries at 100k to bound memory; in practice this is fast (<200ms).
         try {
-          const all = await listEntries({ limit: 100000 });
+          const all = await listEntries({ limit: 100000, readOnly: true });
           const seenNs = new Set<string>();
           for (const e of all?.entries ?? []) if (e.namespace) seenNs.add(e.namespace);
           namespaces = seenNs.size > 0 ? Array.from(seenNs).sort() : LEGACY_DEFAULT;

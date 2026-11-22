@@ -913,8 +913,11 @@ export async function searchHNSWIndex(
   options?: {
     k?: number;
     namespace?: string;
+    /** #5065: search only an index already open in this process; never open or build one. */
+    existingOnly?: boolean;
   }
 ): Promise<Array<{ id: string; key: string; content: string; score: number; namespace: string }> | null> {
+  if (options?.existingOnly && !hnswIndex?.initialized) return null;
   // ADR-053: Try AgentDB v3 bridge first
   const bridge = await getBridge();
   if (bridge) {
@@ -1357,6 +1360,51 @@ export interface MemoryInitResult {
   error?: string;
 }
 
+// Required columns that may be missing in older schemas
+// Issue #977: 'type' column was missing from this list, causing store failures on older DBs
+const MEMORY_ENTRY_COLUMNS: ReadonlyArray<{ name: string; definition: string }> = [
+  { name: 'content', definition: "content TEXT DEFAULT ''" },
+  { name: 'type', definition: "type TEXT DEFAULT 'semantic'" },
+  { name: 'embedding', definition: 'embedding TEXT' },
+  { name: 'embedding_model', definition: "embedding_model TEXT DEFAULT 'local'" },
+  { name: 'embedding_dimensions', definition: 'embedding_dimensions INTEGER' },
+  { name: 'tags', definition: 'tags TEXT' },
+  { name: 'metadata', definition: 'metadata TEXT' },
+  { name: 'owner_id', definition: 'owner_id TEXT' },
+  { name: 'expires_at', definition: 'expires_at INTEGER' },
+  { name: 'last_accessed_at', definition: 'last_accessed_at INTEGER' },
+  { name: 'access_count', definition: 'access_count INTEGER DEFAULT 0' },
+  { name: 'status', definition: "status TEXT DEFAULT 'active'" },
+  // ADR-323: older DBs predate provenance typing entirely — backfilled
+  // as 'unknown' via the DEFAULT, same convention as 'type'/'status'
+  // above (no CHECK on the ALTER; enforcement happens in storeEntry()/
+  // bridgeStoreEntry() so an invalid value gets a CLI-friendly error
+  // instead of a raw SQLite constraint failure).
+  { name: 'provenance_type', definition: "provenance_type TEXT DEFAULT 'unknown'" }
+];
+
+/**
+ * #5065: why a read cannot serve this store without migrating it, or null when
+ * it can. Loads the image and reads PRAGMA table_info only: no lock, no write.
+ * The search and read-only list fallbacks call this instead of
+ * ensureSchemaColumns, which locks and may ALTER/backfill.
+ */
+export async function readOnlySchemaError(dbPath: string): Promise<string | null> {
+  const initSqlJs = (await import('sql.js')).default;
+  const SQL = await initSqlJs();
+  const db = new SQL.Database(readFileMaybeEncrypted(dbPath, null));
+  try {
+    const info = db.exec('PRAGMA table_info(memory_entries)');
+    const existing = new Set(info[0]?.values?.map(row => row[1] as string) || []);
+    if (existing.size === 0) return 'memory.db has no memory_entries table; this read does not create one';
+    const missing = MEMORY_ENTRY_COLUMNS.map(c => c.name).filter(n => !existing.has(n));
+    if (missing.length === 0) return null;
+    return `memory.db schema is out of date (missing: ${missing.join(', ')}); this read does not migrate it. Any memory write (e.g. \`ruflo memory store\`) upgrades it.`;
+  } finally {
+    db.close();
+  }
+}
+
 /**
  * Ensure memory_entries table has all required columns
  * Adds missing columns for older databases (e.g., 'content' column)
@@ -1389,28 +1437,7 @@ export async function ensureSchemaColumns(dbPath: string, options: { encryptWrit
         tableInfo[0]?.values?.map(row => row[1] as string) || []
       );
 
-      // Required columns that may be missing in older schemas
-      // Issue #977: 'type' column was missing from this list, causing store failures on older DBs
-      const requiredColumns: Array<{ name: string; definition: string }> = [
-        { name: 'content', definition: "content TEXT DEFAULT ''" },
-        { name: 'type', definition: "type TEXT DEFAULT 'semantic'" },
-        { name: 'embedding', definition: 'embedding TEXT' },
-        { name: 'embedding_model', definition: "embedding_model TEXT DEFAULT 'local'" },
-        { name: 'embedding_dimensions', definition: 'embedding_dimensions INTEGER' },
-        { name: 'tags', definition: 'tags TEXT' },
-        { name: 'metadata', definition: 'metadata TEXT' },
-        { name: 'owner_id', definition: 'owner_id TEXT' },
-        { name: 'expires_at', definition: 'expires_at INTEGER' },
-        { name: 'last_accessed_at', definition: 'last_accessed_at INTEGER' },
-        { name: 'access_count', definition: 'access_count INTEGER DEFAULT 0' },
-        { name: 'status', definition: "status TEXT DEFAULT 'active'" },
-        // ADR-323: older DBs predate provenance typing entirely — backfilled
-        // as 'unknown' via the DEFAULT, same convention as 'type'/'status'
-        // above (no CHECK on the ALTER; enforcement happens in storeEntry()/
-        // bridgeStoreEntry() so an invalid value gets a CLI-friendly error
-        // instead of a raw SQLite constraint failure).
-        { name: 'provenance_type', definition: "provenance_type TEXT DEFAULT 'unknown'" }
-      ];
+      const requiredColumns = MEMORY_ENTRY_COLUMNS;
 
       let modified = false;
       for (const col of requiredColumns) {
@@ -3323,8 +3350,12 @@ export async function searchEntries(options: {
       return { success: false, results: [], searchTime: 0, error: 'Database not found' };
     }
 
-    // Ensure schema has all required columns (migration for older DBs)
-    await ensureSchemaColumns(dbPath);
+    // #5065: a search never migrates, locks or persists anything. A store that
+    // needs migrating is refused instead (any write upgrades it).
+    const schemaError = await readOnlySchemaError(dbPath);
+    if (schemaError) {
+      return { success: false, results: [], searchTime: Date.now() - startTime, error: schemaError };
+    }
 
     // Generate query embedding
     const queryEmb = await generateEmbedding(query);
@@ -3336,7 +3367,8 @@ export async function searchEntries(options: {
       // #4203: build/rebuild on demand — without this the index was only ever
       // populated by the explicit `embeddings_rabitq_build` tool, so this
       // pre-filter always missed.
-      await ensureRabitqIndex({ dbPath, dimensions: queryEmbedding.length });
+      // #5065: built in memory only; a search does not write rabitq.meta.json.
+      await ensureRabitqIndex({ dbPath, dimensions: queryEmbedding.length, persistMeta: false });
       const rabitqCandidates = await searchRabitq(queryEmbedding, { k: limit * 2, namespace: effectiveNamespace });
       if (rabitqCandidates && rabitqCandidates.length > 0) {
         // Rerank candidates with exact cosine similarity from SQLite
@@ -3394,9 +3426,12 @@ export async function searchEntries(options: {
     } catch { /* RaBitQ unavailable, fall through */ }
 
     // Try HNSW search (150x faster than brute-force)
+    // #5065: only an index this process already opened. Opening one creates
+    // and writes hnsw.index (and saves its metadata); the scan below covers it.
     const hnswResults = await searchHNSWIndex(queryEmbedding, {
       k: provenanceFilter?.length ? Math.max(limit * 4, limit + 32) : limit,
       namespace: effectiveNamespace,
+      existingOnly: true,
     });
     if (hnswResults && hnswResults.length > 0) {
       // Filter by threshold
@@ -3587,6 +3622,11 @@ export async function listEntries(options: {
   includeExpired?: boolean;
   /** Require entries to include all of these tags (AND). */
   tags?: string[];
+  /**
+   * #5065: the sql.js fallback takes no lock and never migrates; a store that
+   * needs migrating is refused. For read-only tools (memory_search_unified).
+   */
+  readOnly?: boolean;
 }): Promise<{
   success: boolean;
   entries: {
@@ -3650,13 +3690,18 @@ export async function listEntries(options: {
 
     // Listing can migrate/backfill the schema, so it is also a whole-image
     // writer. The newly selected native mirror may still have a live WAL.
-    await releaseOwnNativeHandle(dbPath);
+    if (!options.readOnly) await releaseOwnNativeHandle(dbPath);
     if (await hasNativeWalSidecars(dbPath)) {
       return { success: false, entries: [], total: 0, error: await walRefusalError('read/write') };
     }
 
-    // Ensure schema has all required columns (migration for older DBs)
-    await ensureSchemaColumns(dbPath, options);
+    if (options.readOnly) {
+      const schemaError = await readOnlySchemaError(dbPath);
+      if (schemaError) return { success: false, entries: [], total: 0, error: schemaError };
+    } else {
+      // Ensure schema has all required columns (migration for older DBs)
+      await ensureSchemaColumns(dbPath, options);
+    }
 
     const initSqlJs = (await import('sql.js')).default;
     const SQL = await initSqlJs();
