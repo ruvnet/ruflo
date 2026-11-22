@@ -6,6 +6,7 @@ import { config } from "$lib/server/config";
 import { logger } from "$lib/server/logger";
 import type { RequestHandler } from "./$types";
 import { isAllowedMcpUrl, mcpFetchFor } from "$lib/server/mcp/serverTrust";
+import { getMcpServers } from "$lib/server/mcp/registry";
 import { isStrictHfMcpLogin, hasNonEmptyToken, isExaMcpServer } from "$lib/server/mcp/hf";
 
 interface HealthCheckRequest {
@@ -68,10 +69,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		const baseUrl = new URL(finalUrl);
 
-		// Minimal header handling
+		// Minimal header handling. With no headers in the request, an
+		// operator-configured server is checked with its configured headers
+		// (as the chat flow does in mergeMcpServers), so a bridge that requires
+		// a token still reports healthy. Those headers are never returned.
 		const headersRecord: Record<string, string> = headers?.length
 			? Object.fromEntries(headers.map((h) => [h.key, h.value]))
-			: {};
+			: { ...(getMcpServers().find((s) => s.url === url)?.headers ?? {}) };
 		if (!headersRecord["Accept"]) {
 			headersRecord["Accept"] = "application/json, text/event-stream";
 		}
