@@ -2,6 +2,12 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.17.5 — 2026-11-22
+- fix: a test, build or lint command that exits 0 without checking anything is no longer a learning-loop verifier, so the turn is not recorded as verified-success (#5067): help and version (`npm test --help`, `tsc -v`), listings (`npx vitest list`, `npx jest --listTests`, `pytest --collect-only`, `cargo nextest list`, `go test -list`, `dotnet test -t`), dry runs and config dumps (`make -n`, `tsc -b --dry`, `eslint --env-info`), compile-only runs (`cargo test --no-run`, `go test -c`) and `--if-present` scripts. Commands are read as bash splits them, so a real run whose quoted arguments contain those words still verifies, and a command with a shell comment is refused (`npm run build # && npm test` runs only the build).
+- fix: the verifier command kept as evidence is screened for secret shapes, as given and as stored; one that carries a secret keeps its kind and outcome and is stored as `[redacted]`.
+- fix: task text is screened as given before it is normalised and cut, the cut falls at a word boundary so a key it would split is dropped whole, a kept key-block header is refused, and at most 64 KiB of a prompt is read. A task stored as `[redacted]` is counted at ingest and never trains SONA.
+- fix: ADR-503 taints read the same shell words, so a partly quoted `--passWithNoTests` still taints.
+
 ## 0.17.4 — 2026-11-19
 - fix: every file the mod writes under `.claude-flow` refuses a link on the way (#4746): edit records, the learning-loop ledger, guidance observations, context-delegation metrics, cost attribution and the console toast ring, as well as the session heartbeat and compaction snapshots. A symlinked `.claude-flow`, or a symlinked folder below it, can no longer steer a write outside the project; the refused write is dropped like any other failed one.
 - fix: the cost ledger no longer counts a symlinked `.claude-flow` as the project's state.

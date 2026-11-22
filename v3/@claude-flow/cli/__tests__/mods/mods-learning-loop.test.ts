@@ -13,7 +13,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { register } from '../../../../../plugins/ruflo-mods/hooks/register';
 import { classify, verdict } from '../../../../../plugins/ruflo-mods/hooks/loop/verifier';
-import { decide, start as open, step } from '../../../../../plugins/ruflo-mods/hooks/loop/record';
+import { decide, start as open, step, taskText } from '../../../../../plugins/ruflo-mods/hooks/loop/record';
 import { lessonBlock, parseLessons, pick } from '../../../../../plugins/ruflo-mods/hooks/loop/lessons';
 import { buildLessons, ingestVerifiedOutcomes, learningLoopHealth, lessonId, lessonsOrigin, parseRecord, type SonaLike } from '../../src/memory/verified-outcomes.js';
 import { SONAOptimizer } from '../../src/memory/sona-optimizer.js';
@@ -58,10 +58,49 @@ describe('verifier classification (pure)', () => {
 
   it('refuses anything whose exit status could belong to something else', () => {
     for (const cmd of ['npm test || true', 'npm test | tail -5', 'npm test; echo done', 'npm test & sleep 1', 'echo $(npm test)', 'npm test\nexit 0',
-      'npm install', 'npm run deploy', 'git commit -m test', 'echo npm test', 'rm -rf x && npm test', 'npm test && rm -rf dist', '`npm test`', 'ls', '']) {
+      'npm install', 'npm run deploy', 'git commit -m test', 'npm run build # && npm test', 'npm test # --help', 'echo npm test', 'rm -rf x && npm test', 'npm test && rm -rf dist', '`npm test`', 'ls', '']) {
       expect(classify(cmd), cmd).toBeNull();
     }
     for (const bad of [undefined, null, 5, {}, 'x'.repeat(3000)]) expect(classify(bad)).toBeNull();
+  });
+
+  it('a runner asked to print, list or compile is not a verifier: it exits 0 without checking anything', () => {
+    for (const cmd of ['npm test --help', 'npm test -- --help', 'npm run test -- -h', 'pnpm test --version', 'npx vitest --version',
+      'npx jest --listTests', 'npx jest --showConfig', 'npx playwright test --list', 'pytest --collect-only', 'pytest --co -q',
+      'python -m pytest --version', 'cargo test --no-run', 'cargo test -- --list', 'go test -list .', 'node --test --help',
+      'npx tsc --help', 'npx eslint --print-config src/a.ts', 'cd v3 && npm test -- --help', 'npm run build && npm test --help',
+      'npx vitest list', 'pnpm exec vitest list src/', 'cargo nextest list', "npx jest '--listTests'", 'CI=1 npx jest --listTests', 'npm test -- --help=true',
+      "npx vitest 'list'", "cargo +stable nextest 'list'", 'npx jest \\--listTests',
+      // Per-program forms: tsc/eslint/vitest/jest -v are a version, make -n/-q only print, go test -c only compiles.
+      'npx tsc -v', 'npx tsc --listFilesOnly', 'npx tsc -b --dry', 'npx tsc --init', 'npx eslint --env-info', 'npx eslint -v',
+      'npx vitest -v', 'npx jest -v', 'make test -n', 'make -nk test', 'make -q check', 'npm test --if-present', 'pnpm run test --if-present',
+      'pytest --fixtures', 'python -m pytest --markers', 'go test -c ./...', 'go test -n ./...', 'dotnet test -t',
+      'npx tsc --ver\\\nsion' /* bash joins a backslash-newline with no space: this is --version */]) {
+      expect(classify(cmd), cmd).toBeNull();
+    }
+    // Flags that only shape a real run stay verifiers (negative control).
+    for (const cmd of ['npm test -- --reporter=list', 'pytest -v', 'cargo test -- --nocapture', 'npx vitest run --coverage', 'go test -v ./...',
+      'npx vitest run -t "prints --help text"', "pytest -k 'help or --version'", 'npx vitest run tests/list.test.ts',
+      'npx jest "\\--listTests"' /* bash keeps the backslash inside double quotes: jest gets a pattern, not the flag */,
+      'npx jest --testNamePattern vitest list' /* "vitest list" is a pattern here, not the program */, 'pytest -v tests/', 'make test',
+      'npx tsc --noEmit -p tsconfig.json', 'go test -v -count=1 ./...', 'dotnet test --logger trx', 'npx eslint --max-warnings 0 src',
+      'npx vitest run a\\ #b.test.ts' /* an escaped space keeps # inside the word: no comment */]) {
+      expect(classify(cmd), cmd).not.toBeNull();
+    }
+  });
+
+  it('a verifier command carrying a secret keeps its kind but is stored as [redacted]', () => {
+    const v = classify('npm test -- --token=ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ab');
+    expect(v?.kind).toBe('test');
+    expect(v?.command).toBe('[redacted]');
+    // A secret past the 80-character evidence cut is found too.
+    const far = classify(`npx vitest run ${'a/'.repeat(40)}x.test.ts --token=ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ab`);
+    expect(far?.command).toBe('[redacted]');
+    expect(classify('npm test -- --runInBand')?.command).toBe('npm test -- --runInBand');
+    // A control character inside the token: the screen reads through it, folding would not.
+    expect(classify(`npm test -- --token=ghp_ABCDEFGHIJ\u0007KLMNOPQRSTUVWXYZ0123456789ab`)?.command).toBe('[redacted]');
+    // A line separator inside the token: the screen reads through it, but folding whitespace would split it.
+    expect(classify(`npm test -- --token=ghp_ABCDEFGHIJ\u2028KLMNOPQRSTUVWXYZ0123456789ab`)?.command).toBe('[redacted]');
   });
 
   it('only a finished, foreground, uninterrupted run has a verdict', () => {
@@ -120,6 +159,20 @@ describe('learningLoop in the mod', () => {
     await bash(b, 'npm test', true);
     await end(b);
     expect(mem(bare).has(TRAJ)).toBe(false);
+  });
+
+  it('an edit followed by a help or listing run that exits 0 is not recorded as verified-success', async () => {
+    const world = memoryWorld();
+    const mod = await boot(world);
+    for (const cmd of ['npm test --help', 'npx vitest list', 'npx jest --listTests']) {
+      await ask(mod, `fix the parser (${cmd})`);
+      await edit(mod);
+      await bash(mod, cmd, true);
+      await end(mod);
+    }
+    expect(records(world)).toHaveLength(3); // each turn is recorded, so the checks below are not vacuous
+    expect(records(world).map((x) => x.outcome)).not.toContain('verified-success');
+    expect(records(world).every((x) => x.verifier === null)).toBe(true);
   });
 
   it('records verified success, verified failure and unknown from exit status only', async () => {
@@ -391,5 +444,41 @@ describe('end to end: mod record → CLI ingest with real SONA → lesson in the
     expect(block).toMatch(/\[lesson L-[a-f0-9]{10} conf 0\.\d\d, 3 passed \/ 0 failed\]/);
     expect(block).toContain('`npm test`');
     expect((await sona.getRoutingSuggestion('implement the tokenizer parser module')).agent).toBe('coder');
+  });
+});
+
+describe('task text (pure)', () => {
+  const key = 'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ab';
+  const jwt = `eyJhbGciOiJIUzI1NiJ9.eyJ${'a'.repeat(2000)}.${'s'.repeat(43)}`;
+  it('never stores part of a key the cut splits', () => {
+    expect(taskText(`fix it ${key}`)).toBe('[redacted]');
+    expect(taskText(`${'x'.repeat(280)} ${key}`)).toBe('[redacted]'); // was stored with "ghp_ABCDEFGHIJKLMNO"
+    // A JWT that runs past the cut is found whole in the prompt as given.
+    expect(taskText(`fix ${'x'.repeat(285)} ${jwt}`)).toBe('[redacted]');
+    // The cut drops a word it would split instead of keeping part of it.
+    expect(taskText(`fix ${'x'.repeat(285)} ${'q'.repeat(2000)}`)).toBe(`fix ${'x'.repeat(285)}`);
+  });
+  it('screens the prompt as given (a control character inside a key) and refuses a kept key-block header', () => {
+    expect(taskText(`fix ${key.slice(0, 10)}\u0007${key.slice(10)}`)).toBe('[redacted]');
+    expect(taskText(`${'x'.repeat(50)} -----BEGIN OPENSSH PRIVATE KEY----- ${'b3BlbnNzaC1rZXktdjEAAAAA '.repeat(80)}`)).toBe('[redacted]');
+    // A header whose closing words lie past the read bound matches no rule; the kept "-----BEGIN" is still refused.
+    expect(taskText(`${'x'.repeat(50)} -----BEGIN${' '.repeat(70_000)}OPENSSH PRIVATE KEY-----`)).toBe('[redacted]');
+  });
+  it('a key past the read bound is never stored, so the kept text is clean and is kept', () => {
+    expect(taskText(`${'word '.repeat(14_000)}${key}`)).toBe('word '.repeat(60).trimEnd());
+  });
+  it('cuts a clean prompt to at most 300 characters at a word boundary', () => {
+    expect(taskText('implement the parser')).toBe('implement the parser');
+    const cut = taskText('alpha '.repeat(100));
+    expect(cut.length).toBeLessThanOrEqual(300);
+    expect(cut.endsWith('alpha')).toBe(true);
+    expect(taskText('y'.repeat(1000))).toBe('[redacted]'); // one word longer than the cut: nothing whole to keep
+  });
+  it('reads a bounded prefix of a huge prompt', () => {
+    // 32M characters: ~6 ms with the read bound, ~1.4 s without it (measured on an M-series Mac). Built before the clock starts.
+    const huge = `do it ${'z '.repeat(16_000_000)}`;
+    const started = Date.now();
+    expect(taskText(huge).startsWith('do it z')).toBe(true);
+    expect(Date.now() - started).toBeLessThan(250);
   });
 });

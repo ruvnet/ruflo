@@ -184,6 +184,21 @@ describe('CLI ingest defences', () => {
     expect(again.ingested.tainted).toBe(0);
   });
 
+  it('counts a verified success whose task was stored as [redacted] and never sends it to SONA (#5067)', async () => {
+    seed([rec('vt-1'), rec('vt-2', { task: '[redacted]' }), rec('vt-3', { task: '[redacted]', outcome: 'verified-failure', verifier: { kind: 'test', command: 'npm test', passed: false } })]);
+    const { sona, calls } = fakeSona();
+    const r = await ingestVerifiedOutcomes({ root: dir, sona, force: true, config: cfg() });
+    expect(calls.map((c) => c.id)).toEqual(['vt-1']);
+    expect(r.ingested).toMatchObject({ verifiedSuccess: 2, verifiedFailure: 1 });
+  });
+
+  it('narrows() reads shell words: a partly quoted weakening flag is still that flag (#5067)', () => {
+    expect(narrows('npx jest --pass"WithNoTests"', 'test')).toBe(true);
+    expect(narrows("npx jest '--passWithNoTests'", 'test')).toBe(true);
+    expect(narrows('npx jest -t "not --passWithNoTests"', 'test')).toBe(true); // -t itself narrows
+    expect(narrows('npx jest src', 'test')).toBe(false);
+  });
+
   it('allowTaint lets exactly the listed class through (negative control: allowing every class trains them all)', async () => {
     seed([rec('vt-1', { taint: ['edited-verifier-config'] }), rec('vt-2', { taint: ['edited-tests'] }), rec('vt-3', { taint: ['edited-verifier-config', 'edited-tests'] })]);
     const { sona, calls } = fakeSona();

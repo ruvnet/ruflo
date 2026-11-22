@@ -108,6 +108,57 @@ function utf8Bytes(text) {
   return n;
 }
 
+// plugins/ruflo-mods/hooks/loop/words.ts
+function shellWords(segment) {
+  const words2 = [];
+  let word = "";
+  let quoted = false;
+  let quote = "";
+  const flush = () => {
+    if (word !== "" || quoted) words2.push(word);
+    word = "";
+    quoted = false;
+  };
+  for (let i = 0; i < segment.length; i++) {
+    const c = segment[i];
+    if (quote === "'") {
+      if (c === "'") quote = "";
+      else word += c;
+    } else if (quote === '"') {
+      if (c === '"') quote = "";
+      else if (c === "\\" && i + 1 < segment.length && '$`"\\'.includes(segment[i + 1])) word += segment[++i];
+      else word += c;
+    } else if (c === "'" || c === '"') {
+      quote = c;
+      quoted = true;
+    } else if (c === "\\" && i + 1 < segment.length) word += segment[++i];
+    else if (/\s/.test(c)) flush();
+    else word += c;
+  }
+  flush();
+  return words2;
+}
+function hasComment(command) {
+  let quote = "";
+  let wordStart = true;
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i];
+    if (quote !== "") {
+      if (c === quote) quote = "";
+      else if (c === "\\" && quote === '"') i++;
+    } else if (c === "'" || c === '"') {
+      quote = c;
+      wordStart = false;
+    } else if (c === "\\") {
+      i++;
+      wordStart = false;
+    } else if (/\s/.test(c)) wordStart = true;
+    else if (c === "#" && wordStart) return true;
+    else wordStart = false;
+  }
+  return false;
+}
+
 // plugins/ruflo-mods/hooks/loop/taint.ts
 var TEST_FILE = /(?:\.(?:test|spec)\.[A-Za-z0-9]+|^test_[^/]*\.py|_test\.(?:go|rs))$/;
 var TEST_DIRS = /* @__PURE__ */ new Set(["__tests__", "tests"]);
@@ -132,7 +183,7 @@ var WEAKEN = /^(?:--passWithNoTests|--exclude|--testPathIgnorePatterns)(?:=|$)/;
 var SELECT = /^(?:-t|--testNamePattern|-k|--skip|-run)(?:=|$)/;
 var unquote = (token) => token.replace(/^['"]|['"]$/g, "");
 function narrows(segment, kind) {
-  const tokens = segment.split(/\s+/).map(unquote).filter(Boolean);
+  const tokens = shellWords(segment).filter(Boolean);
   if (tokens.some((t) => WEAKEN.test(t))) return true;
   if (kind !== "test") return false;
   if (tokens.some((t) => SELECT.test(t))) return true;
@@ -178,11 +229,27 @@ var ORIGIN_PATH = ".claude-flow/learning-loop-origin";
 var MAX_LINES = 500;
 var MAX_STEPS = 64;
 var MAX_TASK = 300;
+var SCREEN_LOOKAHEAD = 1024;
+var MAX_PROMPT = 64 * 1024;
+var REDACTED = "[redacted]";
 var EDIT_TOOLS = /* @__PURE__ */ new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 var TOOL = /^[A-Za-z0-9_.:-]{1,80}$/;
 function taskText(prompt) {
-  const flat = prompt.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").replace(/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}/g, "[email]").replace(/\s+/g, " ").trim().slice(0, MAX_TASK);
-  return scan(flat).secrets.length > 0 ? "[redacted]" : flat;
+  const raw = prompt.slice(0, MAX_PROMPT);
+  if (scan(raw).secrets.length > 0) return REDACTED;
+  const flat = raw.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").replace(/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}/g, "[email]").replace(/\s+/g, " ").trim();
+  if (scan(flat.slice(0, MAX_TASK + SCREEN_LOOKAHEAD)).secrets.length > 0) return REDACTED;
+  let kept = flat;
+  if (flat.length > MAX_TASK) {
+    kept = flat.slice(0, MAX_TASK);
+    if (kept.at(-1) !== " " && flat[MAX_TASK] !== " ") {
+      const space = kept.lastIndexOf(" ");
+      if (space <= 0) return REDACTED;
+      kept = kept.slice(0, space);
+    }
+    kept = kept.trimEnd();
+  }
+  return /-----BEGIN/.test(kept) ? REDACTED : kept;
 }
 var SESSION = /^[A-Za-z0-9_-]{1,40}$/;
 function start(id, prompt, agent, now, session = "") {
@@ -295,9 +362,9 @@ function parseLessons(text) {
     if (typeof l.id !== "string" || !ID.test(l.id) || typeof l.agent !== "string" || !AGENT.test(l.agent) || keywords.length === 0 || confidence < 0) continue;
     if (l.kind !== "lesson" && l.kind !== "caution") continue;
     if (l.kind === "lesson" && confidence < gate) continue;
-    const evidence = typeof l.evidence === "string" && EVIDENCE.test(l.evidence) ? l.evidence : "";
+    const evidence2 = typeof l.evidence === "string" && EVIDENCE.test(l.evidence) ? l.evidence : "";
     const files = l.kind === "lesson" && Array.isArray(l.files) ? l.files.filter((f) => typeof f === "string" && lessonFile(f)).slice(0, MAX_FILES_SHOWN) : [];
-    lessons.push({ id: l.id, kind: l.kind, agent: l.agent, keywords, confidence, successes: count(l.successes), failures: count(l.failures), evidence, files });
+    lessons.push({ id: l.id, kind: l.kind, agent: l.agent, keywords, confidence, successes: count(l.successes), failures: count(l.failures), evidence: evidence2, files });
   }
   return { gate, lessons, belowGate: count(raw.belowGate), origin: typeof raw.origin === "string" && ORIGIN.test(raw.origin) ? raw.origin : null };
 }
@@ -372,10 +439,55 @@ var RULES = [
 var SETUP = /^(?:cd\s+\S+|export\s+[A-Za-z_][A-Za-z0-9_]*=\S*)$/;
 var ENV_PREFIX = /^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/;
 var REDIRECTS = /\s*(?:\d?>&\d|&>>?\s*\S+|\d?>>?\s*\S+|<\s*\S+)/g;
+var NO_RUN = /^(?:-h|--help|-V|--version|--listTests|--list-tests|--showConfig|--show-config|--collect-only|--co|--no-run|--list|-list|--dry-run|--print-config)(?:=.*)?$/;
+var NO_RUN_FOR = {
+  tsc: /^(?:-v|--listFilesOnly|--dry|--init)$/,
+  eslint: /^(?:-v|--env-info|--init)$/,
+  vitest: /^-v$/,
+  jest: /^-v$/,
+  mvn: /^(?:-v|-h)$/,
+  mvnw: /^(?:-v|-h)$/,
+  gradle: /^(?:-m)$/,
+  gradlew: /^(?:-m)$/,
+  // make -n/-q (and clusters such as -nk) print or test targets without running their recipes.
+  make: /^(?:--just-print|--recon|--question|-[A-Za-z]*[nq][A-Za-z]*)$/,
+  pytest: /^(?:--fixtures|--fixtures-per-test|--markers|--setup-plan)$/,
+  dotnet: /^(?:-t)$/,
+  // A package script run with --if-present exits 0 when the project has no such script.
+  npm: /^--if-present$/,
+  pnpm: /^--if-present$/,
+  yarn: /^--if-present$/,
+  bun: /^--if-present$/
+};
+function programAt(words2) {
+  const name = (i2) => (words2[i2] ?? "").split("/").at(-1);
+  let i = 0;
+  if (["npx", "bunx"].includes(name(i))) i++;
+  else if (name(i) === "pnpm" && ["exec", "dlx"].includes(words2[1] ?? "")) i += 2;
+  else if (["python", "python3"].includes(name(i)) && words2[1] === "-m") i += 2;
+  else if (["uv", "poetry"].includes(name(i)) && words2[1] === "run") i += 2;
+  return i;
+}
+function runsNothing(segment) {
+  const words2 = shellWords(segment);
+  const at = programAt(words2);
+  const program = (words2[at] ?? "").split("/").at(-1);
+  const args = words2.slice(at + 1);
+  if (program === "vitest" && args[0] === "list") return true;
+  if (program === "cargo" && args.filter((a) => !a.startsWith("+"))[0] === "nextest" && args.filter((a) => !a.startsWith("+"))[1] === "list") return true;
+  if (program === "go" && args[0] === "test" && args.some((a) => a === "-c" || a === "-n")) return true;
+  const own = NO_RUN_FOR[program];
+  return args.some((word) => NO_RUN.test(word) || own !== void 0 && own.test(word));
+}
+function evidence(bare2) {
+  const flat = bare2.replace(/\s+/g, " ");
+  return scan(bare2).secrets.length > 0 || scan(flat).secrets.length > 0 ? "[redacted]" : flat.slice(0, MAX_EVIDENCE);
+}
 function classify(command) {
   if (typeof command !== "string" || command.length === 0 || command.length > 2e3) return null;
-  const flat = command.replace(/\\\n/g, " ").trim();
+  const flat = command.replace(/\\\n/g, "").trim();
   if (/[\n\r`]|\$\(|\|\||;|\|/.test(flat)) return null;
+  if (hasComment(flat)) return null;
   const segments = flat.split("&&").map((s) => s.replace(REDIRECTS, "").trim());
   if (segments.some((s) => s.length === 0 || s.includes("&"))) return null;
   let found = null;
@@ -384,7 +496,8 @@ function classify(command) {
     const bare2 = segment.replace(ENV_PREFIX, "");
     const kind = kindOf(bare2);
     if (kind === null) return null;
-    found = { kind: rank(found?.kind, kind), command: bare2.replace(/\s+/g, " ").slice(0, MAX_EVIDENCE), narrowed: found?.narrowed === true || narrows(bare2, kind) };
+    if (runsNothing(bare2)) return null;
+    found = { kind: rank(found?.kind, kind), command: evidence(bare2), narrowed: found?.narrowed === true || narrows(bare2, kind) };
   }
   return found;
 }

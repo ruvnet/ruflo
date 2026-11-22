@@ -8,11 +8,17 @@
  *
  * A command whose exit status could be someone else's is refused: a pipe (the
  * last stage's status wins), `||`, `;`, a background `&`, command
- * substitution, or a segment that is not `cd`/`export`/a verifier. So
+ * substitution, a comment, or a segment that is not `cd`/`export`/a verifier. So
  * `npm test || true` and `npm test | tail` never verify anything.
+ *
+ * A runner asked to print or list instead of run (`--help`, `--version`,
+ * `--listTests`, `--collect-only`, `--no-run`, ...) exits 0 without checking
+ * anything, so it is not a verifier either.
  */
 
+import { scan } from '../guidance/screen'
 import { narrows } from './taint'
+import { hasComment, shellWords } from './words'
 
 export type VerifierKind = 'test' | 'build' | 'typecheck' | 'lint'
 
@@ -63,14 +69,75 @@ const ENV_PREFIX = /^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/
 const REDIRECTS = /\s*(?:\d?>&\d|&>>?\s*\S+|\d?>>?\s*\S+|<\s*\S+)/g
 
 /**
+ * Flags that make a runner print, list or compile instead of running its checks. Matched as whole shell words on the
+ * verifier segment, after the runner (`npm test --help`, `npm test -- --help`, `npx jest --listTests`).
+ */
+const NO_RUN = /^(?:-h|--help|-V|--version|--listTests|--list-tests|--showConfig|--show-config|--collect-only|--co|--no-run|--list|-list|--dry-run|--print-config)(?:=.*)?$/
+/** Per-program flags that also stop a run (`tsc -v` is a version, `pytest -v` is not: only the named program). */
+const NO_RUN_FOR: Record<string, RegExp> = {
+  tsc: /^(?:-v|--listFilesOnly|--dry|--init)$/,
+  eslint: /^(?:-v|--env-info|--init)$/,
+  vitest: /^-v$/,
+  jest: /^-v$/,
+  mvn: /^(?:-v|-h)$/,
+  mvnw: /^(?:-v|-h)$/,
+  gradle: /^(?:-m)$/,
+  gradlew: /^(?:-m)$/,
+  // make -n/-q (and clusters such as -nk) print or test targets without running their recipes.
+  make: /^(?:--just-print|--recon|--question|-[A-Za-z]*[nq][A-Za-z]*)$/,
+  pytest: /^(?:--fixtures|--fixtures-per-test|--markers|--setup-plan)$/,
+  dotnet: /^(?:-t)$/,
+  // A package script run with --if-present exits 0 when the project has no such script.
+  npm: /^--if-present$/,
+  pnpm: /^--if-present$/,
+  yarn: /^--if-present$/,
+  bun: /^--if-present$/,
+}
+
+/** Index of the program a verifier segment runs, past launchers (`npx`, `pnpm exec`, `python -m`, `uv run`). */
+function programAt(words: readonly string[]): number {
+  const name = (i: number) => (words[i] ?? '').split('/').at(-1)!
+  let i = 0
+  if (['npx', 'bunx'].includes(name(i))) i++
+  else if (name(i) === 'pnpm' && ['exec', 'dlx'].includes(words[1] ?? '')) i += 2
+  else if (['python', 'python3'].includes(name(i)) && words[1] === '-m') i += 2
+  else if (['uv', 'poetry'].includes(name(i)) && words[1] === 'run') i += 2
+  return i
+}
+
+/** Whether a verifier segment asks its runner to do anything but run the checks. */
+export function runsNothing(segment: string): boolean {
+  const words = shellWords(segment)
+  const at = programAt(words)
+  const program = (words[at] ?? '').split('/').at(-1)!
+  const args = words.slice(at + 1)
+  if (program === 'vitest' && args[0] === 'list') return true
+  if (program === 'cargo' && args.filter(a => !a.startsWith('+'))[0] === 'nextest' && args.filter(a => !a.startsWith('+'))[1] === 'list') return true
+  // go test -c / -n build or print the test binary without running it.
+  if (program === 'go' && args[0] === 'test' && args.some(a => a === '-c' || a === '-n')) return true
+  const own = NO_RUN_FOR[program]
+  return args.some(word => NO_RUN.test(word) || (own !== undefined && own.test(word)))
+}
+
+/** The command as kept for evidence: a command carrying a secret shape anywhere is kept as `[redacted]`. */
+function evidence(bare: string): string {
+  const flat = bare.replace(/\s+/g, ' ')
+  // Screen the command as given and as stored: folding can split a shape the screen recognises in the original.
+  return scan(bare).secrets.length > 0 || scan(flat).secrets.length > 0 ? '[redacted]' : flat.slice(0, MAX_EVIDENCE)
+}
+
+/**
  * The verifier a Bash command is, or null. Pure; bounded input.
  *
  * @param command the Bash tool's `command` argument
  */
 export function classify(command: unknown): Verifier | null {
   if (typeof command !== 'string' || command.length === 0 || command.length > 2000) return null
-  const flat = command.replace(/\\\n/g, ' ').trim()
+  // Bash removes a backslash-newline outright (`--ver\\<newline>sion` is `--version`), so join without a space.
+  const flat = command.replace(/\\\n/g, '').trim()
   if (/[\n\r`]|\$\(|\|\||;|\|/.test(flat)) return null
+  // A comment hides what follows from the shell: `npm run build # && npm test` runs only the build.
+  if (hasComment(flat)) return null
   const segments = flat.split('&&').map(s => s.replace(REDIRECTS, '').trim())
   if (segments.some(s => s.length === 0 || s.includes('&'))) return null
 
@@ -80,7 +147,8 @@ export function classify(command: unknown): Verifier | null {
     const bare = segment.replace(ENV_PREFIX, '')
     const kind = kindOf(bare)
     if (kind === null) return null // something else ran: its status is not the verifier's
-    found = { kind: rank(found?.kind, kind), command: bare.replace(/\s+/g, ' ').slice(0, MAX_EVIDENCE), narrowed: found?.narrowed === true || narrows(bare, kind) }
+    if (runsNothing(bare)) return null // help, version or a listing: exit 0 says nothing about the code
+    found = { kind: rank(found?.kind, kind), command: evidence(bare), narrowed: found?.narrowed === true || narrows(bare, kind) }
   }
   return found
 }
