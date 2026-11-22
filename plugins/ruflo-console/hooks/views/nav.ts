@@ -46,22 +46,31 @@ export function groupedTabs(ctx: Ctx, hasHotkey: (view: View) => boolean): Rende
   const cells = (view: View, form: string) => (view.id === open ? openName(view).length + 1 : (hasHotkey(view) && view.key !== '' ? 3 : 0) + spell(view, form).length + badgeText(view).length + 3)
   // A row's width: its pages, plus the gap and bar between each two (2 columns).
   const widest = (form: string) => Math.max(0, ...pages.map(ids => ids.reduce((sum, id) => sum + (find(id) === undefined ? 0 : cells(find(id) as View, form)), 0) + 2 * Math.max(0, ids.length - 1)))
-  // auto: the richest form whose widest row fits the page; the others are the person's choice (Settings).
-  const form = state.nav === 'auto' ? (['full', 'brief'].find(candidate => widest(candidate) <= inner) ?? 'icons') : state.nav
+  // auto: every page spells its whole name, at any width. Shortening to fit one line (the three-letter brief codes, or icons alone) left
+  // the nav unreadable at the widths a dock usually has; a row that does not fit wraps instead. brief and icons stay the person's choice (Settings).
+  const form = state.nav === 'auto' ? 'full' : state.nav
 
-  // A row of pages too wide even in the narrowest form wraps onto further rows, greedily, rather than running off the edge.
+  // A row of pages too wide for the card wraps onto further rows, greedily, rather than running off the edge. Each of the group's own rows
+  // wraps by itself, so its pages keep the grouping NAV_GROUPS gives them (SWARM's second row still starts at Hive-Mind).
+  const width = (ids: readonly ViewId[]) => ids.reduce((sum, each) => sum + (find(each) === undefined ? 0 : cells(find(each) as View, form)), 0) + 2 * Math.max(0, ids.length - 1)
   const laid: ViewId[][] =
     widest(form) <= inner
       ? pages
-      : pages.flat().reduce<ViewId[][]>((rows, id) => {
-          const last = rows.at(-1)
-          const width = (ids: readonly ViewId[]) => ids.reduce((sum, each) => sum + (find(each) === undefined ? 0 : cells(find(each) as View, form)), 0) + 2 * Math.max(0, ids.length - 1)
+      : pages.flatMap(ids => {
+          const greedy = ids.reduce<ViewId[][]>((rows, id) => {
+            const last = rows.at(-1)
 
-          if (last !== undefined && width([...last, id]) <= inner) last.push(id)
-          else rows.push([id])
+            if (last !== undefined && width([...last, id]) <= inner) last.push(id)
+            else rows.push([id])
 
-          return rows
-        }, [])
+            return rows
+          }, [])
+          // The same number of lines, shared out evenly where it fits, so a wrap does not leave one page alone on the last line.
+          const per = Math.ceil(ids.length / greedy.length)
+          const even = Array.from({ length: Math.ceil(ids.length / per) }, (_, i) => ids.slice(i * per, (i + 1) * per))
+
+          return even.length === greedy.length && even.every(line => width(line) <= inner) ? even : greedy
+        })
 
   const tab = (view: View): RenderElement => {
     const words = spell(view, form)

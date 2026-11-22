@@ -7,7 +7,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { COST_CHIP, NAV_ACCENT } from '../hooks/menu-colors'
-import { newState, type State, type ViewId } from '../hooks/state'
+import { newState, VIEWS, type State, type ViewId } from '../hooks/state'
 import { CARD_COLUMNS } from '../hooks/views/card'
 import { setLook, tagChip, THEME, type Actions, type Ctx } from '../hooks/views/common'
 import { menuView } from '../hooks/views/menu'
@@ -124,6 +124,25 @@ describe('the nav card', () => {
         const used = flat(row).reduce((sum, node) => sum + (node.kind === 'Button' ? String(node.props.label).length + (node.props.hotkey === undefined ? 0 : 3) + 1 : node.kind === 'Text' && typeof node.props.children === 'string' ? node.props.children.length + 1 : 0), 0)
 
         expect(used, `${columns} columns, ${String(row.props.key)}`).toBeLessThanOrEqual(inner)
+      }
+    }
+  })
+})
+
+describe('the auto nav names every page in full', () => {
+  it('spells each page\'s whole name at every width the nav draws, wrapping instead of shortening to codes or icons', () => {
+    for (const view of ['learning', 'secure', 'swarm', 'settings', 'federation'] as const) for (let columns = 44; columns <= 200; columns++) {
+      const state = newState({})
+
+      state.view = view
+      const card = groupedTabs(ctxOf(state, columns), () => true) as unknown as El
+      const shown = flat(card).filter(node => String(node.props.key).startsWith('tabs-row-')).flatMap(row => flat(row)).filter(node => node.kind === 'Button')
+
+      expect(shown.length, `${view} at ${columns}`).toBeGreaterThan(0)
+      for (const node of shown) {
+        const page = VIEWS.find(entry => `tab-${entry.id}` === node.props.key)
+
+        expect(String(node.props.label), `${view} at ${columns}`).toContain(page?.label ?? '?')
       }
     }
   })
