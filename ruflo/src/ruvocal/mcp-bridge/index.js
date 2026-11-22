@@ -162,9 +162,17 @@ class StdioMcpClient {
           this.ready = false;
           resolve(false);
         });
+        // A write to a backend that has exited raises EPIPE on stdin; without
+        // a listener that error is uncaught and takes the whole bridge down.
+        this.process.stdin.on("error", (err) => {
+          console.error(`[${this.name}] stdin error:`, err.message);
+        });
         this.process.on("exit", (code) => {
           console.log(`[${this.name}] exited with code ${code}`);
           this.ready = false;
+          this.process = null;
+          for (const [, p] of this.pending) p.reject(new Error(`${this.name} process exited`));
+          this.pending.clear();
         });
 
         this._send("initialize", {
@@ -221,7 +229,7 @@ class StdioMcpClient {
 
   _send(method, params) {
     return new Promise((resolve, reject) => {
-      if (!this.process || this.process.killed) {
+      if (!this.process || this.process.killed || this.process.exitCode !== null || !this.process.stdin.writable) {
         return reject(new Error(`${this.name} process not running`));
       }
       const id = randomUUID();
@@ -243,7 +251,7 @@ class StdioMcpClient {
   }
 
   _notify(method, params) {
-    if (!this.process || this.process.killed) return;
+    if (!this.process || this.process.killed || !this.process.stdin.writable) return;
     this.process.stdin.write(JSON.stringify({ jsonrpc: "2.0", method, params }) + "\n");
   }
 
@@ -1056,6 +1064,10 @@ const GROUP_DISPLAY_NAMES = {
 const app = express();
 app.use(express.json({ limit: "10mb" }));
 
+// Express 4 does not catch a rejected async handler; an uncaught rejection
+// exits the process and takes every tool offline. Route it to next() instead.
+const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
 // ---------- MCP Streamable HTTP session (#2425 djimit) ----------
 // Streamable-HTTP clients (Codex/RMCP) send `DELETE /mcp` with an
 // `Mcp-Session-Id` header at shutdown. We echo a stable session id back
@@ -1199,14 +1211,14 @@ function createMcpSseHandler(groupName) {
 
 // ---------- Register per-group endpoints ----------
 for (const groupName of Object.keys(TOOL_GROUPS)) {
-  app.post(`/mcp/${groupName}`, createMcpHandler(groupName));
+  app.post(`/mcp/${groupName}`, asyncRoute(createMcpHandler(groupName)));
   app.get(`/mcp/${groupName}`, createMcpSseHandler(groupName));
   // #2425 djimit — streamable-HTTP session cleanup
   app.delete(`/mcp/${groupName}`, (_, res) => res.sendStatus(204));
 }
 
 // ---------- Catch-all /mcp — serves ALL enabled tools (backwards-compatible) ----------
-app.post("/mcp", async (req, res) => {
+app.post("/mcp", asyncRoute(async (req, res) => {
   const { method, id, params } = req.body;
   try {
     switch (method) {
@@ -1242,7 +1254,7 @@ app.post("/mcp", async (req, res) => {
     console.error(`MCP error [${method}]:`, err);
     return res.json({ jsonrpc: "2.0", id, error: { code: -32603, message: err.message } });
   }
-});
+}));
 
 app.get("/mcp", (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
@@ -1693,14 +1705,17 @@ async function handleAutopilot(req, res, provider, body) {
       break;
     }
 
-    const choice = aiResult.choices?.[0];
+    const choice = aiResult?.choices?.[0];
     if (!choice) {
       sendAutopilotEvent(res, { type: 'autopilot_error', error: 'No response from AI' });
       break;
     }
 
     // 2. Check for tool calls
-    const toolCalls = choice.message?.tool_calls;
+    const rawToolCalls = choice.message?.tool_calls;
+    const toolCalls = Array.isArray(rawToolCalls)
+      ? rawToolCalls.filter(tc => tc && typeof tc.function?.name === 'string')
+      : [];
 
     if (!toolCalls || toolCalls.length === 0) {
       // Final text response — send it
@@ -1849,7 +1864,16 @@ app.get('/autopilot/detail/:token', (req, res) => {
 // CHAT COMPLETIONS PROXY
 // =============================================================================
 
-app.post("/chat/completions", async (req, res) => {
+app.post("/chat/completions", asyncRoute(async (req, res) => {
+  if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+    return res.status(400).json({ error: { message: "Request body must be a JSON object" } });
+  }
+  if (req.body.messages !== undefined && !Array.isArray(req.body.messages)) {
+    return res.status(400).json({ error: { message: "messages must be an array" } });
+  }
+  if (req.headers['x-autopilot'] === 'true' && !Array.isArray(req.body.messages)) {
+    return res.status(400).json({ error: { message: "autopilot requires a messages array" } });
+  }
   const model = req.body?.model;
   const providerName = resolveProvider(model);
   const provider = PROVIDER_ROUTES[providerName];
@@ -1932,7 +1956,7 @@ app.post("/chat/completions", async (req, res) => {
     console.error(`Proxy error [${providerName}/${model}]:`, err.message);
     res.status(502).json({ error: { message: `Upstream error: ${err.message}` } });
   }
-});
+}));
 
 // =============================================================================
 // MODELS & HEALTH
@@ -2028,5 +2052,16 @@ async function main() {
     await initBackends();
   }
 }
+
+// Errors from asyncRoute handlers land here: log, never echo internals.
+app.use((err, req, res, _next) => {
+  console.error(`Route error [${req.method} ${req.path}]:`, err);
+  if (res.headersSent) return res.end();
+  res.status(err.status === 400 ? 400 : 500).json({ error: { message: err.status === 400 ? "Bad request" : "Internal error" } });
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled rejection (bridge kept running):", err);
+});
 
 main().catch(err => { console.error("Fatal:", err); process.exit(1); });

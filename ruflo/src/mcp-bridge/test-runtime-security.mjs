@@ -166,6 +166,30 @@ async function testBridge(label, entry) {
       } catch (e) {
         assert(false, `R7. notifications/initialized threw: ${e.message}`);
       }
+
+      // R8–R10 — malformed requests get a 4xx and the bridge stays up
+      const authed = { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` };
+      const malformed = [
+        ["R8. autopilot request without messages", { ...authed, "x-autopilot": "true" }, JSON.stringify({ model: "gpt-4o" })],
+        ["R9. messages that is not an array", authed, JSON.stringify({ model: "gpt-4o", messages: "hi" })],
+        ["R10. body that is not valid JSON", authed, "{not json"],
+      ];
+      for (const [name, headers, body] of malformed) {
+        try {
+          const r = await fetch(`http://127.0.0.1:${port}/chat/completions`, { method: "POST", headers, body });
+          assert(r.status === 400, `${name} → 400 (got ${r.status})`);
+        } catch (e) {
+          assert(false, `${name} threw: ${e.message}`);
+        }
+        await sleep(200);
+        assert(b.child.exitCode === null, `${name}: bridge still running`);
+      }
+      try {
+        const r = await fetch(`http://127.0.0.1:${port}/health`, { headers: { "Authorization": `Bearer ${TOKEN}` } });
+        assert(r.status === 200, `R10b. /health → 200 after malformed requests (got ${r.status})`);
+      } catch (e) {
+        assert(false, `R10b. /health threw: ${e.message}`);
+      }
     }
     await killAndWait(b.child);
   }
