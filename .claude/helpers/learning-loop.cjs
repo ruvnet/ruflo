@@ -178,11 +178,21 @@ var ORIGIN_PATH = ".claude-flow/learning-loop-origin";
 var MAX_LINES = 500;
 var MAX_STEPS = 64;
 var MAX_TASK = 300;
+var SCREEN_LOOKAHEAD = 1024;
+var MAX_PROMPT = 64 * 1024;
 var EDIT_TOOLS = /* @__PURE__ */ new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 var TOOL = /^[A-Za-z0-9_.:-]{1,80}$/;
 function taskText(prompt) {
-  const flat = prompt.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").replace(/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}/g, "[email]").replace(/\s+/g, " ").trim().slice(0, MAX_TASK);
-  return scan(flat).secrets.length > 0 ? "[redacted]" : flat;
+  const flat = prompt.slice(0, MAX_PROMPT).replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").replace(/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}/g, "[email]").replace(/\s+/g, " ").trim();
+  if (scan(flat.slice(0, MAX_TASK + SCREEN_LOOKAHEAD)).secrets.length > 0) return "[redacted]";
+  if (flat.length <= MAX_TASK) return flat;
+  let kept = flat.slice(0, MAX_TASK);
+  if (kept.at(-1) !== " " && flat[MAX_TASK] !== " ") {
+    const space = kept.lastIndexOf(" ");
+    if (space <= 0) return "[redacted]";
+    kept = kept.slice(0, space);
+  }
+  return kept.trimEnd();
 }
 var SESSION = /^[A-Za-z0-9_-]{1,40}$/;
 function start(id, prompt, agent, now, session = "") {
@@ -295,9 +305,9 @@ function parseLessons(text) {
     if (typeof l.id !== "string" || !ID.test(l.id) || typeof l.agent !== "string" || !AGENT.test(l.agent) || keywords.length === 0 || confidence < 0) continue;
     if (l.kind !== "lesson" && l.kind !== "caution") continue;
     if (l.kind === "lesson" && confidence < gate) continue;
-    const evidence = typeof l.evidence === "string" && EVIDENCE.test(l.evidence) ? l.evidence : "";
+    const evidence2 = typeof l.evidence === "string" && EVIDENCE.test(l.evidence) ? l.evidence : "";
     const files = l.kind === "lesson" && Array.isArray(l.files) ? l.files.filter((f) => typeof f === "string" && lessonFile(f)).slice(0, MAX_FILES_SHOWN) : [];
-    lessons.push({ id: l.id, kind: l.kind, agent: l.agent, keywords, confidence, successes: count(l.successes), failures: count(l.failures), evidence, files });
+    lessons.push({ id: l.id, kind: l.kind, agent: l.agent, keywords, confidence, successes: count(l.successes), failures: count(l.failures), evidence: evidence2, files });
   }
   return { gate, lessons, belowGate: count(raw.belowGate), origin: typeof raw.origin === "string" && ORIGIN.test(raw.origin) ? raw.origin : null };
 }
@@ -372,10 +382,64 @@ var RULES = [
 var SETUP = /^(?:cd\s+\S+|export\s+[A-Za-z_][A-Za-z0-9_]*=\S*)$/;
 var ENV_PREFIX = /^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/;
 var REDIRECTS = /\s*(?:\d?>&\d|&>>?\s*\S+|\d?>>?\s*\S+|<\s*\S+)/g;
+var NO_RUN = /^(?:-h|--help|-V|--version|--listTests|--list-tests|--showConfig|--show-config|--collect-only|--co|--no-run|--list|-list|--dry-run|--print-config)(?:=.*)?$/;
+var LISTING_RUNNERS = /* @__PURE__ */ new Set(["vitest", "nextest"]);
+function shellWords(segment) {
+  const words2 = [];
+  let word = "";
+  let quoted = false;
+  let quote = "";
+  const flush = () => {
+    if (word !== "" || quoted) words2.push(word);
+    word = "";
+    quoted = false;
+  };
+  for (let i = 0; i < segment.length; i++) {
+    const c = segment[i];
+    if (quote === "'") {
+      if (c === "'") quote = "";
+      else word += c;
+    } else if (quote === '"') {
+      if (c === '"') quote = "";
+      else if (c === "\\" && i + 1 < segment.length && '$`"\\'.includes(segment[i + 1])) word += segment[++i];
+      else word += c;
+    } else if (c === "'" || c === '"') {
+      quote = c;
+      quoted = true;
+    } else if (c === "\\" && i + 1 < segment.length) word += segment[++i];
+    else if (/\s/.test(c)) flush();
+    else word += c;
+  }
+  flush();
+  return words2;
+}
+function hasComment(command) {
+  let quote = "";
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i];
+    if (quote !== "") {
+      if (c === quote) quote = "";
+      else if (c === "\\" && quote === '"') i++;
+    } else if (c === "'" || c === '"') quote = c;
+    else if (c === "\\") i++;
+    else if (c === "#" && (i === 0 || /\s/.test(command[i - 1]))) return true;
+  }
+  return false;
+}
+function runsNothing(segment) {
+  const words2 = shellWords(segment);
+  if (words2.some((w, i) => LISTING_RUNNERS.has(w) && words2[i + 1] === "list")) return true;
+  return words2.slice(1).some((word) => NO_RUN.test(word));
+}
+function evidence(bare2) {
+  const flat = bare2.replace(/\s+/g, " ");
+  return scan(flat).secrets.length > 0 ? "[redacted]" : flat.slice(0, MAX_EVIDENCE);
+}
 function classify(command) {
   if (typeof command !== "string" || command.length === 0 || command.length > 2e3) return null;
   const flat = command.replace(/\\\n/g, " ").trim();
   if (/[\n\r`]|\$\(|\|\||;|\|/.test(flat)) return null;
+  if (hasComment(flat)) return null;
   const segments = flat.split("&&").map((s) => s.replace(REDIRECTS, "").trim());
   if (segments.some((s) => s.length === 0 || s.includes("&"))) return null;
   let found = null;
@@ -384,7 +448,8 @@ function classify(command) {
     const bare2 = segment.replace(ENV_PREFIX, "");
     const kind = kindOf(bare2);
     if (kind === null) return null;
-    found = { kind: rank(found?.kind, kind), command: bare2.replace(/\s+/g, " ").slice(0, MAX_EVIDENCE), narrowed: found?.narrowed === true || narrows(bare2, kind) };
+    if (runsNothing(bare2)) return null;
+    found = { kind: rank(found?.kind, kind), command: evidence(bare2), narrowed: found?.narrowed === true || narrows(bare2, kind) };
   }
   return found;
 }

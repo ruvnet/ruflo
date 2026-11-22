@@ -8,10 +8,15 @@
  *
  * A command whose exit status could be someone else's is refused: a pipe (the
  * last stage's status wins), `||`, `;`, a background `&`, command
- * substitution, or a segment that is not `cd`/`export`/a verifier. So
+ * substitution, a comment, or a segment that is not `cd`/`export`/a verifier. So
  * `npm test || true` and `npm test | tail` never verify anything.
+ *
+ * A runner asked to print or list instead of run (`--help`, `--version`,
+ * `--listTests`, `--collect-only`, `--no-run`, ...) exits 0 without checking
+ * anything, so it is not a verifier either.
  */
 
+import { scan } from '../guidance/screen'
 import { narrows } from './taint'
 
 export type VerifierKind = 'test' | 'build' | 'typecheck' | 'lint'
@@ -63,6 +68,77 @@ const ENV_PREFIX = /^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/
 const REDIRECTS = /\s*(?:\d?>&\d|&>>?\s*\S+|\d?>>?\s*\S+|<\s*\S+)/g
 
 /**
+ * Flags that make a runner print, list or compile instead of running its checks. Matched as whole shell words on the
+ * verifier segment, after the runner (`npm test --help`, `npm test -- --help`, `npx jest --listTests`).
+ */
+const NO_RUN = /^(?:-h|--help|-V|--version|--listTests|--list-tests|--showConfig|--show-config|--collect-only|--co|--no-run|--list|-list|--dry-run|--print-config)(?:=.*)?$/
+/** Runners whose `list` subcommand only lists (`vitest list`, `cargo nextest list`). */
+const LISTING_RUNNERS = new Set(['vitest', 'nextest'])
+
+/**
+ * Shell words of one segment, as bash splits them: quotes group (`-t "a --help b"` is two words, the second never a
+ * flag), a quoted flag is still that flag (`'--listTests'`), an unquoted backslash escapes the next character, and
+ * inside double quotes a backslash escapes only `$`, `` ` ``, `"` and `\\`. Comments are refused before this runs.
+ */
+export function shellWords(segment: string): string[] {
+  const words: string[] = []
+  let word = ''
+  let quoted = false
+  let quote: '' | "'" | '"' = ''
+  const flush = () => {
+    if (word !== '' || quoted) words.push(word)
+    word = ''
+    quoted = false
+  }
+  for (let i = 0; i < segment.length; i++) {
+    const c = segment[i]!
+    if (quote === "'") {
+      if (c === "'") quote = ''
+      else word += c
+    } else if (quote === '"') {
+      if (c === '"') quote = ''
+      else if (c === '\\' && i + 1 < segment.length && '$`"\\'.includes(segment[i + 1]!)) word += segment[++i]
+      else word += c
+    } else if (c === "'" || c === '"') {
+      quote = c
+      quoted = true
+    } else if (c === '\\' && i + 1 < segment.length) word += segment[++i]
+    else if (/\s/.test(c)) flush()
+    else word += c
+  }
+  flush()
+  return words
+}
+
+/** Whether an unquoted `#` starts a word, i.e. the shell would drop the rest of the command as a comment. */
+export function hasComment(command: string): boolean {
+  let quote = ''
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i]!
+    if (quote !== '') {
+      if (c === quote) quote = ''
+      else if (c === '\\' && quote === '"') i++
+    } else if (c === "'" || c === '"') quote = c
+    else if (c === '\\') i++
+    else if (c === '#' && (i === 0 || /\s/.test(command[i - 1]!))) return true
+  }
+  return false
+}
+
+/** Whether a verifier segment asks its runner to do anything but run the checks. */
+export function runsNothing(segment: string): boolean {
+  const words = shellWords(segment)
+  if (words.some((w, i) => LISTING_RUNNERS.has(w) && words[i + 1] === 'list')) return true
+  return words.slice(1).some(word => NO_RUN.test(word))
+}
+
+/** The command as kept for evidence: a command carrying a secret shape anywhere is kept as `[redacted]`. */
+function evidence(bare: string): string {
+  const flat = bare.replace(/\s+/g, ' ')
+  return scan(flat).secrets.length > 0 ? '[redacted]' : flat.slice(0, MAX_EVIDENCE)
+}
+
+/**
  * The verifier a Bash command is, or null. Pure; bounded input.
  *
  * @param command the Bash tool's `command` argument
@@ -71,6 +147,8 @@ export function classify(command: unknown): Verifier | null {
   if (typeof command !== 'string' || command.length === 0 || command.length > 2000) return null
   const flat = command.replace(/\\\n/g, ' ').trim()
   if (/[\n\r`]|\$\(|\|\||;|\|/.test(flat)) return null
+  // A comment hides what follows from the shell: `npm run build # && npm test` runs only the build.
+  if (hasComment(flat)) return null
   const segments = flat.split('&&').map(s => s.replace(REDIRECTS, '').trim())
   if (segments.some(s => s.length === 0 || s.includes('&'))) return null
 
@@ -80,7 +158,8 @@ export function classify(command: unknown): Verifier | null {
     const bare = segment.replace(ENV_PREFIX, '')
     const kind = kindOf(bare)
     if (kind === null) return null // something else ran: its status is not the verifier's
-    found = { kind: rank(found?.kind, kind), command: bare.replace(/\s+/g, ' ').slice(0, MAX_EVIDENCE), narrowed: found?.narrowed === true || narrows(bare, kind) }
+    if (runsNothing(bare)) return null // help, version or a listing: exit 0 says nothing about the code
+    found = { kind: rank(found?.kind, kind), command: evidence(bare), narrowed: found?.narrowed === true || narrows(bare, kind) }
   }
   return found
 }
