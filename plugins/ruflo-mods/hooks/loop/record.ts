@@ -24,6 +24,8 @@ export const MAX_TASK = 300
 export const SCREEN_LOOKAHEAD = 1_024
 /** The most of a prompt read at all. */
 export const MAX_PROMPT = 64 * 1_024
+/** The task text stored for a prompt that carried a secret shape; it teaches nothing (ingest skips it). */
+export const REDACTED = '[redacted]'
 /** Records waiting for a write, at most (a file that cannot be written must not grow memory). */
 export const MAX_PENDING = 50
 
@@ -63,25 +65,31 @@ const TOOL = /^[A-Za-z0-9_.:-]{1,80}$/
  * nothing). The cut never keeps part of a word, so a key it would split (a
  * token, a JWT) is dropped whole rather than stored in part; the screen runs
  * over the kept text plus SCREEN_LOOKAHEAD for shapes that span words. Only
- * the first MAX_PROMPT characters are read, so a huge prompt costs no more
- * than a long one. The CLI redacts PII again at ingest.
+ * the first MAX_PROMPT characters are read and screened as given, so a huge
+ * prompt costs no more than a long one. A kept key-block header is refused. The CLI redacts PII again at ingest.
  */
 export function taskText(prompt: string): string {
-  const flat = prompt
-    .slice(0, MAX_PROMPT)
+  const raw = prompt.slice(0, MAX_PROMPT)
+  // The prompt as given: replacing control characters can split a shape the screen recognises in the original.
+  if (scan(raw).secrets.length > 0) return REDACTED
+  const flat = raw
     .replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ')
     .replace(/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}/g, '[email]')
     .replace(/\s+/g, ' ')
     .trim()
-  if (scan(flat.slice(0, MAX_TASK + SCREEN_LOOKAHEAD)).secrets.length > 0) return '[redacted]'
-  if (flat.length <= MAX_TASK) return flat
-  let kept = flat.slice(0, MAX_TASK)
-  if (kept.at(-1) !== ' ' && flat[MAX_TASK] !== ' ') {
-    const space = kept.lastIndexOf(' ')
-    if (space <= 0) return '[redacted]' // one word longer than the cut: nothing whole to keep
-    kept = kept.slice(0, space)
+  if (scan(flat.slice(0, MAX_TASK + SCREEN_LOOKAHEAD)).secrets.length > 0) return REDACTED
+  let kept = flat
+  if (flat.length > MAX_TASK) {
+    kept = flat.slice(0, MAX_TASK)
+    if (kept.at(-1) !== ' ' && flat[MAX_TASK] !== ' ') {
+      const space = kept.lastIndexOf(' ')
+      if (space <= 0) return REDACTED // one word longer than the cut: nothing whole to keep
+      kept = kept.slice(0, space)
+    }
+    kept = kept.trimEnd()
   }
-  return kept.trimEnd()
+  // A key block's header with its body cut off no longer matches the screen; never keep one.
+  return /-----BEGIN/.test(kept) ? REDACTED : kept
 }
 
 const SESSION = /^[A-Za-z0-9_-]{1,40}$/

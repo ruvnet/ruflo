@@ -18,6 +18,7 @@
 
 import { scan } from '../guidance/screen'
 import { narrows } from './taint'
+import { hasComment, shellWords } from './words'
 
 export type VerifierKind = 'test' | 'build' | 'typecheck' | 'lint'
 
@@ -72,70 +73,57 @@ const REDIRECTS = /\s*(?:\d?>&\d|&>>?\s*\S+|\d?>>?\s*\S+|<\s*\S+)/g
  * verifier segment, after the runner (`npm test --help`, `npm test -- --help`, `npx jest --listTests`).
  */
 const NO_RUN = /^(?:-h|--help|-V|--version|--listTests|--list-tests|--showConfig|--show-config|--collect-only|--co|--no-run|--list|-list|--dry-run|--print-config)(?:=.*)?$/
-/** Runners whose `list` subcommand only lists (`vitest list`, `cargo nextest list`). */
-const LISTING_RUNNERS = new Set(['vitest', 'nextest'])
-
-/**
- * Shell words of one segment, as bash splits them: quotes group (`-t "a --help b"` is two words, the second never a
- * flag), a quoted flag is still that flag (`'--listTests'`), an unquoted backslash escapes the next character, and
- * inside double quotes a backslash escapes only `$`, `` ` ``, `"` and `\\`. Comments are refused before this runs.
- */
-export function shellWords(segment: string): string[] {
-  const words: string[] = []
-  let word = ''
-  let quoted = false
-  let quote: '' | "'" | '"' = ''
-  const flush = () => {
-    if (word !== '' || quoted) words.push(word)
-    word = ''
-    quoted = false
-  }
-  for (let i = 0; i < segment.length; i++) {
-    const c = segment[i]!
-    if (quote === "'") {
-      if (c === "'") quote = ''
-      else word += c
-    } else if (quote === '"') {
-      if (c === '"') quote = ''
-      else if (c === '\\' && i + 1 < segment.length && '$`"\\'.includes(segment[i + 1]!)) word += segment[++i]
-      else word += c
-    } else if (c === "'" || c === '"') {
-      quote = c
-      quoted = true
-    } else if (c === '\\' && i + 1 < segment.length) word += segment[++i]
-    else if (/\s/.test(c)) flush()
-    else word += c
-  }
-  flush()
-  return words
+/** Per-program flags that also stop a run (`tsc -v` is a version, `pytest -v` is not: only the named program). */
+const NO_RUN_FOR: Record<string, RegExp> = {
+  tsc: /^(?:-v|--listFilesOnly|--dry|--init)$/,
+  eslint: /^(?:-v|--env-info|--init)$/,
+  vitest: /^-v$/,
+  jest: /^-v$/,
+  mvn: /^(?:-v|-h)$/,
+  mvnw: /^(?:-v|-h)$/,
+  gradle: /^(?:-m)$/,
+  gradlew: /^(?:-m)$/,
+  // make -n/-q (and clusters such as -nk) print or test targets without running their recipes.
+  make: /^(?:--just-print|--recon|--question|-[A-Za-z]*[nq][A-Za-z]*)$/,
+  pytest: /^(?:--fixtures|--fixtures-per-test|--markers|--setup-plan)$/,
+  dotnet: /^(?:-t)$/,
+  // A package script run with --if-present exits 0 when the project has no such script.
+  npm: /^--if-present$/,
+  pnpm: /^--if-present$/,
+  yarn: /^--if-present$/,
+  bun: /^--if-present$/,
 }
 
-/** Whether an unquoted `#` starts a word, i.e. the shell would drop the rest of the command as a comment. */
-export function hasComment(command: string): boolean {
-  let quote = ''
-  for (let i = 0; i < command.length; i++) {
-    const c = command[i]!
-    if (quote !== '') {
-      if (c === quote) quote = ''
-      else if (c === '\\' && quote === '"') i++
-    } else if (c === "'" || c === '"') quote = c
-    else if (c === '\\') i++
-    else if (c === '#' && (i === 0 || /\s/.test(command[i - 1]!))) return true
-  }
-  return false
+/** Index of the program a verifier segment runs, past launchers (`npx`, `pnpm exec`, `python -m`, `uv run`). */
+function programAt(words: readonly string[]): number {
+  const name = (i: number) => (words[i] ?? '').split('/').at(-1)!
+  let i = 0
+  if (['npx', 'bunx'].includes(name(i))) i++
+  else if (name(i) === 'pnpm' && ['exec', 'dlx'].includes(words[1] ?? '')) i += 2
+  else if (['python', 'python3'].includes(name(i)) && words[1] === '-m') i += 2
+  else if (['uv', 'poetry'].includes(name(i)) && words[1] === 'run') i += 2
+  return i
 }
 
 /** Whether a verifier segment asks its runner to do anything but run the checks. */
 export function runsNothing(segment: string): boolean {
   const words = shellWords(segment)
-  if (words.some((w, i) => LISTING_RUNNERS.has(w) && words[i + 1] === 'list')) return true
-  return words.slice(1).some(word => NO_RUN.test(word))
+  const at = programAt(words)
+  const program = (words[at] ?? '').split('/').at(-1)!
+  const args = words.slice(at + 1)
+  if (program === 'vitest' && args[0] === 'list') return true
+  if (program === 'cargo' && args.filter(a => !a.startsWith('+'))[0] === 'nextest' && args.filter(a => !a.startsWith('+'))[1] === 'list') return true
+  // go test -c / -n build or print the test binary without running it.
+  if (program === 'go' && args[0] === 'test' && args.some(a => a === '-c' || a === '-n')) return true
+  const own = NO_RUN_FOR[program]
+  return args.some(word => NO_RUN.test(word) || (own !== undefined && own.test(word)))
 }
 
 /** The command as kept for evidence: a command carrying a secret shape anywhere is kept as `[redacted]`. */
 function evidence(bare: string): string {
   const flat = bare.replace(/\s+/g, ' ')
-  return scan(flat).secrets.length > 0 ? '[redacted]' : flat.slice(0, MAX_EVIDENCE)
+  // Screen the command as given and as stored: folding can split a shape the screen recognises in the original.
+  return scan(bare).secrets.length > 0 || scan(flat).secrets.length > 0 ? '[redacted]' : flat.slice(0, MAX_EVIDENCE)
 }
 
 /**
@@ -145,7 +133,8 @@ function evidence(bare: string): string {
  */
 export function classify(command: unknown): Verifier | null {
   if (typeof command !== 'string' || command.length === 0 || command.length > 2000) return null
-  const flat = command.replace(/\\\n/g, ' ').trim()
+  // Bash removes a backslash-newline outright (`--ver\\<newline>sion` is `--version`), so join without a space.
+  const flat = command.replace(/\\\n/g, '').trim()
   if (/[\n\r`]|\$\(|\|\||;|\|/.test(flat)) return null
   // A comment hides what follows from the shell: `npm run build # && npm test` runs only the build.
   if (hasComment(flat)) return null

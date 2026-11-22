@@ -108,6 +108,57 @@ function utf8Bytes(text) {
   return n;
 }
 
+// plugins/ruflo-mods/hooks/loop/words.ts
+function shellWords(segment) {
+  const words2 = [];
+  let word = "";
+  let quoted = false;
+  let quote = "";
+  const flush = () => {
+    if (word !== "" || quoted) words2.push(word);
+    word = "";
+    quoted = false;
+  };
+  for (let i = 0; i < segment.length; i++) {
+    const c = segment[i];
+    if (quote === "'") {
+      if (c === "'") quote = "";
+      else word += c;
+    } else if (quote === '"') {
+      if (c === '"') quote = "";
+      else if (c === "\\" && i + 1 < segment.length && '$`"\\'.includes(segment[i + 1])) word += segment[++i];
+      else word += c;
+    } else if (c === "'" || c === '"') {
+      quote = c;
+      quoted = true;
+    } else if (c === "\\" && i + 1 < segment.length) word += segment[++i];
+    else if (/\s/.test(c)) flush();
+    else word += c;
+  }
+  flush();
+  return words2;
+}
+function hasComment(command) {
+  let quote = "";
+  let wordStart = true;
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i];
+    if (quote !== "") {
+      if (c === quote) quote = "";
+      else if (c === "\\" && quote === '"') i++;
+    } else if (c === "'" || c === '"') {
+      quote = c;
+      wordStart = false;
+    } else if (c === "\\") {
+      i++;
+      wordStart = false;
+    } else if (/\s/.test(c)) wordStart = true;
+    else if (c === "#" && wordStart) return true;
+    else wordStart = false;
+  }
+  return false;
+}
+
 // plugins/ruflo-mods/hooks/loop/taint.ts
 var TEST_FILE = /(?:\.(?:test|spec)\.[A-Za-z0-9]+|^test_[^/]*\.py|_test\.(?:go|rs))$/;
 var TEST_DIRS = /* @__PURE__ */ new Set(["__tests__", "tests"]);
@@ -132,7 +183,7 @@ var WEAKEN = /^(?:--passWithNoTests|--exclude|--testPathIgnorePatterns)(?:=|$)/;
 var SELECT = /^(?:-t|--testNamePattern|-k|--skip|-run)(?:=|$)/;
 var unquote = (token) => token.replace(/^['"]|['"]$/g, "");
 function narrows(segment, kind) {
-  const tokens = segment.split(/\s+/).map(unquote).filter(Boolean);
+  const tokens = shellWords(segment).filter(Boolean);
   if (tokens.some((t) => WEAKEN.test(t))) return true;
   if (kind !== "test") return false;
   if (tokens.some((t) => SELECT.test(t))) return true;
@@ -180,19 +231,25 @@ var MAX_STEPS = 64;
 var MAX_TASK = 300;
 var SCREEN_LOOKAHEAD = 1024;
 var MAX_PROMPT = 64 * 1024;
+var REDACTED = "[redacted]";
 var EDIT_TOOLS = /* @__PURE__ */ new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 var TOOL = /^[A-Za-z0-9_.:-]{1,80}$/;
 function taskText(prompt) {
-  const flat = prompt.slice(0, MAX_PROMPT).replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").replace(/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}/g, "[email]").replace(/\s+/g, " ").trim();
-  if (scan(flat.slice(0, MAX_TASK + SCREEN_LOOKAHEAD)).secrets.length > 0) return "[redacted]";
-  if (flat.length <= MAX_TASK) return flat;
-  let kept = flat.slice(0, MAX_TASK);
-  if (kept.at(-1) !== " " && flat[MAX_TASK] !== " ") {
-    const space = kept.lastIndexOf(" ");
-    if (space <= 0) return "[redacted]";
-    kept = kept.slice(0, space);
+  const raw = prompt.slice(0, MAX_PROMPT);
+  if (scan(raw).secrets.length > 0) return REDACTED;
+  const flat = raw.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").replace(/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}/g, "[email]").replace(/\s+/g, " ").trim();
+  if (scan(flat.slice(0, MAX_TASK + SCREEN_LOOKAHEAD)).secrets.length > 0) return REDACTED;
+  let kept = flat;
+  if (flat.length > MAX_TASK) {
+    kept = flat.slice(0, MAX_TASK);
+    if (kept.at(-1) !== " " && flat[MAX_TASK] !== " ") {
+      const space = kept.lastIndexOf(" ");
+      if (space <= 0) return REDACTED;
+      kept = kept.slice(0, space);
+    }
+    kept = kept.trimEnd();
   }
-  return kept.trimEnd();
+  return /-----BEGIN/.test(kept) ? REDACTED : kept;
 }
 var SESSION = /^[A-Za-z0-9_-]{1,40}$/;
 function start(id, prompt, agent, now, session = "") {
@@ -383,61 +440,52 @@ var SETUP = /^(?:cd\s+\S+|export\s+[A-Za-z_][A-Za-z0-9_]*=\S*)$/;
 var ENV_PREFIX = /^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/;
 var REDIRECTS = /\s*(?:\d?>&\d|&>>?\s*\S+|\d?>>?\s*\S+|<\s*\S+)/g;
 var NO_RUN = /^(?:-h|--help|-V|--version|--listTests|--list-tests|--showConfig|--show-config|--collect-only|--co|--no-run|--list|-list|--dry-run|--print-config)(?:=.*)?$/;
-var LISTING_RUNNERS = /* @__PURE__ */ new Set(["vitest", "nextest"]);
-function shellWords(segment) {
-  const words2 = [];
-  let word = "";
-  let quoted = false;
-  let quote = "";
-  const flush = () => {
-    if (word !== "" || quoted) words2.push(word);
-    word = "";
-    quoted = false;
-  };
-  for (let i = 0; i < segment.length; i++) {
-    const c = segment[i];
-    if (quote === "'") {
-      if (c === "'") quote = "";
-      else word += c;
-    } else if (quote === '"') {
-      if (c === '"') quote = "";
-      else if (c === "\\" && i + 1 < segment.length && '$`"\\'.includes(segment[i + 1])) word += segment[++i];
-      else word += c;
-    } else if (c === "'" || c === '"') {
-      quote = c;
-      quoted = true;
-    } else if (c === "\\" && i + 1 < segment.length) word += segment[++i];
-    else if (/\s/.test(c)) flush();
-    else word += c;
-  }
-  flush();
-  return words2;
-}
-function hasComment(command) {
-  let quote = "";
-  for (let i = 0; i < command.length; i++) {
-    const c = command[i];
-    if (quote !== "") {
-      if (c === quote) quote = "";
-      else if (c === "\\" && quote === '"') i++;
-    } else if (c === "'" || c === '"') quote = c;
-    else if (c === "\\") i++;
-    else if (c === "#" && (i === 0 || /\s/.test(command[i - 1]))) return true;
-  }
-  return false;
+var NO_RUN_FOR = {
+  tsc: /^(?:-v|--listFilesOnly|--dry|--init)$/,
+  eslint: /^(?:-v|--env-info|--init)$/,
+  vitest: /^-v$/,
+  jest: /^-v$/,
+  mvn: /^(?:-v|-h)$/,
+  mvnw: /^(?:-v|-h)$/,
+  gradle: /^(?:-m)$/,
+  gradlew: /^(?:-m)$/,
+  // make -n/-q (and clusters such as -nk) print or test targets without running their recipes.
+  make: /^(?:--just-print|--recon|--question|-[A-Za-z]*[nq][A-Za-z]*)$/,
+  pytest: /^(?:--fixtures|--fixtures-per-test|--markers|--setup-plan)$/,
+  dotnet: /^(?:-t)$/,
+  // A package script run with --if-present exits 0 when the project has no such script.
+  npm: /^--if-present$/,
+  pnpm: /^--if-present$/,
+  yarn: /^--if-present$/,
+  bun: /^--if-present$/
+};
+function programAt(words2) {
+  const name = (i2) => (words2[i2] ?? "").split("/").at(-1);
+  let i = 0;
+  if (["npx", "bunx"].includes(name(i))) i++;
+  else if (name(i) === "pnpm" && ["exec", "dlx"].includes(words2[1] ?? "")) i += 2;
+  else if (["python", "python3"].includes(name(i)) && words2[1] === "-m") i += 2;
+  else if (["uv", "poetry"].includes(name(i)) && words2[1] === "run") i += 2;
+  return i;
 }
 function runsNothing(segment) {
   const words2 = shellWords(segment);
-  if (words2.some((w, i) => LISTING_RUNNERS.has(w) && words2[i + 1] === "list")) return true;
-  return words2.slice(1).some((word) => NO_RUN.test(word));
+  const at = programAt(words2);
+  const program = (words2[at] ?? "").split("/").at(-1);
+  const args = words2.slice(at + 1);
+  if (program === "vitest" && args[0] === "list") return true;
+  if (program === "cargo" && args.filter((a) => !a.startsWith("+"))[0] === "nextest" && args.filter((a) => !a.startsWith("+"))[1] === "list") return true;
+  if (program === "go" && args[0] === "test" && args.some((a) => a === "-c" || a === "-n")) return true;
+  const own = NO_RUN_FOR[program];
+  return args.some((word) => NO_RUN.test(word) || own !== void 0 && own.test(word));
 }
 function evidence(bare2) {
   const flat = bare2.replace(/\s+/g, " ");
-  return scan(flat).secrets.length > 0 ? "[redacted]" : flat.slice(0, MAX_EVIDENCE);
+  return scan(bare2).secrets.length > 0 || scan(flat).secrets.length > 0 ? "[redacted]" : flat.slice(0, MAX_EVIDENCE);
 }
 function classify(command) {
   if (typeof command !== "string" || command.length === 0 || command.length > 2e3) return null;
-  const flat = command.replace(/\\\n/g, " ").trim();
+  const flat = command.replace(/\\\n/g, "").trim();
   if (/[\n\r`]|\$\(|\|\||;|\|/.test(flat)) return null;
   if (hasComment(flat)) return null;
   const segments = flat.split("&&").map((s) => s.replace(REDIRECTS, "").trim());

@@ -9,6 +9,8 @@
  * A taint never changes the outcome word.
  */
 
+import { shellWords } from './words'
+
 export type Taint = 'edited-tests' | 'edited-verifier-config' | 'narrowed-verifier'
 
 export const TAINTS: readonly Taint[] = ['edited-tests', 'edited-verifier-config', 'narrowed-verifier']
@@ -48,6 +50,7 @@ const WEAKEN = /^(?:--passWithNoTests|--exclude|--testPathIgnorePatterns)(?:=|$)
 /** Flags that select a subset of tests. `-run` is `go test`'s name filter. */
 const SELECT = /^(?:-t|--testNamePattern|-k|--skip|-run)(?:=|$)/
 
+
 const unquote = (token: string) => token.replace(/^['"]|['"]$/g, '')
 
 /**
@@ -56,7 +59,8 @@ const unquote = (token: string) => token.replace(/^['"]|['"]$/g, '')
  * node id `file.py::name` counts). A directory argument (`pytest tests/`) does not.
  */
 export function narrows(segment: string, kind: string): boolean {
-  const tokens = segment.split(/\s+/).map(unquote).filter(Boolean)
+  // The shell's words, so a partly quoted flag (`--pass"WithNoTests"`) is still that flag.
+  const tokens = shellWords(segment).filter(Boolean)
   if (tokens.some(t => WEAKEN.test(t))) return true
   if (kind !== 'test') return false
   if (tokens.some(t => SELECT.test(t))) return true

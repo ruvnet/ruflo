@@ -39,6 +39,9 @@ import { addOutcome, blockedTaints, emptyStats, parseStats, parseTaint, readLoop
 import { gitWorktreeRunner, ReverifySession, type ReverifyRunner } from './verified-reverify.js';
 import { addFiles, buildLessons, parseFileCounts, recordFiles, type LessonsFile, type PatternExport } from './verified-lessons.js';
 
+
+/** The recorder's task text for a prompt that carried a secret shape (ruflo-mods hooks/loop/record.ts). */
+const REDACTED_TASK = '[redacted]';
 export { buildLessons, CAUTION_MIN_FAILURES, LESSON_GATE, lessonFile, lessonId, MAX_LESSONS, type Lesson, type LessonsFile } from './verified-lessons.js';
 
 export const VERIFIED_PATH = join('.claude-flow', 'data', 'verified-trajectories.jsonl');
@@ -368,6 +371,13 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
     }
     if (tainted) {
       ingested.tainted++;
+      continue;
+    }
+    // A task the recorder stored as [redacted] carries no words; training it would teach SONA the marker itself
+    // (`coder:redacted`) and group unrelated tasks under it. Counted, never trained (#5067).
+    if (record.task === REDACTED_TASK) {
+      if (success) ingested.verifiedSuccess++;
+      else ingested.verifiedFailure++;
       continue;
     }
     if (options.dryRun) {

@@ -69,15 +69,23 @@ describe('verifier classification (pure)', () => {
       'npx jest --listTests', 'npx jest --showConfig', 'npx playwright test --list', 'pytest --collect-only', 'pytest --co -q',
       'python -m pytest --version', 'cargo test --no-run', 'cargo test -- --list', 'go test -list .', 'node --test --help',
       'npx tsc --help', 'npx eslint --print-config src/a.ts', 'cd v3 && npm test -- --help', 'npm run build && npm test --help',
-      'npx vitest list', 'pnpm vitest list src/', 'cargo nextest list', "npx jest '--listTests'", 'CI=1 npx jest --listTests', 'npm test -- --help=true',
-      "npx vitest 'list'", "cargo +stable nextest 'list'", 'npx jest \\--listTests']) {
+      'npx vitest list', 'pnpm exec vitest list src/', 'cargo nextest list', "npx jest '--listTests'", 'CI=1 npx jest --listTests', 'npm test -- --help=true',
+      "npx vitest 'list'", "cargo +stable nextest 'list'", 'npx jest \\--listTests',
+      // Per-program forms: tsc/eslint/vitest/jest -v are a version, make -n/-q only print, go test -c only compiles.
+      'npx tsc -v', 'npx tsc --listFilesOnly', 'npx tsc -b --dry', 'npx tsc --init', 'npx eslint --env-info', 'npx eslint -v',
+      'npx vitest -v', 'npx jest -v', 'make test -n', 'make -nk test', 'make -q check', 'npm test --if-present', 'pnpm run test --if-present',
+      'pytest --fixtures', 'python -m pytest --markers', 'go test -c ./...', 'go test -n ./...', 'dotnet test -t',
+      'npx tsc --ver\\\nsion' /* bash joins a backslash-newline with no space: this is --version */]) {
       expect(classify(cmd), cmd).toBeNull();
     }
     // Flags that only shape a real run stay verifiers (negative control).
     for (const cmd of ['npm test -- --reporter=list', 'pytest -v', 'cargo test -- --nocapture', 'npx vitest run --coverage', 'go test -v ./...',
       'npx vitest run -t "prints --help text"', "pytest -k 'help or --version'", 'npx vitest run tests/list.test.ts',
-      'npx jest "\\--listTests"' /* bash keeps the backslash inside double quotes: jest gets a pattern, not the flag */]) {
-      expect(classify(cmd)?.kind, cmd).toBe('test');
+      'npx jest "\\--listTests"' /* bash keeps the backslash inside double quotes: jest gets a pattern, not the flag */,
+      'npx jest --testNamePattern vitest list' /* "vitest list" is a pattern here, not the program */, 'pytest -v tests/', 'make test',
+      'npx tsc --noEmit -p tsconfig.json', 'go test -v -count=1 ./...', 'dotnet test --logger trx', 'npx eslint --max-warnings 0 src',
+      'npx vitest run a\\ #b.test.ts' /* an escaped space keeps # inside the word: no comment */]) {
+      expect(classify(cmd), cmd).not.toBeNull();
     }
   });
 
@@ -89,6 +97,10 @@ describe('verifier classification (pure)', () => {
     const far = classify(`npx vitest run ${'a/'.repeat(40)}x.test.ts --token=ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ab`);
     expect(far?.command).toBe('[redacted]');
     expect(classify('npm test -- --runInBand')?.command).toBe('npm test -- --runInBand');
+    // A control character inside the token: the screen reads through it, folding would not.
+    expect(classify(`npm test -- --token=ghp_ABCDEFGHIJ\u0007KLMNOPQRSTUVWXYZ0123456789ab`)?.command).toBe('[redacted]');
+    // A line separator inside the token: the screen reads through it, but folding whitespace would split it.
+    expect(classify(`npm test -- --token=ghp_ABCDEFGHIJ\u2028KLMNOPQRSTUVWXYZ0123456789ab`)?.command).toBe('[redacted]');
   });
 
   it('only a finished, foreground, uninterrupted run has a verdict', () => {
@@ -441,13 +453,19 @@ describe('task text (pure)', () => {
   it('never stores part of a key the cut splits', () => {
     expect(taskText(`fix it ${key}`)).toBe('[redacted]');
     expect(taskText(`${'x'.repeat(280)} ${key}`)).toBe('[redacted]'); // was stored with "ghp_ABCDEFGHIJKLMNO"
-    // A JWT longer than the screened span: the cut drops the whole word, so none of it is kept.
-    const long = taskText(`fix ${'x'.repeat(285)} ${jwt}`);
-    expect(long).not.toContain('eyJ');
-    expect(long).toBe(`fix ${'x'.repeat(285)}`);
+    // A JWT that runs past the cut is found whole in the prompt as given.
+    expect(taskText(`fix ${'x'.repeat(285)} ${jwt}`)).toBe('[redacted]');
+    // The cut drops a word it would split instead of keeping part of it.
+    expect(taskText(`fix ${'x'.repeat(285)} ${'q'.repeat(2000)}`)).toBe(`fix ${'x'.repeat(285)}`);
   });
-  it('a key wholly past the screened span is never stored, so the kept text is clean and is kept', () => {
-    expect(taskText(`${'word '.repeat(1000)}${key}`)).toBe('word '.repeat(60).trimEnd());
+  it('screens the prompt as given (a control character inside a key) and refuses a kept key-block header', () => {
+    expect(taskText(`fix ${key.slice(0, 10)}\u0007${key.slice(10)}`)).toBe('[redacted]');
+    expect(taskText(`${'x'.repeat(50)} -----BEGIN OPENSSH PRIVATE KEY----- ${'b3BlbnNzaC1rZXktdjEAAAAA '.repeat(80)}`)).toBe('[redacted]');
+    // A header whose closing words lie past the read bound matches no rule; the kept "-----BEGIN" is still refused.
+    expect(taskText(`${'x'.repeat(50)} -----BEGIN${' '.repeat(70_000)}OPENSSH PRIVATE KEY-----`)).toBe('[redacted]');
+  });
+  it('a key past the read bound is never stored, so the kept text is clean and is kept', () => {
+    expect(taskText(`${'word '.repeat(14_000)}${key}`)).toBe('word '.repeat(60).trimEnd());
   });
   it('cuts a clean prompt to at most 300 characters at a word boundary', () => {
     expect(taskText('implement the parser')).toBe('implement the parser');
@@ -457,9 +475,10 @@ describe('task text (pure)', () => {
     expect(taskText('y'.repeat(1000))).toBe('[redacted]'); // one word longer than the cut: nothing whole to keep
   });
   it('reads a bounded prefix of a huge prompt', () => {
+    // 32M characters: ~6 ms with the read bound, ~1.4 s without it (measured on an M-series Mac). Built before the clock starts.
+    const huge = `do it ${'z '.repeat(16_000_000)}`;
     const started = Date.now();
-    // 32M characters: ~6 ms with the read bound, ~1.4 s without it (measured on an M-series Mac).
-    expect(taskText(`do it ${'z '.repeat(16_000_000)}`).startsWith('do it z')).toBe(true);
+    expect(taskText(huge).startsWith('do it z')).toBe(true);
     expect(Date.now() - started).toBeLessThan(250);
   });
 });
