@@ -26,7 +26,7 @@ describe('x_federation_* (ruflo → x.ruv.io gateway)', () => {
 
   it('registers the expected tool set with ADR-112 style descriptions', () => {
     const names = xFederationTools.map((t) => t.name).sort();
-    expect(names).toEqual(['x_federation_admit', 'x_federation_claims', 'x_federation_invite_mint', 'x_federation_publish', 'x_federation_registry', 'x_federation_roster', 'x_federation_sync'].sort());
+    expect(names).toEqual(['x_federation_admit', 'x_federation_claims', 'x_federation_invite_mint', 'x_federation_invite_revoke', 'x_federation_publish', 'x_federation_registry', 'x_federation_roster', 'x_federation_sync'].sort());
     for (const t of xFederationTools) { expect(t.description).toMatch(/Use when/); expect(t.description).toMatch(/wrong because/); }
   });
   it('sync posts a JSON-RPC tools/call to <gateway>/mcp and parses the SSE data frame', async () => {
@@ -39,6 +39,16 @@ describe('x_federation_* (ruflo → x.ruv.io gateway)', () => {
     process.env.RUFLO_X_GATEWAY_URL = 'https://gw.example/';
     await tool('x_federation_roster').handler({}, {} as any);
     expect(calls[0].url).toBe('https://gw.example/mcp');
+  });
+  it('sync passes since_cursor through and declares it in the schema (#5030)', async () => {
+    expect(Object.keys((tool('x_federation_sync').inputSchema as any).properties)).toContain('since_cursor');
+    await tool('x_federation_sync').handler({ since_cursor: 'eyJ2IjoxfQ', limit: 5 }, {} as any);
+    expect(calls[0].body.params).toMatchObject({ name: 'federation_sync', arguments: { since_cursor: 'eyJ2IjoxfQ', limit: 5 } });
+  });
+  it('invite_revoke forwards the code and the admin token to federation_invite_revoke (#5029)', async () => {
+    process.env.RUFLO_X_ADMIN_TOKEN = 'right';
+    await tool('x_federation_invite_revoke').handler({ code: 'v2.abc' }, {} as any);
+    expect(calls.at(-1)!.body.params).toMatchObject({ name: 'federation_invite_revoke', arguments: { code: 'v2.abc', adminToken: 'right' } });
   });
   it('matching gatewayUrl is accepted for compatibility and is not forwarded to the gateway', async () => {
     process.env.RUFLO_X_GATEWAY_URL = 'https://env.example';
@@ -55,7 +65,7 @@ describe('x_federation_* (ruflo → x.ruv.io gateway)', () => {
     }
   });
   it('gateway-identity writes refuse to run without RUFLO_X_ADMIN_TOKEN (fail closed, no network call)', async () => {
-    for (const t of ['x_federation_publish', 'x_federation_invite_mint', 'x_federation_admit']) {
+    for (const t of ['x_federation_publish', 'x_federation_invite_mint', 'x_federation_invite_revoke', 'x_federation_admit']) {
       await expect(tool(t).handler({ msgType: 'Status', payload: {}, pubkey: 'a'.repeat(64) }, {} as any)).rejects.toThrow(/RUFLO_X_ADMIN_TOKEN/);
     }
     expect(calls).toHaveLength(0);

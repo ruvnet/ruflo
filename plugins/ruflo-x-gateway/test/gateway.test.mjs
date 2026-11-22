@@ -466,6 +466,8 @@ const EXPECTED_ANNOTATIONS = {
   channel_publish:        { readOnlyHint: false, destructiveHint: true,  idempotentHint: false, openWorldHint: true  },
   claims_issue:           { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true  },
   federation_invite_mint: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  // Removes a way in (#5029); a repeat returns the first revocation.
+  federation_invite_revoke: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
   // Grants an arbitrary external key access, with no matching revoke tool.
   federation_admit:       { readOnlyHint: false, destructiveHint: true,  idempotentHint: false, openWorldHint: true  },
   // Removes a grant; every retry appends a distinct signed event.
@@ -555,7 +557,7 @@ test('annotations: destructiveHint marks removals and irreversible external send
   // Blanket-setting destructive is exactly as misleading as omitting it.
   assert.deepEqual(
     tools.filter((t) => t.annotations.destructiveHint).map((t) => t.name),
-    ['federation_join', 'federation_publish', 'claims_release', 'federation_admit', 'channel_publish'],
+    ['federation_join', 'federation_publish', 'claims_release', 'federation_invite_revoke', 'federation_admit', 'channel_publish'],
     'destructive tools must include claim removal and append-only sends that cannot be retracted',
   );
 });
@@ -624,7 +626,8 @@ test('review endpoint: legacy /mcp keeps its full surface, secret arguments incl
   const gw = await startGateway();
   const legacy = await toolsAt(gw.base, '/mcp');
   const names = legacy.map((t) => t.name).sort();
-  assert.equal(legacy.length, 18, 'legacy /mcp advertises the 14 federation tools plus the 4 ADR-485 GitHub query tools');
+  assert.equal(legacy.length, 19, 'legacy /mcp advertises the 15 federation tools plus the 4 ADR-485 GitHub query tools');
+  assert.ok(names.includes('federation_invite_revoke'), 'invite revocation is on /mcp (#5029)');
   assert.ok(names.includes('federation_invite_mint'), 'membership admin must remain on /mcp');
   assert.ok(names.includes('federation_admit'), 'membership admin must remain on /mcp');
   // The adminToken ARGUMENT is legacy behaviour and must remain available. It is
@@ -634,7 +637,7 @@ test('review endpoint: legacy /mcp keeps its full surface, secret arguments incl
     .filter((t) => Object.hasOwn(t.inputSchema.properties ?? {}, 'adminToken'))
     .map((t) => t.name).sort();
   assert.deepEqual(gatedByArg,
-    ['channel_publish', 'claims_issue', 'claims_release', 'federation_admit', 'federation_invite_mint', 'federation_join', 'federation_publish', 'seraphina_guidance'].sort(),
+    ['channel_publish', 'claims_issue', 'claims_release', 'federation_admit', 'federation_invite_mint', 'federation_invite_revoke', 'federation_join', 'federation_publish', 'seraphina_guidance'].sort(),
     'legacy /mcp must still expose adminToken as a service-side tool argument');
   gw.close();
 });
@@ -647,12 +650,12 @@ test('review endpoint: advertises 12 tools, dropping membership administration a
   const legacyNames = new Set(legacy.map((t) => t.name));
   const reviewNames = new Set(review.map((t) => t.name));
   const withheld = [...legacyNames].filter((n) => !reviewNames.has(n)).sort();
-  // Exactly the two that decide who may exist on the relay. `federation_invite_mint`
-  // also RETURNS an invite code, so no amount of argument reshaping would make it
-  // acceptable — it has to be withheld.
+  // Exactly the three that decide who may exist on the relay. `federation_invite_mint`
+  // also RETURNS an invite code and `federation_invite_revoke` ACCEPTS one, so no
+  // amount of argument reshaping would make them acceptable — they are withheld.
   // The four ruv_* GitHub/npm tools (ADR-485) are legacy-only: the directory profiles were
   // reviewed with a fixed tool list, so widening them is a re-review, not a deploy detail.
-  assert.deepEqual(withheld, ['federation_admit', 'federation_invite_mint', 'ruv_github_file', 'ruv_github_repo', 'ruv_github_search', 'ruv_registry_latest']);
+  assert.deepEqual(withheld, ['federation_admit', 'federation_invite_mint', 'federation_invite_revoke', 'ruv_github_file', 'ruv_github_repo', 'ruv_github_search', 'ruv_registry_latest']);
   // Nothing was invented for the review surface that is not a real tool.
   assert.deepEqual([...reviewNames].filter((n) => !legacyNames.has(n)), []);
   gw.close();

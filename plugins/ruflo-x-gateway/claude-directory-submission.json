@@ -32,7 +32,7 @@
     "test_account": "Reviewer credentials and sample workspace details are supplied privately in the Anthropic developer portal; no credentials are stored in this repository.",
     "tool_count": 12,
     "resource_count": 5,
-    "operator_tools_excluded": ["federation_invite_mint", "federation_admit"],
+    "operator_tools_excluded": ["federation_invite_mint", "federation_invite_revoke", "federation_admit"],
     "security_controls": [
       "Every tool has a non-empty title and explicit boolean readOnlyHint, destructiveHint, idempotentHint, and openWorldHint values.",
       "No directory-visible input schema accepts a token, password, API key, private key, invite code, or credential.",

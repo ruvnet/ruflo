@@ -16,11 +16,12 @@ import { readFileSync } from 'node:fs';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
-import { loadIdentity, publish, fetchRecent, fetchManyOn, cached, publishTagged, fetchChannel, listChannels } from './nostr-federation.mjs';
+import { loadIdentity, publish, fetchRecent, fetchCovering, fetchManyOn, cached, publishTagged, fetchChannel, listChannels } from './nostr-federation.mjs';
 import { publicChannelId, channelTags, isPrivateChannel, CHANNEL_ID_RE, DEFAULT_CHANNELS } from './channels.mjs';
 import { reduceClaims } from './claims.mjs';
 import { clientIp, rateLimited, readBody, securityHeaders, checkAdmin, seraphinaAllowance, ANON_TIERS, SERAPHINA_DAILY_CAP, SERAPHINA_IP_HOURLY_CAP } from './security.mjs';
-import { mintInvite, admitMember, isMemberBanned } from './relay-admin.mjs';
+import { mintInvite, revokeInvite, admitMember, isMemberBanned, DEFAULT_INVITE_MAX_USES } from './relay-admin.mjs';
+import { cursorSync, OVERLAP_SECS, MAX_CURSOR_CHARS } from './sync-cursor.mjs';
 import { attachWsProxy } from './ws-proxy.mjs';
 import { onboardingGuide } from './onboarding.mjs';
 import { askSeraphina } from './seraphina.mjs';
@@ -220,10 +221,21 @@ export function createGateway({ relay, keyFile, port, registration, github: gith
     const adminOnly = (fn) => async (args) => (checkAdmin(args.adminToken) ? fn(args) : denied());
     // ---- open reads ----
     mcp.tool('federation_identity', 'Gateway Nostr pubkey + relay. Open read.', {}, READ('Gateway identity'), async () => text({ pubkey, relay: RELAY, httpBase: HTTP_BASE }));
-    mcp.tool('federation_sync', 'Fetch recent verified swarm coordination messages (#t=ruflo-swarm). Open read; optional type filter.',
-      { sinceSeconds: SINCE_SECONDS, limit: LIMIT, type: z.string().optional() },
+    mcp.tool('federation_sync', `Fetch recent verified swarm coordination messages (#t=ruflo-swarm). Open read; optional type filter. Every result carries next_cursor; pass it back as since_cursor to get each later message exactly once, oldest first by (created_at, id), even when several share a second. A message that reaches the relay more than ${OVERLAP_SECS}s after its own created_at falls outside the cursor's window.`,
+      { sinceSeconds: SINCE_SECONDS, limit: LIMIT, type: z.string().optional(),
+        since_cursor: z.string().max(MAX_CURSOR_CHARS).optional().describe('Opaque next_cursor from a previous federation_sync call with the same type filter. When set, sinceSeconds is ignored.') },
       READ('Read swarm messages', { openWorld: true }),
-      async (a) => { const msgs = await fetchRecent(RELAY, sk, a); return relayText({ count: msgs.length, messages: msgs, ...partialOf(msgs) }, partialNote(msgs)); });
+      async (a) => {
+        const r = await cursorSync({
+          fetchRecent: (q) => fetchRecent(RELAY, sk, q),
+          fetchCovering: (q) => fetchCovering(RELAY, sk, q),
+        }, a);
+        const msgs = r.messages;
+        // next_cursor is gateway-built base64url (no relay text), carried in the payload.
+        return relayText({ count: msgs.length, messages: msgs, ...partialOf(msgs),
+          ...(r.next_cursor ? { next_cursor: r.next_cursor } : {}), ...(r.more !== undefined ? { more: r.more } : {}),
+          ...(r.degraded ? { degraded: true } : {}) }, partialNote(msgs));
+      });
     mcp.tool('claims_status', 'Current owner-per-resource claims ledger from recent verified claim events. Open read.', {},
       READ('Read claims ledger', { openWorld: true }),
       // The claims ledger is derived from relay events, and every resourceId in it
@@ -258,19 +270,26 @@ export function createGateway({ relay, keyFile, port, registration, github: gith
       gate(async ({ resourceId }) => text({ ok: true, eventId: await publish(RELAY, sk, 'ClaimReleased', { from: pubkey, resourceId }), resourceId })));
     // ---- relay MEMBERSHIP administration — legacy endpoint only ----
     //
-    // These two decide who may exist on the relay at all, which is an operator
+    // These decide who may exist on the relay at all, which is an operator
     // decision and not something a public assistant should be able to reach for.
     // `federation_invite_mint` additionally RETURNS an invite code — a bearer
     // credential — in its tool output, which the review rules treat the same as
     // accepting one. Moving its argument to a header would not help: the secret
     // is the RESULT. So the tool is withheld from the review surface entirely
-    // rather than reshaped, which is the honest fix.
+    // rather than reshaped, which is the honest fix. `federation_invite_revoke`
+    // ACCEPTS that code as an argument, so it is withheld for the same reason.
     if (!review) {
-      mcp.tool('federation_invite_mint', 'Mint a self-service invite code so a new ruflo user can claim relay membership with their own key. Requires the admin token; OAuth swarm:publish is not sufficient.',
-        { ttlSecs: z.number().optional(), maxUses: z.number().optional(), ...adminSchema },
+      mcp.tool('federation_invite_mint', `Mint a self-service invite code so a new ruflo user can claim relay membership with their own key. Single use unless maxUses says otherwise (default ${DEFAULT_INVITE_MAX_USES}). Requires the admin token; OAuth swarm:publish is not sufficient.`,
+        { ttlSecs: z.number().int().min(1).optional(), maxUses: z.number().int().min(1).optional().describe(`Redemptions allowed (default ${DEFAULT_INVITE_MAX_USES}).`), ...adminSchema },
         // Each call mints a DIFFERENT code, so repeating it is not a no-op.
         WRITE('Mint relay invite'),
         adminOnly(async ({ ttlSecs, maxUses }) => text(await mintInvite(HTTP_BASE, sk, { ttlSecs, maxUses }))));
+      mcp.tool('federation_invite_revoke', 'Revoke an unused or partly used invite by its code or id, so the relay refuses any further claim of it. Members who already joined with it stay members. Requires the admin token; OAuth swarm:publish is not sufficient. Needs a relay build with POST /api/invites/revoke (block/buzz#9680); an older relay answers that revocation is unsupported.',
+        { code: z.string().max(300).optional().describe('The v2 invite code to revoke.'), id: z.string().max(64).optional().describe('The invite uuid, as the relay lists it.'), ...adminSchema },
+        // Removes a way into the relay. Repeating it returns the first revocation,
+        // so it is idempotent.
+        WRITE('Revoke relay invite', { destructive: true, idempotent: true }),
+        adminOnly(async ({ code, id }) => text(await revokeInvite(HTTP_BASE, sk, { code, id }))));
       mcp.tool('federation_admit', 'Admit a pubkey as a relay member directly (NIP-43 kind 9030). Requires the admin token; OAuth swarm:publish is not sufficient.',
         { pubkey: z.string(), role: z.enum(['member', 'admin']).optional(), ...adminSchema },
         // This grants an arbitrary external key relay access and there is no

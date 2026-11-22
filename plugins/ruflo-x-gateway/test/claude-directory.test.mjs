@@ -27,7 +27,7 @@ test('Claude listing contains complete public, legal, support, OAuth, and review
   assert.equal(submission.review.tool_count, 12);
   assert.equal(submission.review.resource_count, 5);
   assert.deepEqual(submission.review.operator_tools_excluded.sort(),
-    ['federation_admit', 'federation_invite_mint']);
+    ['federation_admit', 'federation_invite_mint', 'federation_invite_revoke']);
 });
 
 test('Claude submission artifacts contain no credential-shaped values', () => {
