@@ -42,6 +42,7 @@ import { dispatchQueueDir } from './dispatch-queue.js';
 import { resolveGitWorkspaceIdentity, type GitWorkspaceIdentity } from './git-workspace-identity.js';
 import { getWorkspaceLeaseRegistry } from './workspace-lease.js';
 import { getRepoSupervisorRegistry, type SupervisorRecord } from './repo-supervisor.js';
+import { createAvailableMemoryReader, type AvailableMemoryReader } from './available-memory.js';
 
 // Daemon config is read synchronously from the constructor. In an ESM build,
 // bare `require` is undefined, so use a module-relative require for YAML.
@@ -797,21 +798,39 @@ export class WorkerDaemon extends EventEmitter {
     try { unlinkSync(file); } catch { /* ignore */ }
   }
 
+  // #2935 — on Darwin, os.freemem() leaves out reclaimable inactive pages, so
+  // the memory gate measures available memory from vm_stat instead (see
+  // available-memory.ts). One reader per daemon keeps its short cache local.
+  private memoryReader: AvailableMemoryReader = createAvailableMemoryReader();
+  private memoryFallbackLogged = false;
+  private memoryDiagnosticLogged = false;
+
   /**
    * Check if system resources allow worker execution
    */
   private async canRunWorker(): Promise<{ allowed: boolean; reason?: string }> {
     const os = await import('os');
     const cpuLoad = os.loadavg()[0];
-    const totalMem = os.totalmem();
-    const freeMem = os.freemem();
-    const freePercent = (freeMem / totalMem) * 100;
+    const memory = await this.memoryReader.read();
+
+    // Report a degraded measurement once per daemon lifetime, whatever the verdict.
+    if (memory.fallbackReason && !this.memoryFallbackLogged) {
+      this.memoryFallbackLogged = true;
+      this.log('warn', `Memory gate falling back to os.freemem(): ${memory.fallbackReason}`);
+    }
+    if (memory.diagnostic && !this.memoryDiagnosticLogged) {
+      this.memoryDiagnosticLogged = true;
+      this.log('warn', `Memory gate measurement unavailable (${memory.diagnostic}); memory check not enforced`);
+    }
 
     if (cpuLoad > this.config.resourceThresholds.maxCpuLoad) {
       return { allowed: false, reason: `CPU load too high: ${cpuLoad.toFixed(2)}` };
     }
-    if (freePercent < this.config.resourceThresholds.minFreeMemoryPercent) {
-      return { allowed: false, reason: `Memory too low: ${freePercent.toFixed(1)}% free` };
+    if (memory.percent < this.config.resourceThresholds.minFreeMemoryPercent) {
+      return {
+        allowed: false,
+        reason: `Memory too low: ${memory.percent.toFixed(1)}% available (${memory.source})`,
+      };
     }
     return { allowed: true };
   }
