@@ -11,6 +11,7 @@
 
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier } from './validate-input.js';
+import { loadSwarmStore } from './swarm-tools.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, statfsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -374,12 +375,33 @@ export const systemTools: MCPTool[] = [
         });
       }
 
-      // Swarm — cannot verify real connectivity, report unknown
-      checks.push({
-        name: 'swarm',
-        status: 'unknown',
-        message: 'Swarm connectivity not monitored — check coordination store manually',
-      });
+      // Swarm — inspect persisted swarm state
+      {
+        const t0 = performance.now();
+        try {
+          const runningSwarms = Object.values(loadSwarmStore().swarms)
+            .filter(swarm => swarm.status === 'running')
+            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+          const elapsed = performance.now() - t0;
+          const count = runningSwarms.length;
+          checks.push({
+            name: 'swarm',
+            status: count > 0 ? 'healthy' : 'unknown',
+            latency: Math.round(elapsed * 100) / 100,
+            message: count > 0
+              ? `${count} running swarm${count === 1 ? '' : 's'} (${runningSwarms[0].swarmId})`
+              : 'No active swarm — run swarm_init',
+          });
+        } catch (error) {
+          const elapsed = performance.now() - t0;
+          checks.push({
+            name: 'swarm',
+            status: 'warning',
+            latency: Math.round(elapsed * 100) / 100,
+            message: `Swarm state check failed: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+      }
 
       // Neural — cannot verify, report unknown
       checks.push({
