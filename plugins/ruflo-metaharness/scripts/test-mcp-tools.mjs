@@ -237,6 +237,10 @@ async function main() {
   const { tmpdir } = await import('node:os');
   const { join: pjoin } = await import('node:path');
   const tmp = mkdtempSync(pjoin(tmpdir(), 'mcp-positive-'));
+  // The fixtures live outside the project, which MCP callers may not name.
+  // Call these handlers the way the local CLI does, with operator paths.
+  const { localCliContext } = await import(resolve(dirname(distPath), 'path-containment.js'));
+  const cli = localCliContext();
 
   // #2626 — upstream deliberately exits 2 for a valid `blocked` genome.
   // The wrapper must preserve that report as data instead of converting it
@@ -275,7 +279,7 @@ async function main() {
       score: { harnessFit: 75, compileConfidence: 90, taskCoverage: 70, toolSafety: 90, memoryUsefulness: 72, estCostPerRunUsd: 0.05, recommendedMode: 'CLI + MCP', archetype: 'compliance-harness', template: 'vertical:support' },
       genome: { repo_type: 'node_mcp_ci', agent_topology: ['x','y','z','q','r'], risk_score: 0.40, test_confidence: 0.75, publish_readiness: 0.65 },
     }));
-    const r = await simTool.handler({ aFile: aPath, bFile: bPath });
+    const r = await simTool.handler({ aFile: aPath, bFile: bPath }, cli);
     assert(r.degraded === false, 'similarity positive case: degraded === false');
     assert(r.success === true, 'similarity positive case: success === true');
     assert(r.exitCode === 0, 'similarity positive case: exitCode === 0');
@@ -297,12 +301,12 @@ async function main() {
       `similarity overall in (0, 1) — got ${d.overall}`);
 
     // Per-dimension variant
-    const rPD = await simTool.handler({ aFile: aPath, bFile: bPath, perDimension: true });
+    const rPD = await simTool.handler({ aFile: aPath, bFile: bPath, perDimension: true }, cli);
     assert(typeof rPD.data?.perDimension === 'object',
       'similarity perDimension=true populates breakdown');
 
     // Alert-below variant exercises non-zero exit
-    const rAlert = await simTool.handler({ aFile: aPath, bFile: bPath, alertBelow: 0.99 });
+    const rAlert = await simTool.handler({ aFile: aPath, bFile: bPath, alertBelow: 0.99 }, cli);
     assert(rAlert.data?.alert?.triggered === true,
       'similarity alertBelow=0.99 triggers alert');
     assert(rAlert.exitCode === 1, 'similarity alertBelow=0.99 → exitCode 1');
@@ -383,7 +387,7 @@ async function main() {
     // exit!=0 AND no JSON came back), tracked separately. Asserting
     // current behavior here protects against silent semantic shifts.
     // iter 46 — file-input path. audit_trend now accepts baselineFile/currentFile.
-    const rFiles = await trendTool.handler({ baselineFile: basePath, currentFile: currPath });
+    const rFiles = await trendTool.handler({ baselineFile: basePath, currentFile: currPath }, cli);
     assert(rFiles.success === true,
       'audit_trend file-input path: success === true (iter 46)');
     assert(rFiles.exitCode === 0, 'audit_trend file-input path: exitCode === 0');
@@ -409,7 +413,7 @@ async function main() {
       }));
       const rFastFast = await driftTool.handler({
         path: '.', dryRun: true, threshold: 0.5, baselineFile: baselinePath,
-      });
+      }, cli);
       if (!rFastFast.degraded) {
         assert(rFastFast.data?.timing?.usedBaselineFile === true,
           'drift_from_history MCP-layer: baselineFile fastpath fires (iter 71)');
@@ -435,7 +439,7 @@ async function main() {
         path: '.', dryRun: true, threshold: 0.5,
         baselineFile: baselineNoFindings,
         alertOnNewSeverity: 'info',
-      });
+      }, cli);
       if (!rSevAlert.degraded) {
         assert(rSevAlert.data?.alert?.newSeverityThreshold === 'info',
           'drift_from_history MCP-layer: alertOnNewSeverity echoed in payload (iter 85)');

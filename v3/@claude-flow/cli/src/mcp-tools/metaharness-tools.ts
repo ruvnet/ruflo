@@ -337,7 +337,7 @@ export const metaharnessTools: MCPTool[] = [
       const aFile = toolFileArg(input.aFile, 'read', context);
       const bFile = toolFileArg(input.bFile, 'read', context);
       const bad = aFile.error ?? bFile.error;
-      if (bad) return { success: false, error: bad, degraded: false, exitCode: 2 };
+      if (bad) return { success: false, data: null, error: bad, degraded: false, exitCode: 2 };
       const args: string[] = [];
       if (aFile.path) args.push('--a', aFile.path);
       if (bFile.path) args.push('--b', bFile.path);
@@ -367,7 +367,7 @@ export const metaharnessTools: MCPTool[] = [
     },
     handler: async (input, context) => {
       const baselineFile = toolFileArg(input.baselineFile, 'read', context);
-      if (baselineFile.error) return { success: false, error: baselineFile.error, degraded: false, exitCode: 2 };
+      if (baselineFile.error) return { success: false, data: null, error: baselineFile.error, degraded: false, exitCode: 2 };
       const args: string[] = [];
       args.push('--path', String(input.path ?? '.'));
       if (input.baselineSince) args.push('--baseline-since', String(input.baselineSince));
@@ -401,7 +401,7 @@ export const metaharnessTools: MCPTool[] = [
       const baselineFile = toolFileArg(input.baselineFile, 'read', context);
       const currentFile = toolFileArg(input.currentFile, 'read', context);
       const bad = baselineFile.error ?? currentFile.error;
-      if (bad) return { success: false, error: bad, degraded: false, exitCode: 2 };
+      if (bad) return { success: false, data: null, error: bad, degraded: false, exitCode: 2 };
       const args: string[] = [];
       if (input.baselineKey) args.push('--baseline-key', String(input.baselineKey));
       if (input.currentKey) args.push('--current-key', String(input.currentKey));
@@ -517,7 +517,7 @@ export const metaharnessTools: MCPTool[] = [
       const suite = toolFileArg(input.suite, 'read', context);
       const out = toolFileArg(input.out, 'write', context, ['.json']);
       const bad = suite.error ?? out.error;
-      if (bad) return { success: false, error: bad, degraded: false, exitCode: 2 };
+      if (bad) return { success: false, data: null, error: bad, degraded: false, exitCode: 2 };
       // ADR-526: verify runs in-process (darwin is a regular dependency);
       // create still goes through the darwin CLI, which owns the scaffold task.
       if (input.op === 'verify') {
@@ -575,7 +575,7 @@ export const metaharnessTools: MCPTool[] = [
       const out = toolFileArg(input.out, 'write', context, sub === 'init' ? ['.yaml', '.yml'] : ['.json']);
       const inPath = toolFileArg(input.in, 'read', context);
       const bad = config.error ?? out.error ?? inPath.error;
-      if (bad) return { success: false, error: bad, degraded: false, exitCode: 2 };
+      if (bad) return { success: false, data: null, error: bad, degraded: false, exitCode: 2 };
       const args: string[] = [sub];
       // attack family is positional
       if (input.subcommand === 'attack' && input.family) args.push(String(input.family));
@@ -655,7 +655,7 @@ export const metaharnessTools: MCPTool[] = [
       const genomePath = toolFileArg(input.path, 'read', context);
       const transcript = toolFileArg(input.transcript, 'read', context);
       const bad = genomePath.error ?? transcript.error;
-      if (bad) return { success: false, error: bad, degraded: false, exitCode: 2 };
+      if (bad) return { success: false, data: null, error: bad, degraded: false, exitCode: 2 };
       // ADR-526: GEPA genome ops run in-process; the plugin script is the fallback.
       const inProc = await gepaOp({
         op: String(input.op),

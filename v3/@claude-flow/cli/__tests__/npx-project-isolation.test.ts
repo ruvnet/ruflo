@@ -32,7 +32,7 @@ vi.mock('node:module', async (importOriginal) => ({
 
 import { execBrowserCommand } from '../src/mcp-tools/browser-tools.js';
 import { browserSessionTools } from '../src/mcp-tools/browser-session-tools.js';
-import { npxIsolationArgs } from '../src/runtime/npx-isolation.js';
+import { npmGlobalConfigPath, npxIsolationArgs, npxPrefixDir } from '../src/runtime/npx-isolation.js';
 
 let project: string;
 let home: string;
@@ -117,5 +117,28 @@ describe('tool-time npx is isolated from the project directory', () => {
       return; // npm not available on this runner
     }
     expect(realpathSync(cwd)).toBe(realpathSync(project));
+  });
+
+  it('keeps the user global npmrc, which npm would otherwise look for under the prefix', async () => {
+    expect(npxIsolationArgs(home)).toContain('--globalconfig');
+    if (process.platform !== 'win32') {
+      expect(npmGlobalConfigPath({}, '/opt/node/bin/node')).toBe('/opt/node/etc/npmrc');
+    }
+    expect(npmGlobalConfigPath({ npm_config_globalconfig: '/custom/npmrc' })).toBe('/custom/npmrc');
+
+    const globalRc = join(home, 'global-npmrc');
+    writeFileSync(globalRc, 'registry=http://127.0.0.1:7/\n');
+    const real = await vi.importActual<typeof import('node:child_process')>('node:child_process');
+    const env = { ...process.env, HOME: home };
+    for (const k of Object.keys(env)) if (/^npm_config_/i.test(k)) delete env[k];
+    let registry: string;
+    try {
+      registry = real.execFileSync('npm', ['--prefix', npxPrefixDir(home), '--globalconfig', globalRc, 'config', 'get', 'registry'], {
+        cwd: project, encoding: 'utf-8', env,
+      }).trim();
+    } catch {
+      return; // npm not available on this runner
+    }
+    expect(registry).toContain('127.0.0.1:7');
   });
 });
