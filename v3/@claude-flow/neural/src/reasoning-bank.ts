@@ -295,6 +295,12 @@ export class ReasoningBank {
     if (usedHnsw) this.hnswRetrievalCount++;
     else this.bruteForceRetrievalCount++;
 
+    // detectContradictions() marks the lower-quality side of a contradicting
+    // pair `consolidated = true` specifically "to exclude from retrieval" —
+    // enforce that here (both the HNSW and brute-force paths above can
+    // surface a consolidated entry since neither filters on it).
+    candidates = candidates.filter(c => !c.entry.consolidated);
+
     // Apply MMR for diversity
     const results: RetrievalResult[] = [];
     const selected: MemoryEntry[] = [];
@@ -362,7 +368,8 @@ export class ReasoningBank {
     const results: RetrievalResult[] = [];
 
     const contentLower = content.toLowerCase();
-    const entries = Array.from(this.memories.values());
+    // Same contradiction-exclusion enforcement as retrieve() — see comment there.
+    const entries = Array.from(this.memories.values()).filter(e => !e.consolidated);
 
     // Score by content similarity
     const scored = entries.map(entry => ({
