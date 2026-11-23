@@ -13,7 +13,7 @@ import {
   resolveDaemonProjectRoot,
   writeDaemonStopMarker,
 } from '../services/daemon-autostart.js';
-import { spawn, execFile, fork } from 'child_process';
+import { spawn, execFile, execFileSync, fork } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve, isAbsolute } from 'path';
 import { homedir } from 'os';
@@ -801,6 +801,42 @@ async function stopAllDaemons(quiet: boolean): Promise<CommandResult> {
   return { success: true, data: { stopped } };
 }
 
+/** Command line of a live process, or null where it cannot be read. */
+function processCommandLine(pid: number): string | null {
+  try {
+    const raw = fs.readFileSync(`/proc/${pid}/cmdline`, 'utf-8');
+    if (raw) return raw.split('\0').join(' ');
+  } catch { /* not Linux, or the process is gone */ }
+  if (process.platform === 'win32') return null;
+  try {
+    return execFileSync('ps', ['-p', String(pid), '-o', 'command='], { encoding: 'utf-8', timeout: 2000 }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The PID that `daemon stop` may signal, given the contents of the project's
+ * `.claude-flow/daemon.pid`. That file lives in the working tree, so a cloned
+ * repository can ship one. Only a plain positive PID qualifies (`-1` or `0`
+ * would signal every process the user owns, or the whole process group), and
+ * on POSIX the process must be a ruflo CLI process — whatever else the PID
+ * names now is left alone.
+ */
+export function pidFileSignalTarget(
+  contents: string,
+  commandLineOf: (pid: number) => string | null = processCommandLine,
+): number | null {
+  const raw = contents.trim();
+  if (!/^[1-9]\d{0,9}$/.test(raw)) return null;
+  const pid = Number(raw);
+  if (pid <= 1 || pid > 0x7fffffff || pid === process.pid) return null;
+  if (process.platform === 'win32') return pid;
+  const cmd = commandLineOf(pid);
+  if (cmd === null) return null;
+  return /claude-flow|@claude-flow[\\/]cli|ruflo/i.test(cmd) ? pid : null;
+}
+
 /**
  * Kill background daemon process using PID file
  */
@@ -812,9 +848,9 @@ async function killBackgroundDaemon(projectRoot: string): Promise<boolean> {
   }
 
   try {
-    const pid = parseInt(fs.readFileSync(pidFile, 'utf-8').trim(), 10);
+    const pid = pidFileSignalTarget(fs.readFileSync(pidFile, 'utf-8'));
 
-    if (isNaN(pid)) {
+    if (pid === null) {
       fs.unlinkSync(pidFile);
       return false;
     }

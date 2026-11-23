@@ -5,6 +5,7 @@ const execFileSync = vi.hoisted(() => vi.fn());
 const resolveAgentBrowserLaunch = vi.hoisted(() => vi.fn());
 const resolveNpxLaunch = vi.hoisted(() => vi.fn());
 vi.mock('child_process', () => ({ execFileSync }));
+vi.mock('../src/runtime/npx-isolation.js', () => ({ npxIsolationArgs: () => ['--prefix', '/ruflo-npx-prefix'] }));
 vi.mock('../src/runtime/browser-command.js', () => ({ resolveAgentBrowserLaunch, resolveNpxLaunch }));
 vi.mock('../src/mcp-tools/validate-input.js', () => ({
   validateIdentifier: () => ({ valid: true }),
@@ -59,7 +60,7 @@ describe('execBrowserCommand never spawns through a shell', () => {
         await execBrowserCommand(['eval', payload], 'test-session');
         const [command, argv, options] = execFileSync.mock.calls.at(-1)!;
         expect(command).toBe('node');
-        expect(argv).toEqual(['/npm/bin/npx-cli.js', '--yes', 'agent-browser', '--session', 'test-session', '--json', 'eval', payload]);
+        expect(argv).toEqual(['/npm/bin/npx-cli.js', '--prefix', '/ruflo-npx-prefix', '--yes', 'agent-browser', '--session', 'test-session', '--json', 'eval', payload]);
         expect(options.shell).toBeFalsy();
       }
     });
