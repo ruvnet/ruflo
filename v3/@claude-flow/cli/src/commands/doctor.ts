@@ -1675,7 +1675,7 @@ async function checkBuildTools(): Promise<HealthCheck> {
 }
 
 // Check for stale npx cache (version freshness)
-async function checkVersionFreshness(): Promise<HealthCheck> {
+export async function checkVersionFreshness(): Promise<HealthCheck> {
   try {
     // Get current CLI version from package.json
     // Use import.meta.url to reliably locate our own package.json,
@@ -1719,10 +1719,10 @@ async function checkVersionFreshness(): Promise<HealthCheck> {
                   process.env.npm_execpath?.includes('npx') ||
                   process.cwd().includes('_npx');
 
-    // Query npm for latest version (using alpha tag since that's what we publish to)
+    // Query npm for the latest stable version
     let latestVersion = currentVersion;
     try {
-      const npmInfo = await runCommand('npm view @claude-flow/cli@alpha version', 5000);
+      const npmInfo = await runCommand('npm view @claude-flow/cli@latest version', 5000);
       latestVersion = npmInfo.trim();
     } catch {
       // Can't reach npm registry - skip check
