@@ -60,8 +60,9 @@ const short = (label: string): string => (label.length > MAX_LABEL ? `${label.sl
 
 /**
  * The motion, as one constant stylesheet: no data is ever written into it. Classes: `ring` (a node's pulse), `flow` (traffic running
- * along an edge), `sweep` (a gauge filling), `draw` (a line drawing in), `fade` (an area appearing), `flicker` (a neon sign), and the
- * hover states. Reduced motion turns every animation off.
+ * along an edge) and `flicker` (a neon sign): only motion that loops. A picture whose data ticks (a sparkline every 5 s, the gauge every
+ * turn) is a new document each time, so an entrance animation there would replay on every tick; those pictures are still and hoverable.
+ * Reduced motion turns every animation off.
  */
 const MOTION =
   '.ring{transform-box:fill-box;transform-origin:center;animation:ring 1.8s ease-out infinite}' +
@@ -69,12 +70,6 @@ const MOTION =
   '@keyframes ring{from{transform:scale(1);opacity:.85}to{transform:scale(2.8);opacity:0}}' +
   '.flow{stroke-dasharray:3 9;animation:flow .9s linear infinite}' +
   '@keyframes flow{to{stroke-dashoffset:-24}}' +
-  '.sweep{animation:sweep 1.1s cubic-bezier(.2,.8,.2,1) both}' +
-  '@keyframes sweep{from{stroke-dasharray:0 100}}' +
-  '.draw{stroke-dasharray:1;animation:draw 1s ease-out both}' +
-  '@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}' +
-  '.fade{animation:fade 1.2s ease-out both}' +
-  '@keyframes fade{from{opacity:0}}' +
   '.flicker{animation:flicker 6s linear infinite}' +
   '@keyframes flicker{0%,18%,22%,62%,64%,100%{opacity:1}20%,63%{opacity:.55}}' +
   '@media (prefers-reduced-motion:reduce){*{animation:none!important}}'
@@ -168,7 +163,7 @@ export const ladderColor = (ratio: number, p: VectorPalette): string => (ratio <
 const dollars = (value: number): string => `$${value >= 100 ? value.toFixed(0) : value.toFixed(2)}`
 
 /**
- * The budget as a half-ring gauge: the arc fills to spend/limit (sweeping in), with ticks at 50, 75, 90 and 100%, and the dollars in
+ * The budget as a half-ring gauge: the arc fills to spend/limit, with ticks at 50, 75, 90 and 100%, and the dollars in
  * the middle. No limit: the spend alone, said in words. No spend: n/a, never $0.
  */
 export function gaugeSvg(spend: number | null, limit: number | null, alt: string, options: VectorOptions): string | null {
@@ -186,7 +181,7 @@ export function gaugeSvg(spend: number | null, limit: number | null, alt: string
   const parts = [`<path d="${arc}" fill="none" stroke="${p.dim}" stroke-opacity=".25" stroke-width="12" stroke-linecap="round"/>`]
 
   if (hasSpend && hasLimit) {
-    parts.push(`<path${options.animate ? ' class="sweep"' : ''} d="${arc}" pathLength="100" stroke-dasharray="${num(ratio * 100)} 100" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round"><title>${escapeXml(`${dollars(spend as number)} of ${dollars(limit as number)} (${Math.round(ratio * 100)}%)`)}</title></path>`)
+    parts.push(`<path d="${arc}" pathLength="100" stroke-dasharray="${num(ratio * 100)} 100" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round"><title>${escapeXml(`${dollars(spend as number)} of ${dollars(limit as number)} (${Math.round(ratio * 100)}%)`)}</title></path>`)
     for (const step of [0.5, 0.75, 0.9, 1]) {
       const a = Math.PI * (1 - step)
       const x1 = cx + Math.cos(a) * (r - 9)
@@ -214,7 +209,7 @@ export type Series = { label: string; values: readonly number[] }
 const tail = (values: readonly number[]): number[] => values.filter(v => Number.isFinite(v)).slice(-120)
 
 /**
- * Sparklines, one band per series: a line that draws in over a soft area, the newest value as a dot, and an invisible column per
+ * Sparklines, one band per series: a line over a soft area, the newest value as a dot, and an invisible column per
  * sample whose `<title>` is its value (hover shows it). Fewer than two samples: the series says so in words.
  */
 export function sparklineSvg(series: readonly Series[], alt: string, options: VectorOptions, format: (value: number) => string = v => num(v, 2)): string | null {
@@ -251,8 +246,8 @@ export function sparklineSvg(series: readonly Series[], alt: string, options: Ve
     const last = pts.at(-1) as { x: number; y: number }
     const lastValue = values.at(-1) as number
 
-    parts.push(`<path${options.animate ? ' class="fade"' : ''} d="${line}L${num(last.x)} ${bottom}L${left} ${bottom}Z" fill="${color}" fill-opacity=".14"/>`)
-    parts.push(`<path${options.animate ? ' class="draw"' : ''} pathLength="1" d="${line}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round"/>`)
+    parts.push(`<path d="${line}L${num(last.x)} ${bottom}L${left} ${bottom}Z" fill="${color}" fill-opacity=".14"/>`)
+    parts.push(`<path d="${line}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round"/>`)
     parts.push(`<circle cx="${num(last.x)}" cy="${num(last.y)}" r="3" fill="${color}"/>`)
     parts.push(`<text x="${num(right + 8)}" y="${num(last.y + 4)}" font-size="11" fill="${color}" ${FONT}>${escapeXml(format(lastValue))}</text>`)
     pts.forEach((pt, i) => {

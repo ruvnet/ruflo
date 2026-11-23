@@ -15,6 +15,8 @@ type Body = Parameters<TestBody>
 type Props = { source?: string; alt?: string; width?: number; height?: number; isInteractive?: boolean }
 const propsOf = (element: unknown): Props => ((element as { props?: Props }).props ?? {}) as Props
 const SVG_SOURCE_MAX = 131_072
+/** A host that takes Text `weight` (2.1.299+) and so the Svg `height` and `isInteractive` props: the vectors are drawn only there. */
+const modern = (on: Body[1], version = '2.1.318') => on('session.version', () => ({ value: { version } as never }))
 
 /** The Svg elements a page draws on one surface, by their box's picture key. */
 async function drawnOn($: Body[0], view: string, surface: 'terminal' | 'desktop') {
@@ -33,6 +35,7 @@ for (const look of ['plain', 'bbs', 'orbital'] as const) {
   describe(`the desktop look (${look})`, () => {
     test('the swarm, cost and overview pictures are interactive vectors on the desktop and Rasters on the terminal', { timeoutMs: 60_000, options: { boot: false, look } }, async ($, on) => {
       worldOf(on, RUFLO_FILES)
+      modern(on)
       mock.clock(on)
       await $.session.start(SESSION)
 
@@ -70,6 +73,7 @@ for (const look of ['plain', 'bbs', 'orbital'] as const) {
 describe('the desktop look', () => {
   test('the BBS look lights the menu banner as a neon sign, keeping its words', { timeoutMs: 30_000, options: { boot: false, look: 'bbs' } }, async ($, on) => {
     worldOf(on, RUFLO_FILES)
+    modern(on)
     mock.clock(on)
     await $.session.start(SESSION)
 
@@ -81,8 +85,30 @@ describe('the desktop look', () => {
     expect(banner?.isInteractive).toBe(true)
   })
 
+  test('every BBS page title is a neon sign, never wider than the cell title it replaces, even in a narrow pane', { timeoutMs: 30_000, options: { boot: false, look: 'bbs' } }, async ($, on) => {
+    worldOf(on, RUFLO_FILES)
+    modern(on)
+    mock.clock(on)
+    await $.session.start(SESSION)
+
+    for (const columns of [110, 64]) {
+      await $.command.run(command('swarm'))
+      const pane = await $.ui.mount({ ...paneAt(columns, 60, true, 'desktop'), plugin: PLUGIN })
+      const tree = await pane.drawn()
+      await pane.unmount()
+      const title = elementsOf(tree, 'Box').filter(box => keyOf(box) === 'svg-title').map(box => propsOf(elementsOf(box, 'Svg')[0]))[0]
+
+      expect(title?.isInteractive, `${columns} columns: the title is a vector`).toBe(true)
+      expect(title?.source).toContain('filter="url(#glow)"')
+      // The pane's body is `columns - 1` cells of 8 px; the title fits inside it at every width.
+      expect(title?.width ?? Infinity, `${columns} columns: the title fits the pane`).toBeLessThanOrEqual((columns - 1) * 8)
+      expect(title?.height ?? 0).toBeGreaterThan(0)
+    }
+  })
+
   test('a saved "cells" draws the cell pictures, not interactive, as before ADR-546', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
+    modern(on)
 
     world.stored.set('desktop-art', 'cells')
     mock.clock(on)
@@ -96,8 +122,22 @@ describe('the desktop look', () => {
     expect(topology?.source).not.toContain('<style>')
   })
 
+  test('a host before 2.1.299 gets the cell pictures: it would refuse a tree with Svg props it does not know', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
+    worldOf(on, RUFLO_FILES)
+    modern(on, '2.1.289')
+    mock.clock(on)
+    await $.session.start(SESSION)
+
+    const topology = (await drawnOn($, 'swarm', 'desktop')).svgs.get('topology')
+
+    expect(topology).toBeDefined()
+    expect(topology?.isInteractive).toBeUndefined()
+    expect(topology?.height).toBeUndefined()
+  })
+
   test('nothing moves with fps 0: the vectors are drawn still', { timeoutMs: 30_000, options: { boot: false, fps: 0 } }, async ($, on) => {
     worldOf(on, RUFLO_FILES)
+    modern(on)
     mock.clock(on)
     await $.session.start(SESSION)
 
@@ -108,6 +148,7 @@ describe('the desktop look', () => {
 
   test('Settings has a Desktop pictures row; picking cells saves it and redraws the desktop with cells', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
+    modern(on)
 
     world.respond = settingsAnswer
     mock.clock(on)

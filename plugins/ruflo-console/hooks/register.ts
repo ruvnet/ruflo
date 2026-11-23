@@ -325,8 +325,9 @@ export const register: Register = (on, raw: PluginOptions) => {
     state.pictured = pictures.size
     control.animate()
 
-    // ADR-546: where the surface draws Svg, the pictures with a native vector form are drawn as one (the setting says whether).
-    const vectors = isNarrow || kit.Svg === undefined ? undefined : vectorsOf(state, columns, Date.now())
+    // ADR-546: where the surface draws Svg, pictures with a vector form are drawn as one (the setting says whether). Only on a host that
+    // takes Text `weight` (2.1.299+), past the 2.1.289 types that declare Svg `height` and `isInteractive`: an older engine refuses a tree with a prop it does not know.
+    const vectors = isNarrow || kit.Svg === undefined || !textWeight ? undefined : vectorsOf(state, columns, Date.now())
     const tree = paneView({ kit: withClearing(kit, state, control.actions.clearField, { columns, repaint: () => host?.invalidate() }), state, nowMs: Date.now(), columns, pictures, ...(vectors !== undefined && { vectors }), act: control.actions })
 
     state.stats.renders.push(Date.now() - started)

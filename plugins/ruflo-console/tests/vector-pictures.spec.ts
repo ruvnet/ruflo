@@ -118,7 +118,7 @@ describe('gaugeSvg', () => {
     const svg = holds(gaugeSvg(1.5, 2, 'budget', MOVING), 'budget')
 
     expect(svg).toContain('stroke-dasharray="75 100"')
-    expect(svg).toContain('class="sweep"')
+    expect(svg.match(/class="(?!n")/g), 'its data ticks every turn: only hover groups, no entrance animation to replay').toBeNull()
     for (const step of ['50%', '75%', '90%', '100%']) expect(svg).toContain(`<title>${step} · `)
     expect(svg).toContain('$1.50')
     expect(svg).toContain(`stroke="${DEFAULT_PALETTE.warn}"`)
@@ -147,7 +147,7 @@ describe('sparklineSvg', () => {
     expect(svg.match(/<rect class="pt"/g)).toHaveLength(4)
     expect(svg).toContain('<title>tool calls · #4: 8</title>')
     expect(svg).toContain('not enough samples yet')
-    expect(svg).toContain('class="draw"')
+    expect(svg.match(/class="(?!pt")/g), 'only the hover columns carry a class: nothing replays when a sample lands').toBeNull()
   })
 
   it('drops non-finite samples and keeps the newest 120, so a long session cannot outgrow the limit', () => {
@@ -242,7 +242,9 @@ describe('colours and documents', () => {
 describe('vectorsOf', () => {
   const at = 1_800_000_000_000
   const ready = (view: string, look: 'bbs' | 'plain' | 'orbital' = 'plain') => {
-    const state = newState('/work/project')
+    const state = newState({})
+
+    state.cwd = '/work/project'
 
     state.view = view as typeof state.view
     state.options = { ...state.options, look, fps: 8, boot: false }

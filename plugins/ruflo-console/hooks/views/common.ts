@@ -365,8 +365,8 @@ export function art(ctx: Ctx, grid: Grid | undefined, key: string, alt: string):
   const label = alt.replace(/\s+needs? a terminal(?: that draws pictures)?/g, '').trim() || key
   const vector = ctx.vectors?.get(key)
   const rich = vector?.draw(label) ?? null
-
-  if (vector !== undefined && rich !== null) return ctx.kit.Box({ key: `svg-${key}`, children: [ctx.kit.Svg({ source: rich, alt: label, width: vector.width, height: vector.height, isInteractive: true })] })
+  const fit = vector === undefined ? 1 : Math.min(1, (grid.columns * CELL_W) / Math.max(1, vector.width)) // never wider than the cell picture, already fitted to the pane
+  if (vector !== undefined && rich !== null) return ctx.kit.Box({ key: `svg-${key}`, children: [ctx.kit.Svg({ source: rich, alt: label, width: Math.round(vector.width * fit), height: Math.round(vector.height * fit), isInteractive: true })] })
   const source = gridToSvg(grid, label)
 
   return source === null ? null : ctx.kit.Box({ key: `svg-${key}`, children: [ctx.kit.Svg({ source, alt: label, width: grid.columns * CELL_W })] })
