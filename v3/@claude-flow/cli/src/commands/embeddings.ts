@@ -178,15 +178,22 @@ const searchCommand: Command = {
 
       // Get all entries with embeddings from database
       // Parameterized query to prevent SQL injection (CRIT-01)
+      // #2982: without ORDER BY, SQLite returns the oldest-inserted rows, so past
+      // the window the newest entries were never scored. Read newest first, with
+      // the same window as the memory bridge (#4397, CLAUDE_FLOW_SEARCH_WINDOW).
+      const { resolveBridgeSearchWindow } = await import('../memory/memory-bridge.js');
+      const searchWindow = resolveBridgeSearchWindow();
       const embeddingSql = namespace !== 'all'
         ? `SELECT id, key, namespace, content, embedding, embedding_dimensions
            FROM memory_entries
            WHERE status = 'active' AND embedding IS NOT NULL AND namespace = ?
-           LIMIT 1000`
+           ORDER BY updated_at DESC
+           LIMIT ${searchWindow}`
         : `SELECT id, key, namespace, content, embedding, embedding_dimensions
            FROM memory_entries
            WHERE status = 'active' AND embedding IS NOT NULL
-           LIMIT 1000`;
+           ORDER BY updated_at DESC
+           LIMIT ${searchWindow}`;
 
       const embeddingStmt = db.prepare(embeddingSql);
       if (namespace !== 'all') {
