@@ -754,6 +754,41 @@ function ownedByMod(cmd, env = process.env) {
   return String(env.RUFLO_MODS_OWNS || '').split(',').some((owned) => owned.trim() === cmd);
 }
 
+// Codex's hook payloads carry a turn_id that Claude Code's do not (#3163).
+function isCodexPayload(hookInput) {
+  return !!hookInput && typeof hookInput === 'object' && typeof hookInput.turn_id === 'string';
+}
+
+// Events whose hook JSON takes `additionalContext`, so the report still reaches the model.
+const CODEX_CONTEXT_EVENTS = new Set(['UserPromptSubmit', 'SessionStart']);
+const CODEX_EVENT_OF = { route: 'UserPromptSubmit', 'session-restore': 'SessionStart' };
+
+// Under Codex, collect everything the handler logs and emit it once at exit:
+// as `hookSpecificOutput.additionalContext` JSON where the event takes context,
+// on stderr otherwise, so stdout is valid hook JSON or empty. The 'exit'
+// listener also covers the handlers and the safety timer that call
+// process.exit. pre-bash keeps its own blocking protocol and is never routed here.
+function codexStdout(hookInput, cmd) {
+  const util = require('util');
+  const event = String(hookInput.hook_event_name || hookInput.hookEventName || CODEX_EVENT_OF[cmd] || '');
+  const lines = [];
+  console.log = (...parts) => { lines.push(util.format(...parts)); };
+  let flushed = false;
+  process.on('exit', () => {
+    if (flushed) return;
+    flushed = true;
+    const text = lines.join('\n').trim();
+    if (!text) return;
+    try {
+      if (CODEX_CONTEXT_EVENTS.has(event)) {
+        fs.writeSync(1, JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: text } }) + '\n');
+      } else {
+        fs.writeSync(2, text + '\n');
+      }
+    } catch (_) { /* a closed pipe must not fail the hook */ }
+  });
+}
+
 function claimSideEffectEvent(family, stdinData, event) {
   if (/^(1|true|yes|on)$/i.test(process.env.RUFLO_DISABLE_HOOK_DEDUP || '')) return true;
   try {
@@ -806,6 +841,10 @@ async function main() {
   if (stdinData.trim()) {
     try { hookInput = JSON.parse(stdinData); } catch (e) { stdinUnparsable = true; }
   }
+  // Codex reads a hook's stdout as hook JSON when it starts with `{` or `[`,
+  // so every `[INFO]`/`[OK]` report failed the hook ("invalid user prompt
+  // submit JSON output"). See codexStdout below.
+  if (command !== 'pre-bash' && isCodexPayload(hookInput)) codexStdout(hookInput, command);
 
   // ADR-512: record what finished and train from it, before the dedup below: it keys session-end
   // on the session id, so after a PreCompact the real SessionEnd would never record the last turn.
@@ -1436,4 +1475,4 @@ const loadedHelpers = { router: !!router, session: !!session, memory: !!memory, 
 // resolveGlobalCliBin/npmGlobalPrefix are exported for
 // hook-handler-global-cli.test.ts; resolveCliBinForHook for anyone checking
 // what a given machine resolves to without running a hook (#3368).
-module.exports = { runWithTimeout, INTELLIGENCE_TIMEOUT_MS, loadedHelpers, ownedByMod, MOD_OWNABLE_EVENTS, resolveCliBinForHook, resolveGlobalCliBin, npmGlobalPrefix, cliSpawnArgs, helperRoot, scanSessionStartSettingsForRisk, srFormatRiskFindingsForAutomaticBoot, srScanSettingsForRisk, srScanCommandStringForRisk, srScanAllowRuleForRisk, SR_DANGEROUS_COMMAND_WORDS, SR_SHELL_EXEC_WORDS, SR_DOWNLOADER_WORDS, SR_STANDALONE_RISK_PATTERNS };
+module.exports = { isCodexPayload, CODEX_CONTEXT_EVENTS, runWithTimeout, INTELLIGENCE_TIMEOUT_MS, loadedHelpers, ownedByMod, MOD_OWNABLE_EVENTS, resolveCliBinForHook, resolveGlobalCliBin, npmGlobalPrefix, cliSpawnArgs, helperRoot, scanSessionStartSettingsForRisk, srFormatRiskFindingsForAutomaticBoot, srScanSettingsForRisk, srScanCommandStringForRisk, srScanAllowRuleForRisk, SR_DANGEROUS_COMMAND_WORDS, SR_SHELL_EXEC_WORDS, SR_DOWNLOADER_WORDS, SR_STANDALONE_RISK_PATTERNS };

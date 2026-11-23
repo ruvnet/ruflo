@@ -3,7 +3,7 @@
     "version": "3.80.1",
     "files": {
       "auto-memory-hook.mjs": "83775ccec13ed5e63bafdd27d429535608b4626805b3f063ad8f434cd5c64518",
-      "hook-handler.cjs": "f736cb7092030568ab80a1b17a2afb1e0d52e0e16f407d86393f619ae29fec90",
+      "hook-handler.cjs": "9d3dedd67940482368747a1bc129f20ab4c21fd121bf9b7df6f9554bc74be787",
       "intelligence.cjs": "ffdcfa6d2665a16e417dedd5bc67080c8192820f76265de5013fcb49f668ec71",
       "statusline.cjs": "284b95629ced4340667872b977de3f2beac90fc6bb7ab1a62dd7f7ae75c5e5d1",
       "router.cjs": "16648b3c0d73b6681ac2d8d13def6a68286c57f5a11004de5b19a0fa088c833d",
@@ -12,6 +12,6 @@
       "memory.cjs": "2ef989f4640e357c1ac3eae09330242c1f6b037e6ef676a5999b8a7c11d53c33"
     }
   },
-  "signature": "jXVelCnoU871FcxJPDf+IFfTmbTD/3eeocJxhc1nXzp0y7lr8k3Q+v+qTCJn4NqXGPdrEUdEm3wFHS3DRGXgDg==",
+  "signature": "pR4v48i6OkEFTDhfq/rmAIp8U3go2vYvmVUQVk6FRtYpeJGRXqZA7wyn3jxAJ1XwGLv/IQb5DTG4556qEXNiAw==",
   "algorithm": "ed25519"
 }

@@ -901,6 +901,22 @@ export function generateHookHandler(): string {
     '  if (stdinData.trim()) {',
     '    try { hookInput = JSON.parse(stdinData); } catch (e) { /* ignore */ }',
     '  }',
+    // Codex reads a hook's stdout as hook JSON when it starts with `{` or `[`
+    // (its payloads carry turn_id, #3163): collect the reports and emit them
+    // once at exit, as additionalContext where the event takes it, else on stderr.
+    "  if (command !== 'pre-bash' && hookInput && typeof hookInput.turn_id === 'string') {",
+    "    var codexEvent = String(hookInput.hook_event_name || (command === 'route' ? 'UserPromptSubmit' : command === 'session-restore' ? 'SessionStart' : ''));",
+    '    var codexLines = [];',
+    "    console.log = function () { codexLines.push(require('util').format.apply(null, arguments)); };",
+    "    process.once('exit', function () {",
+    "      var text = codexLines.join('\\n').trim();",
+    '      if (!text) return;',
+    "      try {",
+    "        if (codexEvent === 'UserPromptSubmit' || codexEvent === 'SessionStart') fs.writeSync(1, JSON.stringify({ hookSpecificOutput: { hookEventName: codexEvent, additionalContext: text } }) + '\\n');",
+    "        else fs.writeSync(2, text + '\\n');",
+    '      } catch (e) { /* closed pipe */ }',
+    '    });',
+    '  }',
     '  // Prefer stdin fields, then env, then argv. `hookInput.toolInput` is an',
     '  // object (e.g. {command:"ls"}); falling back to it directly bound prompt',
     '  // to the object and tripped .toLowerCase() / .substring() on every Bash',
