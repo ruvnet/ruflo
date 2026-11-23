@@ -28,6 +28,7 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   symlinkSync,
@@ -381,5 +382,66 @@ describe('serialized dead-owner reclamation', () => {
     writeFileSync(`${lock}.reclaim`, guard); utimesSync(`${lock}.reclaim`, new Date(0), new Date(0));
     await expect(authorizeRead(root)).rejects.toThrow('inspect exact owner');
     expect(readFileSync(lock, 'utf8')).toBe(content); expect(readFileSync(`${lock}.reclaim`, 'utf8')).toBe(guard);
+  }, 15_000);
+});
+
+describe('the lock never exists without its owner, and a stuck lock says how to recover', () => {
+  // Creating state.lock and then writing to it left an empty lock whenever the
+  // process died in between (seen after a reboot: every MCP call, Codex's
+  // included, then failed with a bare policy-state-lock-timeout). The owner is
+  // now written first and the lock published whole.
+  it('a lock that appears already names its owner, and no temp file is left', async () => {
+    const { lock } = await setup();
+    const dir = join(lock, '..');
+    const release = await acquireLock(lock);
+    try {
+      expect(JSON.parse(readFileSync(lock, 'utf8'))).toMatchObject({ pid: process.pid });
+    } finally {
+      release();
+    }
+    expect(existsSync(lock)).toBe(false);
+    expect(readdirSync(dir).filter((name) => name.startsWith('state.lock.'))).toEqual([]);
+  });
+
+  it.skipIf(process.platform === 'win32')('another process never reads an empty lock while it is taken and released', async () => {
+    const { lock } = await setup();
+    const reader = spawn(process.execPath, ['-e', `
+      const fs = require('node:fs'); let empty = 0, seen = 0; const end = Date.now() + 1500;
+      while (Date.now() < end) { try { const s = fs.readFileSync(process.argv[1], 'utf8'); seen++; if (s === '') empty++; } catch {} }
+      process.stdout.write(JSON.stringify({ empty, seen }));`, lock], { stdio: ['ignore', 'pipe', 'ignore'] });
+    children.push(reader);
+    let out = '';
+    reader.stdout!.on('data', (chunk) => { out += chunk; });
+    const done = new Promise((resolveExit) => reader.once('exit', resolveExit));
+    const end = Date.now() + 1200;
+    while (Date.now() < end) (await acquireLock(lock))();
+    await done;
+    const { empty, seen } = JSON.parse(out) as { empty: number; seen: number };
+    expect(seen).toBeGreaterThan(0);
+    expect(empty).toBe(0);
+  }, 15_000);
+
+  it('an empty lock times out naming what it is and the path to remove', async () => {
+    const { root, lock } = await setup();
+    plantLock(lock, '');
+    const error = await authorizeRead(root).then(() => undefined, (e: unknown) => e as Error);
+    expect(error?.message).toMatch(/^policy-state-lock-timeout: lock is empty \(its owner died before recording itself\), \d+s old; if no ruflo process uses this project, remove /);
+    expect(error?.message).toContain(lock);
+    expect(readFileSync(lock, 'utf8')).toBe('');
+  }, 15_000);
+
+  it.skipIf(process.platform !== 'linux')('a lock from an earlier boot says so', async () => {
+    const { root, lock, owner } = await setup();
+    plantLock(lock, JSON.stringify({ ...owner, pid: await deadPid(), boot: '00000000-0000-0000-0000-000000000000' }));
+    await expect(authorizeRead(root)).rejects.toThrow(/policy-state-lock-timeout: lock is held by pid \d+ from an earlier boot/);
+  }, 15_000);
+
+  // The console retries exactly `policy-state-lock-timeout`: a live owner is
+  // ordinary contention and must keep that message.
+  it('a live owner keeps the bare, retryable message', async () => {
+    const { root, lock, owner } = await setup();
+    plantLock(lock, JSON.stringify({ ...owner, pid: livePid() }));
+    const error = await authorizeRead(root).then(() => undefined, (e: unknown) => e as Error);
+    expect(error?.message).toBe('policy-state-lock-timeout');
   }, 15_000);
 });

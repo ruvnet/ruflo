@@ -32,6 +32,7 @@ import {
   fstatSync,
   fsyncSync,
   ftruncateSync,
+  linkSync,
   writeSync,
   lstatSync,
   mkdirSync,
@@ -202,7 +203,6 @@ export async function acquireLock(lockPath: string): Promise<() => void> {
     | (process.platform === 'win32' ? 0 : (fsConstants.O_NOFOLLOW ?? 0));
   while (Date.now() - started < LOCK_WAIT_MS) {
     try {
-      const fd = openSync(lockPath, createFlags, 0o600);
       const ownership = JSON.stringify({
         pid: process.pid,
         acquiredAt: Date.now(),
@@ -212,7 +212,7 @@ export async function acquireLock(lockPath: string): Promise<() => void> {
         boot: BOOT_ID,
         nonce: randomUUID(),
       });
-      try { writeFileSync(fd, ownership); } finally { closeSync(fd); }
+      createLockFile(lockPath, ownership, createFlags);
       return () => {
         try { if (readLockFile(lockPath) === ownership) unlinkSync(lockPath); } catch { /* already released */ }
       };
@@ -242,9 +242,74 @@ export async function acquireLock(lockPath: string): Promise<() => void> {
       await sleep(10);
     }
   }
-  throw new Error(lockOwnerIsDead(lockPath)
-    ? 'policy-state-lock-timeout: dead owner; inspect exact owner of state.lock.reclaim before explicit recovery'
-    : 'policy-state-lock-timeout');
+  if (lockOwnerIsDead(lockPath)) {
+    throw new Error('policy-state-lock-timeout: dead owner; inspect exact owner of state.lock.reclaim before explicit recovery');
+  }
+  // A live, identified owner is ordinary contention and keeps the bare
+  // message: callers (the console's mcp-run) retry exactly that. An owner that
+  // can never be identified is not transient, so say what it is and how to
+  // recover instead of failing every MCP call with no hint.
+  const stuck = unidentifiableLockOwner(lockPath);
+  throw new Error(stuck === undefined
+    ? 'policy-state-lock-timeout'
+    : `policy-state-lock-timeout: ${stuck}; if no ruflo process uses this project, remove ${lockPath}`);
+}
+
+/**
+ * Creates the lock with its owner already inside. Creating the file and then
+ * writing to it left an empty lock whenever the process died in between (a
+ * reboot, SIGKILL, OOM); an empty lock names no owner, can never be reclaimed,
+ * and failed every MCP call with policy-state-lock-timeout. Here the owner is
+ * written to a private temp file that link() publishes atomically: link fails
+ * with EEXIST when the lock exists and never follows a symlink at the target.
+ * Filesystems without hard links, and Windows, keep create-then-write, which
+ * removes its own lock if the write fails.
+ */
+function createLockFile(lockPath: string, ownership: string, createFlags: number): void {
+  if (process.platform !== 'win32') {
+    const temp = `${lockPath}.${process.pid}.${randomUUID()}.acquire`;
+    const fd = openSync(temp, createFlags, 0o600);
+    try { writeFileSync(fd, ownership); } finally { closeSync(fd); }
+    try {
+      linkSync(temp, lockPath);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException)?.code;
+      if (code !== 'EPERM' && code !== 'ENOTSUP' && code !== 'EOPNOTSUPP' && code !== 'ENOSYS') throw error;
+    } finally {
+      try { unlinkSync(temp); } catch { /* already gone */ }
+    }
+  }
+  const fd = openSync(lockPath, createFlags, 0o600);
+  try {
+    writeFileSync(fd, ownership);
+  } catch (error) {
+    try { unlinkSync(lockPath); } catch { /* already gone */ }
+    throw error;
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/** Why the lock's owner can never be confirmed alive or dead from here, or
+ * undefined when it can (a live owner on this boot and PID namespace). */
+function unidentifiableLockOwner(lockPath: string): string | undefined {
+  let read: string | undefined;
+  let ageS = 0;
+  try {
+    ageS = Math.round((Date.now() - lstatSync(lockPath).mtimeMs) / 1000);
+    read = readLockFile(lockPath);
+  } catch { return undefined; }
+  const age = `${ageS}s old`;
+  if (read === undefined) return undefined;
+  if (read.trim() === '') return `lock is empty (its owner died before recording itself), ${age}`;
+  let owner: { pid?: unknown; host?: unknown; pidns?: unknown; boot?: unknown } | null;
+  try { owner = JSON.parse(read); } catch { return `lock owner is unreadable, ${age}`; }
+  if (!owner || typeof owner.pid !== 'number') return `lock names no owner pid, ${age}`;
+  if (owner.host !== hostname()) return `lock is held by pid ${owner.pid} on host ${String(owner.host)}, ${age}`;
+  if (owner.boot !== BOOT_ID) return `lock is held by pid ${owner.pid} from an earlier boot, ${age}`;
+  if (owner.pidns !== PID_NAMESPACE) return `lock is held by pid ${owner.pid} in another PID namespace (a sandbox or container), ${age}`;
+  return undefined;
 }
 
 // #3398: Windows rename over a file another process holds open fails with
