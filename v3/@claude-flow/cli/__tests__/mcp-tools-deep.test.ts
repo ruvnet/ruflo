@@ -72,6 +72,11 @@ const createFsFake = vi.hoisted(() => () => {
     mkdirSync: vi.fn(),
     readdirSync: vi.fn(() => []),
     unlinkSync: vi.fn((p: string) => memStore.delete(p)),
+    // acquireLock publishes its owner record with link(): EEXIST while held.
+    linkSync: vi.fn((from: string, to: string) => {
+      if (memStore.has(to)) throw Object.assign(new Error(`EEXIST: file already exists, link '${from}' -> '${to}'`), { code: 'EEXIST' });
+      memStore.set(to, memStore.get(from) ?? '');
+    }),
     statSync: vi.fn(() => ({ size: 100, isFile: () => true, isDirectory: () => false })),
   };
 });
