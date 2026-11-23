@@ -8,6 +8,7 @@ import { MUTABLE_SOURCES, summaryOf } from '../toasts'
 import { UPDATES_MODES, type UpdatesMode } from '../updates'
 import { button, clip, col, row, rule, section, text, THEME, type Ctx } from './common'
 import { own } from '../data/safe'
+import { DESKTOP_ARTS, type DesktopArt } from '../desktop-art'
 
 /** One setting, whatever it belongs to, so a search, a level and "changed only" filter one list. */
 type Item = { id: string; source: string; title: string; haystack: string; level: Level; changed: boolean; rows: () => RenderElement[] }
@@ -206,6 +207,30 @@ function uiItems(ctx: Ctx): Item[] {
           fieldLabel: 'nav',
           fieldHint: '',
           where: 'the console’s main nav',
+        }),
+    },
+    {
+      id: 'ui-desktop-art',
+      source: 'UI',
+      title: 'Desktop pictures',
+      haystack: `desktop pictures svg vector rich cells graphics animation app editor mobile ${ctx.state.desktopArt}`,
+      level: 'simple',
+      changed: ctx.state.desktopArt !== 'rich',
+      rows: () =>
+        settingRows(ctx, {
+          key: 'ui-desktop-art',
+          title: 'Desktop pictures',
+          description:
+            'where the surface draws vectors (Claude Code Desktop, the editor, the mobile app): rich draws the swarm graph, cost gauge, sparklines and BBS titles as animated vector pictures with hover tooltips; cells draws the terminal’s cell pictures. The terminal is never affected; motion stops with fps 0 and under reduced motion',
+          current: ctx.state.desktopArt,
+          isChanged: ctx.state.desktopArt !== 'rich',
+          choices: DESKTOP_ARTS,
+          defaultText: 'default rich',
+          onChoice: value => ctx.act.desktopArt(value as DesktopArt),
+          fieldKey: 'st-ui-in-desktop-art',
+          fieldLabel: 'desktop pictures',
+          fieldHint: '',
+          where: 'the console’s pictures on Claude Code Desktop',
         }),
     },
     {

@@ -143,6 +143,7 @@ export type Actions = {
   navigator: NavActions
   /** Sets how the main nav spells its tabs (saved). */
   nav: (style: NavStyle) => void
+  /** ADR-546: native vector pictures or the terminal's cells, where the surface draws Svg (saved). */ desktopArt: (mode: 'rich' | 'cells') => void
   /** Sets whether to check for a newer published ruflo-console: ask first, update without asking, or never (saved). */
   updates: (mode: UpdatesMode) => void
   /** Checks now, whatever the daily gate or an off setting says (it still asks before installing, and skips a development checkout). */
@@ -169,6 +170,7 @@ export type Ctx = {
   columns: number
   /** Every picture of this view, by Raster key, already drawn for this frame. */
   pictures: Map<string, Grid>
+  /** ADR-546: this frame's native vector pictures (views/vector-art.ts), drawn interactive where the surface draws Svg. */ vectors?: ReadonlyMap<string, { width: number; height: number; draw: (alt: string) => string | null }>
   act: Actions
   /** True while the page is drawn in cards (views/card.ts): a section header then needs no blank row above it. */
   cards?: boolean
@@ -359,9 +361,12 @@ export function art(ctx: Ctx, grid: Grid | undefined, key: string, alt: string):
   if (grid === undefined) return null
   if (ctx.kit.Raster !== undefined) return ctx.kit.Raster(grid.toRaster(key))
   if (ctx.kit.Svg === undefined) return null
-
   // The words a picture falls back to say what it shows, but "needs a terminal" is not true of a surface that draws it.
   const label = alt.replace(/\s+needs? a terminal(?: that draws pictures)?/g, '').trim() || key
+  const vector = ctx.vectors?.get(key)
+  const rich = vector?.draw(label) ?? null
+  const fit = vector === undefined ? 1 : Math.min(1, (grid.columns * CELL_W) / Math.max(1, vector.width)) // never wider than the cell picture, already fitted to the pane
+  if (vector !== undefined && rich !== null) return ctx.kit.Box({ key: `svg-${key}`, children: [ctx.kit.Svg({ source: rich, alt: label, width: Math.round(vector.width * fit), height: Math.round(vector.height * fit), isInteractive: true })] })
   const source = gridToSvg(grid, label)
 
   return source === null ? null : ctx.kit.Box({ key: `svg-${key}`, children: [ctx.kit.Svg({ source, alt: label, width: grid.columns * CELL_W })] })

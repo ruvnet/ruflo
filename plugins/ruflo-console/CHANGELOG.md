@@ -2,6 +2,11 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.51.0 — 2026-11-22
+- feat: on Claude Code Desktop, the editor and the mobile app (surfaces that draw vectors), the swarm graph, cost gauge, activity and burn sparklines and the BBS look's banner and titles are now native vector pictures, not the terminal's cells written as SVG (ADR-546). Busy agents pulse and traffic runs along their edges, the gauge fills to spend/limit with 50/75/90/100% marks, and the neon sign glows and flickers. Each is drawn interactive in the host's script-less sandboxed frame, so every node, sample and tick has a hover tooltip. They are drawn on Claude Code 2.1.299 and later; an older host keeps the cell pictures, and a vector is never wider than the cell picture it replaces.
+- feat: Settings → UI has a **Desktop pictures** row: `rich` (the default) or `cells`, which brings back the cell pictures. It is saved, and the terminal never reads it. Motion is CSS only: it stops when fps is 0 and under reduced motion, and the plugin's frame loop does no work for it.
+- chore: the vector pictures let data in only escaped, colours only as validated hex attributes, and use one constant stylesheet. They emit no script, link, image, `foreignObject` or external `url()`. Each document is capped at the host's 131072-character limit and falls back to the cell picture past it (tests/vector-pictures.spec.ts, tests/desktop-rich.test.ts).
+
 ## 0.50.3 — 2026-11-22
 - fix: the nav's `auto` style always spells every page's whole name (Missions, MetaHarness, Learning Lab). Before, it fell back to three-letter codes (Msn, Ovr, Wfl) below about 90 columns and to bare icons below about 70, which left the nav unreadable at the widths a dock usually has. A row that does not fit now wraps instead, shared out evenly over its lines so one page is not left alone on the last. The `brief` and `icons` styles are unchanged and still chosen in Settings.
 

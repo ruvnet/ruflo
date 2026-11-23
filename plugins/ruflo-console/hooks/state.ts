@@ -250,8 +250,8 @@ export type State = {
   curveGrewAtMs: number
   /** Kinds of action the person said never to ask about again, with a sample label (saved; Settings forgets them). */
   allowed: Map<string, string>
-  /** The main nav's style, saved across sessions. */
-  nav: NavStyle
+  /** The main nav's style, and (ADR-546) whether a surface that draws Svg gets native vector pictures or the cells: both saved. */
+  nav: NavStyle; desktopArt: 'rich' | 'cells'
   /** Whether to check for a newer published ruflo-console: ask first (the default), update without asking, or never check. Kept in the plugin's store. */
   updates: UpdatesMode
   /** The Toasts setting (ADR-477): which levels draw and which sources are muted. Kept in the plugin's store and mirrored to a file the other plugins read. */
@@ -389,7 +389,7 @@ export function newState(raw: PluginOptions | undefined): State {
     eventFilter: 'all',
     curveGrewAtMs: 0,
     dockColumns: 0,
-    nav: 'auto',
+    nav: 'auto', desktopArt: 'rich',
     updates: 'ask',
     toastPrefs: { mode: 'all', muted: [] },
     toastLog: [],
