@@ -55,7 +55,15 @@ Vitest 4.1.8, `@claude-flow/neural`, run against `src/` directly.
 
 ## SOTA Proof & Witness
 
-See issue/PR for the finalized witness block (computed after the candidate commit exists).
+```
+Session commit:   326687da9b6a442303818249bbd80444a1414cca
+Candidate commit: c1401e5bc63c060929ad7994a5c0b3ef7b2c79ac
+Gist SHA-256 (pre-witness): c1970e1fbc932ab1f4e2ec6a3f95a85b742975688259bfeaee5f54f5eb3ce73e
+Witness stamp:    48c5020b74625b2e4c833eb0d6286a903a576cebdb1be9ad25f41635afe2f936
+```
+Verifier: fetch this file from the branch, replace the Witness block's three dynamic values (Candidate commit, Gist SHA-256, Witness stamp) with the literal text `PENDING`, SHA-256 the result, concatenate with the Session commit above, SHA-256 again — must equal the Witness stamp.
+
+Evaluation receipt identity: the 3-test file `v3/@claude-flow/neural/__tests__/reasoning-bank-contradiction-exclusion.test.ts` at commit `c1401e5`. Flywheel evidence identity: this issue/PR + the independent adversarial critic's reproduction (§6). No Darwin lineage identity (Darwin skipped, §7).
 
 ## Recommended Next Steps
 
