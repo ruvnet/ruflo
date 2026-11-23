@@ -74,6 +74,23 @@ describe('ReasoningBank - contradiction exclusion at retrieval (Dream Cycle 2026
     expect(returnedIds).toContain(highMemory!.memoryId);
   });
 
+  it('retrieve() falls back to brute force when HNSW returns only consolidated memories', async () => {
+    const bank = createReasoningBank({ dedupThreshold: 0.95, enableContradictionDetection: true });
+    const highMemory = await bank.distill(createTestTrajectory(0.95, 'code', 5));
+    const lowMemory = await bank.distill(createTestTrajectory(0.2, 'code', 5));
+    await bank.consolidate();
+
+    // Simulate an HNSW index whose over-fetched hits are all consolidated.
+    const internals = bank as unknown as Record<string, unknown>;
+    internals.agentdb = {};
+    internals.agentdbAvailable = true;
+    internals.searchWithAgentDB = async () => [{ id: lowMemory!.memoryId, similarity: 1 }];
+
+    const returnedIds = (await bank.retrieve(lowMemory!.embedding, 5)).map(r => r.memory.memoryId);
+    expect(returnedIds).not.toContain(lowMemory!.memoryId);
+    expect(returnedIds).toContain(highMemory!.memoryId);
+  });
+
   it('retrieveByContent() must not return a memory detectContradictions() marked consolidated', async () => {
     const bank = createReasoningBank({
       dedupThreshold: 0.95,

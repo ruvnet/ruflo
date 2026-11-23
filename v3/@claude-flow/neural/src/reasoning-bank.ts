@@ -272,7 +272,9 @@ export class ReasoningBank {
         candidates = results
           .map(r => {
             const entry = this.memories.get(r.id);
-            return entry ? { entry, relevance: r.similarity } : null;
+            // detectContradictions() marks the lower-quality side of a
+            // contradicting pair consolidated "to exclude from retrieval" (#5081).
+            return entry && !entry.consolidated ? { entry, relevance: r.similarity } : null;
           })
           .filter((c): c is { entry: MemoryEntry; relevance: number } => c !== null);
         if (candidates.length > 0) usedHnsw = true;
@@ -284,6 +286,7 @@ export class ReasoningBank {
     // Fallback: brute-force search
     if (candidates.length === 0) {
       for (const entry of this.memories.values()) {
+        if (entry.consolidated) continue;
         const relevance = this.cosineSimilarity(queryEmbedding, entry.memory.embedding);
         candidates.push({ entry, relevance });
       }
@@ -294,12 +297,6 @@ export class ReasoningBank {
     // dashboard can surface "you got HNSW" vs "you got O(n) brute-force"
     if (usedHnsw) this.hnswRetrievalCount++;
     else this.bruteForceRetrievalCount++;
-
-    // detectContradictions() marks the lower-quality side of a contradicting
-    // pair `consolidated = true` specifically "to exclude from retrieval" —
-    // enforce that here (both the HNSW and brute-force paths above can
-    // surface a consolidated entry since neither filters on it).
-    candidates = candidates.filter(c => !c.entry.consolidated);
 
     // Apply MMR for diversity
     const results: RetrievalResult[] = [];
