@@ -1443,7 +1443,7 @@ async function checkFederationBreaker(): Promise<HealthCheck> {
         status: 'warn',
         message:
           '@claude-flow/plugin-agent-federation loaded but FederationNodeState export missing — version older than ADR-097 Phase 2',
-        fix: 'Upgrade: npm install @claude-flow/plugin-agent-federation@alpha',
+        fix: 'Upgrade: npm install @claude-flow/plugin-agent-federation@latest',
       };
     }
     return {
@@ -1458,7 +1458,7 @@ async function checkFederationBreaker(): Promise<HealthCheck> {
       status: 'pass',
       message:
         'Federation plugin not installed (optional) — install only if you need cross-installation peering',
-      fix: 'npm install --save @claude-flow/plugin-agent-federation@alpha',
+      fix: 'npm install --save @claude-flow/plugin-agent-federation@latest',
     };
   }
 }
@@ -1674,6 +1674,12 @@ async function checkBuildTools(): Promise<HealthCheck> {
   }
 }
 
+/**
+ * Registry query behind Version Freshness. Releases go to the `latest` dist-tag
+ * (the one the fix advice installs); `alpha` is frozen (ADR-513, #5079).
+ */
+export const VERSION_FRESHNESS_QUERY = 'npm view @claude-flow/cli@latest version';
+
 // Check for stale npx cache (version freshness)
 async function checkVersionFreshness(): Promise<HealthCheck> {
   try {
@@ -1719,10 +1725,9 @@ async function checkVersionFreshness(): Promise<HealthCheck> {
                   process.env.npm_execpath?.includes('npx') ||
                   process.cwd().includes('_npx');
 
-    // Query npm for latest version (using alpha tag since that's what we publish to)
     let latestVersion = currentVersion;
     try {
-      const npmInfo = await runCommand('npm view @claude-flow/cli@alpha version', 5000);
+      const npmInfo = await runCommand(VERSION_FRESHNESS_QUERY, 5000);
       latestVersion = npmInfo.trim();
     } catch {
       // Can't reach npm registry - skip check
