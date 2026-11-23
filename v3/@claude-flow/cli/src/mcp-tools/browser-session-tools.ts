@@ -25,6 +25,7 @@
 import type { MCPTool, MCPToolResult } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { browserUrlError } from './browser-argv.js';
+import { npxIsolationArgs } from '../runtime/npx-isolation.js';
 
 // Pin matches the version in this package's own dependency tree so the npx
 // fallback never downloads a second ruvector. Subcommand surface verified
@@ -45,7 +46,9 @@ async function shell(cmd: string, args: string[], opts: { timeout?: number } = {
   const { promisify } = await import('node:util');
   const run = promisify(execFile);
   try {
-    const { stdout, stderr } = await run(cmd, args, {
+    // npx must not resolve packages from the opened repository (see npx-isolation.ts).
+    const argv = cmd === 'npx' ? [...npxIsolationArgs(), ...args] : args;
+    const { stdout, stderr } = await run(cmd, argv, {
       timeout: opts.timeout ?? 30000,
       encoding: 'utf-8',
     });

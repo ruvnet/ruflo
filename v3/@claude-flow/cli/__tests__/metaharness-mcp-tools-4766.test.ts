@@ -42,18 +42,18 @@ const cases: ScriptCase[] = [
   { name: 'metaharness_threat_model', script: 'threat-model.mjs', reason: harnessMissing },
   { name: 'metaharness_oia_audit', script: 'oia-audit.mjs', input: { dryRun: true }, reason: harnessMissing },
   { name: 'metaharness_audit_list', script: 'audit-list.mjs' },
-  { name: 'metaharness_similarity', script: 'similarity.mjs', input: { aFile: 'a.json', bFile: 'b.json' } },
+  { name: 'metaharness_similarity', script: 'similarity.mjs', input: { aFile: 'package.json', bFile: 'package.json' } },
   {
     name: 'metaharness_drift_from_history', script: 'drift-from-history.mjs',
-    input: { baselineFile: 'baseline.json', dryRun: true }, reason: harnessMissing, exitCode: 3,
+    input: { baselineFile: 'package.json', dryRun: true }, reason: harnessMissing, exitCode: 3,
   },
-  { name: 'metaharness_audit_trend', script: 'audit-trend.mjs', input: { baselineFile: 'a.json', currentFile: 'b.json' } },
+  { name: 'metaharness_audit_trend', script: 'audit-trend.mjs', input: { baselineFile: 'package.json', currentFile: 'package.json' } },
   { name: 'metaharness_evolve', script: 'evolve.mjs', input: { repo: '.', sandbox: 'mock', confirm: true }, reason: darwinMissing },
   { name: 'metaharness_security_bench', script: 'security-bench.mjs', reason: darwinMissing },
-  { name: 'metaharness_bench', script: 'bench.mjs', input: { op: 'verify', suite: 'suite.json' }, reason: darwinMissing },
+  { name: 'metaharness_bench', script: 'bench.mjs', input: { op: 'verify', suite: 'package.json' }, reason: darwinMissing },
   { name: 'metaharness_redblue', script: 'redblue.mjs', input: { subcommand: 'run', mockJudge: true }, reason: 'metaharness-redblue-not-available' },
   { name: 'metaharness_learn', script: 'learn.mjs', input: { run: true }, reason: harnessMissing },
-  { name: 'metaharness_gepa', script: 'gepa.mjs', input: { op: 'validate', path: 'genome.json' }, reason: darwinMissing },
+  { name: 'metaharness_gepa', script: 'gepa.mjs', input: { op: 'validate', path: 'package.json' }, reason: darwinMissing },
 ];
 
 const mockExists = vi.mocked(existsSync);

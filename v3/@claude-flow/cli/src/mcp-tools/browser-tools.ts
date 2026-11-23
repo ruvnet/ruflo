@@ -9,6 +9,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import type { MCPTool, MCPToolResult } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { resolveAgentBrowserLaunch, resolveNpxLaunch } from '../runtime/browser-command.js';
+import { npxIsolationArgs } from '../runtime/npx-isolation.js';
 import { commandArgvError, launchArgsError } from './browser-argv.js';
 import { containedWritePath } from './path-containment.js';
 
@@ -91,7 +92,7 @@ export async function execBrowserCommand(
     const npx = resolveNpxLaunch();
     if (!npx) return browserCommandFailure(Object.assign(new Error('npx not resolvable'), { code: 'ENOENT' }), missing);
     try {
-      result = execFileSync(npx.command, [...npx.argsPrefix, '--yes', 'agent-browser', ...fullArgs], {
+      result = execFileSync(npx.command, [...npx.argsPrefix, ...npxIsolationArgs(), '--yes', 'agent-browser', ...fullArgs], {
         encoding: 'utf-8',
         timeout: 60000,
         windowsHide: true,

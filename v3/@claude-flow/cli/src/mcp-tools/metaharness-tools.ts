@@ -55,6 +55,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { ownPluginDirs } from '../plugins/own-install.js';
+import { containedReadPath, containedWritePath, isLocalCliCall } from './path-containment.js';
 import { runFlywheelWorker } from '../services/harness-flywheel-runtime.js';
 import { benchVerify, gepaOp } from '../metaharness/darwin-lib.js';
 import { evaluatePolicyRequest } from '../services/policy-runtime.js';
@@ -67,6 +68,25 @@ import {
 } from '../services/flywheel-transaction.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * A file path from MCP input that the plugin script reads or writes. Over MCP it
+ * must stay inside the project (see path-containment.ts): the scripts echo a
+ * report they read back, so an outside path would read or overwrite any file.
+ * The local CLI passes its own operator paths through unchanged.
+ */
+function toolFileArg(
+  value: unknown, mode: 'read' | 'write', context: unknown, extensions?: readonly string[],
+): { path?: string; error?: string } {
+  if (value === undefined || value === null || value === '') return {};
+  const raw = String(value);
+  if (isLocalCliCall(context)) return { path: raw };
+  const path = mode === 'write' ? containedWritePath(raw, extensions) : containedReadPath(raw);
+  if (path) return { path };
+  return { error: mode === 'write'
+    ? `output path must be a ${(extensions ?? []).join(' or ')} file inside the project directory (not a symlink, not in .git)`
+    : 'input path must be an existing regular file inside the project directory (not a symlink)' };
+}
 
 /**
  * Walk up from this module to find plugins/ruflo-metaharness/scripts/.
@@ -313,10 +333,14 @@ export const metaharnessTools: MCPTool[] = [
         alertBelow: { type: 'number', description: 'Set tool.alert.triggered when overall < N (used by ADR-151 §3.3 Drift Detection)' },
       },
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
+      const aFile = toolFileArg(input.aFile, 'read', context);
+      const bFile = toolFileArg(input.bFile, 'read', context);
+      const bad = aFile.error ?? bFile.error;
+      if (bad) return { success: false, data: null, error: bad, degraded: false, exitCode: 2 };
       const args: string[] = [];
-      if (input.aFile) args.push('--a', String(input.aFile));
-      if (input.bFile) args.push('--b', String(input.bFile));
+      if (aFile.path) args.push('--a', aFile.path);
+      if (bFile.path) args.push('--b', bFile.path);
       if (input.aKey) args.push('--a-key', String(input.aKey));
       if (input.bKey) args.push('--b-key', String(input.bKey));
       if (input.perDimension === true) args.push('--per-dimension');
@@ -341,12 +365,14 @@ export const metaharnessTools: MCPTool[] = [
         dryRun: { type: 'boolean', description: 'Skip persisting the fresh audit to memory', default: false },
       },
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
+      const baselineFile = toolFileArg(input.baselineFile, 'read', context);
+      if (baselineFile.error) return { success: false, data: null, error: baselineFile.error, degraded: false, exitCode: 2 };
       const args: string[] = [];
       args.push('--path', String(input.path ?? '.'));
       if (input.baselineSince) args.push('--baseline-since', String(input.baselineSince));
       if (input.baselineKey) args.push('--baseline-key', String(input.baselineKey));
-      if (input.baselineFile) args.push('--baseline-file', String(input.baselineFile));
+      if (baselineFile.path) args.push('--baseline-file', baselineFile.path);
       if (input.threshold !== undefined) args.push('--threshold', String(input.threshold));
       if (input.alertOnNewSeverity) args.push('--alert-on-new-severity', String(input.alertOnNewSeverity));
       if (input.dryRun === true) args.push('--dry-run');
@@ -371,12 +397,16 @@ export const metaharnessTools: MCPTool[] = [
       // No required[] — caller picks key OR file inputs. The script
       // emits a graceful degraded payload if neither is supplied.
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
+      const baselineFile = toolFileArg(input.baselineFile, 'read', context);
+      const currentFile = toolFileArg(input.currentFile, 'read', context);
+      const bad = baselineFile.error ?? currentFile.error;
+      if (bad) return { success: false, data: null, error: bad, degraded: false, exitCode: 2 };
       const args: string[] = [];
       if (input.baselineKey) args.push('--baseline-key', String(input.baselineKey));
       if (input.currentKey) args.push('--current-key', String(input.currentKey));
-      if (input.baselineFile) args.push('--baseline', String(input.baselineFile));
-      if (input.currentFile) args.push('--current', String(input.currentFile));
+      if (baselineFile.path) args.push('--baseline', baselineFile.path);
+      if (currentFile.path) args.push('--current', currentFile.path);
       if (input.alertOnWorsening === true) args.push('--alert-on-worsening');
       if (input.alertOnDistanceBelow !== undefined) args.push('--alert-on-distance-below', String(input.alertOnDistanceBelow));
       const r = await runScript('audit-trend.mjs', args);
@@ -483,17 +513,21 @@ export const metaharnessTools: MCPTool[] = [
       },
       required: ['op'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
+      const suite = toolFileArg(input.suite, 'read', context);
+      const out = toolFileArg(input.out, 'write', context, ['.json']);
+      const bad = suite.error ?? out.error;
+      if (bad) return { success: false, data: null, error: bad, degraded: false, exitCode: 2 };
       // ADR-526: verify runs in-process (darwin is a regular dependency);
       // create still goes through the darwin CLI, which owns the scaffold task.
       if (input.op === 'verify') {
-        const inProc = await benchVerify(String(input.suite ?? ''));
+        const inProc = await benchVerify(suite.path ?? '');
         if (inProc) return { success: inProc.exitCode === 0, data: inProc.json, degraded: false, exitCode: inProc.exitCode };
       }
       const args: string[] = ['--op', String(input.op)];
       if (input.repo) args.push('--repo', String(input.repo));
-      if (input.suite) args.push('--suite', String(input.suite));
-      if (input.out) args.push('--out', String(input.out));
+      if (suite.path) args.push('--suite', suite.path);
+      if (out.path) args.push('--out', out.path);
       const r = await runScript('bench.mjs', args);
       return { success: r.success, data: r.json, degraded: r.degraded, exitCode: r.exitCode };
     },
@@ -535,13 +569,19 @@ export const metaharnessTools: MCPTool[] = [
         timeoutMs: { type: 'number', description: 'Subprocess hard timeout (default 120000; mock-judge runs complete in seconds)' },
       },
     },
-    handler: async (input) => {
-      const args: string[] = [String(input.subcommand ?? 'run')];
+    handler: async (input, context) => {
+      const sub = String(input.subcommand ?? 'run');
+      const config = toolFileArg(input.config, 'read', context);
+      const out = toolFileArg(input.out, 'write', context, sub === 'init' ? ['.yaml', '.yml'] : ['.json']);
+      const inPath = toolFileArg(input.in, 'read', context);
+      const bad = config.error ?? out.error ?? inPath.error;
+      if (bad) return { success: false, data: null, error: bad, degraded: false, exitCode: 2 };
+      const args: string[] = [sub];
       // attack family is positional
       if (input.subcommand === 'attack' && input.family) args.push(String(input.family));
-      if (input.config) args.push('--config', String(input.config));
-      if (input.out) args.push('--out', String(input.out));
-      if (input.in) args.push('--in', String(input.in));
+      if (config.path) args.push('--config', config.path);
+      if (out.path) args.push('--out', out.path);
+      if (inPath.path) args.push('--in', inPath.path);
       if (input.tests !== undefined) args.push('--tests', String(input.tests));
       if (input.patch === true) args.push('--patch');
       if (input.mockJudge === true) args.push('--mock-judge');
@@ -611,20 +651,24 @@ export const metaharnessTools: MCPTool[] = [
       },
       required: ['op'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
+      const genomePath = toolFileArg(input.path, 'read', context);
+      const transcript = toolFileArg(input.transcript, 'read', context);
+      const bad = genomePath.error ?? transcript.error;
+      if (bad) return { success: false, data: null, error: bad, degraded: false, exitCode: 2 };
       // ADR-526: GEPA genome ops run in-process; the plugin script is the fallback.
       const inProc = await gepaOp({
         op: String(input.op),
-        path: input.path ? String(input.path) : undefined,
-        transcript: input.transcript ? String(input.transcript) : undefined,
+        path: genomePath.path,
+        transcript: transcript.path,
         ext: input.ext ? String(input.ext) : undefined,
         glob: input.glob ? String(input.glob) : undefined,
         alertOnInvalid: input.alertOnInvalid === true,
       });
       if (inProc) return { success: inProc.exitCode === 0, data: inProc.json, degraded: false, exitCode: inProc.exitCode };
       const args: string[] = ['--op', String(input.op)];
-      if (input.path) args.push('--path', String(input.path));
-      if (input.transcript) args.push('--transcript', String(input.transcript));
+      if (genomePath.path) args.push('--path', genomePath.path);
+      if (transcript.path) args.push('--transcript', transcript.path);
       if (input.ext) args.push('--ext', String(input.ext));
       if (input.glob) args.push('--glob', String(input.glob));
       if (input.alertOnInvalid === true) args.push('--alert-on-invalid');
