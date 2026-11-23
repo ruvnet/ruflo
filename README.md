@@ -1,12 +1,12 @@
 <div align="center">
 
-<a href="https://cognitum.one/ruPro"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
+<a href="https://cognitum.one/rupro?utm_source=github&utm_medium=readme&utm_campaign=ruflo-readme-rupro-neon"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
 
-<a href="https://cognitum.one/rupro"><picture><source media="(max-width: 760px)" srcset="https://raw.githubusercontent.com/ruvnet/ruflo/6f847a38ebc8594c627bd834b967fe0c238a1623/docs/assets/readme/rupro-workspace-mobile.svg"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-workspace.svg" alt="ruPro workspace tour showing project agents, provider terminals, evidence review and business dashboards" width="100%"></picture></a>
+<a href="https://cognitum.one/rupro?utm_source=github&utm_medium=readme&utm_campaign=ruflo-readme-rupro-workspace"><picture><source media="(max-width: 760px)" srcset="https://raw.githubusercontent.com/ruvnet/ruflo/6f847a38ebc8594c627bd834b967fe0c238a1623/docs/assets/readme/rupro-workspace-mobile.svg"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-workspace.svg" alt="ruPro workspace tour showing project agents, provider terminals, evidence review and business dashboards" width="100%"></picture></a>
 
 <p align="center">
-<a href="https://cognitum.one/rupro"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-explore.svg" alt="Explore ruPro" width="300" height="76"></a>
-<a href="https://cognitum.one/#demo=welcome"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/1f421a1dce9634b5dc5960070cd96abaff9aaf08/docs/assets/readme/rupro-demo.svg" alt="Try the interactive demo" width="300" height="76"></a>
+<a href="https://cognitum.one/rupro?utm_source=github&utm_medium=readme&utm_campaign=ruflo-readme-rupro-explore"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/c474dba4b590914a585ac95cd7fed7dd1d49b954/docs/assets/readme/rupro-explore.svg" alt="Explore ruPro" width="300" height="76"></a>
+<a href="https://cognitum.one/?utm_source=github&utm_medium=readme&utm_campaign=ruflo-readme-rupro-demo#demo=welcome"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/1f421a1dce9634b5dc5960070cd96abaff9aaf08/docs/assets/readme/rupro-demo.svg" alt="Try the interactive demo" width="300" height="76"></a>
 </p>
 
 **An agent meta-harness for Claude Code and Codex.**
