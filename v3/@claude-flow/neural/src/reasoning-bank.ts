@@ -272,7 +272,9 @@ export class ReasoningBank {
         candidates = results
           .map(r => {
             const entry = this.memories.get(r.id);
-            return entry ? { entry, relevance: r.similarity } : null;
+            // detectContradictions() marks the lower-quality side of a
+            // contradicting pair consolidated "to exclude from retrieval" (#5081).
+            return entry && !entry.consolidated ? { entry, relevance: r.similarity } : null;
           })
           .filter((c): c is { entry: MemoryEntry; relevance: number } => c !== null);
         if (candidates.length > 0) usedHnsw = true;
@@ -284,6 +286,7 @@ export class ReasoningBank {
     // Fallback: brute-force search
     if (candidates.length === 0) {
       for (const entry of this.memories.values()) {
+        if (entry.consolidated) continue;
         const relevance = this.cosineSimilarity(queryEmbedding, entry.memory.embedding);
         candidates.push({ entry, relevance });
       }
@@ -362,7 +365,8 @@ export class ReasoningBank {
     const results: RetrievalResult[] = [];
 
     const contentLower = content.toLowerCase();
-    const entries = Array.from(this.memories.values());
+    // Same contradiction-exclusion enforcement as retrieve() — see comment there.
+    const entries = Array.from(this.memories.values()).filter(e => !e.consolidated);
 
     // Score by content similarity
     const scored = entries.map(entry => ({
