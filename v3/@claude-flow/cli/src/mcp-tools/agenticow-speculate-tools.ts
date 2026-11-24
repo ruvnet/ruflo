@@ -24,7 +24,7 @@ import type { MCPTool } from './types.js';
 import {
   loadAgenticow,
   degradedResult,
-  resolveMemoryPath,
+  resolveToolMemoryPath,
   openWithLineage,
   manifestFor,
   validateLabel,
@@ -131,11 +131,11 @@ export const agenticowSpeculateTools: MCPTool[] = [
       },
       required: ['basePath', 'candidates'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const api = await loadAgenticow();
       if (!api) return degradedResult('agenticow-not-found');
 
-      const basePath = resolveMemoryPath(String(input.basePath));
+      const basePath = resolveToolMemoryPath(String(input.basePath), context);
       const dimension = input.dimension as number | undefined;
       const scoreBy = (input.scoreBy as string) === 'count' ? 'count' : 'nearest';
       const k = Number.isInteger(input.k) && (input.k as number) > 0 ? (input.k as number) : 1;
@@ -195,7 +195,7 @@ export const agenticowSpeculateTools: MCPTool[] = [
 
       const branchPath = (label: string): string => {
         const explicit = explicitBranchPaths.get(label);
-        if (explicit) return resolveMemoryPath(explicit);
+        if (explicit) return resolveToolMemoryPath(explicit, context);
         return `${basePath}.spec-${safeSegment(label)}.rvf`;
       };
 

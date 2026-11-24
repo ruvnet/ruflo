@@ -18,6 +18,7 @@
 import { existsSync } from 'node:fs';
 import { resolve, isAbsolute } from 'node:path';
 import { getProjectCwd } from './types.js';
+import { containedWritePath, isLocalCliCall } from './path-containment.js';
 
 export const PACKAGE_NAME = 'agenticow';
 
@@ -71,6 +72,23 @@ export function resolveMemoryPath(path: string): string {
   if (!path || typeof path !== 'string') throw new Error('memory path is required');
   if (/\.\.[\\/]|\0/.test(path)) throw new Error('memory path contains disallowed characters');
   return isAbsolute(path) ? path : resolve(getProjectCwd(), path);
+}
+
+/**
+ * Resolve a memory path named in MCP tool input. The agenticow verbs create
+ * and overwrite both `<path>` and its `<path>.agenticow.json` manifest, so a
+ * path from tool input must stay inside the project (real parent directory,
+ * no symlinked or executable target) — same rule as the other file-writing
+ * MCP tools. Only the local CLI acting for the operator may name any path.
+ */
+export function resolveToolMemoryPath(path: string, context?: unknown): string {
+  const resolved = resolveMemoryPath(path);
+  if (isLocalCliCall(context)) return resolved;
+  const target = containedWritePath(resolved);
+  if (!target || !containedWritePath(manifestFor(target))) {
+    throw new Error('memory path must name a regular file inside the project directory');
+  }
+  return target;
 }
 
 /**
