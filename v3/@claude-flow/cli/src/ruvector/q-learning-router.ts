@@ -209,8 +209,21 @@ export class QLearningRouter {
   private stepCount = 0;
   private updateCount = 0;
   private avgTDError = 0;
-  private ruvectorEngine: unknown = null;
-  private useNative = false;
+  /**
+   * Always false: no native-accelerated Q-learning backend exists in the
+   * ruvector ecosystem today. Neither the installed `ruvector` package nor
+   * `@ruvector/core` (not a dependency of this package, and not installed
+   * anywhere reachable from it) exports a `createQLearning`-shaped API, and
+   * `@claude-flow/neural`'s `createQLearning` uses an incompatible
+   * trajectory-batch API (Float32Array states, `update(trajectory)`) versus
+   * this router's string-keyed, per-call `route()`/`update()` API. A prior
+   * dynamic-import probe of that package here was dead code: `route()`/
+   * `update()` never read the resulting engine back, so even a correctly
+   * targeted probe could not have changed any routing decision. Removed
+   * 2026-11-24; see docs/dream-cycle/LEDGER.md (2026-10-29, 2026-11-14,
+   * 2026-11-24) for the research history before reopening this.
+   */
+  private readonly useNative = false;
 
   // Experience replay buffer (circular buffer)
   private replayBuffer: Experience[] = [];
@@ -232,20 +245,11 @@ export class QLearningRouter {
   }
 
   /**
-   * Initialize the router, attempting to load ruvector native module
-   * and restore persisted model if available
+   * Initialize the router: restore a persisted model if available.
+   *
+   * No native-backend probe runs here — see the `useNative` field doc above.
    */
   async initialize(): Promise<void> {
-    try {
-      const ruvector = await import('@ruvector/core');
-      this.ruvectorEngine = (ruvector as any).createQLearning?.(this.config);
-      this.useNative = !!this.ruvectorEngine;
-    } catch {
-      // Fallback to JS implementation
-      this.useNative = false;
-    }
-
-    // Try to load persisted model
     await this.loadModel();
   }
 
