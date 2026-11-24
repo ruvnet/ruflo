@@ -629,11 +629,16 @@ export class CommandParser {
 
   validateFlags(flags: ParsedFlags, command?: Command): string[] {
     const errors: string[] = [];
-    const allOptions = [...this.globalOptions];
-
-    if (command?.options) {
-      allOptions.push(...command.options);
-    }
+    // A command's own option shadows the global one of the same name, as it already does
+    // for parsing and defaults. Checking both rejected every subcommand-specific value:
+    // `process monitor` failed on its own default `--format dashboard`, and
+    // `session export --format yaml` failed the global text/json/table choices.
+    const ownOptions = command?.options ?? [];
+    const ownKeys = new Set(ownOptions.map(opt => this.normalizeKey(opt.name)));
+    const allOptions = [
+      ...this.globalOptions.filter(opt => !ownKeys.has(this.normalizeKey(opt.name))),
+      ...ownOptions,
+    ];
 
     // Check required flags
     for (const opt of allOptions) {
