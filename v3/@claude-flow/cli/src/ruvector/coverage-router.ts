@@ -137,7 +137,8 @@ export class CoverageRouter {
     const files: FileCoverage[] = [];
     let currentFile: Partial<FileCoverage> | null = null;
     const lines = data.split('\n');
-    for (const line of lines) {
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
       if (line.startsWith('SF:')) {
         if (currentFile?.path) files.push(this.finalizeFileCoverage(currentFile));
         currentFile = { path: line.substring(3), uncoveredLines: [], totalLines: 0, coveredLines: 0 };
@@ -146,6 +147,7 @@ export class CoverageRouter {
       else if (line.startsWith('DA:')) { const [lineNum, hits] = line.substring(3).split(',').map(Number); if (currentFile && hits === 0) currentFile.uncoveredLines?.push(lineNum); }
       else if (line === 'end_of_record') { if (currentFile?.path) files.push(this.finalizeFileCoverage(currentFile)); currentFile = null; }
     }
+    if (currentFile?.path) files.push(this.finalizeFileCoverage(currentFile));
     return this.buildReport(files);
   }
 
