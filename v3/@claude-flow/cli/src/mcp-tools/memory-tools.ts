@@ -1439,7 +1439,7 @@ export const memoryTools: MCPTool[] = [
           }
           seenContentHashes.add(contentHash);
 
-          const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+          const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
           let name = memFile.file.replace('.md', '');
           let body = content;
 
@@ -1465,7 +1465,7 @@ export const memoryTools: MCPTool[] = [
             for (const section of sections) {
               const titleMatch = section.match(/^##\s+(.+)/);
               const sectionTitle = titleMatch ? titleMatch[1].trim() : name;
-              const sectionBody = section.replace(/^##\s+.+\n/, '').trim();
+              const sectionBody = section.replace(/^##\s+.+\r?\n/, '').trim();
               if (sectionBody.length < 10) continue;
               // #1884 — sanitize so any dangerous chars in the heading don't
               // produce keys memory_delete will reject.
