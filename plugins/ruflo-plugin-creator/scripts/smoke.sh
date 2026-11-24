@@ -84,7 +84,9 @@ T="$ROOT/templates/mod"
 grep -q '"modules": \["./register.ts"\]' "$T/hooks/hooks.json" && grep -q '"UserPromptSubmit"' "$T/hooks/hooks.json" \
   && grep -q "MY_MOD_ACTIVE" "$T/hooks/classic.cjs" && grep -q "my-mod-status" "$T/hooks/register.ts" \
   && grep -q "claude-code/testing" "$T/tests/register.test.ts" && [[ -f "$ROOT/skills/create-mod/SKILL.md" ]] \
-  && ! grep -qE '\$\[' "$T/hooks/register.ts" && [[ -f "$T/plugin.json.tmpl" && ! -e "$T/.claude-plugin" ]] && ok || bad "templates/mod incomplete"
+  && ! grep -qE '\$\[' "$T/hooks/register.ts" && [[ -f "$T/plugin.json.tmpl" && ! -e "$T/.claude-plugin" ]] \
+  && [[ -f "$T/codex-plugin.json.tmpl" && -f "$T/hooks/codex-hooks.json" && ! -e "$T/.codex-plugin" ]] \
+  && grep -q '"UserPromptSubmit"' "$T/hooks/codex-hooks.json" && ! grep -q '"modules"' "$T/hooks/codex-hooks.json" && ok || bad "templates/mod incomplete"
 
 # M1. The mod (ADR-445): hooks module registered, files within the 500-line rule, no network or process access in the hooks
 step "M1. mod: hooks.json names register.ts, every hook file is present and under 500 lines"

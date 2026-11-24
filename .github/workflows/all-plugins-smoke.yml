@@ -116,6 +116,9 @@ jobs:
           node scripts/build-codex-mod-hooks.mjs --check
           node --test tests/plugins/codex-mod-hooks.test.mjs
 
+      - name: Codex hook manifests for every function-hook plugin (no unknown modules field)
+        run: node --test tests/plugins/codex-swarm-hook-manifest.test.mjs tests/plugins/codex-function-hook-manifests.test.mjs
+
       - name: No mod forwards another mod's status file into model context (ADR-450 T7)
         run: |
           node --test tests/check-status-forwarding.test.mjs

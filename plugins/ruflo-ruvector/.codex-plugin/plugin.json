@@ -1,0 +1,12 @@
+{
+  "name": "ruflo-ruvector",
+  "description": "Self-learning vector database via npx ruvector@0.3.13 — HNSW, adaptive LoRA embeddings, code-graph clustering, exact min-cut, RaBitQ/DiskANN extras, hooks routing, brain/SONA, 118 MCP tools. As a mod (ADR-445): a write guard that keeps secrets out of the vector store and shared brain, /ruvector-mod, and a status file the console shows",
+  "version": "0.4.1",
+  "author": {
+    "name": "ruvnet",
+    "url": "https://github.com/ruvnet"
+  },
+  "homepage": "https://github.com/ruvnet/ruvector",
+  "license": "MIT",
+  "hooks": "./hooks/codex-hooks.json"
+}
