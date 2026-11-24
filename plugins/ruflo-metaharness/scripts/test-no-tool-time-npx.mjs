@@ -288,6 +288,18 @@ else process.exit(2);
     assert(!/"stub":"cwd-redblue"/.test(cwdRb.json?.stdout ?? ''),
       'redblue in the tool\'s cwd node_modules is NOT executed');
     resetTrap();
+    // metaharness (_harness.mjs) also ends in a spawn of the resolved bin,
+    // for every score / genome / mcp-scan / threat-model call — a project
+    // that ships node_modules/metaharness must not get its bin run.
+    const cwdMh = join(isoProject, 'node_modules', 'metaharness');
+    const cwdMhMarker = join(ISO, 'cwd-metaharness-ran');
+    const markerStub = `import { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(cwdMhMarker)}, 'ran');\nconsole.log('{}');\n`;
+    write(join(cwdMh, 'package.json'), JSON.stringify({ name: 'metaharness', version: floorOfPin(METAHARNESS_VERSION_PIN), type: 'module', bin: { metaharness: 'dist/bin.js', harness: 'dist/harness-bin.js' } }));
+    write(join(cwdMh, 'dist', 'bin.js'), markerStub);
+    write(join(cwdMh, 'dist', 'harness-bin.js'), markerStub);
+    run('genome.mjs', ['--path', isoProject, '--format', 'json'], isoEnv, isoScripts, isoProject);
+    assert(!existsSync(cwdMhMarker), 'metaharness in the tool\'s cwd node_modules is NOT executed');
+    resetTrap();
 
     // A cache dir holding package.json but no bin (npm killed by the 180s
     // install timeout, or two first calls racing into the same prefix) must

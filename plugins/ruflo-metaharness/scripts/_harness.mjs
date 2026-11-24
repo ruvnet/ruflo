@@ -75,7 +75,12 @@ let RESOLVED = null;
 function resolveMetaharnessBins() {
   if (RESOLVED) return RESOLVED;
   // (a) already-installed local copy satisfying the pin — free.
-  const localDir = findLocalPackageDir(METAHARNESS_PKG, METAHARNESS_PIN_VERSION);
+  //    fromCwd:false: the resolved bin is SPAWNED for every score / genome /
+  //    mcp-scan / threat-model call, so only ruflo's own install tree counts —
+  //    a node_modules/metaharness shipped by the opened project (or any
+  //    ancestor of the cwd) must never be executed. Falls back to the pinned
+  //    cache install below, same as _darwin.mjs / _redblue.mjs.
+  const localDir = findLocalPackageDir(METAHARNESS_PKG, METAHARNESS_PIN_VERSION, { fromCwd: false });
   if (localDir) {
     const bins = readBinMap(localDir);
     if (bins) return (RESOLVED = { ok: true, bins, source: 'local' });

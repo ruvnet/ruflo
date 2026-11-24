@@ -123,11 +123,9 @@ export function satisfiesTildeRange(version, pinVersion) {
  * `{ fromCwd: false }` (#3366) searches ONLY the ruflo install that owns this
  * plugin. The $CWD walk reaches every ancestor of the tool's working
  * directory, i.e. directories the user's project — or anything above it —
- * controls. That is tolerable for the pre-existing `metaharness` lookup,
- * which this PR does not change, but the two lookups added here (_darwin,
- * _redblue) END IN A SPAWN of the package's bin with MCP-supplied argv, so
- * they stay inside ruflo's own tree and fall back to the pinned cache
- * install instead.
+ * controls. Every lookup that ENDS IN A SPAWN of the package's bin
+ * (_harness, _darwin, _redblue) passes fromCwd:false, so it stays inside
+ * ruflo's own tree and falls back to the pinned cache install instead.
  */
 export function findLocalPackageDir(pkg, pinVersion, { fromCwd = true } = {}) {
   if (process.env.RUFLO_METAHARNESS_SKIP_LOCAL === '1') return null;

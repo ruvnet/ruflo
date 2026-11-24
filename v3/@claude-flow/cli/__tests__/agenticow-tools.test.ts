@@ -14,7 +14,7 @@
  * the load-bearing architectural rule (zero hard runtime dep).
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, statSync, readdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, statSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -43,14 +43,20 @@ try { await import('agenticow'); havePkg = true; } catch { havePkg = false; }
 
 describe('agenticow MCP tools — happy path (real package)', () => {
   let workdir: string;
+  let prevCwd: string | undefined;
   let basePath: string;
 
   beforeAll(() => {
-    workdir = mkdtempSync(join(tmpdir(), 'agenticow-tools-'));
+    workdir = realpathSync(mkdtempSync(join(tmpdir(), 'agenticow-tools-')));
+    // MCP handlers keep memory paths inside the project directory.
+    prevCwd = process.env.CLAUDE_FLOW_CWD;
+    process.env.CLAUDE_FLOW_CWD = workdir;
     basePath = join(workdir, 'base.rvf');
   });
 
   afterAll(() => {
+    if (prevCwd === undefined) delete process.env.CLAUDE_FLOW_CWD;
+    else process.env.CLAUDE_FLOW_CWD = prevCwd;
     try { rmSync(workdir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
 
