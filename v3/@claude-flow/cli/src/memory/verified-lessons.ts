@@ -9,6 +9,7 @@
 
 import { createHash } from 'node:crypto';
 import { emptyStats, holdReason, type HoldReason, type PatternStats } from './verified-guards.js';
+import { redactCommandForStorage } from '../services/command-recording.js';
 
 /** The SONA routing gate (sona-optimizer.ts `SONA_ROUTING_GATE`); a lesson below it never influences routing. */
 export const LESSON_GATE = 0.6;
@@ -74,6 +75,9 @@ const VERIFIER_CONFIG = /^(?:package\.json|vitest\.config\.[^/]+|jest\.config\.[
  */
 export function lessonFile(path: unknown): path is string {
   if (typeof path !== 'string' || !FILE.test(path)) return false;
+  // A token-shaped file name is not an anchor a lesson may name (`ghp_…` is
+  // a valid path segment but a secret shape the screen recognises).
+  if (redactCommandForStorage(path) !== path) return false;
   const segs = path.split('/');
   if (segs.some(s => s === '' || s === '..' || s.startsWith('.'))) return false;
   const base = segs[segs.length - 1]!;
@@ -128,9 +132,9 @@ export function buildLessons(patterns: PatternExport, verified: Record<string, V
   for (const [id, p] of Object.entries(patterns)) {
     const v = verified[id];
     if (!v || !p || !Array.isArray(p.keywords)) continue;
-    const keywords = p.keywords.filter(k => typeof k === 'string' && SAFE_KEYWORD.test(k)).slice(0, 10);
+    const keywords = p.keywords.filter(k => typeof k === 'string' && SAFE_KEYWORD.test(k) && redactCommandForStorage(k) === k).slice(0, 10);
     if (keywords.length === 0 || !AGENT.test(p.agent)) continue;
-    const base = { id: lessonId(id), agent: p.agent, keywords, confidence: Math.round(p.confidence * 1000) / 1000, successes: p.successCount, failures: p.failureCount, evidence: v.evidence };
+    const base = { id: lessonId(id), agent: p.agent, keywords, confidence: Math.round(p.confidence * 1000) / 1000, successes: p.successCount, failures: p.failureCount, evidence: redactCommandForStorage(v.evidence) };
     if (p.failureCount >= CAUTION_MIN_FAILURES && p.failureCount > p.successCount) lessons.push({ ...base, kind: 'caution' });
     else if (p.confidence >= LESSON_GATE) {
       const reason = holdReason(v.stats ?? emptyStats(), p.successCount);

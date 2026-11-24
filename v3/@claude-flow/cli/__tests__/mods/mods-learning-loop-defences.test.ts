@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { register } from '../../../../../plugins/ruflo-mods/hooks/register';
 import { isTestPath, isVerifierConfig, narrows, relativePath, shellTouches } from '../../../../../plugins/ruflo-mods/hooks/loop/taint';
 import { classify } from '../../../../../plugins/ruflo-mods/hooks/loop/verifier';
-import { buildLessons, ingestVerifiedOutcomes, lessonId, parseRecord, type SonaLike } from '../../src/memory/verified-outcomes.js';
+import { buildLessons, ingestVerifiedOutcomes, lessonId, parseRecord, readLedger, type SonaLike } from '../../src/memory/verified-outcomes.js';
 import { DEFAULT_LOOP_CONFIG, holdReason, parseLoopConfig, type LoopConfig } from '../../src/memory/verified-guards.js';
 import { pickCheck, type ReverifyCheck, type ReverifyRunner } from '../../src/memory/verified-reverify.js';
 import { loadMod, memoryWorld, type World } from './harness';
@@ -170,6 +170,19 @@ describe('CLI ingest defences', () => {
     expect(parseRecord(rec('vt-1', { taint: ['edited-tests', 'bogus', 'edited-tests', 7] }))!.taint).toEqual(['edited-tests']);
     expect(parseRecord(rec('vt-2', { outcome: 'verified-failure', verifier: { kind: 'test', command: 'npm test', passed: false }, taint: ['edited-tests'] }))!.taint).toEqual([]);
     expect(parseRecord(rec('vt-3', { taint: undefined, session: 'bad session!' }))).toMatchObject({ taint: [], session: null });
+  });
+
+  it('screens legacy task, verifier evidence and ledger evidence for secret shapes (#5067)', () => {
+    const token = 'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ab';
+    expect(parseRecord(rec('vt-1', { task: `fix ${token}` }))).toBeNull();
+
+    const parsed = parseRecord(rec('vt-2', { verifier: { kind: 'test', command: `npm test -- --token=${token}`, passed: true } }));
+    expect(parsed!.verifier!.command).not.toContain(token);
+    expect(parsed!.verifier!.command).toContain('[redacted]');
+
+    const ledger = readLedger(JSON.stringify({ version: 1, ids: [], patterns: { k: { evidence: `npm test -- --token=${token}`, at: 1 } } }));
+    expect(ledger.patterns.k!.evidence).not.toContain(token);
+    expect(ledger.patterns.k!.evidence).toContain('[redacted]');
   });
 
   it('counts a tainted success and never sends it to SONA (§2.2)', async () => {

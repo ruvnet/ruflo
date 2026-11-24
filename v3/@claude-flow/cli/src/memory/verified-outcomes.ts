@@ -38,6 +38,7 @@ import { dirname, join } from 'node:path';
 import { addOutcome, blockedTaints, emptyStats, parseStats, parseTaint, readLoopConfig, type LoopConfig, type PatternStats, type Taint } from './verified-guards.js';
 import { gitWorktreeRunner, ReverifySession, type ReverifyRunner } from './verified-reverify.js';
 import { addFiles, buildLessons, parseFileCounts, recordFiles, type LessonsFile, type PatternExport } from './verified-lessons.js';
+import { redactCommandForStorage } from '../services/command-recording.js';
 
 
 /** The recorder's task text for a prompt that carried a secret shape (ruflo-mods hooks/loop/record.ts). */
@@ -160,13 +161,15 @@ export function parseRecord(line: string): VerifiedRecord | null {
   if (!OUTCOMES.includes(r.outcome as Outcome)) return null;
   const agent = typeof r.agent === 'string' && AGENT.test(r.agent) ? r.agent : 'coder';
   const task = text(r.task, 300);
-  if (!task) return null;
+  // The mod screens task text before it writes; a legacy or hostile record is
+  // screened again here so no secret shape reaches SONA's keyword store.
+  if (!task || redactCommandForStorage(task) !== task) return null;
 
   let verifier: VerifiedRecord['verifier'] = null;
   if (r.verifier && typeof r.verifier === 'object') {
     const v = r.verifier as Record<string, unknown>;
     if (KINDS.includes(v.kind as VerifierKind) && typeof v.passed === 'boolean') {
-      verifier = { kind: v.kind as VerifierKind, command: text(v.command, 80), passed: v.passed };
+      verifier = { kind: v.kind as VerifierKind, command: redactCommandForStorage(text(v.command, 80)), passed: v.passed };
     }
   }
   // A verified outcome must carry the verifier that decided it, and agree with it.
@@ -201,14 +204,14 @@ export function readLedger(raw: string | null): IngestLedger {
     const patterns: IngestLedger['patterns'] = {};
     for (const [k, v] of Object.entries(j.patterns && typeof j.patterns === 'object' ? j.patterns : {})) {
       if (k === '__proto__' || typeof k !== 'string' || k.length > 400 || !v || typeof v !== 'object') continue;
-      patterns[k] = { evidence: text((v as { evidence?: unknown }).evidence, 80), at: num((v as { at?: unknown }).at), stats: parseStats((v as { stats?: unknown }).stats), files: parseFileCounts((v as { files?: unknown }).files) };
+      patterns[k] = { evidence: redactCommandForStorage(text((v as { evidence?: unknown }).evidence, 80)), at: num((v as { at?: unknown }).at), stats: parseStats((v as { stats?: unknown }).stats), files: parseFileCounts((v as { files?: unknown }).files) };
     }
     const rv = (j.reverify && typeof j.reverify === 'object' ? j.reverify : {}) as { cursor?: unknown; log?: unknown };
     const STATUS = ['pass', 'fail', 'timeout', 'error'];
     const log: ReverifyLogEntry[] = (Array.isArray(rv.log) ? rv.log : [])
       .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object' && typeof (e as { id?: unknown }).id === 'string' && ID.test((e as { id: string }).id) && STATUS.includes((e as { status?: unknown }).status as string))
       .slice(-MAX_REVERIFY_LOG)
-      .map(e => ({ id: e.id as string, check: typeof e.check === 'string' ? text(e.check, 40) : null, commit: typeof e.commit === 'string' && /^[0-9a-f]{40,64}$/.test(e.commit) ? e.commit : null, status: e.status as ReverifyLogEntry['status'], at: num(e.at) }));
+      .map(e => ({ id: e.id as string, check: typeof e.check === 'string' ? redactCommandForStorage(text(e.check, 40)) : null, commit: typeof e.commit === 'string' && /^[0-9a-f]{40,64}$/.test(e.commit) ? e.commit : null, status: e.status as ReverifyLogEntry['status'], at: num(e.at) }));
     return {
       version: 1,
       ids: j.ids.filter((id): id is string => typeof id === 'string' && ID.test(id)).slice(-MAX_LEDGER_IDS),
