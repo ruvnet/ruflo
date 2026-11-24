@@ -4,10 +4,17 @@
  * Tests for the Q-Learning based task routing system.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { QLearningRouter, createQLearningRouter, type RouteDecision } from '../../src/ruvector/q-learning-router';
 
-// Mock the @ruvector/core module
+// Mock the @ruvector/core module. NOTE (2026-11-24): vitest.config.ts's
+// `externalize-optional-deps` plugin marks every `@ruvector/*` specifier
+// external, so this mock never actually intercepts the dynamic import() in
+// q-learning-router.ts -- the real (always-failing, package not installed)
+// Node resolution runs instead. Kept for documentation/back-compat with
+// `useNative` assertions below; do not rely on it for call-count spying (see
+// the static source-guard test instead, which does discriminate).
 vi.mock('@ruvector/core', () => ({
   createQLearning: vi.fn(() => null),
 }));
@@ -58,6 +65,41 @@ describe('QLearningRouter', () => {
       await router.initialize();
       const stats = router.getStats();
       expect(stats.useNative).toBe(0);
+    });
+
+    // 2026-11-24 dream-cycle finding: initialize() previously probed
+    // `@ruvector/core` for a native Q-learning engine, but route()/update()
+    // never read the result back — the probe was dead state regardless of
+    // which package it targeted (confirmed: neither `@ruvector/core` nor the
+    // installed `ruvector` package exports `createQLearning`, and
+    // `@claude-flow/neural`'s `createQLearning` has an incompatible
+    // trajectory-batch API). The probe has been removed as unreachable dead
+    // code.
+    //
+    // This is a static source guard, not a runtime mock-call-count test: see
+    // the vi.mock note above for why a runtime spy can't discriminate here
+    // (the module is externalized, so the mock never intercepts the dynamic
+    // import). Baseline source contains the literal specifier; candidate
+    // does not.
+    it('should not dynamically import @ruvector/core (dead probe removed)', () => {
+      const source = readFileSync(
+        new URL('../../src/ruvector/q-learning-router.ts', import.meta.url),
+        'utf-8',
+      );
+      // Matches the specific dead call pattern, not the explanatory comment
+      // text above (which legitimately names the package for context).
+      expect(source).not.toMatch(/import\(\s*['"]@ruvector\/core['"]\s*\)/);
+    });
+
+    it('should leave route()/update() behavior unaffected by initialize()', async () => {
+      await router.initialize();
+      router.update('control task', 'coder', 7.5);
+      const decision = router.route('control task', false);
+      expect(decision.route).toBe('coder');
+      expect(decision.qValues.some(v => v > 0)).toBe(true);
+      // useNative can never be a meaningful signal: nothing in route()/update()
+      // branches on it, so it stays a constant, documented 0.
+      expect(router.getStats().useNative).toBe(0);
     });
   });
 
