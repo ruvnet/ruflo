@@ -2681,6 +2681,11 @@ Claude Code pipes JSON session data via **stdin** to the statusline script after
 |----------|--------|---------|
 | `RUFLO_STATUSLINE_COST_SYMBOL` | Overrides the leading `$`. Set to an empty string to show the number alone. | `RUFLO_STATUSLINE_COST_SYMBOL=⚡` → `⚡1.30` |
 | `RUFLO_STATUSLINE_HIDE_COST` | `1`/`true`/`yes`/`on` removes the segment entirely. | `RUFLO_STATUSLINE_HIDE_COST=1` |
+| `RUFLO_STATUSLINE_ENERGY_CSV` | Path to the [CLEER](https://cleerdash.sustainableaigroup.com/) dashboard CSV (`data/v1/cleer-dashboard-data.csv`). Shows the session as an energy and carbon estimate instead of dollars. Falls back to the cost display for models CLEER does not list. | `⚡ ~44-66 Wh · 30-45 gCO₂e` |
+| `RUFLO_STATUSLINE_GRID_G_PER_KWH` | Grid carbon intensity in gCO₂e/kWh. Unset uses CLEER's own (640, on-site gas). | `RUFLO_STATUSLINE_GRID_G_PER_KWH=287` |
+| `RUFLO_STATUSLINE_ENERGY_CARBON` | `0`/`false`/`no`/`off` shows energy only. | `⚡ ~44-66 Wh` |
+
+The energy estimate is session cost × CLEER's Wh per dollar for the model's agentic workload; the range is CLEER's ±1 SD, and `~` means a newer Claude version is estimated from the closest same-family row. It is an estimate from published methodology, not a measurement: Claude models are estimated through open-model proxies, and long-context sessions may use more energy than shown. CLEER data is CC BY-NC 4.0, so it is not bundled; download the CSV from the [CLEER repository](https://github.com/sustainableaigroup/CLEER) and point the variable at it.
 
 Set them in the `env` block of `.claude/settings.json` — Claude Code applies it to every session and to the statusline subprocess, and unlike hand-editing the helper it survives `npx ruflo@latest init --update`:
 

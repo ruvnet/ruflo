@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Statusline energy and carbon estimate (opt-in): `RUFLO_STATUSLINE_ENERGY_CSV` points at the CLEER dashboard CSV and replaces the cost segment with `⚡ ~44-66 Wh · 30-45 gCO₂e` (session cost × CLEER's agentic Wh per dollar, ±1 SD). Matches any model CLEER lists; newer Claude versions use the closest same-family row, marked `~`. `RUFLO_STATUSLINE_GRID_G_PER_KWH` overrides the grid intensity, `RUFLO_STATUSLINE_ENERGY_CARBON=0` shows energy only. Unset, the display is unchanged.
+
 ### Security
 - `@claude-flow/plugin-agent-federation`: `signatureMode` defaults to `require-jcs`. A legacy-v1 signature covers only `id` and `type`, so `payload`, `targetNodeId` and `sessionId` went unsigned (#4748). **Breaking:** a peer that does not advertise `ruflo-signature-jcs-v1` (an older release, or one joined by endpoint without a verified manifest) can no longer exchange heartbeat or status messages. Set `signatureMode: 'prefer-jcs'` to allow legacy-v1 for those two types again.
 
