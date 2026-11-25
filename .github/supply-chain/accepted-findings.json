@@ -32,16 +32,6 @@
     },
     {
       "package": "v3/@claude-flow/browser",
-      "depName": "vitest",
-      "severity": "critical",
-      "via": ["GHSA-5xrq-8626-4rwp"],
-      "tracking": "ruflo#2268 — Vitest <4.1.0 UI server arbitrary-file-read/exec (CWE-862, CVSS 9.8). vitest is a devDependency only — never in the published tarball, never in the runtime path. The advisory's exploit requires the Vitest UI server (vitest --ui) to be listening, which only happens during interactive local test development. CI (--run) and production install (--omit=dev) never activate the UI server. Spec was already bumped to ^4.1.0 in v3/@claude-flow/browser/package.json on 2026-06-02 (release/3.10.34); the standalone-publish package-lock.json carries workspace:* refs that npm cannot resolve in isolation, so the lockfile refresh has to wait until the next workspace-coordinated rebuild. Tracked separately so this entry expires the moment that rebuild lands.",
-      "trackingIssue": "https://github.com/ruvnet/ruflo/issues/2268",
-      "expiresAt": "2026-09-02",
-      "rationale": "devDependency-only + exploit requires `vitest --ui` which is local-dev only. Spec already requires ^4.1.0; only the standalone package-lock graph hasn't refreshed (workspace:* protocol limitation on raw `npm install`). Zero production / CI exposure. Re-audit and remove this entry the next time the browser's package-lock.json is regenerated."
-    },
-    {
-      "package": "v3/@claude-flow/browser",
       "depName": "zod",
       "severity": "high",
       "via": ["GHSA-mrhx-c7xc-m3w5"],
