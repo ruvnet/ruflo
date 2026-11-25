@@ -445,13 +445,40 @@ export class AttentionCoordinator extends EventEmitter {
     // Multi-head attention computation
     const headOutputs: number[][] = [];
 
+    // computeAttentionScore's `head` parameter is never read in its body, so
+    // every head's score for a given (i, j) pair is byte-identical — the
+    // numHeads-iteration outer loop below previously recomputed the same
+    // O(n^2) cosine-similarity matrix numHeads times for a result that's
+    // mathematically a no-op average of numHeads identical copies. Memoize
+    // each pair's score once per call (not across calls — fresh typed arrays
+    // per invocation, since inputs are fixed for the duration of this
+    // synchronous computation) and reuse it for every head, preserving the
+    // exact original summation/division arithmetic byte-for-byte.
+    //
+    // A string-keyed Map (`${i},${j}`) was tried first and measured SLOWER
+    // than the original 8x-redundant loop at n>=400: per-pair template-
+    // string allocation + hashing cost more than computeAttentionScore's own
+    // cheap O(headDim) cosine loop, since getOrCreateEmbedding() is already
+    // memoized (2026-10-30 fix). Flat index-addressed typed arrays avoid any
+    // string allocation or hashing, so the cache itself is cheaper than the
+    // work it replaces.
+    const pairScoreCache = new Float64Array(n * n);
+    const pairScoreSeen = new Uint8Array(n * n);
+    const getScore = (i: number, j: number): number => {
+      const idx = i * n + j;
+      if (!pairScoreSeen[idx]) {
+        pairScoreCache[idx] = this.computeAttentionScore(agentOutputs[i], agentOutputs[j]);
+        pairScoreSeen[idx] = 1;
+      }
+      return pairScoreCache[idx];
+    };
+
     for (let h = 0; h < numHeads; h++) {
       const headWeights = new Array(n).fill(0);
 
       for (let i = 0; i < n; i++) {
         for (let j = 0; j < n; j++) {
-          const score = this.computeAttentionScore(agentOutputs[i], agentOutputs[j], h);
-          headWeights[i] += score;
+          headWeights[i] += getScore(i, j);
         }
         headWeights[i] /= n;
       }
