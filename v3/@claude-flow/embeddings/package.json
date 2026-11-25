@@ -17,7 +17,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.js",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [
