@@ -42,7 +42,7 @@ Vitest 4.1.8, `@claude-flow/swarm`, run directly against `src/` (package has no 
 
 ## Evaluation
 
-7 new tests (2 discriminating via call-count/pair-uniqueness spies, 5 controls including a hand-computed ground-truth comparison and cross-mechanism sanity checks). Stash-isolated baseline: the 2 discriminating tests fail exactly as predicted (200 calls vs expected 25 at n=5; 648 pairs vs expected 81 at n=9 — i.e., exactly 8x over-count), the 5 controls pass vacuously either way. Candidate: 7/7 new, full `@claude-flow/swarm` suite 389/389 (382 pre-existing + 7 new), 0 regressions. `tsc --noEmit -p .`: 0 errors, both before and after. `harness mcp-scan .`: MEDIUM (3 findings, 0 high) — byte-identical to every recent night's baseline (candidate touches no `.claude/settings.json` or dependency manifest).
+7 new tests (2 discriminating via call-count/pair-uniqueness spies, 5 controls including a hand-computed ground-truth comparison and cross-mechanism sanity checks). Stash-isolated baseline: the 2 discriminating tests fail exactly as predicted (200 calls vs expected 25 at n=5; 648 pairs vs expected 81 at n=9 — i.e., exactly 8x over-count), the 5 controls pass vacuously either way. Candidate: 7/7 new, full `@claude-flow/swarm` suite 389/389 (382 pre-existing + 7 new), 0 regressions. `tsc --noEmit -p .`: 0 errors, both before and after. `harness mcp-scan .`: MEDIUM (3 findings, 0 high) — byte-identical to every recent night's baseline (candidate touches no `.claude/settings.json` or dependency manifest). Independently reproduced by a fresh-context adversarial critic (own stash/pop cycle, own throwaway probe): n=400 baseline median 256.4ms → candidate median 40.0ms (~6.4x), cross-validating this session's own 6.2x at the same n. Verdict: **CONFIRMED**, no blocking issues; one disclosed non-blocking caveat (the string-keyed-Map-is-slower claim above is plausible but was not independently re-run by the critic for lack of budget).
 
 ## Darwin Results
 
@@ -50,7 +50,15 @@ Vitest 4.1.8, `@claude-flow/swarm`, run directly against `src/` (package has no 
 
 ## SOTA Proof & Witness
 
-See the issue/PR for the full witness block (session commit, candidate commit, gist SHA-256, witness stamp) — computed after this file is finalized, per STEP 16.
+```
+Session commit:   f8a62a5f0ea4fa83b9fa7f5dc10acfe9ce0e8876
+Candidate commit: 07ce6dbf1b6cc38265ef0586ed692835577690f0
+Gist SHA-256 (pre-witness): c2ec634dc50819187b0ee1895157d6e67321934799ac6e8d9ffae8ee2c82ea20
+Witness stamp:    ee0d1892be90e8d3ba60647ae232ca463705eaae8ac48ac75c9f5f1f3e259a22
+```
+Verifier: fetch this file from the branch, replace only the Gist SHA-256 and Witness stamp fields above with the literal text `PENDING` (Session/Candidate commit stay as-is — they were already fixed at hash time), SHA-256 the result, concatenate that hash with the Session commit value, SHA-256 again — must equal the Witness stamp.
+
+Evaluation receipt identity: `v3/@claude-flow/swarm/__tests__/attention-coordinator-multihead-memoization.test.ts` at the candidate commit. Flywheel evidence identity: issue #5112 + this gist + the independent adversarial critique described in the Evaluation section above. No Darwin lineage (skipped, binary guard).
 
 ## Recommended Next Steps
 
