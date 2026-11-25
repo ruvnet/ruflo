@@ -91,7 +91,7 @@ function loadConfig(cwd: string): Record<string, unknown> | null {
 export const startAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const daemon = ctx.flags.daemon as boolean;
   const port = (ctx.flags.port as number) || DEFAULT_PORT;
-  const topology = (ctx.flags.topology as string) || DEFAULT_TOPOLOGY;
+  const topology = ctx.flags.topology as string | undefined;
   const skipMcp = ctx.flags.skipMcp as boolean;
   const cwd = ctx.cwd;
 
