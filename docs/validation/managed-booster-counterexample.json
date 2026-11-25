@@ -1,0 +1,79 @@
+{
+  "scope": "Actual observed failure, pinned Agent Booster0.2.2; preserved unchanged",
+  "dependencyReceipt": {
+    "version": "0.2.2",
+    "lockSha256": "68f7e1a37d036f4e577b097ef0744ff815225d644f7774e61e686d0eb9c449be",
+    "engineFiles": {
+      "node_modules/agent-booster/package.json": "4cb8da27b8384868db4c5275ec38cc03a4155ca26f531113e39a639340ddb7d7",
+      "node_modules/agent-booster/wasm/agent_booster_wasm_bg.wasm": "5b1666ad952329e9b586e5e3775f39c3746fef691d3f77bf753cc7e92ce2502c",
+      "node_modules/agent-booster/wasm/package.json": "791c9d8ec9710308709f2a0c384c918e0db0fd54fd6f4f52fcd1cdbf874a1c95"
+    }
+  },
+  "task": {
+    "id": "preserve-helper",
+    "code": "function twice(x){return x*2;} function solve(x){return twice(x)+1;}",
+    "edit": "Keep the twice helper and change solve to add 3 after doubling.",
+    "language": "javascript",
+    "cases": [
+      [
+        [
+          2
+        ],
+        7
+      ],
+      [
+        [
+          0
+        ],
+        3
+      ],
+      [
+        [
+          -2
+        ],
+        -1
+      ]
+    ],
+    "referenceCode": "function twice(x){return x*2;} function solve(x){return twice(x)+3;}"
+  },
+  "row": {
+    "task": "preserve-helper",
+    "providerCostUSD": 0.0006336,
+    "directPassed": true,
+    "boosterPassed": false,
+    "providerReceipt": {
+      "generationId": "gen-1792896622-JblMYquFJK1DDBpJHpoM",
+      "provider": "Moonshot AI",
+      "model": "moonshotai/kimi-k3.1-pro",
+      "usage": {
+        "cost": 0.0006336,
+        "prompt_tokens": 150,
+        "completion_tokens": 34,
+        "total_tokens": 184,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "audio_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00064,
+          "upstream_inference_prompt_cost": 0.0003,
+          "upstream_inference_completions_cost": 0.00034
+        }
+      }
+    },
+    "requestDigest": "cd35fe3c4da13c14c369eed3f6a35de4bd0bf1470a267d114022c7577b4f35ea",
+    "generationHash": "0eae39877f09ef851e8cfd978d3f4bf83316daccbbdc0da1d08e9ae2efe33c73",
+    "candidateCode": "function twice(x){return x*2;} function solve(x){return twice(x)+3;}",
+    "boosterAdmitted": true,
+    "boosterConfidence": 0.5481485724449158,
+    "boosterStrategy": "fuzzy_replace",
+    "boosterLatencyMs": 122.06146000000001,
+    "boosterCode": "function twice(x){return x*2;} function solve(x){return twice(x)+3;} function solve(x){return twice(x)+1;}",
+    "latencyMs": 3706
+  }
+}
