@@ -636,8 +636,8 @@ function extractKeyTerms(text: string): string[] {
   const terms: string[] = [];
   const termPatterns = [
     /\$[\d,]+/g,              // Dollar amounts
-    /\d+\s*(days?|months?|years?)/gi,  // Time periods
-    /\d+%/g,                  // Percentages
+    /(?<!\d)\d+\s*(days?|months?|years?)/gi,  // Time periods; (?<!\d) keeps a long digit run linear
+    /(?<!\d)\d+%/g,           // Percentages
     /"[^"]+"/g,               // Quoted terms
   ];
 

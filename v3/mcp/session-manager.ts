@@ -15,6 +15,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { randomUUID } from 'crypto';
 import {
   MCPSession,
   SessionState,
@@ -393,7 +394,9 @@ export class SessionManager extends EventEmitter {
    * Generate a unique session ID
    */
   private generateSessionId(): string {
-    return `session-${++this.sessionCounter}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    // Same fix as @claude-flow/mcp: timestamp + 6 base36 chars of Math.random()
+    // was guessable, and the session id is the only handle on the session.
+    return `session-${++this.sessionCounter}-${randomUUID()}`;
   }
 
   /**

@@ -42,7 +42,10 @@ export interface ChannelScanResult {
   stats: { messageLength: number; scanTimeMs: number };
 }
 
-const ROLE_SHIFT_RE = /(^|\n)\s*(system|assistant|user|developer)\s*:\s*/gi;
+// `[^\S\n]*` (whitespace except newline) instead of `\s*`: with `\s*`, every
+// newline in a run of N newlines started a scan across the rest of the run,
+// which made the scan quadratic (CodeQL js/polynomial-redos).
+const ROLE_SHIFT_RE = /(^|\n)[^\S\n]*(system|assistant|user|developer)\s*:\s*/gi;
 const BASE64_RE = /\b[A-Za-z0-9+/]{80,}={0,2}/g;
 const HEX_RE = /\b(?:0x)?[a-f0-9]{60,}\b/gi;
 // eslint-disable-next-line no-misleading-character-class
@@ -81,7 +84,8 @@ export function scanChannelMessage(
     let seen = 0;
     while ((m = ROLE_SHIFT_RE.exec(message)) !== null) {
       seen++;
-      if (seen === 1 && m.index === 0) continue;
+      // Leading blank lines still count as the preamble position.
+      if (seen === 1 && message.slice(0, m.index).trim() === '') continue;
       findings.push({
         kind: 'role-shift',
         severity: 'high',
