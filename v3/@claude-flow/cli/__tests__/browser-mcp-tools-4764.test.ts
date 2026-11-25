@@ -1,6 +1,8 @@
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Ajv from 'ajv';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { browserTools } from '../src/mcp-tools/browser-tools.js';
 import { browserSessionTools } from '../src/mcp-tools/browser-session-tools.js';
 import type { MCPToolResult } from '../src/mcp-tools/types.js';
@@ -38,6 +40,20 @@ vi.mock('node:fs/promises', async (importOriginal) => ({
 }));
 
 const ajv = new Ajv();
+
+// rvf paths from tool input must be inside the project, so the session tests
+// run in a temporary project that holds mock-sessions/<session>.rvf.
+const previousCwd = process.cwd();
+const projectRoot = realpathSync(mkdtempSync(join(tmpdir(), 'ruflo-4764-')));
+beforeAll(() => {
+  mkdirSync(join(projectRoot, 'mock-sessions'));
+  writeFileSync(join(projectRoot, 'mock-sessions', 'mock-session-4764.rvf'), '');
+  process.chdir(projectRoot);
+});
+afterAll(() => {
+  process.chdir(previousCwd);
+  rmSync(projectRoot, { recursive: true, force: true });
+});
 const session = 'mock-session-4764';
 const url = 'https://example.invalid/';
 const browserExec = driver.childProcess.execFileSync;
@@ -177,7 +193,7 @@ describe.each(browserCases)('$name', ({ name, input, required, invalidField, arg
 describe('browser_session_record', () => {
   const name = 'browser_session_record';
   const input = { url, task: 'Read test page', session, rvf_dir: 'mock-sessions' };
-  const rvfPath = join(input.rvf_dir, session + '.rvf');
+  const rvfPath = join(projectRoot, input.rvf_dir, session + '.rvf');
 
   it('validates the required URL and task in the advertised schema', () => {
     checkRequiredStrings(name, input, ['url', 'task']);
