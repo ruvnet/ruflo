@@ -691,5 +691,9 @@ step "48. #4711 a failed CLI read is an error, and health warms an npx CLI once 
 node "$ROOT/scripts/test-cli-failure-4711.mjs" >/dev/null 2>&1 \
   && ok || bad "test-cli-failure-4711-failed"
 
+step "49. #5121 a Fable session is priced at the fable rates, not \$0"
+node "$ROOT/scripts/test-fable-pricing-5121.mjs" >/dev/null 2>&1 \
+  && ok || bad "test-fable-pricing-5121-failed"
+
 printf "\n%s passed, %s failed\n" "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]] || exit 1
