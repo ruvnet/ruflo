@@ -59,7 +59,7 @@ function main() {
   console.log(`|---|---:|`);
   console.log(`| Conversations tracked | ${records.length} |`);
   console.log(`| **Total cost (all)** | **${fmtUsd(total)}** |`);
-  for (const t of ['haiku', 'sonnet', 'opus', 'unknown']) {
+  for (const t of ['haiku', 'sonnet', 'opus', 'fable', 'unknown']) {
     if (byTier[t] > 0) console.log(`| Tier ${t} | ${fmtUsd(byTier[t])} |`);
   }
   console.log('');

@@ -26,15 +26,17 @@ export const PRICING = {
   haiku:  tierOf('claude-haiku-4-5'),
   sonnet: tierOf('claude-sonnet-5-5'),
   opus:   tierOf('claude-opus-5-5'),
+  fable:  tierOf('claude-fable-5-1'),
 };
 
-/** Map a model id to one of `haiku | sonnet | opus | unknown`. */
+/** Map a model id to one of `haiku | sonnet | opus | fable | unknown`. */
 export function modelTier(model) {
   if (!model) return 'unknown';
   const m = String(model).toLowerCase();
   if (m.includes('haiku')) return 'haiku';
   if (m.includes('sonnet')) return 'sonnet';
   if (m.includes('opus')) return 'opus';
+  if (m.includes('fable')) return 'fable';
   return 'unknown';
 }
 

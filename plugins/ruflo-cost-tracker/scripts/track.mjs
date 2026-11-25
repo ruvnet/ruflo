@@ -46,7 +46,7 @@ function summarizeSession(jsonlPath) {
   const text = readFileSync(jsonlPath, 'utf-8');
   const lines = text.split('\n').filter(Boolean);
   const byModel = {};
-  const byTier = { haiku: 0, sonnet: 0, opus: 0, unknown: 0 };
+  const byTier = { haiku: 0, sonnet: 0, opus: 0, fable: 0, unknown: 0 };
   let messageCount = 0, totalCost = 0;
   let firstTs = null, lastTs = null;
   let sessionId = null, cwd = null;
