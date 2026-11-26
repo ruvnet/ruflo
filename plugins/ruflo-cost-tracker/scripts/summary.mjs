@@ -11,7 +11,7 @@
 //   total_cost_usd: number,
 //   sessionCount: number,
 //   conversationCount: number,    // alias of sessionCount
-//   byTier: { haiku, sonnet, opus, unknown }: USD,
+//   byTier: { haiku, sonnet, opus, fable, unknown }: USD,
 //   byModel: { <model>: { tier, cost_usd, messages, ... } },
 //   topSession: { sessionId, total_cost_usd, messageCount },
 //   budget: null | { budget_usd, setAt, utilization, level },
@@ -69,7 +69,7 @@ function gather() {
     .map((k) => memoryRetrieve(NS, k)).filter(Boolean);
 
   const totalUsd = sessions.reduce((s, r) => s + (r.total_cost_usd || 0), 0);
-  const byTier = { haiku: 0, sonnet: 0, opus: 0, unknown: 0 };
+  const byTier = { haiku: 0, sonnet: 0, opus: 0, fable: 0, unknown: 0 };
   const byModel = {};
   // iter 84 — per-token-class aggregation (mirrors iter 83's export.mjs).
   // Surfaces cache_write as a distinct cost driver in summary output.

@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-cost-tracker`.
 
+## 0.31.4 — 2026-11-26
+- fix: Fable sessions are priced at the `fable` rates in `data/prices.json` instead of being recorded as tier `unknown` at $0 (#5121). `scripts/test-fable-pricing-5121.mjs` guards it.
+
 ## 0.31.3 — 2026-11-09
 - fix: `scripts/compact.mjs` exits once its output has been flushed. With a patched agentic-flow (>= 2.0.14, GHSA-vcv2-r9jh-99m5) the ReasoningBank backend leaves a timer alive, so the script printed its result and then never exited. `scripts/smoke-compact-exit.mjs` guards it.
 

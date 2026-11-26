@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Structural smoke test for ruflo-cost-tracker v0.31.3.
+# Structural smoke test for ruflo-cost-tracker v0.31.4.
 set -u
 # `pwd -W` (Git Bash on Windows) gives C:/Users/...; plain pwd gives /c/Users/..., which a Windows node cannot open. Elsewhere -W fails and pwd answers.
 ROOT="$(cd "$(dirname "$0")/.." && { pwd -W 2>/dev/null || pwd; })"
@@ -9,10 +9,10 @@ step() { printf "→ %s ... " "$1"; }
 ok()   { printf "PASS\n"; PASS=$((PASS+1)); }
 bad()  { printf "FAIL: %s\n" "$1"; FAIL=$((FAIL+1)); }
 
-step "1. plugin.json declares 0.31.3 with new keywords"
+step "1. plugin.json declares 0.31.4 with new keywords"
 v=$(grep -E '"version"' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.31.3" ]]; then
-  bad "expected 0.31.3, got '$v'"
+if [[ "$v" != "0.31.4" ]]; then
+  bad "expected 0.31.4, got '$v'"
 else
   miss=""
   for k in namespace-routing mcp agentic-flow agent-booster tier1-routing model-routing benchmarking verified telemetry budget projection forecast counterfactual drift-detection trend-alert anomaly-detection outlier-detection health-check composite-gate auto-track stop-hook snapshot-diff pr-regression git-context traceability drill-down per-message; do
@@ -690,6 +690,10 @@ node "$ROOT/scripts/test-cost-tracker-data-cwd-4397.mjs" >/dev/null 2>&1 \
 step "48. #4711 a failed CLI read is an error, and health warms an npx CLI once first"
 node "$ROOT/scripts/test-cli-failure-4711.mjs" >/dev/null 2>&1 \
   && ok || bad "test-cli-failure-4711-failed"
+
+step "49. #5121 a Fable session is priced at the fable rates, not \$0"
+node "$ROOT/scripts/test-fable-pricing-5121.mjs" >/dev/null 2>&1 \
+  && ok || bad "test-fable-pricing-5121-failed"
 
 printf "\n%s passed, %s failed\n" "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]] || exit 1
