@@ -90,7 +90,7 @@ function loadConfig(cwd: string): Record<string, unknown> | null {
 // Main start action
 export const startAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const daemon = ctx.flags.daemon as boolean;
-  const port = (ctx.flags.port as number) || DEFAULT_PORT;
+  const port = ctx.flags.port as number | undefined;
   const topology = ctx.flags.topology as string | undefined;
   const skipMcp = ctx.flags.skipMcp as boolean;
   const cwd = ctx.cwd;
@@ -110,7 +110,8 @@ export const startAction = async (ctx: CommandContext): Promise<CommandResult> =
   const finalTopology = topology || (swarmConfig.topology as string) || DEFAULT_TOPOLOGY;
   const maxAgents = (swarmConfig.maxAgents as number) || DEFAULT_MAX_AGENTS;
   const autoStartMcp = (mcpConfig.autoStart as boolean) !== false && !skipMcp;
-  const mcpPort = port || (mcpConfig.serverPort as number) || DEFAULT_PORT;
+  const configPort = [mcpConfig.port, mcpConfig.serverPort].find((value) => typeof value === 'number') as number | undefined;
+  const mcpPort = port || configPort || DEFAULT_PORT;
 
   output.writeln();
   output.writeln(output.bold('Starting RuFlo V3'));
@@ -453,9 +454,8 @@ export const startCommand: Command = {
     {
       name: 'port',
       short: 'p',
-      description: 'MCP server port',
-      type: 'number',
-      default: DEFAULT_PORT
+      description: `MCP server port (default: mcp.port in config.yaml, else ${DEFAULT_PORT})`,
+      type: 'number'
     },
     {
       name: 'topology',
