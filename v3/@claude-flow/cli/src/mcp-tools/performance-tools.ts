@@ -85,6 +85,10 @@ function savePerfStore(store: PerfStore): void {
   writeFileSync(getPerfPath(), JSON.stringify(store, null, 2), 'utf-8');
 }
 
+function nearestRank(sorted: number[], p: number): number {
+  return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1))];
+}
+
 export const performanceTools: MCPTool[] = [
   {
     name: 'performance_report',
@@ -128,7 +132,7 @@ export const performanceTools: MCPTool[] = [
       const recentLatencies = recent.map(m => m.latency.avg).filter(n => Number.isFinite(n));
       recentLatencies.push(selfLatencyMs);
       const sorted = [...recentLatencies].sort((a, b) => a - b);
-      const pct = (p: number) => sorted.length === 0 ? selfLatencyMs : sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
+      const pct = (p: number) => sorted.length === 0 ? selfLatencyMs : nearestRank(sorted, p / 100);
       const avg = recentLatencies.reduce((s, n) => s + n, 0) / Math.max(1, recentLatencies.length);
 
       // Throughput from real cadence: count metric samples in the last 60s.
@@ -656,9 +660,9 @@ export const performanceTools: MCPTool[] = [
           avg: arr.reduce((s, v) => s + v, 0) / arr.length,
           min: Math.min(...arr),
           max: Math.max(...arr),
-          p50: sorted[Math.floor(sorted.length * 0.5)],
-          p95: sorted[Math.floor(sorted.length * 0.95)],
-          p99: sorted[Math.floor(sorted.length * 0.99)],
+          p50: nearestRank(sorted, 0.5),
+          p95: nearestRank(sorted, 0.95),
+          p99: nearestRank(sorted, 0.99),
         };
       };
 
