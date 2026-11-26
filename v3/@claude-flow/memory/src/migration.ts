@@ -656,7 +656,7 @@ export class MemoryMigrator extends EventEmitter {
     basePath: string
   ): LegacyEntry | null {
     // Extract frontmatter if present
-    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+    const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
 
     let metadata: Record<string, unknown> = {};
     let body = content;
