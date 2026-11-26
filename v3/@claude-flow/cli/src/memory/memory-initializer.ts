@@ -701,9 +701,11 @@ export async function getHNSWIndex(options?: {
       storagePath: hnswPath  // Persistent storage!
     } as any);
 
-    // Load metadata (entry info) if exists
+    // Load metadata (entry info) if exists. A forced rebuild starts from
+    // SQLite instead: vectors left in the persisted index without metadata
+    // cannot resolve into results.
     const entries = new Map<string, HNSWEntry>();
-    if (fs.existsSync(metadataPath)) {
+    if (!options?.forceRebuild && fs.existsSync(metadataPath)) {
       try {
         const metadataJson = fs.readFileSync(metadataPath, 'utf-8');
         const metadata = JSON.parse(metadataJson) as Array<[string, HNSWEntry]>;
@@ -724,7 +726,7 @@ export async function getHNSWIndex(options?: {
 
     // Check if index already has data (from persistent storage)
     const existingLen = await db.len();
-    if (existingLen > 0 && entries.size > 0) {
+    if (!options?.forceRebuild && existingLen > 0 && entries.size > 0) {
       // Index loaded from disk, skip SQLite sync
       hnswIndex.initialized = true;
       hnswInitializing = false;
@@ -738,11 +740,13 @@ export async function getHNSWIndex(options?: {
         const fileBuffer = readFileMaybeEncrypted(dbPath, null);
         const sqlDb = new SQL.Database(fileBuffer);
 
-        // Load all entries with embeddings
+        // Load entries with embeddings, newest first so the cap drops the
+        // oldest rows rather than an arbitrary set.
         const result = sqlDb.exec(`
           SELECT id, key, namespace, content, embedding
           FROM memory_entries
           WHERE status = 'active' AND embedding IS NOT NULL
+          ORDER BY updated_at DESC
           LIMIT 10000
         `);
 
@@ -773,6 +777,7 @@ export async function getHNSWIndex(options?: {
         }
 
         sqlDb.close();
+        if (options?.forceRebuild) saveHNSWMetadata();
       } catch {
         // SQLite load failed, start with empty index
       }
