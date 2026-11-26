@@ -8,15 +8,26 @@
  * live `tools/call` dispatch never consulted it. Any connected MCP client
  * could call every registered tool with no audit trail and no call budget.
  *
- * This module wires the two policy fields that are actually in this
- * server's jurisdiction, per the policy file's own rationale comment
- * (`dangerousPatterns` / `allowShell` / `allowNetwork` / `allowFileWrite`
- * describe the native-Claude-Code-tool layer — Bash/Write/Edit/WebFetch —
- * not this MCP server's memory_-, hooks_-, agentdb_-prefixed tool surface,
- * so they are intentionally left unenforced here):
+ * This module wires the policy fields that are actually in this server's
+ * jurisdiction:
  *   - `auditLog`: append a JSONL record for every `tools/call`.
  *   - `maxToolCallsPerTurn`: bound calls per MCP *session* (one stdio
  *     process lifetime), deny once exceeded.
+ *   - `allowShell` / `allowNetwork` / `allowFileWrite` (dream-cycle
+ *     2026-11-26): deny a call when the tool is listed in
+ *     `MCP_TOOL_CAPABILITY` below — proven, by two independent research
+ *     passes that traced the call chain file:line, to perform that
+ *     capability directly inside its own MCP handler — and the
+ *     corresponding flag is explicitly `false`. Earlier revisions of this
+ *     module claimed these three fields describe only the native-Claude-
+ *     Code-tool layer (Bash/Write/Edit/WebFetch) and were "intentionally
+ *     left unenforced" here on that basis; that premise was false
+ *     (`terminal_execute` runs `execSync` on caller-supplied input,
+ *     `http_fetch` performs raw outbound HTTP(S), `hooks_fast-apply` and
+ *     `hooks_codemod` write files directly — all inside this MCP server's
+ *     own tool surface, not Claude Code's). Scoped to the tools actually
+ *     traced end-to-end tonight; a tool not in `MCP_TOOL_CAPABILITY` is
+ *     unaffected by these three flags, same as before.
  *
  * Fully opt-in via `RUFLO_MCP_ENFORCE_POLICY=1` (or `true`). Unset/false
  * means every function below is a no-op on the hot path — the pre-existing
@@ -73,6 +84,12 @@ export interface McpPolicy {
   /** Rotated segments retained in addition to the active log. Default 5, maximum 100. */
   auditLogMaxFiles?: number;
   requireApprovalForDangerous?: boolean;
+  /** Deny tools in `MCP_TOOL_CAPABILITY` whose capability is 'shell', when explicitly `false`. */
+  allowShell?: boolean;
+  /** Deny tools in `MCP_TOOL_CAPABILITY` whose capability is 'network', when explicitly `false`. */
+  allowNetwork?: boolean;
+  /** Deny tools in `MCP_TOOL_CAPABILITY` whose capability is 'fileWrite', when explicitly `false`. */
+  allowFileWrite?: boolean;
   toolTimeoutMs?: number;
   /**
    * Despite the name, this is a WALL-CLOCK rate limit, not a literal
@@ -125,6 +142,51 @@ export function resetPolicyEnforcerState(): void {
 export interface PolicyCheckResult {
   allowed: boolean;
   reason?: string;
+}
+
+export type McpToolCapability = 'shell' | 'network' | 'fileWrite';
+
+/**
+ * Tool name -> capability it is proven (dream-cycle 2026-11-26, two
+ * independent research passes, file:line traced) to exercise directly
+ * inside its own MCP handler: `terminal_execute` (`execSync` on
+ * caller-supplied input), `http_fetch` (raw outbound HTTP/S), and
+ * `hooks_fast-apply`/`hooks_codemod` (direct `writeFileSync`). This is
+ * deliberately the narrow, traced subset, not every tool the broader scan
+ * also turned up (github_*, browser_*, several more exec/fetch call
+ * sites) — those are a disclosed, not-yet-audited follow-up, not implied
+ * safe by omission from this table.
+ */
+export const MCP_TOOL_CAPABILITY: Readonly<Record<string, McpToolCapability>> = Object.freeze({
+  terminal_execute: 'shell',
+  http_fetch: 'network',
+  'hooks_fast-apply': 'fileWrite',
+  hooks_codemod: 'fileWrite',
+});
+
+const CAPABILITY_POLICY_FIELD: Readonly<Record<McpToolCapability, 'allowShell' | 'allowNetwork' | 'allowFileWrite'>> =
+  Object.freeze({
+    shell: 'allowShell',
+    network: 'allowNetwork',
+    fileWrite: 'allowFileWrite',
+  });
+
+/**
+ * Denies a call only when `toolName` is in `MCP_TOOL_CAPABILITY` AND the
+ * matching `allow*` flag is explicitly `false`. A tool outside the table,
+ * or a flag left `undefined`, is unaffected — this closes the gap for the
+ * specific tools proven to need it; it does not invent a new default-deny
+ * posture for the rest of the ~300-tool surface.
+ */
+export function checkCapabilityAllowed(policy: McpPolicy, toolName: string): PolicyCheckResult {
+  const capability = MCP_TOOL_CAPABILITY[toolName];
+  if (!capability) return { allowed: true };
+  const field = CAPABILITY_POLICY_FIELD[capability];
+  if (policy[field] !== false) return { allowed: true };
+  return {
+    allowed: false,
+    reason: `policy.${field} is false and '${toolName}' performs direct ${capability} access`,
+  };
 }
 
 /**
@@ -259,10 +321,13 @@ export function appendAuditLog(policy: McpPolicy, entry: AuditLogEntry): boolean
 
 /**
  * Single enforcement entry point for a `tools/call` dispatch. Combines, in
- * order: fail-closed on a missing/malformed policy, the per-session call
- * budget, and fail-closed on a failed mandatory audit-log write. `policy`
- * is the result of `loadMcpPolicy()` — pass `null` straight through when it
- * failed to load, rather than re-deciding that here.
+ * order: fail-closed on a missing/malformed policy, the `allowShell`/
+ * `allowNetwork`/`allowFileWrite` capability check (`checkCapabilityAllowed`),
+ * the per-session call budget, and fail-closed on a failed mandatory
+ * audit-log write. A capability denial skips the budget check entirely —
+ * it is not counted against `maxToolCallsPerTurn`. `policy` is the result
+ * of `loadMcpPolicy()` — pass `null` straight through when it failed to
+ * load, rather than re-deciding that here.
  */
 export function evaluateToolCall(
   policy: McpPolicy | null,
@@ -277,7 +342,8 @@ export function evaluateToolCall(
     };
   }
 
-  const budget = checkAndRecordCall(policy, sessionId, now);
+  const capability = checkCapabilityAllowed(policy, toolName);
+  const budget = capability.allowed ? checkAndRecordCall(policy, sessionId, now) : capability;
   const auditOk = appendAuditLog(policy, {
     timestamp: new Date(now).toISOString(),
     sessionId,

@@ -8,12 +8,14 @@
     "description": "Ruflo — multi-agent orchestration platform built on @claude-flow/cli",
     "host": "claude-code"
   },
-  "hosts": ["claude-code"],
+  "hosts": [
+    "claude-code"
+  ],
   "files": {
-    ".harness/mcp-policy.json": "4b4c5826c9d1cdb8bd70a5c097a1d1b9a79b2d4850fdf05149b9ea84bfefa502",
+    ".harness/mcp-policy.json": "4c856ac6d94117a85e2fd13811e9553d9b0d9b8bf2a3607de0719c4deff1ff28",
     ".claude/settings.json": "ba278b1f9ccf8e170e4cef3748a6bcb4efc0850b7ec66d34690fec328fdabeb1"
   },
-  "generated_at": "2026-06-16T20:00:00.000Z",
+  "generated_at": "2026-11-26T07:19:52.780Z",
   "meta": {
     "surface": "cli",
     "adr_anchor": "ADR-150 — ruflo's metaharness integration; this manifest covers the security-relevant surface that mcp-policy.json governs"
