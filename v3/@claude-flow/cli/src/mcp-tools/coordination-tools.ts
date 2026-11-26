@@ -268,7 +268,9 @@ export const coordinationTools: MCPTool[] = [
           selectedNode = nodes.reduce((min, n) => n.load < min.load ? n : min);
         } else if (algorithm === 'weighted') {
           const weights = store.loadBalance.weights;
-          selectedNode = nodes.reduce((max, n) => (weights[n.id] || 1) > (weights[max.id] || 1) ? n : max);
+          // A weight of 0 is a real weight; any other missing or falsy weight counts as 1.
+          const weightOf = (id: string) => (weights[id] === 0 ? 0 : weights[id] || 1);
+          selectedNode = nodes.reduce((max, n) => weightOf(n.id) > weightOf(max.id) ? n : max);
         } else {
           // Round robin: the active node after the one the last task went to,
           // wrapping around (and starting over if that node is gone).
