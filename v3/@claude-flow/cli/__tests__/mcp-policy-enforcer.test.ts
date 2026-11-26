@@ -21,6 +21,8 @@ import {
   checkAndRecordCall,
   appendAuditLog,
   evaluateToolCall,
+  checkCapabilityAllowed,
+  MCP_TOOL_CAPABILITY,
   resetPolicyEnforcerState,
   setAuditLogPathForTesting,
   getAuditLogPath,
@@ -266,6 +268,76 @@ describe('evaluateToolCall — single enforcement entry point (fail-closed)', ()
     );
     expect(results.filter(r => r.allowed)).toHaveLength(3);
     expect(results.filter(r => !r.allowed)).toHaveLength(2);
+  });
+});
+
+describe('checkCapabilityAllowed — allowShell/allowNetwork/allowFileWrite (dream-cycle 2026-11-26)', () => {
+  it('allows a tool outside MCP_TOOL_CAPABILITY regardless of policy flags', () => {
+    const policy: McpPolicy = { allowShell: false, allowNetwork: false, allowFileWrite: false };
+    expect(checkCapabilityAllowed(policy, 'memory_store').allowed).toBe(true);
+  });
+
+  it('allows a known tool when its flag is left undefined (no behavior change absent an explicit false)', () => {
+    expect(checkCapabilityAllowed({}, 'terminal_execute').allowed).toBe(true);
+  });
+
+  it('allows a known tool when its flag is explicitly true', () => {
+    expect(checkCapabilityAllowed({ allowShell: true }, 'terminal_execute').allowed).toBe(true);
+  });
+
+  it.each(Object.entries(MCP_TOOL_CAPABILITY))(
+    'denies %s when its capability (%s) flag is explicitly false, with a reason naming the field and tool',
+    (toolName, capability) => {
+      const field = { shell: 'allowShell', network: 'allowNetwork', fileWrite: 'allowFileWrite' }[capability] as string;
+      const result = checkCapabilityAllowed({ [field]: false } as McpPolicy, toolName);
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain(field);
+      expect(result.reason).toContain(toolName);
+    },
+  );
+
+  it('does not cross-wire capabilities: denying allowShell does not deny a fileWrite tool', () => {
+    expect(checkCapabilityAllowed({ allowShell: false }, 'hooks_codemod').allowed).toBe(true);
+  });
+});
+
+describe('evaluateToolCall — capability denial (dream-cycle 2026-11-26)', () => {
+  let logFile: string;
+  beforeEach(() => {
+    resetPolicyEnforcerState();
+    logFile = path.join(os.tmpdir(), `mcp-audit-cap-${Date.now()}-${Math.random()}.jsonl`);
+    setAuditLogPathForTesting(logFile);
+  });
+  afterEach(() => {
+    setAuditLogPathForTesting(null);
+    if (fs.existsSync(logFile)) fs.unlinkSync(logFile);
+  });
+
+  it('denies terminal_execute under the committed .harness/mcp-policy.json shape (allowShell:false) even though budget would allow it', () => {
+    const policy: McpPolicy = { auditLog: true, allowShell: false, maxToolCallsPerTurn: 5 };
+    const result = evaluateToolCall(policy, 's1', 'terminal_execute');
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toMatch(/allowShell is false/);
+    const lines = fs.readFileSync(logFile, 'utf-8').trim().split('\n');
+    expect(lines).toHaveLength(1);
+    expect(JSON.parse(lines[0]).allowed).toBe(false);
+  });
+
+  it('does not consume turn budget on a capability denial — the next unrelated call still has its full budget', () => {
+    const policy: McpPolicy = { allowShell: false, maxToolCallsPerTurn: 1 };
+    expect(evaluateToolCall(policy, 's1', 'terminal_execute').allowed).toBe(false);
+    // memory_store is unaffected by allowShell and should still get its one slot.
+    expect(evaluateToolCall(policy, 's1', 'memory_store').allowed).toBe(true);
+  });
+
+  it('leaves every other registered tool byte-identical: memory_store still allowed with all three capability flags false', () => {
+    const policy: McpPolicy = { allowShell: false, allowNetwork: false, allowFileWrite: false, maxToolCallsPerTurn: 5 };
+    expect(evaluateToolCall(policy, 's1', 'memory_store').allowed).toBe(true);
+  });
+
+  it('allows terminal_execute once allowShell is true (opt-in capability, not a new hardcoded deny)', () => {
+    const policy: McpPolicy = { allowShell: true, maxToolCallsPerTurn: 5 };
+    expect(evaluateToolCall(policy, 's1', 'terminal_execute').allowed).toBe(true);
   });
 });
 
