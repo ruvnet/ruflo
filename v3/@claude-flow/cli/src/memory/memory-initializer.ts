@@ -3502,8 +3502,12 @@ export async function searchEntries(options: {
       whereClauses.push(`provenance_type IN (${provenanceFilter.map(() => '?').join(',')})`);
       whereParams.push(...provenanceFilter);
     }
+    // #2982: without ORDER BY, SQLite returns the oldest-inserted rows, so past
+    // the window the newest entries were never scored. Read newest first, with
+    // the same window as the memory bridge (#4397, CLAUDE_FLOW_SEARCH_WINDOW).
+    const { resolveBridgeSearchWindow } = await import('./memory-bridge.js');
     const searchStmt = db.prepare(
-      `SELECT id, key, namespace, content, embedding, provenance_type FROM memory_entries WHERE ${whereClauses.join(' AND ')} LIMIT 1000`
+      `SELECT id, key, namespace, content, embedding, provenance_type FROM memory_entries WHERE ${whereClauses.join(' AND ')} ORDER BY updated_at DESC LIMIT ${resolveBridgeSearchWindow()}`
     );
     if (whereParams.length > 0) {
       searchStmt.bind(whereParams);
