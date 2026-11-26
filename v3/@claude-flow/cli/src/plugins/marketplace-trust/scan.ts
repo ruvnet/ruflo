@@ -1,8 +1,10 @@
 /**
  * Static scan of a Claude Code plugin before it is installed (ADR-509 §2.2).
  *
- * Reads what the plugin will make Claude Code run: `.mcp.json` servers,
- * `hooks/hooks.json` command hooks, and its hook modules (function hooks).
+ * Reads what the plugin will make Claude Code run: `.mcp.json` servers, the
+ * hooks file resolved the way the host resolves it (`.claude-plugin/plugin.json`
+ * `hooks` when it is a path or an inline object, otherwise
+ * `hooks/hooks.json`), and its hook modules (function hooks).
  * Rules: the settings-risk-scanner command rules for anything that becomes a
  * shell command, and the ruflo-mods trust classifier's capability names for
  * hook modules (`$.process.*`, `$.http.*`, `$.mcp.*`, `$.tool.call`, ...).
@@ -43,6 +45,85 @@ const MAX_FILE_BYTES = 1024 * 1024;
 
 const record = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 
+interface HooksSource {
+  /** Plugin-relative path for findings. */
+  file: string;
+  /** Directory the manifest lives in; `modules` resolve against it. */
+  dir: string;
+  /** Parsed hooks manifest (`hooks`, and `modules` when the file declares them). */
+  parsed: Record<string, unknown>;
+}
+
+const PLUGIN_MANIFEST = '.claude-plugin/plugin.json';
+
+/**
+ * Resolve the hooks file the way Claude Code does:
+ *  - `plugin.json#hooks` as a string path, resolved inside the plugin;
+ *  - `plugin.json#hooks` as an inline object;
+ *  - otherwise the default `hooks/hooks.json`.
+ *
+ * A declared path that escapes the plugin, is missing, or is not a regular
+ * readable JSON file is a high finding, never a silent skip (#5115).
+ */
+function resolveHooksSource(plugin: string, root: string, out: ScanFinding[]): HooksSource | null {
+  const manifest = readJson(join(root, PLUGIN_MANIFEST));
+  const declared = record(manifest) ? manifest.hooks : undefined;
+
+  if (declared !== undefined && declared !== null) {
+    if (typeof declared === 'string') {
+      const abs = resolve(root, declared);
+      const rel = relative(root, abs);
+      if (rel.startsWith('..') || isAbsolute(rel)) {
+        out.push({ plugin, severity: 'high', file: PLUGIN_MANIFEST, rule: 'hooks-outside-plugin', detail: `plugin.json#hooks points outside the plugin (${declared})` });
+        return null;
+      }
+      const file = relTo(root, abs);
+      if (!existsSync(abs)) {
+        out.push({ plugin, severity: 'high', file, rule: 'hooks-missing', detail: 'plugin.json#hooks points at a file that does not exist' });
+        return null;
+      }
+      try {
+        if (!lstatSync(abs).isFile()) {
+          out.push({ plugin, severity: 'high', file, rule: 'hooks-unscannable', detail: 'plugin.json#hooks is not a regular file' });
+          return null;
+        }
+      } catch (error) {
+        out.push({ plugin, severity: 'high', file, rule: 'hooks-unscannable', detail: `plugin.json#hooks cannot be read (${(error as Error).message})` });
+        return null;
+      }
+      const parsed = readJson(abs);
+      if (!record(parsed)) {
+        out.push({ plugin, severity: 'high', file, rule: 'hooks-unreadable', detail: 'plugin.json#hooks is not valid JSON' });
+        return null;
+      }
+      return { file, dir: dirname(abs), parsed };
+    }
+    if (record(declared)) {
+      return { file: PLUGIN_MANIFEST, dir: root, parsed: { hooks: declared } };
+    }
+    out.push({ plugin, severity: 'high', file: PLUGIN_MANIFEST, rule: 'hooks-invalid', detail: 'plugin.json#hooks is neither a path nor an object' });
+    return null;
+  }
+
+  const abs = join(root, 'hooks', 'hooks.json');
+  if (!existsSync(abs)) return null;
+  try {
+    if (!lstatSync(abs).isFile()) {
+      out.push({ plugin, severity: 'high', file: 'hooks/hooks.json', rule: 'hooks-unscannable', detail: 'hooks/hooks.json is not a regular file' });
+      return null;
+    }
+  } catch (error) {
+    out.push({ plugin, severity: 'high', file: 'hooks/hooks.json', rule: 'hooks-unscannable', detail: `hooks/hooks.json cannot be read (${(error as Error).message})` });
+    return null;
+  }
+  const parsed = readJson(abs);
+  if (!record(parsed)) {
+    out.push({ plugin, severity: 'high', file: 'hooks/hooks.json', rule: 'hooks-unreadable', detail: 'hooks/hooks.json is not valid JSON' });
+    return null;
+  }
+  return { file: 'hooks/hooks.json', dir: dirname(abs), parsed };
+}
+
 function readJson(path: string): unknown {
   try {
     return JSON.parse(readFileSync(path, 'utf-8'));
@@ -74,18 +155,15 @@ function scanMcp(plugin: string, root: string, out: ScanFinding[]): void {
   }
 }
 
-function scanHooksJson(plugin: string, root: string, out: ScanFinding[]): void {
-  const file = 'hooks/hooks.json';
-  if (!existsSync(join(root, file))) return;
-  const parsed = readJson(join(root, file));
-  const hooks = record(parsed) && record(parsed.hooks) ? parsed.hooks : {};
+function scanHooksJson(plugin: string, source: HooksSource, out: ScanFinding[]): void {
+  const hooks = record(source.parsed.hooks) ? source.parsed.hooks : {};
   for (const [event, groups] of Object.entries(hooks)) {
     if (!Array.isArray(groups)) continue;
     for (const group of groups) {
       const list = record(group) && Array.isArray(group.hooks) ? group.hooks : [];
       for (const h of list) {
         if (!record(h) || typeof h.command !== 'string') continue;
-        for (const reason of scanCommandStringForRisk(h.command)) out.push({ plugin, severity: 'high', file, rule: 'hook-command', detail: `${event}: ${reason}` });
+        for (const reason of scanCommandStringForRisk(h.command)) out.push({ plugin, severity: 'high', file: source.file, rule: 'hook-command', detail: `${event}: ${reason}` });
       }
     }
   }
@@ -160,16 +238,13 @@ const relTo = (root: string, abs: string) => relative(root, abs).split(sep).join
  * name or size, and one that cannot be read or is too large is itself a high
  * finding (\`unscannable\`), never silently passed.
  */
-function scanLoadedModules(plugin: string, root: string, out: ScanFinding[], scanned: Set<string>): void {
-  const hooksJson = join(root, 'hooks', 'hooks.json');
-  if (!existsSync(hooksJson)) return;
-  const parsed = readJson(hooksJson);
-  const listed = record(parsed) && Array.isArray(parsed.modules) ? parsed.modules : [];
+function scanLoadedModules(plugin: string, root: string, source: HooksSource, out: ScanFinding[], scanned: Set<string>): void {
+  const listed = Array.isArray(source.parsed.modules) ? source.parsed.modules : [];
   const queue: Array<{ abs: string; from: string }> = [];
   for (const m of listed) {
     if (typeof m !== 'string') continue;
-    const abs = resolveSpecifier(dirname(hooksJson), m) ?? resolve(dirname(hooksJson), m);
-    queue.push({ abs, from: 'hooks/hooks.json' });
+    const abs = resolveSpecifier(source.dir, m) ?? resolve(source.dir, m);
+    queue.push({ abs, from: source.file });
   }
   const rootAbs = resolve(root);
   while (queue.length) {
@@ -210,9 +285,9 @@ function scanText(plugin: string, file: string, text: string, out: ScanFinding[]
   for (const r of MODULE_CAPABILITIES) if (r.re.test(text)) out.push({ plugin, severity: 'medium', file, rule: r.rule, detail: r.detail });
 }
 
-function scanModules(plugin: string, root: string, out: ScanFinding[]): void {
+function scanModules(plugin: string, root: string, source: HooksSource | null, out: ScanFinding[]): void {
   const scanned = new Set<string>();
-  scanLoadedModules(plugin, root, out, scanned);
+  if (source) scanLoadedModules(plugin, root, source, out, scanned);
   for (const file of moduleFiles(root)) {
     const abs = resolve(root, file);
     if (scanned.has(abs)) continue;
@@ -226,8 +301,9 @@ export function scanPluginDir(plugin: string, root: string): ScanFinding[] {
   const out: ScanFinding[] = [];
   if (!existsSync(root)) return out;
   scanMcp(plugin, root, out);
-  scanHooksJson(plugin, root, out);
-  scanModules(plugin, root, out);
+  const source = resolveHooksSource(plugin, root, out);
+  if (source) scanHooksJson(plugin, source, out);
+  scanModules(plugin, root, source, out);
   return out;
 }
 
