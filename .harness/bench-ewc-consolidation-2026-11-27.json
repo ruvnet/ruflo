@@ -1,0 +1,28 @@
+{
+  "corpus_path": ".harness/bench-ewc-consolidation-2026-11-27.json",
+  "created_by_date": "2026-11-27",
+  "created_by_hypothesis": "Given a sequential-task workload where SONA's RealTimeMode (and EdgeMode) continues learning across task boundaries, wiring EWC consolidation (getConsolidationSnapshot()/updateEWCConsolidation(), mirroring BalancedMode's already-correct pattern) should improve quality retention on earlier-learned tasks after training on new tasks, relative to the current silently-disabled baseline, subject to: new-task learning quality must not regress >2%, existing SONA/EWC tests stay green, effect must be positive and reproducible across >=2 seeds.",
+  "task_count": 6,
+  "task_categories": ["task-A (code domain, quality 0.8)", "task-B (math domain, quality 0.85)", "task-A re-exposure (code domain, quality 0.8, fresh trajectories)"],
+  "gold_data_source": "synthetic deterministic embeddings via sin(seed*0.37 + i*0.11); no gold answers for the candidate to tamper with -- the metric is the real emitted SONAManager `learning_completed` event's improvementDelta plus the real serialized ewcState, both read from the real SONAManager.triggerLearning() pipeline (v3/@claude-flow/neural/src/sona-manager.ts), not a reimplementation",
+  "seeds": [1000, 2000],
+  "evaluator": "ephemeral git-stash baseline/candidate comparison against the real v3/@claude-flow/neural/src/sona-manager.ts SONAManager.triggerLearning() pipeline, run during tonight's Dream Cycle evaluation (not committed as a test -- the wiring patch itself was rejected and reverted after this receipt was captured; see verdict and process_note below)",
+  "receipt": {
+    "baseline": {
+      "description": "unpatched modes/real-time.ts and modes/edge.ts, isolated via git stash",
+      "seed_1000": { "ewcFisherSizeAfterTaskA": 0, "ewcMeansSizeAfterTaskA": 0, "deltaA1": 0.30000000000000004, "deltaB": 0.35, "deltaA2_reexposure": 0.30000000000000004, "retentionRatio": 1 },
+      "seed_2000": { "ewcFisherSizeAfterTaskA": 0, "ewcMeansSizeAfterTaskA": 0, "deltaA1": 0.30000000000000004, "deltaB": 0.35, "deltaA2_reexposure": 0.30000000000000004, "retentionRatio": 1 }
+    },
+    "candidate": {
+      "description": "this patch: getConsolidationSnapshot() wired into RealTimeMode/EdgeMode",
+      "seed_1000": { "ewcFisherSizeAfterTaskA": 1, "ewcMeansSizeAfterTaskA": 1, "deltaA1": 0.30000000000000004, "deltaB": 0.35, "deltaA2_reexposure": 0.30000000000000004, "retentionRatio": 1 },
+      "seed_2000": { "ewcFisherSizeAfterTaskA": 1, "ewcMeansSizeAfterTaskA": 1, "deltaA1": 0.30000000000000004, "deltaB": 0.35, "deltaA2_reexposure": 0.30000000000000004, "retentionRatio": 1 }
+    },
+    "effect_size_on_primary_metric_improvementDelta_retention": 0,
+    "effect_size_on_structural_metric_ewcState_population": "0 -> 1 (fisher.size, means.size), both seeds, candidate only",
+    "new_task_quality_regression": "none (deltaB identical baseline vs candidate: 0.35 both)",
+    "verdict": "REJECT on hypothesis's primary metric (quality retention did not improve; effect size exactly 0, reproduced identically across both seeds). ACCEPT on the structural-correctness sub-claim (ewcState is now genuinely populated for these 2 modes, matching balanced/research). Root cause (confirmed by code inspection, not just the experiment): ewcState.fisher/means are read ONLY inside computeEWCPenalty(), whose output (totalGradientNorm) is itself dead code in every SONA mode -- already disclosed for balanced.ts by the 2026-10-27 night. RealTimeMode/EdgeMode.learn()'s returned improvementDelta never reads ewcState at all, so no code path exists today by which consolidation state can affect observable learning output."
+  },
+  "notes": "Reused test harness pattern (createSONAManager/runLearningCycle/decodeEwcState) from the 2026-10-27 night's sona-ewc-consolidation.test.ts to drive this evaluation rather than reimplementing one. The wiring patch's own test file was NOT committed and the code wiring itself was reverted after this receipt was captured -- see process_note.",
+  "process_note": "STEP 1.1 (reject duplicate direction) process gap, disclosed: this candidate was selected before cross-referencing the ledger closely enough. The 2026-11-02 row already investigated wiring EdgeMode/RealTimeMode EWC consolidation and explicitly declined it ('confirmed to track no gradient-shaped state at all ... NOT wired, would require fabricating state'), and the root cause (ewcState consumed only by dead computeEWCPenalty()/totalGradientNorm) was already disclosed on 2026-10-27. Tonight's research phase (5 parallel roles) independently rediscovered the code gap via fresh code reading and did not catch the prior rejection until mid-implementation. This receipt's empirical value over the 2026-11-02 note: it replaces an architectural prediction with an actual measured run (fabricated the declined state, ran 2 seeds through the real SONAManager pipeline, confirmed effect size exactly 0) and generalizes the dead-code finding from balanced-mode-specific to 'no SONA mode's learn() reads ewcState at all'. Net assessment: legitimate REJECT with incremental (not novel) evidence; the wiring code was reverted rather than shipped since it adds fabricated state for zero measured benefit and would have broken an existing deliberate control test for no gain. Only a false comment in real-time.ts was fixed and is being shipped tonight."
+}

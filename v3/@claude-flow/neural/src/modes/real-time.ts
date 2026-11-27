@@ -139,8 +139,12 @@ export class RealTimeMode extends BaseModeImplementation {
     // Compute average quality improvement
     const avgQuality = goodTrajectories.reduce((sum, t) => sum + t.qualityScore, 0) / goodTrajectories.length;
 
-    // Simplified gradient update (for real-time, we skip full backprop)
-    // Just update EWC means to track what works
+    // Simplified gradient update (for real-time, we skip full backprop).
+    // This mode tracks no gradient-shaped state and does not implement
+    // `getConsolidationSnapshot()`, so `config.ewcLambda` is configured but
+    // currently has no effect here — confirmed dead code path tonight
+    // (Dream Cycle 2026-11-27); see docs/dream-cycle/LEDGER.md 2026-11-02
+    // and 2026-11-27 rows for why this was not wired.
     const improvementDelta = avgQuality - 0.5; // Relative to baseline of 0.5
 
     this.totalLearnTime += performance.now() - startTime;
