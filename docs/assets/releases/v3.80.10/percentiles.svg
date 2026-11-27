@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="240" viewBox="0 0 720 240" role="img" aria-labelledby="t d">
+<title id="t">performance_metrics and performance_report percentiles are now correct</title>
+<desc id="d">With two timings of 10 ms and 40 ms, the median used to come out as 40 ms. Now percentiles use the standard nearest-rank method, so the median is 10 ms, and p95 and p99 are fixed too.</desc>
+<style>
+text{font-family:system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}
+.m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.bg{fill:#0d1117}.card{fill:#161b22;stroke:#30363d}
+.t1{font-size:15px;font-weight:600;fill:#e6edf3}
+.lb{font-size:11px;font-weight:700;fill:#8b949e;letter-spacing:.08em}
+.tx{font-size:13px;fill:#c9d1d9}
+.mu{fill:#8b949e}.r{fill:#f85149}.g{fill:#3fb950}.b{fill:#58a6ff}
+.old{animation:old 8s infinite both}.now{animation:now 8s infinite both}
+@keyframes old{0%,46%{opacity:1}50%,96%{opacity:0}100%{opacity:1}}
+@keyframes now{0%,46%{opacity:0}50%,96%{opacity:1}100%{opacity:0}}
+.rv{animation:rv 4s infinite both}
+@keyframes rv{0%{opacity:0}8%,100%{opacity:1}}
+.flow{stroke-dasharray:6 6;animation:dash 1s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-12}}
+
+@media (prefers-reduced-motion:reduce){.old{animation:none;opacity:0}.now,.rv,.flow,.fly,.beam,.dot{animation:none;opacity:1}}
+</style>
+<rect class="bg" width="720" height="240" rx="12"/>
+<g class="old"><rect x="568" y="14" width="128" height="24" rx="12" fill="#f8514922" stroke="#f85149"/><text x="632" y="30" text-anchor="middle" class="lb r">BEFORE</text></g>
+<g class="now"><rect x="568" y="14" width="128" height="24" rx="12" fill="#3fb95022" stroke="#3fb950"/><text x="632" y="30" text-anchor="middle" class="lb g">NOW · 3.80.10</text></g>
+<text x="24" y="34" class="t1">Median (p50) of two timings</text>
+<line x1="60" y1="170" x2="660" y2="170" stroke="#30363d" stroke-width="2"/><line x1="60" y1="166" x2="60" y2="174" stroke="#30363d"/><text x="60" y="192" text-anchor="middle" class="tx mu" style="font-size:11px">0 ms</text><line x1="180" y1="166" x2="180" y2="174" stroke="#30363d"/><text x="180" y="192" text-anchor="middle" class="tx mu" style="font-size:11px">10 ms</text><line x1="300" y1="166" x2="300" y2="174" stroke="#30363d"/><text x="300" y="192" text-anchor="middle" class="tx mu" style="font-size:11px">20 ms</text><line x1="420" y1="166" x2="420" y2="174" stroke="#30363d"/><text x="420" y="192" text-anchor="middle" class="tx mu" style="font-size:11px">30 ms</text><line x1="540" y1="166" x2="540" y2="174" stroke="#30363d"/><text x="540" y="192" text-anchor="middle" class="tx mu" style="font-size:11px">40 ms</text><line x1="660" y1="166" x2="660" y2="174" stroke="#30363d"/><text x="660" y="192" text-anchor="middle" class="tx mu" style="font-size:11px">50 ms</text>
+<circle cx="180" cy="148" r="9" fill="#58a6ff"/><circle cx="540" cy="148" r="9" fill="#58a6ff"/><text x="180" y="128" text-anchor="middle" class="m tx">10 ms</text><text x="540" y="128" text-anchor="middle" class="m tx">40 ms</text>
+<g class="old"><g class="rv" style="animation-delay:0.5s"><line x1="540" y1="72" x2="540" y2="114" stroke="#f85149" stroke-width="2" stroke-dasharray="4 3"/><rect x="470" y="48" width="140" height="24" rx="12" fill="#f8514922" stroke="#f85149"/><text x="540" y="64" text-anchor="middle" class="tx r">p50 = 40 ms  ✗</text></g><text x="24" y="226" class="tx r">Before: the median of 10 ms and 40 ms came out as 40 ms, the slower one.</text></g>
+<g class="now"><g class="rv" style="animation-delay:0.5s"><line x1="180" y1="72" x2="180" y2="114" stroke="#3fb950" stroke-width="2" stroke-dasharray="4 3"/><rect x="110" y="48" width="140" height="24" rx="12" fill="#3fb95022" stroke="#3fb950"/><text x="180" y="64" text-anchor="middle" class="tx g">p50 = 10 ms  ✓</text></g><text x="24" y="226" class="tx g">Now: the standard nearest-rank method. p95 and p99 are fixed the same way.</text></g>
+</svg>

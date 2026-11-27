@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="250" viewBox="0 0 720 250" role="img" aria-labelledby="t d">
+<title id="t">MCP discovery no longer offers updates the server cannot send</title>
+<desc id="d">Before 3.80.10, server/discover advertised listChanged, so new-protocol clients opened a subscriptions/listen stream that failed with Method not found. Now discovery leaves it out and clients connect cleanly.</desc>
+<style>
+text{font-family:system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}
+.m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.bg{fill:#0d1117}.card{fill:#161b22;stroke:#30363d}
+.t1{font-size:15px;font-weight:600;fill:#e6edf3}
+.lb{font-size:11px;font-weight:700;fill:#8b949e;letter-spacing:.08em}
+.tx{font-size:13px;fill:#c9d1d9}
+.mu{fill:#8b949e}.r{fill:#f85149}.g{fill:#3fb950}.b{fill:#58a6ff}
+.old{animation:old 8s infinite both}.now{animation:now 8s infinite both}
+@keyframes old{0%,46%{opacity:1}50%,96%{opacity:0}100%{opacity:1}}
+@keyframes now{0%,46%{opacity:0}50%,96%{opacity:1}100%{opacity:0}}
+.rv{animation:rv 4s infinite both}
+@keyframes rv{0%{opacity:0}8%,100%{opacity:1}}
+.flow{stroke-dasharray:6 6;animation:dash 1s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-12}}
+
+@media (prefers-reduced-motion:reduce){.old{animation:none;opacity:0}.now,.rv,.flow,.fly,.beam,.dot{animation:none;opacity:1}}
+</style>
+<rect class="bg" width="720" height="250" rx="12"/>
+<g class="old"><rect x="568" y="14" width="128" height="24" rx="12" fill="#f8514922" stroke="#f85149"/><text x="632" y="30" text-anchor="middle" class="lb r">BEFORE</text></g>
+<g class="now"><rect x="568" y="14" width="128" height="24" rx="12" fill="#3fb95022" stroke="#3fb950"/><text x="632" y="30" text-anchor="middle" class="lb g">NOW · 3.80.10</text></g>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8b949e"/></marker><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f85149"/></marker><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3fb950"/></marker></defs>
+<text x="24" y="34" class="t1">An MCP client connects (2026-07-28 protocol)</text>
+<rect class="card" x="24" y="56" width="150" height="150" rx="8"/><text x="99" y="80" text-anchor="middle" class="lb">MCP CLIENT</text>
+<rect class="card" x="546" y="56" width="150" height="150" rx="8"/><text x="621" y="80" text-anchor="middle" class="lb">RUFLO SERVER</text>
+<line x1="180" y1="104" x2="540" y2="104" stroke="#8b949e" stroke-width="1.5" marker-end="url(#a)"/><text x="360" y="96" text-anchor="middle" class="m tx">server/discover</text>
+<g class="old"><g class="rv" style="animation-delay:0.4s"><line x1="540" y1="138" x2="180" y2="138" stroke="#8b949e" stroke-width="1.5" marker-end="url(#a)"/><text x="360" y="130" text-anchor="middle" class="m tx">tools: { listChanged: true }</text></g>
+<g class="rv" style="animation-delay:1.2s"><line x1="180" y1="172" x2="540" y2="172" stroke="#f85149" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="360" y="164" text-anchor="middle" class="m tx">subscriptions/listen</text></g>
+<g class="rv" style="animation-delay:2s"><text x="621" y="192" text-anchor="middle" class="tx r">✗ Method not found</text></g>
+<text x="24" y="234" class="tx r">Before: the server offered updates it can't send, so the client's listen call failed.</text></g>
+<g class="now"><g class="rv" style="animation-delay:0.4s"><line x1="540" y1="138" x2="180" y2="138" stroke="#3fb950" stroke-width="1.5" marker-end="url(#ag)"/><text x="360" y="130" text-anchor="middle" class="m tx">tools: { }</text></g>
+<g class="rv" style="animation-delay:1.2s"><text x="99" y="172" text-anchor="middle" class="tx g">✓ connected</text></g><g class="rv" style="animation-delay:1.2s"><text x="99" y="192" text-anchor="middle" class="tx mu" style="font-size:11px">no listen call needed</text></g>
+<text x="24" y="234" class="tx g">Now: discovery only lists what the server really supports. Older clients see no change.</text></g>
+</svg>

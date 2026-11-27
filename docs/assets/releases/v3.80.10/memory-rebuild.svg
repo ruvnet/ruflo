@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="250" viewBox="0 0 720 250" role="img" aria-labelledby="t d">
+<title id="t">Rebuilding the memory search index now reads the database</title>
+<desc id="d">Before 3.80.10, a forced rebuild of the memory search index returned the old saved copy, so new memories were not searchable. Now it rebuilds from the memory database, keeping the newest 10,000 entries.</desc>
+<style>
+text{font-family:system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}
+.m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.bg{fill:#0d1117}.card{fill:#161b22;stroke:#30363d}
+.t1{font-size:15px;font-weight:600;fill:#e6edf3}
+.lb{font-size:11px;font-weight:700;fill:#8b949e;letter-spacing:.08em}
+.tx{font-size:13px;fill:#c9d1d9}
+.mu{fill:#8b949e}.r{fill:#f85149}.g{fill:#3fb950}.b{fill:#58a6ff}
+.old{animation:old 8s infinite both}.now{animation:now 8s infinite both}
+@keyframes old{0%,46%{opacity:1}50%,96%{opacity:0}100%{opacity:1}}
+@keyframes now{0%,46%{opacity:0}50%,96%{opacity:1}100%{opacity:0}}
+.rv{animation:rv 4s infinite both}
+@keyframes rv{0%{opacity:0}8%,100%{opacity:1}}
+.flow{stroke-dasharray:6 6;animation:dash 1s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-12}}
+
+@media (prefers-reduced-motion:reduce){.old{animation:none;opacity:0}.now,.rv,.flow,.fly,.beam,.dot{animation:none;opacity:1}}
+</style>
+<rect class="bg" width="720" height="250" rx="12"/>
+<g class="old"><rect x="568" y="14" width="128" height="24" rx="12" fill="#f8514922" stroke="#f85149"/><text x="632" y="30" text-anchor="middle" class="lb r">BEFORE</text></g>
+<g class="now"><rect x="568" y="14" width="128" height="24" rx="12" fill="#3fb95022" stroke="#3fb950"/><text x="632" y="30" text-anchor="middle" class="lb g">NOW · 3.80.10</text></g>
+<text x="24" y="34" class="t1">Rebuild the memory search index</text>
+<rect class="card" x="24" y="56" width="190" height="104" rx="8"/><text x="119" y="80" text-anchor="middle" class="lb">MEMORY DATABASE</text><text x="119" y="110" text-anchor="middle" class="tx">all memories</text><text x="119" y="130" text-anchor="middle" class="tx mu" style="font-size:12px">including today's</text>
+<rect class="card" x="265" y="56" width="190" height="104" rx="8"/><text x="360" y="80" text-anchor="middle" class="lb">SAVED INDEX FILE</text><text x="360" y="110" text-anchor="middle" class="tx">old copy</text><text x="360" y="130" text-anchor="middle" class="tx mu" style="font-size:12px">from last week</text>
+<rect class="card" x="506" y="56" width="190" height="104" rx="8"/><text x="601" y="80" text-anchor="middle" class="lb">SEARCH INDEX</text>
+<g class="old"><path class="flow" d="M455 108 H504" stroke="#f85149" stroke-width="2.5" fill="none"/>
+<text x="601" y="110" text-anchor="middle" class="tx r">last week's copy</text><text x="601" y="130" text-anchor="middle" class="tx mu" style="font-size:12px">new memories missing</text>
+<text x="24" y="234" class="tx r">Before: asking for a rebuild handed back the old saved copy.</text></g>
+<g class="now"><path class="flow" d="M119 160 C119 205 601 205 601 162" stroke="#3fb950" stroke-width="2.5" fill="none"/>
+<text x="601" y="110" text-anchor="middle" class="tx g">rebuilt fresh</text><text x="601" y="130" text-anchor="middle" class="tx mu" style="font-size:12px">newest 10,000 entries</text>
+<text x="24" y="234" class="tx g">Now: a rebuild reads the database again. Above 10,000 entries, the newest are kept.</text></g>
+</svg>

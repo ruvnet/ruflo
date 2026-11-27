@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="240" viewBox="0 0 720 240" role="img" aria-labelledby="t d">
+<title id="t">agent spawn and agent stop now report failures</title>
+<desc id="d">Before 3.80.11, ruflo agent spawn printed success and exited 0 even when the swarm was full and no agent was created. Now it prints the real error, exits 1 and leaves the agent count unchanged.</desc>
+<style>
+text{font-family:system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}
+.m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.bg{fill:#0d1117}.card{fill:#161b22;stroke:#30363d}
+.t1{font-size:15px;font-weight:600;fill:#e6edf3}
+.lb{font-size:11px;font-weight:700;fill:#8b949e;letter-spacing:.08em}
+.tx{font-size:13px;fill:#c9d1d9}
+.mu{fill:#8b949e}.r{fill:#f85149}.g{fill:#3fb950}.b{fill:#58a6ff}
+.old{animation:old 8s infinite both}.now{animation:now 8s infinite both}
+@keyframes old{0%,46%{opacity:1}50%,96%{opacity:0}100%{opacity:1}}
+@keyframes now{0%,46%{opacity:0}50%,96%{opacity:1}100%{opacity:0}}
+.rv{animation:rv 4s infinite both}
+@keyframes rv{0%{opacity:0}8%,100%{opacity:1}}
+.flow{stroke-dasharray:6 6;animation:dash 1s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-12}}
+
+@media (prefers-reduced-motion:reduce){.old{animation:none;opacity:0}.now,.rv,.flow,.fly,.beam,.dot{animation:none;opacity:1}}
+</style>
+<rect class="bg" width="720" height="240" rx="12"/>
+<g class="old"><rect x="568" y="14" width="128" height="24" rx="12" fill="#f8514922" stroke="#f85149"/><text x="632" y="30" text-anchor="middle" class="lb r">BEFORE</text></g>
+<g class="now"><rect x="568" y="14" width="128" height="24" rx="12" fill="#3fb95022" stroke="#3fb950"/><text x="632" y="30" text-anchor="middle" class="lb g">NOW · 3.80.11</text></g>
+<circle cx="28" cy="26" r="5" fill="#f85149"/><circle cx="46" cy="26" r="5" fill="#d29922"/><circle cx="64" cy="26" r="5" fill="#3fb950"/><text x="84" y="30" class="lb">TERMINAL</text>
+<rect x="24" y="48" width="236" height="24" rx="12" fill="#d2992222" stroke="#d29922"/><text x="142" y="64" text-anchor="middle" class="lb" style="fill:#d29922">SWARM IS FULL · 1/1 AGENTS</text>
+<text x="24" y="102" class="m tx">$ ruflo agent spawn -t coder --name coder-1</text>
+<text x="540" y="102" class="lb">AGENTS COUNTED</text>
+<g class="old"><g class="rv" style="animation-delay:0.4s"><text x="24" y="128" class="m tx g">✓ Agent coder-1 spawned successfully</text></g>
+<g class="rv" style="animation-delay:1s"><text x="24" y="154" class="m tx mu">$ echo $?</text></g><g class="rv" style="animation-delay:1.4s"><text x="24" y="176" class="m tx">0</text></g>
+<g class="rv" style="animation-delay:0.8s"><text x="540" y="132" class="t1 r">2 → 3  ✗</text></g>
+<text x="24" y="220" class="tx r">Before: it said success and exited 0, even though no agent was created.</text></g>
+<g class="now"><g class="rv" style="animation-delay:0.4s"><text x="24" y="128" class="m tx r">✗ Failed to spawn agent: Swarm swarm-x is full (1/1 agents)</text></g>
+<g class="rv" style="animation-delay:1s"><text x="24" y="154" class="m tx mu">$ echo $?</text></g><g class="rv" style="animation-delay:1.4s"><text x="24" y="176" class="m tx">1</text></g>
+<g class="rv" style="animation-delay:0.8s"><text x="540" y="132" class="t1 g">2  ✓ unchanged</text></g>
+<text x="24" y="220" class="tx g">Now: the real error, exit code 1, and a correct count. ruflo agent stop works the same way.</text></g>
+</svg>
