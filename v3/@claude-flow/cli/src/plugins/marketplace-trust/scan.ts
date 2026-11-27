@@ -132,11 +132,53 @@ function readJson(path: string): unknown {
   }
 }
 
+const serversIn = (parsed: unknown): Record<string, unknown> =>
+  record(parsed) && record(parsed.mcpServers) ? parsed.mcpServers : record(parsed) ? parsed : {};
+
+/**
+ * Claude Code loads `.mcp.json` first, then each `plugin.json#mcpServers`
+ * entry: a `.json` path inside the plugin, an inline map, or an array of
+ * either. A declared entry that cannot be scanned is a high finding.
+ */
 function scanMcp(plugin: string, root: string, out: ScanFinding[]): void {
-  const file = '.mcp.json';
-  if (!existsSync(join(root, file))) return;
-  const parsed = readJson(join(root, file));
-  const servers = record(parsed) && record(parsed.mcpServers) ? parsed.mcpServers : record(parsed) ? parsed : {};
+  if (existsSync(join(root, '.mcp.json'))) {
+    scanMcpServers(plugin, '.mcp.json', serversIn(readJson(join(root, '.mcp.json'))), out);
+  }
+  const manifest = readJson(join(root, PLUGIN_MANIFEST));
+  const declared = record(manifest) ? manifest.mcpServers : undefined;
+  if (declared === undefined || declared === null) return;
+  for (const entry of Array.isArray(declared) ? declared : [declared]) {
+    if (record(entry)) {
+      scanMcpServers(plugin, PLUGIN_MANIFEST, entry, out);
+      continue;
+    }
+    if (typeof entry !== 'string' || !/\.json$/i.test(entry) || /^[a-z][a-z0-9+.-]*:/i.test(entry)) {
+      out.push({ plugin, severity: 'high', file: PLUGIN_MANIFEST, rule: 'mcp-unscannable', detail: `plugin.json#mcpServers entry cannot be scanned (${String(entry).slice(0, 80)})` });
+      continue;
+    }
+    const abs = resolve(root, entry);
+    const rel = relative(root, abs);
+    if (rel.startsWith('..') || isAbsolute(rel)) {
+      out.push({ plugin, severity: 'high', file: PLUGIN_MANIFEST, rule: 'mcp-outside-plugin', detail: `plugin.json#mcpServers points outside the plugin (${entry})` });
+      continue;
+    }
+    const file = relTo(root, abs);
+    let regular = false;
+    try { regular = lstatSync(abs).isFile(); } catch { /* reported below */ }
+    if (!regular) {
+      out.push({ plugin, severity: 'high', file, rule: existsSync(abs) ? 'mcp-unscannable' : 'mcp-missing', detail: 'plugin.json#mcpServers does not point at a regular file' });
+      continue;
+    }
+    const parsed = readJson(abs);
+    if (!record(parsed)) {
+      out.push({ plugin, severity: 'high', file, rule: 'mcp-unreadable', detail: 'plugin.json#mcpServers file is not valid JSON' });
+      continue;
+    }
+    scanMcpServers(plugin, file, serversIn(parsed), out);
+  }
+}
+
+function scanMcpServers(plugin: string, file: string, servers: Record<string, unknown>, out: ScanFinding[]): void {
   for (const [name, raw] of Object.entries(servers)) {
     if (!record(raw)) continue;
     const command = typeof raw.command === 'string' ? raw.command : '';
