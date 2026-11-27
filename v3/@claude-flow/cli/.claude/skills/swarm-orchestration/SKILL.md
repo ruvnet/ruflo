@@ -19,17 +19,17 @@ Orchestrates multi-agent swarms using agentic-flow's advanced coordination syste
 
 ```bash
 # Initialize swarm
-npx agentic-flow hooks swarm-init --topology mesh --max-agents 5
+npx @claude-flow/cli@latest swarm init --topology mesh --max-agents 5
 
 # Spawn agents
-npx agentic-flow hooks agent-spawn --type coder
-npx agentic-flow hooks agent-spawn --type tester
-npx agentic-flow hooks agent-spawn --type reviewer
+npx @claude-flow/cli@latest agent spawn --type coder
+npx @claude-flow/cli@latest agent spawn --type tester
+npx @claude-flow/cli@latest agent spawn --type reviewer
 
-# Orchestrate task
-npx agentic-flow hooks task-orchestrate \
-  --task "Build REST API with tests" \
-  --mode parallel
+# Create a task (queued; assign it with `task assign`)
+npx @claude-flow/cli@latest task create \
+  --type implementation \
+  --description "Build REST API with tests"
 ```
 
 ## Topology Patterns
@@ -147,13 +147,13 @@ const metrics = await swarm.getMetrics();
 
 ```bash
 # Pre-task coordination
-npx agentic-flow hooks pre-task --description "Build API"
+npx @claude-flow/cli@latest hooks pre-task --description "Build API"
 
 # Post-task synchronization
-npx agentic-flow hooks post-task --task-id "task-123"
+npx @claude-flow/cli@latest hooks post-task --task-id "task-123"
 
 # Session restore
-npx agentic-flow hooks session-restore --session-id "swarm-001"
+npx @claude-flow/cli@latest hooks session-restore --session-id "swarm-001"
 ```
 
 ## Best Practices
