@@ -40,6 +40,12 @@ const CONFIG = {
   //   RUFLO_STATUSLINE_HIDE_COST    1/true/yes/on removes the segment entirely.
   costSymbol: process.env.RUFLO_STATUSLINE_COST_SYMBOL ?? '$',
   hideCost: /^(1|true|yes|on)$/i.test(process.env.RUFLO_STATUSLINE_HIDE_COST || ''),
+  //   RUFLO_STATUSLINE_ENERGY_CSV   path to the CLEER dashboard CSV; shows the
+  //                                 session as an energy/carbon estimate instead.
+  energyCsv: process.env.RUFLO_STATUSLINE_ENERGY_CSV || '',
+  // Grid intensity override in gCO2e/kWh; unset keeps CLEER's own (640, on-site gas).
+  gridGPerKwh: Number(process.env.RUFLO_STATUSLINE_GRID_G_PER_KWH) || 0,
+  energyCarbon: !/^(0|false|no|off)$/i.test(process.env.RUFLO_STATUSLINE_ENERGY_CARBON || ''),
 };
 
 const CWD = process.cwd();
@@ -904,6 +910,110 @@ function getCostFromStdin() {
   return null;
 }
 
+// ─── Energy estimate (CLEER) ────────────────────────────────────
+// Wh = session cost x CLEER's energy_wh_per_usd for the model's Agentic/Typical
+// workload (https://cleerdash.sustainableaigroup.com/). The band is the row's
+// energy SD/mean; gCO2e uses the row's carbon/energy ratio. CLEER data is
+// CC BY-NC 4.0, so it is read from a user-supplied path, never bundled.
+// Valid for agentic sessions only: CLEER's Chat Wh/USD is ~2.7x higher. CLEER
+// sets cached-input energy by the cache price ratio, so cache reads don't skew
+// Wh/USD; decode energy ignores context length, so long sessions may run higher.
+
+// Quote-aware CSV line split (CLEER descriptions contain commas).
+function splitCsv(line) {
+  const out = [];
+  let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') q = false;
+      else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ',') { out.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
+// "claude-opus-4-5-20251101", "claude-opus-4-8[1m]", "GPT-5.4 mini" -> "opus 4.5", "opus 4.8", "gpt 5.4 mini"
+function modelKey(s) {
+  return String(s || '').toLowerCase().replace(/\[[^\]]*\]/g, '').replace(/-\d{8}\b/g, '').replace(/(\d)-(\d)(?!\d)/g, '$1.$2')
+    .replace(/[^a-z0-9.]+/g, ' ').replace(/^claude /, '').trim();
+}
+
+// "opus 5.5" -> { family: 'opus', version: 5.5 }, for Claude version fallback.
+function claudeFamily(key) {
+  const m = /^(opus|sonnet|haiku|fable) (\d+(?:\.\d)?)$/.exec(key);
+  return m ? { family: m[1], version: Number(m[2]) } : null;
+}
+
+function loadEnergyTable(csvPath) {
+  const lines = fs.readFileSync(csvPath, 'utf8').split(/\r?\n/).filter(Boolean);
+  const head = splitCsv(lines[0]);
+  const col = Object.fromEntries(head.map((h, i) => [h, i]));
+  for (const k of ['model_name', 'use_case', 'tier', 'energy_wh_mean', 'energy_wh_sd', 'carbon_gco2e_mean', 'energy_wh_per_usd']) {
+    if (!(k in col)) throw new Error('CLEER CSV missing column: ' + k);
+  }
+  const rows = [];
+  for (const line of lines.slice(1)) {
+    const r = splitCsv(line);
+    if (r[col.use_case] !== 'Agentic' || r[col.tier] !== 'Typical') continue;
+    const mean = Number(r[col.energy_wh_mean]);
+    const whPerUsd = Number(r[col.energy_wh_per_usd]);
+    if (!(mean > 0) || !(whPerUsd > 0)) continue;
+    const key = modelKey(r[col.model_name]);
+    rows.push({ key, claude: claudeFamily(key), whPerUsd,
+      sdRatio: Number(r[col.energy_wh_sd]) / mean, gPerWh: Number(r[col.carbon_gco2e_mean]) / mean });
+  }
+  return rows;
+}
+
+// Exact name (any provider); for Claude, else the newest same-family row at or
+// below the version, else the newest of the family. Proxied matches get '~'.
+function matchEnergyRow(rows, modelStr) {
+  const key = modelKey(modelStr);
+  const exact = rows.find(r => r.key === key);
+  if (exact) return { row: exact, proxy: false };
+  const want = claudeFamily(key);
+  if (!want) return null;
+  const fam = rows.filter(r => r.claude && r.claude.family === want.family).sort((a, b) => b.claude.version - a.claude.version);
+  const near = fam.find(r => r.claude.version < want.version) || fam[0];
+  return near ? { row: near, proxy: true } : null;
+}
+
+// >=10 integer, <10 one decimal, anything that rounds to 0.0 shows "0".
+function fmtSmall(x) {
+  const r = Math.round(x * 10) / 10;
+  return r === 0 ? '0' : r >= 10 ? String(Math.round(x)) : r.toFixed(1);
+}
+
+// A range whose high end would show 0.0 collapses to "<0.1".
+function bandSmall(lo, hi, mid, f) {
+  if (hi > 0 && fmtSmall(hi) === '0') return '<0.1';
+  return f(lo) === f(hi) ? f(mid) : f(lo) + '-' + f(hi);
+}
+
+// "~15-22 Wh · 10-14 gCO₂e"; null falls back to the cost display.
+function getEnergyLabel(costUsd) {
+  if (!CONFIG.energyCsv || !(costUsd > 0)) return null;
+  try {
+    const data = getStdinData();
+    const m = matchEnergyRow(loadEnergyTable(CONFIG.energyCsv), data && data.model && (data.model.id || data.model.display_name));
+    if (!m) return null;
+    const wh = costUsd * m.row.whPerUsd;
+    const lo = wh * Math.max(0, 1 - m.row.sdRatio), hi = wh * (1 + m.row.sdRatio);
+    const kwh = hi >= 1000;
+    const v = x => kwh ? (x / 1000).toFixed(1) : fmtSmall(x);
+    const band = (a, b, mid, f) => f(a) === f(b) ? f(mid) : f(a) + '-' + f(b);
+    const label = '⚡ ' + (m.proxy ? '~' : '') + (kwh ? band(lo, hi, wh, v) : bandSmall(lo, hi, wh, v)) + (kwh ? ' kWh' : ' Wh');
+    if (!CONFIG.energyCarbon) return label;
+    const g = CONFIG.gridGPerKwh ? CONFIG.gridGPerKwh / 1000 : m.row.gPerWh;
+    return label + ' · ' + bandSmall(lo * g, hi * g, wh * g, fmtSmall) + ' gCO₂e';
+  } catch (e) { return null; }
+}
+
 // Compares dotted-numeric version strings (e.g. "3.27.1" vs "3.27.10").
 // Returns >0 if a>b, <0 if a<b, 0 if equal-as-far-as-parseable. Deliberately
 // simple (no prerelease/build-metadata handling) — this only orders local
@@ -1120,7 +1230,7 @@ function generateStatusline() {
     header += '  ' + c.dim + '│' + c.reset + '  ' + ctxColor + '● ' + ctxInfo.usedPct + '% ctx' + c.reset;
   }
   if (!CONFIG.hideCost && costInfo && costInfo.costUsd > 0) {
-    header += '  ' + c.dim + '│' + c.reset + '  ' + c.brightYellow + CONFIG.costSymbol + costInfo.costUsd.toFixed(2) + c.reset;
+    header += '  ' + c.dim + '│' + c.reset + '  ' + c.brightYellow + (getEnergyLabel(costInfo.costUsd) || CONFIG.costSymbol + costInfo.costUsd.toFixed(2)) + c.reset;
   }
   lines.push(header);
 

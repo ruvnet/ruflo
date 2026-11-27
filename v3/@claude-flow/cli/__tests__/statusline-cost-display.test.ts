@@ -40,14 +40,14 @@ const stripAnsi = (s: string): string =>
  * local data — the cost segment comes purely from stdin, so this stays offline
  * and deterministic. Returns the first (header) line with ANSI stripped.
  */
-function renderHeader(env: Record<string, string> = {}): string {
+function renderHeader(env: Record<string, string> = {}, model: object = { display_name: 'Opus 4.8' }, costUsd = 1.3): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'ruflo-statusline-'));
   const scriptPath = path.join(dir, 'statusline.cjs');
   writeFileSync(scriptPath, SCRIPT, 'utf-8');
   const payload = JSON.stringify({
-    model: { display_name: 'Opus 4.8' },
+    model,
     context_window: { used_percentage: 34 },
-    cost: { total_cost_usd: 1.3, total_duration_ms: 376000 },
+    cost: { total_cost_usd: costUsd, total_duration_ms: 376000 },
   });
   try {
     const out = execFileSync(process.execPath, [scriptPath], {
@@ -101,6 +101,70 @@ describe('statusline cost display — runtime behavior', () => {
     const header = renderHeader({ RUFLO_STATUSLINE_COST_SYMBOL: '' });
     expect(header).toContain('1.30');
     expect(header).not.toContain('$1.30');
+  });
+});
+
+describe('statusline cost display — CLEER energy estimate', () => {
+  // Synthetic rows in the CLEER dashboard CSV shape (real data is CC BY-NC, so
+  // users point at their own copy). The quoted comma checks the CSV splitter.
+  const csvDir = mkdtempSync(path.join(tmpdir(), 'ruflo-cleer-'));
+  const csv = path.join(csvDir, 'cleer.csv');
+  writeFileSync(csv, [
+    'notes,model_name,use_case,tier,energy_wh_mean,energy_wh_sd,carbon_gco2e_mean,energy_wh_per_usd',
+    '"proxy, open model",Claude Opus 4,Agentic,Typical,10,2,6.4,5',
+    'x,Claude Opus 4,Chat,Typical,10,2,6.4,50',
+    'x,GPT-5.4 mini,Agentic,Typical,4,0,2.56,2',
+  ].join('\n'));
+  const withCsv = { RUFLO_STATUSLINE_ENERGY_CSV: csv };
+
+  it('keeps the dollar default when no CSV is configured', () => {
+    expect(renderHeader({}, { id: 'gpt-5.4-mini' })).toContain('$1.30');
+  });
+
+  it('renders an exact match for a non-Claude model', () => {
+    const header = renderHeader(withCsv, { id: 'gpt-5.4-mini' });
+    expect(header).toContain('⚡ 2.6 Wh · 1.7 gCO₂e');
+    expect(header).not.toContain('$1.30');
+  });
+
+  it('proxies a newer Claude model to its family with "~" and an SD band', () => {
+    expect(renderHeader(withCsv, { id: 'claude-opus-4-8' })).toContain('⚡ ~5.2-7.8 Wh · 3.3-5.0 gCO₂e');
+  });
+
+  it('ignores the context-window suffix in the model id', () => {
+    expect(renderHeader(withCsv, { id: 'claude-opus-4-8[1m]' })).toContain('⚡ ~5.2-7.8 Wh · 3.3-5.0 gCO₂e');
+  });
+
+  it('applies a grid-intensity override to the carbon band', () => {
+    const header = renderHeader({ ...withCsv, RUFLO_STATUSLINE_GRID_G_PER_KWH: '300' }, { id: 'claude-opus-4-8' });
+    expect(header).toContain('⚡ ~5.2-7.8 Wh · 1.6-2.3 gCO₂e');
+  });
+
+  it('shows energy alone when carbon is toggled off', () => {
+    const header = renderHeader({ ...withCsv, RUFLO_STATUSLINE_ENERGY_CARBON: '0' }, { id: 'gpt-5.4-mini' });
+    expect(header).toContain('⚡ 2.6 Wh');
+    expect(header).not.toContain('gCO₂e');
+  });
+
+  it('shows <0.1 for the whole range when the high end rounds to 0.0', () => {
+    expect(renderHeader(withCsv, { id: 'gpt-5.4-mini' }, 0.005)).toContain('⚡ <0.1 Wh · <0.1 gCO₂e');
+  });
+
+  it('prints a low end that rounds to 0.0 as 0', () => {
+    expect(renderHeader(withCsv, { id: 'claude-opus-4-8' }, 0.01)).toContain('⚡ ~0-0.1 Wh · <0.1 gCO₂e');
+  });
+
+  it('uses integers from 10 up and one decimal below', () => {
+    expect(renderHeader(withCsv, { id: 'gpt-5.4-mini' }, 5)).toContain('⚡ 10 Wh · 6.4 gCO₂e');
+    expect(renderHeader(withCsv, { id: 'gpt-5.4-mini' }, 4.9)).toContain('⚡ 9.8 Wh · 6.3 gCO₂e');
+  });
+
+  it('falls back to the cost symbol for an unknown model', () => {
+    expect(renderHeader(withCsv, { id: 'gpt-9' })).toContain('$1.30');
+  });
+
+  it('falls back to the cost symbol when the CSV is missing', () => {
+    expect(renderHeader({ RUFLO_STATUSLINE_ENERGY_CSV: path.join(csvDir, 'nope.csv') })).toContain('$1.30');
   });
 });
 
