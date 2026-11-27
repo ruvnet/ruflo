@@ -27,8 +27,8 @@ mcp__claude-flow__swarm_init({ topology: "mesh", maxAgents: 6 })
 // 2. Spawn specialized agents
 mcp__claude-flow__agent_spawn({ agentType: "researcher", name: "Agent 1" })
 
-// 3. Orchestrate tasks
-mcp__claude-flow__task_orchestrate({ task: "...", strategy: "parallel" })
+// 3. Create tasks
+mcp__claude-flow__task_create({ type: "feature", description: "..." })
 ```
 
 ## Core Concepts
@@ -210,18 +210,16 @@ mcp__claude-flow__memory_usage({
 
 #### Phase 4: Report Generation
 ```javascript
-// Orchestrate report generation
-mcp__claude-flow__task_orchestrate({
-  "task": "generate comprehensive research report",
-  "strategy": "sequential",
-  "priority": "high",
-  "dependencies": ["gather", "analyze", "validate", "synthesize"]
+// Create report generation task
+// Set report dependencies with CLI: task create --dependencies <taskIds>
+mcp__claude-flow__task_create({
+  "type": "research",
+  "description": "generate comprehensive research report",
+  "priority": "high"
 })
 
 // Monitor research progress
-mcp__claude-flow__swarm_status({
-  "swarmId": "research-swarm"
-})
+mcp__claude-flow__swarm_status({})
 
 // Generate final report
 mcp__claude-flow__workflow_execute({
@@ -287,11 +285,11 @@ devTeam.forEach(member => {
 #### Phase 1: Architecture and Design
 ```javascript
 // System architecture design
-mcp__claude-flow__task_orchestrate({
-  "task": "design system architecture for REST API",
-  "strategy": "sequential",
+mcp__claude-flow__task_create({
+  "type": "feature",
+  "description": "design system architecture for REST API",
   "priority": "critical",
-  "assignTo": "System Architect"
+  "assignTo": ["<architect agentId from agent_spawn>"]
 })
 
 // Store architecture decisions
@@ -332,10 +330,7 @@ mcp__claude-flow__parallel_execute({
 })
 
 // Monitor development progress
-mcp__claude-flow__swarm_monitor({
-  "swarmId": "dev-swarm",
-  "interval": 5000
-})
+mcp__claude-flow__swarm_status({})
 ```
 
 #### Phase 3: Testing and Validation
@@ -555,10 +550,7 @@ mcp__claude-flow__error_analysis({
 #### Phase 4: Monitoring and Reporting
 ```javascript
 // Real-time test monitoring
-mcp__claude-flow__swarm_monitor({
-  "swarmId": "testing-swarm",
-  "interval": 2000
-})
+mcp__claude-flow__swarm_status({})
 
 // Generate comprehensive test report
 mcp__claude-flow__performance_report({
@@ -567,8 +559,8 @@ mcp__claude-flow__performance_report({
 })
 
 // Get test results
-mcp__claude-flow__task_results({
-  "taskId": "test-execution-001"
+mcp__claude-flow__task_status({
+  "taskId": "<taskId returned by task_create>"
 })
 
 // Trend analysis
@@ -678,9 +670,9 @@ mcp__claude-flow__daa_fault_tolerance({
 
 // Error handling pattern
 try {
-  await mcp__claude-flow__task_orchestrate({
-    "task": "complex operation",
-    "strategy": "parallel",
+  await mcp__claude-flow__task_create({
+    "type": "feature",
+    "description": "complex operation",
     "priority": "high"
   })
 } catch (error) {
@@ -694,9 +686,9 @@ try {
 
   // Auto-recovery attempt
   if (status.healthy) {
-    await mcp__claude-flow__task_orchestrate({
-      "task": "retry failed operation",
-      "strategy": "sequential"
+    await mcp__claude-flow__task_create({
+      "type": "feature",
+      "description": "retry failed operation"
     })
   }
 }
@@ -816,10 +808,12 @@ mcp__claude-flow__coordination_sync({
   "swarmId": "development-swarm"
 })
 
-// Auto-scaling
-mcp__claude-flow__swarm_scale({
-  "swarmId": "development-swarm",
-  "targetSize": 12
+// Spawn additional agents (up to the maxAgents set in swarm_init)
+["coder", "tester", "reviewer"].forEach((agentType, index) => {
+  mcp__claude-flow__agent_spawn({
+    "agentType": agentType,
+    "name": `scale-worker-${index + 1}`
+  })
 })
 ```
 
@@ -827,10 +821,7 @@ mcp__claude-flow__swarm_scale({
 
 ```javascript
 // Real-time swarm monitoring
-mcp__claude-flow__swarm_monitor({
-  "swarmId": "active-swarm",
-  "interval": 3000
-})
+mcp__claude-flow__swarm_status({})
 
 // Collect comprehensive metrics
 mcp__claude-flow__metrics_collect({
