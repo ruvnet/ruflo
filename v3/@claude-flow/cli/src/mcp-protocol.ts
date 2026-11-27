@@ -13,6 +13,8 @@
  *    statelessly: `resultType` and `serverInfo` on every result, cache hints on lists,
  *    `-32602` for an unknown resource, `-32022` for an unsupported version.
  *  - `server/discover` is always answered, so a dual-era client's stdio probe succeeds.
+ *    Its capability copy omits `listChanged`: these dispatchers serve a static
+ *    catalogue and do not implement the modern notification stream (#5145).
  */
 
 import { readFileSync } from 'node:fs';
@@ -192,12 +194,31 @@ function discoverResponse(
     result: {
       resultType: 'complete',
       supportedVersions: [...SUPPORTED_PROTOCOL_VERSIONS],
-      capabilities,
+      // The stdio dispatchers answer tools/list statically and do not implement
+      // `subscriptions/listen`; advertising listChanged makes a modern client
+      // open a notification stream that fails with Method not found (#5145).
+      // Legacy `initialize` still returns the original capability object.
+      capabilities: discoveryCapabilities(capabilities),
       _meta: { [META_SERVER_INFO]: identity },
       ttlMs: DISCOVER_TTL_MS,
       cacheScope: 'private',
     },
   };
+}
+
+/** Copy capabilities without `listChanged`, which needs a modern notification stream we do not serve. */
+function discoveryCapabilities(capabilities: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(capabilities)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const copy = { ...(value as Record<string, unknown>) };
+      delete copy.listChanged;
+      out[name] = copy;
+    } else {
+      out[name] = value;
+    }
+  }
+  return out;
 }
 
 /** The resource-not-found code the request's revision expects. */
