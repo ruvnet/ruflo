@@ -1,0 +1,12 @@
+{
+  "name": "ruflo-testgen",
+  "description": "Test gap detection, coverage analysis, and automated test generation — drives the testgaps background worker via hooks_worker-dispatch; SPARC Refinement-phase canonical owner",
+  "version": "0.3.4",
+  "author": {
+    "name": "ruvnet",
+    "url": "https://github.com/ruvnet"
+  },
+  "homepage": "https://github.com/ruvnet/ruflo",
+  "license": "MIT",
+  "hooks": "./hooks/codex-hooks.json"
+}

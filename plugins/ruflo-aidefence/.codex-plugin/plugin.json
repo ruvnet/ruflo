@@ -1,0 +1,12 @@
+{
+  "name": "ruflo-aidefence",
+  "description": "AI safety scanning, PII detection, prompt injection defense, and adaptive threat learning",
+  "version": "0.3.4",
+  "author": {
+    "name": "ruvnet",
+    "url": "https://github.com/ruvnet"
+  },
+  "homepage": "https://github.com/ruvnet/ruflo",
+  "license": "MIT",
+  "hooks": "./hooks/codex-hooks.json"
+}

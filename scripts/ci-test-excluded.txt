@@ -84,6 +84,7 @@ plugins/ruflo-workflows/tests/textsof.test.ts
 plugins/ruflo-x-gateway/tests/mod.test.ts
 plugins/ruflo-x-gateway/tests/textsof.test.ts
 scripts/check-adr-links.test.mjs
+tests/plugins/codex-function-hook-manifests.test.mjs
 tests/plugins/codex-mod-hooks.test.mjs
 tests/plugins/codex-swarm-hook-manifest.test.mjs
 scripts/__tests__/guard-label.test.mjs

@@ -1,0 +1,12 @@
+{
+  "name": "ruflo-rag-memory",
+  "description": "RuVector memory with HNSW search, AgentDB, and semantic retrieval. As a mod (ADR-445): a write guard that keeps secrets out of memory, /rag-mod, and a status file the console shows",
+  "version": "0.3.8",
+  "author": {
+    "name": "ruvnet",
+    "url": "https://github.com/ruvnet"
+  },
+  "homepage": "https://github.com/ruvnet/ruflo",
+  "license": "MIT",
+  "hooks": "./hooks/codex-hooks.json"
+}

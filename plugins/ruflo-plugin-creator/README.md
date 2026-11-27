@@ -24,7 +24,7 @@ Scaffold, validate, and publish new Claude Code plugins with proper structure, M
 
 - `create-plugin` -- Generate plugin structure with skills, commands, agents, ADR-0001, smoke test, and contract sections
 - `validate-plugin` -- Validate plugin format and catch issues before publishing
-- `create-mod` -- Scaffold a Claude Code mod (function hooks) from `templates/mod/` (`scripts/scaffold-mod.mjs <name> <dir>`; the manifest is `plugin.json.tmpl` so validators do not read it as a nested plugin): hybrid `hooks.json` with a classic fallback that stands down while the module runs, a host adapter over literal `$` calls, `userConfig`, engine-kit tests, tsconfig. Validated with `claude plugin validate` and `claude plugin test` (ruflo ADR-404)
+- `create-mod` -- Scaffold a Claude Code mod (function hooks) from `templates/mod/` (`scripts/scaffold-mod.mjs <name> <dir>`; manifests are `plugin.json.tmpl` and `codex-plugin.json.tmpl` so validators do not read it as a nested plugin): hybrid `hooks.json` with a classic fallback that stands down while the module runs, a Codex override at `hooks/codex-hooks.json` (no `modules` field), a host adapter over literal `$` calls, `userConfig`, engine-kit tests, tsconfig. Validated with `claude plugin validate` and `claude plugin test` (ruflo ADR-404)
 
 ## Compatibility
 

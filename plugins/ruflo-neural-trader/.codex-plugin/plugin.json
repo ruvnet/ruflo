@@ -1,0 +1,12 @@
+{
+  "name": "ruflo-neural-trader",
+  "description": "Neural trading via npx neural-trader — self-learning strategies, Rust/NAPI backtesting, 112+ MCP tools, swarm coordination, and portfolio optimization. As a mod (ADR-445): a tighten-only guard on its tools, /trader-mod, and a status file the console shows",
+  "version": "0.3.6",
+  "author": {
+    "name": "ruvnet",
+    "url": "https://github.com/ruvnet"
+  },
+  "homepage": "https://github.com/ruvnet/neural-trader",
+  "license": "MIT",
+  "hooks": "./hooks/codex-hooks.json"
+}

@@ -16,6 +16,8 @@ export function scaffoldMod(name, dest) {
   cpSync(template, out, { recursive: true })
   mkdirSync(join(out, '.claude-plugin'), { recursive: true })
   renameSync(join(out, 'plugin.json.tmpl'), join(out, '.claude-plugin', 'plugin.json'))
+  mkdirSync(join(out, '.codex-plugin'), { recursive: true })
+  renameSync(join(out, 'codex-plugin.json.tmpl'), join(out, '.codex-plugin', 'plugin.json'))
   const statusDir = name.endsWith('-mod') ? name : `${name}-mod`
   const upper = name.toUpperCase().replace(/-/g, '_')
   const walk = (dir) => {
