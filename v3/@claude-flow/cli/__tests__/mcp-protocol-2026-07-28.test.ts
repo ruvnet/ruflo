@@ -42,19 +42,38 @@ describe('mcp-protocol unit', () => {
     expect(p.response?.result).toEqual({ protocolVersion: '2025-06-18', serverInfo: ID, capabilities: CAPS });
   });
 
-  it('answers server/discover with or without _meta (stdio probe)', () => {
+  it('answers server/discover with or without _meta (stdio probe), without unsupported listChanged', () => {
     for (const params of [{}, modernMeta()]) {
       const r = protocolPreflight({ id: 'd', method: 'server/discover', params }, CAPS, ID).response!;
       expect(r.id).toBe('d');
       expect(r.result).toMatchObject({
         resultType: 'complete',
         supportedVersions: SUPPORTED_PROTOCOL_VERSIONS,
-        capabilities: CAPS,
+        capabilities: { tools: {}, resources: {} },
         _meta: { 'io.modelcontextprotocol/serverInfo': ID },
         cacheScope: 'private',
       });
       expect(typeof r.result!.ttlMs).toBe('number');
+      expect((r.result!.capabilities as { tools?: { listChanged?: unknown } }).tools?.listChanged).toBeUndefined();
     }
+  });
+
+  it('removes listChanged from every discovery capability without mutating the caller object (#5145)', () => {
+    const caps = {
+      tools: { listChanged: true, title: 'keep' },
+      resources: { listChanged: true, subscribe: false },
+      prompts: { listChanged: true },
+    };
+    const discover = protocolPreflight({ id: 1, method: 'server/discover', params: {} }, caps, ID).response!;
+    expect(discover.result!.capabilities).toEqual({
+      tools: { title: 'keep' },
+      resources: { subscribe: false },
+      prompts: {},
+    });
+    // Capability discovery must not consume the caller's object; legacy initialize keeps it intact.
+    expect(caps.tools.listChanged).toBe(true);
+    const init = protocolPreflight({ id: 2, method: 'initialize', params: { protocolVersion: '2025-11-25' } }, caps, ID).response!;
+    expect((init.result!.capabilities as typeof caps).tools.listChanged).toBe(true);
   });
 
   it('rejects an unknown declared version with UnsupportedProtocolVersionError (-32022)', () => {
