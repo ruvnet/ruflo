@@ -153,6 +153,8 @@ const spawnCommand: Command = {
         agentType: string;
         status: string;
         createdAt: string;
+        success?: boolean;
+        error?: string;
       }>('agent_spawn', {
         agentType,
         id: agentName,
@@ -170,6 +172,14 @@ const spawnCommand: Command = {
           capabilities: getAgentCapabilities(agentType),
         },
       });
+
+      if (result.success === false) {
+        output.printError(`Failed to spawn agent: ${result.error ?? 'unknown error'}`);
+        if (ctx.flags.format === 'json') {
+          output.printJson(result);
+        }
+        return { success: false, exitCode: 1 };
+      }
 
       output.writeln();
       output.printTable({
@@ -465,11 +475,21 @@ const stopCommand: Command = {
         agentId: string;
         terminated: boolean;
         terminatedAt: string;
+        success?: boolean;
+        error?: string;
       }>('agent_terminate', {
         agentId,
         graceful: !force,
         reason: 'Stopped by user via CLI',
       });
+
+      if (result.success === false) {
+        output.printError(`Failed to stop agent: ${result.error ?? 'unknown error'}`);
+        if (ctx.flags.format === 'json') {
+          output.printJson(result);
+        }
+        return { success: false, exitCode: 1 };
+      }
 
       if (!force) {
         output.writeln(output.dim('  Completing current task...'));
