@@ -193,7 +193,7 @@ export class ConfigFileManager {
   }
 
   /** Import config from a specific path */
-  importFrom(cwd: string, importPath: string): void {
+  importFrom(cwd: string, importPath: string, merge = false): void {
     const resolved = path.resolve(cwd, importPath);
     if (!fs.existsSync(resolved)) {
       throw new Error(`Import file not found: ${resolved}`);
@@ -209,9 +209,21 @@ export class ConfigFileManager {
       throw new Error('Import file must contain a JSON object');
     }
     this.selectProject(cwd);
+    let config: Record<string, unknown>;
+    if (merge) {
+      const current = structuredClone(this.load(cwd) ?? {});
+      for (const importedKey of Object.keys(imported)) {
+        for (const existingKey of Object.keys(current)) {
+          if (existingKey.startsWith(`${importedKey}.`)) delete current[existingKey];
+        }
+      }
+      config = { ...current, ...imported };
+    } else {
+      config = imported;
+    }
     const targetPath = this.findConfig(cwd) ?? path.resolve(cwd, CONFIG_FILENAMES[0]);
-    this.writeAtomic(targetPath, imported);
-    this.config = imported;
+    this.writeAtomic(targetPath, config);
+    this.config = config;
     this.configPath = targetPath;
   }
 
