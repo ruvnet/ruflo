@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="250" viewBox="0 0 720 250" role="img" aria-labelledby="t d">
+<title id="t">config import --merge now keeps your other settings</title>
+<desc id="d">Before 3.80.11, ruflo config import --merge replaced the whole config file with the import file. Now it keeps every setting the import file does not mention.</desc>
+<style>
+text{font-family:system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}
+.m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.bg{fill:#0d1117}.card{fill:#161b22;stroke:#30363d}
+.t1{font-size:15px;font-weight:600;fill:#e6edf3}
+.lb{font-size:11px;font-weight:700;fill:#8b949e;letter-spacing:.08em}
+.tx{font-size:13px;fill:#c9d1d9}
+.mu{fill:#8b949e}.r{fill:#f85149}.g{fill:#3fb950}.b{fill:#58a6ff}
+.old{animation:old 8s infinite both}.now{animation:now 8s infinite both}
+@keyframes old{0%,46%{opacity:1}50%,96%{opacity:0}100%{opacity:1}}
+@keyframes now{0%,46%{opacity:0}50%,96%{opacity:1}100%{opacity:0}}
+.rv{animation:rv 4s infinite both}
+@keyframes rv{0%{opacity:0}8%,100%{opacity:1}}
+.flow{stroke-dasharray:6 6;animation:dash 1s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-12}}
+.fly{animation:fly 4s infinite both}@keyframes fly{0%,8%{opacity:0;transform:translate(0,0)}14%{opacity:1;transform:translate(0,0)}45%,100%{opacity:1;transform:translate(236px,78px)}}
+@media (prefers-reduced-motion:reduce){.old{animation:none;opacity:0}.now,.rv,.flow,.fly,.beam,.dot{animation:none;opacity:1}}
+</style>
+<rect class="bg" width="720" height="250" rx="12"/>
+<g class="old"><rect x="568" y="14" width="128" height="24" rx="12" fill="#f8514922" stroke="#f85149"/><text x="632" y="30" text-anchor="middle" class="lb r">BEFORE</text></g>
+<g class="now"><rect x="568" y="14" width="128" height="24" rx="12" fill="#3fb95022" stroke="#3fb950"/><text x="632" y="30" text-anchor="middle" class="lb g">NOW · 3.80.11</text></g>
+<text x="24" y="34" class="m tx">$ ruflo config import --file import.json --merge</text>
+<text x="24" y="70" class="lb">YOUR CONFIG</text><text x="260" y="70" class="lb">IMPORT.JSON</text><text x="496" y="70" class="lb">RESULT</text>
+<rect class="card" x="24" y="80" width="200" height="120" rx="8"/><rect class="card" x="260" y="80" width="200" height="120" rx="8"/><rect class="card" x="496" y="80" width="200" height="120" rx="8"/>
+<rect x="36" y="90" width="176" height="22" rx="5" fill="#30363d" stroke="#30363d"/><text x="46" y="105" class="m tx">version</text><rect x="36" y="116" width="176" height="22" rx="5" fill="#30363d" stroke="#30363d"/><text x="46" y="131" class="m tx">swarm</text><rect x="36" y="142" width="176" height="22" rx="5" fill="#30363d" stroke="#30363d"/><text x="46" y="157" class="m tx">custom</text>
+<text x="242" y="146" text-anchor="middle" class="t1 mu">+</text><text x="478" y="146" text-anchor="middle" class="t1 mu">→</text>
+<rect x="272" y="90" width="176" height="22" rx="5" fill="#58a6ff33" stroke="#58a6ff"/><text x="282" y="105" class="m tx">added</text>
+<g class="old"><rect x="508" y="90" width="176" height="22" rx="5" fill="#f8514915" stroke="#f85149" stroke-dasharray="4 3"/><text x="518" y="105" class="m tx mu">version</text><line x1="516" y1="101" x2="576.6" y2="101" stroke="#f85149" stroke-width="1.5"/><text x="676" y="105" text-anchor="end" class="lb r">DELETED</text><rect x="508" y="116" width="176" height="22" rx="5" fill="#f8514915" stroke="#f85149" stroke-dasharray="4 3"/><text x="518" y="131" class="m tx mu">swarm</text><line x1="516" y1="127" x2="561" y2="127" stroke="#f85149" stroke-width="1.5"/><text x="676" y="131" text-anchor="end" class="lb r">DELETED</text><rect x="508" y="142" width="176" height="22" rx="5" fill="#f8514915" stroke="#f85149" stroke-dasharray="4 3"/><text x="518" y="157" class="m tx mu">custom</text><line x1="516" y1="153" x2="568.8" y2="153" stroke="#f85149" stroke-width="1.5"/><text x="676" y="157" text-anchor="end" class="lb r">DELETED</text>
+<text x="24" y="232" class="tx r">Before: --merge was ignored, so every setting missing from import.json was deleted.</text></g>
+<g class="now"><rect x="508" y="90" width="176" height="22" rx="5" fill="#3fb95022" stroke="#3fb950"/><text x="518" y="105" class="m tx">version</text><text x="676" y="105" text-anchor="end" class="lb g">KEPT</text><rect x="508" y="116" width="176" height="22" rx="5" fill="#3fb95022" stroke="#3fb950"/><text x="518" y="131" class="m tx">swarm</text><text x="676" y="131" text-anchor="end" class="lb g">KEPT</text><rect x="508" y="142" width="176" height="22" rx="5" fill="#3fb95022" stroke="#3fb950"/><text x="518" y="157" class="m tx">custom</text><text x="676" y="157" text-anchor="end" class="lb g">KEPT</text>
+<text x="24" y="232" class="tx g">Now: settings import.json doesn't mention are kept; the ones it names are replaced.</text></g>
+<g class="fly"><rect x="272" y="90" width="176" height="22" rx="5" fill="#58a6ff33" stroke="#58a6ff"/><text x="282" y="105" class="m tx">added</text></g>
+</svg>

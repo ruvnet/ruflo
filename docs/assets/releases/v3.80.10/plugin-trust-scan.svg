@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="250" viewBox="0 0 720 250" role="img" aria-labelledby="t d">
+<title id="t">The plugin trust scan now checks servers declared in plugin.json</title>
+<desc id="d">Before 3.80.10, the marketplace trust scan only read .mcp.json, so MCP servers declared in plugin.json were never checked. Now both are checked, and unreadable servers or servers outside the plugin are high findings.</desc>
+<style>
+text{font-family:system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}
+.m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.bg{fill:#0d1117}.card{fill:#161b22;stroke:#30363d}
+.t1{font-size:15px;font-weight:600;fill:#e6edf3}
+.lb{font-size:11px;font-weight:700;fill:#8b949e;letter-spacing:.08em}
+.tx{font-size:13px;fill:#c9d1d9}
+.mu{fill:#8b949e}.r{fill:#f85149}.g{fill:#3fb950}.b{fill:#58a6ff}
+.old{animation:old 8s infinite both}.now{animation:now 8s infinite both}
+@keyframes old{0%,46%{opacity:1}50%,96%{opacity:0}100%{opacity:1}}
+@keyframes now{0%,46%{opacity:0}50%,96%{opacity:1}100%{opacity:0}}
+.rv{animation:rv 4s infinite both}
+@keyframes rv{0%{opacity:0}8%,100%{opacity:1}}
+.flow{stroke-dasharray:6 6;animation:dash 1s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-12}}
+.beam{animation:beam 4s ease-in-out infinite}@keyframes beam{0%,100%{transform:translateY(0)}50%{transform:translateY(52px)}}
+@media (prefers-reduced-motion:reduce){.old{animation:none;opacity:0}.now,.rv,.flow,.fly,.beam,.dot{animation:none;opacity:1}}
+</style>
+<rect class="bg" width="720" height="250" rx="12"/>
+<g class="old"><rect x="568" y="14" width="128" height="24" rx="12" fill="#f8514922" stroke="#f85149"/><text x="632" y="30" text-anchor="middle" class="lb r">BEFORE</text></g>
+<g class="now"><rect x="568" y="14" width="128" height="24" rx="12" fill="#3fb95022" stroke="#3fb950"/><text x="632" y="30" text-anchor="middle" class="lb g">NOW · 3.80.10</text></g>
+<text x="24" y="34" class="t1">Trust scan of an installed plugin</text>
+<rect class="card" x="24" y="56" width="310" height="150" rx="8"/><text x="40" y="78" class="lb">PLUGIN FOLDER</text>
+<rect class="beam" x="32" y="114" width="294" height="24" rx="4" fill="#58a6ff22" stroke="#58a6ff55"/>
+<text x="40" y="104" class="m tx">my-plugin/</text><text x="40" y="130" class="m tx">├─ .mcp.json   → server A</text><text x="40" y="156" class="m tx">└─ plugin.json → server B</text><text x="160" y="176" class="m tx mu" style="font-size:11px">(mcpServers)</text>
+<rect class="card" x="360" y="56" width="336" height="150" rx="8"/><text x="376" y="78" class="lb">SCAN RESULT</text>
+<text x="376" y="110" class="m tx">server A</text><text x="376" y="138" class="m tx">server B</text>
+<g class="old"><g class="rv" style="animation-delay:0.6s"><text x="680" y="110" text-anchor="end" class="tx g">✓ checked</text></g><g class="rv" style="animation-delay:1.2s"><text x="680" y="138" text-anchor="end" class="tx r">— never checked</text></g>
+<text x="24" y="234" class="tx r">Before: servers declared in plugin.json slipped past the trust scan.</text></g>
+<g class="now"><g class="rv" style="animation-delay:0.6s"><text x="680" y="110" text-anchor="end" class="tx g">✓ checked</text></g><g class="rv" style="animation-delay:1.2s"><text x="680" y="138" text-anchor="end" class="tx g">✓ checked</text></g>
+<g class="rv" style="animation-delay:1.8s"><text x="376" y="174" class="m tx" style="font-size:12px">server outside the plugin</text><rect x="628" y="160" width="52" height="20" rx="10" fill="#f8514922" stroke="#f85149"/><text x="654" y="174" text-anchor="middle" class="lb r">HIGH</text></g>
+<text x="24" y="234" class="tx g">Now: both are checked. Servers it can't read, or outside the plugin, are flagged high.</text></g>
+</svg>
