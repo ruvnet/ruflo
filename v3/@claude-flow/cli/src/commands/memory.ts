@@ -1819,7 +1819,7 @@ const exportCommand: Command = {
     {
       name: 'format',
       short: 'f',
-      description: 'Export format (json, csv, binary)',
+      description: 'Export format (json; csv and binary fall back to JSON today)',
       type: 'string',
       choices: ['json', 'csv', 'binary'],
       default: 'json'
@@ -1832,16 +1832,15 @@ const exportCommand: Command = {
     },
     {
       name: 'include-vectors',
-      description: 'Include vector embeddings',
-      type: 'boolean',
-      default: true
+      description: 'Include vector embeddings (advisory — vectors are not exported yet)',
+      type: 'boolean'
     },
     DB_PATH_OPTION
   ],
   examples: [
     { command: 'claude-flow memory export -o ./backup.json', description: 'Export all to JSON' },
     { command: 'claude-flow memory export -o ./agentdb.json --path .swarm/agentdb-memory.db', description: 'Export one specific store' },
-    { command: 'claude-flow memory export -o ./data.csv -f csv', description: 'Export to CSV' }
+    { command: 'claude-flow memory export -o ./data.csv -f csv', description: 'CSV (falls back to JSON today)' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const outputPath = ctx.flags.output as string;
@@ -1864,6 +1863,8 @@ const exportCommand: Command = {
           patterns: number;
         };
         fileSize: string;
+        note?: string;
+        warnings?: string[];
       }>('memory_export', {
         outputPath,
         format,
@@ -1881,9 +1882,11 @@ const exportCommand: Command = {
       }
 
       output.printSuccess(`Exported to ${result.outputPath}`);
+      if (result.note) output.printWarning(result.note);
+      result.warnings?.forEach(warning => output.printWarning(warning));
       output.printList([
         `Entries: ${result.exported.entries}`,
-        `Vectors: ${result.exported.vectors}`,
+        `Entries with embeddings: ${result.exported.vectors} (vectors are not written to the file yet)`,
         `Patterns: ${result.exported.patterns}`,
         `File size: ${result.fileSize}`
       ]);

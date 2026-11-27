@@ -1871,13 +1871,13 @@ export const memoryTools: MCPTool[] = [
     // #1916: `ruflo memory export -o <file>` referenced an unregistered tool.
     // Dumps entry metadata (and values when the backend returns them) to JSON.
     name: 'memory_export',
-    description: 'Export memory entries to a JSON file (keys, namespaces, timestamps, and values when available). Use when native Write is wrong because the data is rows in .swarm/memory.db, not a file you can copy. For ingesting an export elsewhere use memory_import. (CSV output and embedding-vector export are follow-ups.)',
+    description: 'Export memory entries to a JSON file (keys, namespaces, timestamps, and values when available). Use when native Write is wrong because the data is rows in .swarm/memory.db, not a file you can copy. For ingesting an export elsewhere use memory_import. (CSV/binary output and embedding-vector export are follow-ups.)',
     category: 'memory',
     inputSchema: {
       type: 'object',
       properties: {
         outputPath: { type: 'string', description: 'File path to write the JSON export to' },
-        format: { type: 'string', enum: ['json', 'csv'], description: 'Export format (csv falls back to json today)' },
+        format: { type: 'string', enum: ['json', 'csv', 'binary'], description: 'Export format (csv and binary fall back to json today)' },
         dbPath: { type: 'string', description: 'Explicit memory DB to export (default: the AgentDB store plus the CLI sibling)' },
         namespace: { type: 'string', description: 'Limit export to one namespace' },
         includeVectors: { type: 'boolean', description: 'Include embedding vectors (advisory — not exported yet)' },
@@ -1971,14 +1971,15 @@ export const memoryTools: MCPTool[] = [
       try { writeFileSync(outputPath, JSON.stringify(payload, null, 2), 'utf-8'); }
       catch (e) { return { error: `Could not write ${outputPath}: ${(e as Error).message}` }; }
       const vectorsWithEmb = all.entries.filter(e => e.hasEmbedding).length;
+      const fmt = typeof input.format === 'string' && input.format ? input.format : 'json';
       return {
         outputPath,
-        format: (input.format as string) || 'json',
+        format: fmt,
         exported: { entries: all.entries.length, vectors: vectorsWithEmb, patterns: 0 },
         stores,
         ...(warnings.length ? { warnings } : {}),
         fileSize: `${Buffer.byteLength(JSON.stringify(payload))}B`,
-        note: input.format === 'csv' ? 'CSV not implemented yet — wrote JSON' : undefined,
+        note: fmt.toLowerCase() !== 'json' ? `${fmt.toUpperCase()} not implemented yet — wrote JSON` : undefined,
       };
     },
   },
