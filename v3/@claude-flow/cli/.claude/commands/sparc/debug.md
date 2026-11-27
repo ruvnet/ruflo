@@ -79,5 +79,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "debug_context" "important decisions" --namespace debug
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "debug" --limit 5
+npx @claude-flow/cli@latest memory search --query "debug" --limit 5
 ```

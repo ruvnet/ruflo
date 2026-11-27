@@ -79,5 +79,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "refinement-optimization-mode_context" "important decisions" --namespace refinement-optimization-mode
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "refinement-optimization-mode" --limit 5
+npx @claude-flow/cli@latest memory search --query "refinement-optimization-mode" --limit 5
 ```

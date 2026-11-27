@@ -107,5 +107,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "sparc_context" "important decisions" --namespace sparc
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "sparc" --limit 5
+npx @claude-flow/cli@latest memory search --query "sparc" --limit 5
 ```

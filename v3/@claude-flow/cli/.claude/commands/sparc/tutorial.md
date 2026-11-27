@@ -75,5 +75,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "tutorial_context" "important decisions" --namespace tutorial
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "tutorial" --limit 5
+npx @claude-flow/cli@latest memory search --query "tutorial" --limit 5
 ```

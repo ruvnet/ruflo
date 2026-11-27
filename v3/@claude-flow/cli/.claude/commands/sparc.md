@@ -127,7 +127,7 @@ npx @claude-flow/cli@latest memory store "spec_auth" "OAuth2 + JWT requirements"
 ./claude-flow memory store "arch_api" "RESTful microservices design" --namespace arch
 
 # Query previous work
-./claude-flow memory query "authentication" --limit 10
+./claude-flow memory search --query "authentication" --limit 10
 
 # Export project memory
 ./claude-flow memory export sparc-project-backup.json

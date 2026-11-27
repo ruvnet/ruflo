@@ -145,7 +145,7 @@ Swarms automatically use distributed memory for collaboration:
 ./claude-flow memory store "swarm_objective" "Build scalable API" --namespace swarm
 
 # Query swarm progress
-./claude-flow memory query "swarm_progress" --namespace swarm
+./claude-flow memory search --query "swarm_progress" --namespace swarm
 
 # Export swarm memory
 ./claude-flow memory export swarm-results.json --namespace swarm

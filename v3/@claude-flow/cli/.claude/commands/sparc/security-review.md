@@ -76,5 +76,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "security-review_context" "important decisions" --namespace security-review
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "security-review" --limit 5
+npx @claude-flow/cli@latest memory search --query "security-review" --limit 5
 ```

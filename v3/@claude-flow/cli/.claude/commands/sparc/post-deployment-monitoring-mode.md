@@ -79,5 +79,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "post-deployment-monitoring-mode_context" "important decisions" --namespace post-deployment-monitoring-mode
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "post-deployment-monitoring-mode" --limit 5
+npx @claude-flow/cli@latest memory search --query "post-deployment-monitoring-mode" --limit 5
 ```
