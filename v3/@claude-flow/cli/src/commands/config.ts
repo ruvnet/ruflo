@@ -393,7 +393,7 @@ const importCommand: Command = {
     }
 
     try {
-      configManager.importFrom(ctx.cwd, file);
+      configManager.importFrom(ctx.cwd, file, ctx.flags.merge === true);
       output.writeln(`Configuration imported from: ${path.resolve(ctx.cwd, file)}`);
       return { success: true };
     } catch (err: unknown) {
