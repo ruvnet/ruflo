@@ -93,5 +93,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "ask_context" "important decisions" --namespace ask
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "ask" --limit 5
+npx @claude-flow/cli@latest memory search --query "ask" --limit 5
 ```

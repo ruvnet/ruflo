@@ -33,7 +33,7 @@ Claude-Flow is the ultimate multi-terminal orchestration platform that revolutio
 
 ### 🧠 Memory Operations
 - `./claude-flow memory store "key" "value"` - Store data
-- `./claude-flow memory query "search"` - Search memory
+- `./claude-flow memory search --query "search"` - Search memory
 - `./claude-flow memory stats` - Memory statistics
 - `./claude-flow memory export <file>` - Export memory
 - `./claude-flow memory import <file>` - Import memory

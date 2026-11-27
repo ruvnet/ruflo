@@ -19,10 +19,10 @@ The memory system provides persistent storage for cross-session and cross-agent 
 ## Query Memory
 ```bash
 # Search across all namespaces
-./claude-flow memory query "authentication"
+./claude-flow memory search --query "authentication"
 
 # Search with filters
-./claude-flow memory query "API design" --namespace arch --limit 10
+./claude-flow memory search --query "API design" --namespace arch --limit 10
 ```
 
 ## Memory Statistics
@@ -97,8 +97,8 @@ The memory system provides persistent storage for cross-session and cross-agent 
 
 ### Query project decisions:
 ```bash
-./claude-flow memory query "authentication" --namespace arch --limit 5
-./claude-flow memory query "test results" --namespace test
+./claude-flow memory search --query "authentication" --namespace arch --limit 5
+./claude-flow memory search --query "test results" --namespace test
 ```
 
 ### Backup project memory:

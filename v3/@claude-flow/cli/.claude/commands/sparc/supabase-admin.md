@@ -344,5 +344,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "supabase-admin_context" "important decisions" --namespace supabase-admin
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "supabase-admin" --limit 5
+npx @claude-flow/cli@latest memory search --query "supabase-admin" --limit 5
 ```

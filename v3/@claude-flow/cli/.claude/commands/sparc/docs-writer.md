@@ -76,5 +76,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "docs-writer_context" "important decisions" --namespace docs-writer
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "docs-writer" --limit 5
+npx @claude-flow/cli@latest memory search --query "docs-writer" --limit 5
 ```

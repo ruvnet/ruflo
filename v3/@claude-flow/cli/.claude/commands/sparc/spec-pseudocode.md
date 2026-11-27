@@ -76,5 +76,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "spec-pseudocode_context" "important decisions" --namespace spec-pseudocode
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "spec-pseudocode" --limit 5
+npx @claude-flow/cli@latest memory search --query "spec-pseudocode" --limit 5
 ```

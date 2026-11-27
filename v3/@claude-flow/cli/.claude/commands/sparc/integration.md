@@ -79,5 +79,5 @@ mcp__claude-flow__memory_search {
 npx @claude-flow/cli@latest memory store "integration_context" "important decisions" --namespace integration
 
 # Query previous work
-npx @claude-flow/cli@latest memory query "integration" --limit 5
+npx @claude-flow/cli@latest memory search --query "integration" --limit 5
 ```
