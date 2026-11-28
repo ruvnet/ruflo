@@ -15,6 +15,16 @@
 - ALWAYS read a file before editing it
 - NEVER commit secrets, credentials, or .env files
 
+## Claude Code Experimental Code Mode (ADR-531)
+
+- Code Mode (v2.1.323+) is an **experimental user-controlled interactive terminal mode**, not a replacement for Ruflo's existing swarms, MCP, Codex or headless workers. Default remains unchanged.
+- **Do not set** `CLAUDE_CODE_EXPERIMENTAL_CODE_MODE=1` in repository settings, managed settings, generated projects or standard launch scripts. Anthropic ignores project-level opt-in, and this repo enables `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, which conflicts with Code Mode.
+- Before **any** manual isolated lab attempt, run `node scripts/claude-code-mode-preflight.mjs --json`. A blocked result is a stop condition; a manual-trial-only result is **not** proof of eligibility or security.
+- Only a user may opt in through their own shell/user settings in a separate, compatible interactive native terminal project. Never auto-disable agent teams, Ruflo mods, function hooks, telemetry, auth protections or policy to make Code Mode start.
+- Claude's auto-mode classifier reviews each REPL program, **not** every runtime call argument. Underlying tool calls must retain independent deny/ask/PreToolUse checks, native sandbox and receipts; a `REPL` hook is only supplemental.
+- Code Mode does not currently work with `claude -p`, Agent SDK, VS Code/desktop/cloud panels, gateways or agent teams. Do not route CI, autonomous swarms or background workers into it.
+- Evaluate any future opt-in with existing `ruflo metaharness bench`, `mcp-scan`, `threat-model`, Darwin and Flywheel receipts before a separate human-approved promotion. See [ADR-531](v3/docs/adr/ADR-531-claude-code-mode-metaharness.md) and [#4998](https://github.com/ruvnet/ruflo/issues/4998).
+
 ## Capability Brain and Governed Implementation
 
 Ruflo is the coordination ledger and policy decision point. Claude Code
