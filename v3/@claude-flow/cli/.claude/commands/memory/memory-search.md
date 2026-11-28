@@ -9,7 +9,7 @@ npx @claude-flow/cli@latest memory search [options]
 
 ## Options
 - `--query <text>` - Search query
-- `--pattern <regex>` - Pattern matching
+- `--type <type>` - Search type (semantic, keyword, hybrid)
 - `--limit <n>` - Result limit
 
 ## Examples
@@ -17,8 +17,8 @@ npx @claude-flow/cli@latest memory search [options]
 # Search memory
 npx @claude-flow/cli@latest memory search --query "authentication"
 
-# Pattern search
-npx @claude-flow/cli@latest memory search --pattern "api-.*"
+# Keyword search
+npx @claude-flow/cli@latest memory search --query "api" --type keyword
 
 # Limited results
 npx @claude-flow/cli@latest memory search --query "config" --limit 10
