@@ -55,7 +55,7 @@ const STOP_WORDS = new Set([
 export const tokenize = (text: string): string[] =>
   text
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, ' ')
+    .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
     .split(/\s+/)
     .filter(word => word.length > 2 && !STOP_WORDS.has(word))
 

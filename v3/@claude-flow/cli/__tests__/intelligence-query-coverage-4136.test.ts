@@ -57,6 +57,15 @@ describe.each(helpers)('route memory recall (%s)', (helper) => {
     expect(hit?.surfaced[0]?.id).toBe('migration-runner');
   });
 
+  it('keeps non-Latin words: a Russian prompt recalls a Russian entry', () => {
+    const ru = [
+      ...entries,
+      { id: 'ru-labeling', summary: 'Правила разметки', words: ['правила', 'разметки', 'птицы', 'животные', ...filler], pageRank: 0.001 },
+    ];
+    const hit = recall(helper, 'правила разметки птицы животные', ru);
+    expect(hit?.surfaced[0]?.id).toBe('ru-labeling');
+  });
+
   it('does not stem short words into unrelated ones', () => {
     const shortEntries = [{ id: 'bus', summary: 'bus', words: ['bus', 'ran', ...filler], pageRank: 0.001 }];
     expect(recall(helper, 'running busy ranges', shortEntries)).toBeNull();

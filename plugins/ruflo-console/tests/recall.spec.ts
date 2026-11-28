@@ -35,6 +35,7 @@ const MODELS = JSON.stringify({
 describe('the hook’s scoring, copied', () => {
   it('tokenizes, takes trigrams and compares like intelligence.cjs', () => {
     expect(tokenize('Fix the AUTH token, now!')).toEqual(['fix', 'auth', 'token', 'now'])
+    expect(tokenize('Правила РАЗМЕТКИ, птицы!')).toEqual(['правила', 'разметки', 'птицы'])
     expect([...trigrams(['auth'])].sort()).toEqual(['aut', 'uth'])
     expect(jaccard(new Set(['a', 'b']), new Set(['b', 'c']))).toBeCloseTo(1 / 3)
     expect(jaccard(new Set(), new Set())).toBe(0)
