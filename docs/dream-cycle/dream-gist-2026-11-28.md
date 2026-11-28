@@ -44,7 +44,9 @@ Not applicable in the synthetic-corpus sense — this is a pure correctness fix 
 
 ## Evaluation
 
-3 new tests (1 discriminating, 2 controls) in `cache-manager-clear-event.test.ts`. Stash-isolated baseline: 1/3 fail exactly as predicted (`previousSize` reports `0` instead of `3`). Candidate: 3/3 pass. Full `@claude-flow/memory` suite: 748/749 baseline → 751/752 candidate (exactly +3, 0 regressions), same 1 pre-existing environmental chmod-as-root failure (root can write "read-only" files) byte-identical both ways. `tsc --noEmit` clean both ways.
+3 new tests (1 discriminating, 2 controls) in `cache-manager-clear-event.test.ts`. Stash-isolated baseline: 1/3 fail exactly as predicted (`previousSize` reports `0` instead of `3`). Candidate: 3/3 pass. Full `@claude-flow/memory` suite: 748/749 baseline → 751/752 candidate (exactly +3, 0 regressions), same 1 pre-existing environmental chmod-as-root failure (test process runs as root, so a "read-only" file stays writable) byte-identical both ways. `tsc --noEmit` clean both ways.
+
+An independent adversarial critic, working from a fresh context with its own git-stash isolation (not reusing any numbers reported to it), reproduced identical results: baseline 750/752 (2 failing: the 1 discriminating test + the same pre-existing environmental failure), candidate 751/752 (1 failing: environmental only). **Verdict: CONFIRMED**, no blocking caveats. The critic additionally: grepped every other `.emit()` call in `cache-manager.ts` (9 events) and confirmed no sibling instance of the same "read container size after mutating it" bug exists; confirmed `clear()` is reachable in production via `agentdb-adapter.ts`'s `CacheManager.shutdown()` → `clear()` path (not dead code); and confirmed — disclosed here plainly rather than oversold — that no production code anywhere in `v3/` currently listens for the `cache:cleared` event or reads `previousSize`, so today's real-world impact is a correct-but-currently-unconsumed event payload, not a fix to an observed live symptom.
 
 ## Darwin Results
 
@@ -52,7 +54,13 @@ Skipped — binary correctness guard, no tunable parameter to evolve (consistent
 
 ## SOTA Proof & Witness
 
-See Witness section in the linked issue/PR for the session-commit-bound witness stamp, computed from this gist's final SHA256.
+- Session commit: `df1204f53829568e59da0f69f637bd97905f4b24`
+- Report SHA256 (computed over this file's content as it stood immediately before this Witness section's final rewrite, per the standard Dream Cycle self-referential-stamp convention — this section's own bytes are necessarily excluded from the hash it reports): `f7ed67eb058fae6a026ee9afbe8c22024da3915a00c0224493e03781707b6685`
+- Witness stamp (`sha256(report_sha256 + session_commit)`): `26229aa2f1cbd283b4ae02ce4cfc6f6b6efbdc8c561617215f0a18772290fb92`
+- Evaluation receipt: `@claude-flow/memory` vitest run, `cache-manager-clear-event.test.ts` (3 tests) + full suite (751/752)
+- Adversarial critique: independently reproduced, verdict CONFIRMED (see Evaluation section above)
+- Darwin lineage: none (skipped — binary guard, no tunable parameter)
+- Flywheel evidence identity: no `.claude-flow/flywheel/` store exists in this repo yet; evidence recorded inline in this gist + the linked issue/PR body instead (OBSERVATION: previousSize always 0 before fix; MEASUREMENT: 751/752 post-fix, 1 pre-existing environmental failure; DECISION: ACCEPT)
 
 ## Recommended Next Steps
 
