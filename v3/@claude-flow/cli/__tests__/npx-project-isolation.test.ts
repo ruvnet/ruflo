@@ -81,6 +81,9 @@ describe('tool-time npx is isolated from the project directory', () => {
 
   it('browser session tools pass a ruflo-owned --prefix to every npx call', async () => {
     const tool = browserSessionTools.find(t => t.name === 'browser_session_end')!;
+    // rvf_path must name an existing container inside the project.
+    mkdirSync(join(project, '.ruflo', 'browser-sessions'), { recursive: true });
+    writeFileSync(join(project, '.ruflo', 'browser-sessions', 's1.rvf'), '');
     await tool.handler({ session: 's1', rvf_path: join('.ruflo', 'browser-sessions', 's1.rvf'), verdict: 'pass' }, {} as never);
     const npxCalls = driver.runSessionCommand.mock.calls.filter(([cmd]) => cmd === 'npx');
     expect(npxCalls.length).toBeGreaterThan(0);

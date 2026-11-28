@@ -26,6 +26,20 @@ import type { MCPTool, MCPToolResult } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { browserUrlError } from './browser-argv.js';
 import { npxIsolationArgs } from '../runtime/npx-isolation.js';
+import { containedReadPath, containedWritePath } from './path-containment.js';
+
+const RVF_EXT = ['.rvf'];
+
+/**
+ * Resolve a caller-named existing .rvf container inside the project. The rvf
+ * tools rewrite (compact) or derive next to it, and replay returns its listing,
+ * so a path from tool input must not reach outside the project.
+ */
+function containedRvfPath(p: unknown): string | null {
+  if (typeof p !== 'string') return null;
+  const target = containedReadPath(p);
+  return target && RVF_EXT.includes(target.slice(-4).toLowerCase()) ? target : null;
+}
 
 // Pin matches the version in this package's own dependency tree so the npx
 // fallback never downloads a second ruvector. Subcommand surface verified
@@ -175,8 +189,17 @@ export const browserSessionTools: MCPTool[] = [
         if (!v.valid) return fail(v.error || 'invalid session');
       }
       const sessionId = explicitSession ?? makeSessionId(input.task as string);
-      const dir = (input.rvf_dir as string | undefined) ?? (await ensureSessionsDir());
-      const rvfPath = path.join(dir, `${sessionId}.rvf`);
+      let rvfPath: string;
+      if (input.rvf_dir !== undefined) {
+        // A caller-chosen directory must be an existing directory inside the project.
+        const contained = typeof input.rvf_dir === 'string'
+          ? containedWritePath(path.join(input.rvf_dir, `${sessionId}.rvf`), RVF_EXT)
+          : null;
+        if (!contained) return fail('rvf_dir must be an existing directory inside the project');
+        rvfPath = contained;
+      } else {
+        rvfPath = path.join(await ensureSessionsDir(), `${sessionId}.rvf`);
+      }
 
       // 1. RVF allocate.
       // Issue #2015: ruvector@0.2.25's `rvf create` accepts only
@@ -261,6 +284,8 @@ export const browserSessionTools: MCPTool[] = [
       if (!vS.valid) return fail(vS.error || 'invalid session');
       const verdict = input.verdict as string;
       if (!['pass', 'fail', 'partial'].includes(verdict)) return fail(`invalid verdict: ${verdict}`);
+      const rvfPath = containedRvfPath(input.rvf_path);
+      if (!rvfPath) return fail('rvf_path must be an existing .rvf file inside the project');
 
       // 1. trajectory-end.
       // trajectory-end takes `--success` + `--quality <0-1>` (no
@@ -273,13 +298,13 @@ export const browserSessionTools: MCPTool[] = [
       if (!te.success) return fail('trajectory-end failed', { detail: te.error, stderr: te.stderr });
 
       // 2. rvf compact
-      const compact = await ruvector(['rvf', 'compact', input.rvf_path as string]);
+      const compact = await ruvector(['rvf', 'compact', rvfPath]);
       if (!compact.success) return fail('rvf compact failed', { detail: compact.error, stderr: compact.stderr });
 
       // 3. AgentDB index — best-effort via memory store (claude-flow bridges)
       const indexValue = JSON.stringify({
         rvf_id: input.session,
-        rvf_path: input.rvf_path,
+        rvf_path: rvfPath,
         host: input.host ?? null,
         task: input.task ?? null,
         verdict,
@@ -294,7 +319,7 @@ export const browserSessionTools: MCPTool[] = [
 
       return ok({
         sessionId: input.session,
-        rvfPath: input.rvf_path,
+        rvfPath,
         verdict,
         indexed: idx.success,
         indexError: idx.success ? undefined : (idx.stderr || idx.error),
@@ -324,8 +349,11 @@ export const browserSessionTools: MCPTool[] = [
       const vS = validateIdentifier(input.session as string, 'session');
       if (!vS.valid) return fail(vS.error || 'invalid session');
 
+      const rvfPath = containedRvfPath(input.rvf_path);
+      if (!rvfPath) return fail('rvf_path must be an existing .rvf file inside the project');
+
       // 1. Verify RVF container exists
-      const status = await ruvector(['rvf', 'status', input.rvf_path as string]);
+      const status = await ruvector(['rvf', 'status', rvfPath]);
       if (!status.success) return fail('rvf status failed', { detail: status.error, stderr: status.stderr });
 
       // 2. Derive child container if requested
@@ -334,20 +362,20 @@ export const browserSessionTools: MCPTool[] = [
       const derive = input.derive !== false;
       if (derive) {
         const path = await import('node:path');
-        const dir = path.dirname(input.rvf_path as string);
+        const dir = path.dirname(rvfPath);
         replayId = `${input.session}-replay-${Date.now()}`;
         replayPath = path.join(dir, `${replayId}.rvf`);
-        const dr = await ruvector(['rvf', 'derive', input.rvf_path as string, replayPath]);
+        const dr = await ruvector(['rvf', 'derive', rvfPath, replayPath]);
         if (!dr.success) return fail('rvf derive failed', { detail: dr.error, stderr: dr.stderr });
       }
 
       // 3. Surface the trajectory steps from the segments listing — the caller is
       //    expected to read trajectory.ndjson from the RVF container and dispatch.
-      const segments = await ruvector(['rvf', 'segments', input.rvf_path as string]);
+      const segments = await ruvector(['rvf', 'segments', rvfPath]);
 
       return ok({
         sourceSession: input.session,
-        sourceRvfPath: input.rvf_path,
+        sourceRvfPath: rvfPath,
         replaySession: replayId,
         replayRvfPath: replayPath,
         urlOverride: input.url_override ?? null,
