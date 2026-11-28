@@ -395,7 +395,10 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
         const baseMessage: AgentMessage = {
           id: envelope.envelopeId,
           type: envelope.messageType,
-          payload: envelope as unknown,
+          // Canonicalize the JSON projection the receiver will reconstruct, not
+          // the class instance: the JCS canonicalizer rejects a class prototype,
+          // a Date and undefined values (#5153).
+          payload: envelope.toWireObject(),
           metadata: {
             sourceNodeId: envelope.sourceNodeId,
             targetNodeId: envelope.targetNodeId,

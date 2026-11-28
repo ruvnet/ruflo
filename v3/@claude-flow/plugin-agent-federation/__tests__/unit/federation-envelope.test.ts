@@ -172,6 +172,49 @@ describe('FederationEnvelope', () => {
     });
   });
 
+  describe('toWireObject', () => {
+    it('projects a plain, JSON-safe payload the JCS canonicalizer accepts (#5153)', async () => {
+      const { canonicalizeEnvelopeForVerify } = await import(
+        '../../src/application/inbound-dispatcher.js'
+      );
+      const envelope = new FederationEnvelope(makeProps({
+        hmacSignature: undefined as unknown as string,
+        piiScanResult: undefined as unknown as PIIScanResult,
+        payload: { action: 'ping', at: new Date('2026-01-15T12:00:00.000Z') },
+      }));
+
+      const payload = envelope.toWireObject();
+      expect(Object.getPrototypeOf(payload)).toBe(Object.prototype);
+      expect(payload['timestamp']).toBe('2026-01-15T12:00:00.000Z');
+      expect('hmacSignature' in payload).toBe(false);
+      expect('piiScanResult' in payload).toBe(false);
+
+      const base = {
+        id: envelope.envelopeId,
+        type: envelope.messageType,
+        payload,
+        metadata: {
+          sourceNodeId: envelope.sourceNodeId,
+          targetNodeId: envelope.targetNodeId,
+          sessionId: envelope.sessionId,
+          signatureVersion: 'jcs-v1',
+        },
+      };
+      // The class instance is exactly what the canonicalizer refuses; the wire projection is not.
+      expect(() => canonicalizeEnvelopeForVerify({ ...base, payload: envelope }, 'jcs-v1')).toThrow(/plain objects/);
+      // Legacy canonicalization is unchanged: JSON.stringify already serialized the class through toJSON.
+      expect(canonicalizeEnvelopeForVerify({ ...base, payload: envelope }, 'legacy-v1'))
+        .toBe(canonicalizeEnvelopeForVerify(base, 'legacy-v1'));
+      const signedBytes = canonicalizeEnvelopeForVerify(base, 'jcs-v1');
+      // The receiver reconstructs the signed message from JSON; the bytes must match.
+      const wire = JSON.parse(JSON.stringify({
+        ...base,
+        metadata: { ...base.metadata, signature: 'sig' },
+      }));
+      expect(canonicalizeEnvelopeForVerify(wire, 'jcs-v1')).toBe(signedBytes);
+    });
+  });
+
   describe('emptyScanResult', () => {
     it('should return scanned=false', () => {
       const result = FederationEnvelope.emptyScanResult();

@@ -104,6 +104,18 @@ export class FederationEnvelope<T = unknown> {
     });
   }
 
+  /**
+   * The JSON projection the transport sends and the receiver reconstructs.
+   *
+   * Use this when canonicalizing for signing. The JCS canonicalizer rejects a
+   * class prototype, a `Date` and `undefined` values, all of which disappear in
+   * the wire round trip; signing the class instance instead throws before the
+   * message reaches the transport (#5153).
+   */
+  toWireObject(): Record<string, unknown> {
+    return JSON.parse(JSON.stringify(this)) as Record<string, unknown>;
+  }
+
   static emptyScanResult(): PIIScanResult {
     return {
       scanned: false,
