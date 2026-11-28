@@ -150,9 +150,14 @@ function breakStaleLock(path: string, seen: Stats): boolean {
 }
 
 // A lost record would strand a session this project just paid for, so wait briefly for another writer. The lock
-// names its owner; one older than LOCK_STALE_MS was left by a writer that died, and is broken. Returns the release,
-// which removes the lock only if it is still the file this call created.
+// names its owner; one older than LOCK_STALE_MS was left by a writer that died, and is broken. The wait is time-based,
+// not a fixed attempt count: eight concurrent writers can each spend longer than a 200 ms attempt budget holding the
+// lock, and throwing EEXIST there loses a session the project just created. Returns the release, which removes the
+// lock only if it is still the file this call created.
+const LOCK_WAIT_MS = 2_000;
+
 export function acquireLedgerLock(path: string): () => void {
+  const deadline = Date.now() + LOCK_WAIT_MS;
   for (let attempt = 0; ; attempt++) {
     try {
       const fd = openSync(path, 'wx', 0o600);
@@ -162,11 +167,12 @@ export function acquireLedgerLock(path: string): () => void {
         try { if (sameFile(lstatSync(path), mine)) unlinkSync(path); } catch { /* already gone */ } finally { closeSync(fd); }
       };
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST' || attempt >= 20) throw error;
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
       let lock: Stats;
       try { lock = lstatSync(path); } catch { /* released meanwhile */ continue; }
       if (lock.isFile() && Date.now() - lock.mtimeMs > LOCK_STALE_MS && breakStaleLock(path, lock)) continue;
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+      if (Date.now() >= deadline) throw error;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.min(50, 10 + attempt * 5));
     }
   }
 }

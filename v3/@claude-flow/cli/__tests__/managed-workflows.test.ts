@@ -459,6 +459,21 @@ recordManagedSession(root, sessionId, sessionId.replace('sesn_', 'env_'));
     const recorded = JSON.parse(readFileSync(managedLedgerPath(testRoot), 'utf8')).sessions.map((s: { sessionId: string }) => s.sessionId);
     expect([...recorded].sort()).toEqual([...ids, 'sesn_a'].sort());
   }, 30_000);
+  it('waits for a live writer instead of failing after the old fixed attempt budget', async () => {
+    const lock = `${managedLedgerPath(testRoot)}.lock`;
+    mkdirSync(dirname(lock), { recursive: true });
+    writeFileSync(lock, `${process.pid} ${Date.now()}\n`);
+    // Hold the lock past the old 20×10 ms budget, then release it from a child.
+    const child = spawn(process.execPath, ['-e', `setTimeout(() => require('node:fs').unlinkSync(${JSON.stringify(lock)}), 500)`], { stdio: 'ignore' });
+    await new Promise(r => setTimeout(r, 50));
+    expect(() => recordManagedSession(testRoot, 'sesn_wait', 'env_wait')).not.toThrow();
+    await new Promise<void>((resolve, reject) => {
+      child.on('error', reject);
+      child.on('close', code => code === 0 ? resolve() : reject(new Error(`child exit ${code}`)));
+    });
+    const recorded = JSON.parse(readFileSync(managedLedgerPath(testRoot), 'utf8')).sessions.map((s: { sessionId: string }) => s.sessionId);
+    expect(recorded).toContain('sesn_wait');
+  }, 10_000);
   it('breaks a lock left by a writer that died, but not a live one', async () => {
     const lock = `${managedLedgerPath(testRoot)}.lock`;
     writeFileSync(lock, '999999 0\n');
