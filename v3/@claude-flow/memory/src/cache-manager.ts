@@ -216,12 +216,13 @@ export class CacheManager<T = MemoryEntry> extends EventEmitter {
    * Clear all entries from the cache
    */
   clear(): void {
+    const previousSize = this.cache.size;
     this.cache.clear();
     this.head = null;
     this.tail = null;
     this.currentMemory = 0;
 
-    this.emit('cache:cleared', { previousSize: this.cache.size });
+    this.emit('cache:cleared', { previousSize });
   }
 
   /**
