@@ -306,6 +306,25 @@ function hasForkBomb(command: string): boolean {
   return false
 }
 
+// Wiping or formatting a whole Windows drive (#5166): cmd's format and rd/rmdir /s, and PowerShell's
+// Remove-Item (or an alias) with -Recurse, aimed at a drive root: c:\, c:/, c:, "c:\" or c:\*. A path below
+// the root (c:\temp) is not matched, nor is Format-Table. The command arrives lowercased.
+export function windowsDriveWipe(command: string): string {
+  const start = /(?:^|[\s;&|(])/.source
+  const drive = /["']?[a-z]:[\\/]?\*?["']?(?=\s|$|[;&|)])/.source
+  const flags = /(?:\s+\/[a-z])*/.source
+  if (new RegExp(start + /format(?:\.com)?\s+[a-z]:/.source).test(command)) return 'format <drive>'
+  if (new RegExp(start + /(?:rd|rmdir)/.source + flags + /\s+\/s/.source + flags + /\s+/.source + drive).test(command) ||
+    new RegExp(start + /(?:rd|rmdir)\s+/.source + drive + flags + /\s+\/s\b/.source).test(command)) return 'rd /s <drive>'
+  const remove = new RegExp(start + /(?:remove-item|ri|rm|del|erase|rmdir|rd)\b([^;&|\n]*)/.source, 'g')
+  const recurse = /(?:^|\s)-r(?:e|ec|ecu|ecur|ecurs|ecurse)?\b/
+  const target = new RegExp(/(?:^|\s)/.source + drive)
+  for (let m = remove.exec(command); m; m = remove.exec(command)) {
+    if (recurse.test(m[1]) && target.test(m[1])) return 'Remove-Item -Recurse <drive>'
+  }
+  return ''
+}
+
 /**
  * A deny for a Bash call whose command is on the list, else undefined.
  *
@@ -319,6 +338,7 @@ export function dangerousCommandVerdict(tool: string, input: unknown): Verdict |
   // never skipped.
   const command = String(raw ?? '').toLowerCase()
   const hit = DANGEROUS_COMMANDS.find(d => d === 'rm -rf /' ? hasRootDelete(command) : d === ':(){:|:&};:' ? hasForkBomb(command) : command.includes(d))
+    ?? (windowsDriveWipe(command) || undefined)
   return hit === undefined
     ? undefined
     : { decision: 'deny', reason: `ruflo: dangerous command blocked (${hit})` }

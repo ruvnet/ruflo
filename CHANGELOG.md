@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Security
+- `pre-bash` fails closed on Windows again (#5166). The classic `hook-handler.cjs` and its inline fallback took the command from `prompt`, which falls back to `process.env.PROMPT`; cmd.exe always sets it (`$P$G`), so under a cmd environment an empty or command-less payload validated that text and passed the #4743 gate. The command now comes only from the hook payload. The classic helpers, the fallback and the ruflo-mods guard also block wiping or formatting a whole Windows drive: `format <drive>`, `rd`/`rmdir /s <drive>`, and `Remove-Item` (or an alias) with `-Recurse` on a drive root such as `C:\`, `C:/` or `C:\*`. Paths below the root and `Format-Table` are unaffected.
 - `@claude-flow/plugin-agent-federation`: `signatureMode` defaults to `require-jcs`. A legacy-v1 signature covers only `id` and `type`, so `payload`, `targetNodeId` and `sessionId` went unsigned (#4748). **Breaking:** a peer that does not advertise `ruflo-signature-jcs-v1` (an older release, or one joined by endpoint without a verified manifest) can no longer exchange heartbeat or status messages. Set `signatureMode: 'prefer-jcs'` to allow legacy-v1 for those two types again.
 
 ## [3.71.0] - 2026-11-01
