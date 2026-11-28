@@ -330,7 +330,7 @@ function generateHooksConfig(config: HooksConfig, scope: HelperScope): object {
           {
             type: 'command',
             command: hookHandlerCmd('session-end', scope),
-            timeout: 5000,
+            timeout: 10000,
           },
         ],
       },
@@ -355,7 +355,7 @@ function generateHooksConfig(config: HooksConfig, scope: HelperScope): object {
         {
           type: 'command',
           command: hookHandlerCmd('post-task', scope),
-          timeout: 5000,
+          timeout: 10000,
         },
       ],
     },
