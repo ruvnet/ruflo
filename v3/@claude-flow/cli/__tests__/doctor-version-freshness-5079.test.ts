@@ -5,11 +5,18 @@
  * the same frozen-tag problem.
  */
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { VERSION_FRESHNESS_QUERY } from '../src/commands/doctor.js';
 
-const source = readFileSync(fileURLToPath(new URL('../src/commands/doctor.ts', import.meta.url)), 'utf-8');
+// doctor's checks live in commands/doctor-checks/ (#4773)
+const commandsDir = fileURLToPath(new URL('../src/commands/', import.meta.url));
+const checksDir = join(commandsDir, 'doctor-checks');
+const source = [
+  join(commandsDir, 'doctor.ts'),
+  ...readdirSync(checksDir).filter(f => f.endsWith('.ts')).map(f => join(checksDir, f)),
+].map(f => readFileSync(f, 'utf-8')).join('\n');
 
 describe('#5079 doctor compares against the latest dist-tag', () => {
   it('queries @claude-flow/cli@latest', () => {
