@@ -1763,8 +1763,8 @@ async function checkVersionFreshness(): Promise<HealthCheck> {
 
     if (isOutdated) {
       const fix = isNpx
-        ? 'rm -rf ~/.npm/_npx/* && npx -y @claude-flow/cli@latest'
-        : 'npm update @claude-flow/cli';
+        ? 'rm -rf ~/.npm/_npx/* && npx -y ruflo@latest'
+        : 'npm update ruflo';
 
       return {
         name: 'Version Freshness',
