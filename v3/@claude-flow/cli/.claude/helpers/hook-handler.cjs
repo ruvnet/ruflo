@@ -1006,7 +1006,9 @@ const handlers = {
     // Only a non-empty string counts as the command (#2017, #4743): input that
     // arrived late, did not parse, or carried no command blocks instead of passing.
     if (stdinUnparsable) blockPreBash('pre-bash could not parse the hook input');
-    const raw = [hookInput.command, toolInput.command, prompt].find((c) => typeof c === 'string' && c.trim());
+    // Only the stdin payload names the command (#5166): `prompt` falls back to process.env.PROMPT, which
+    // cmd.exe always sets ($P$G), so an empty payload validated that text instead of blocking.
+    const raw = [hookInput.command, toolInput.command, hookInput.prompt].find((c) => typeof c === 'string' && c.trim());
     if (!raw) blockPreBash('pre-bash received no command to validate');
     const cmd = raw.toLowerCase();
     const dangerous = ['rm -rf /', 'format c:', 'del /s /q c:\\', ':(){:|:&};:'];
@@ -1307,12 +1309,35 @@ const handlers = {
       }
       return false
     }
+    // Wiping or formatting a whole Windows drive (#5166): cmd's format and rd/rmdir /s, and PowerShell's
+    // Remove-Item (or an alias) with -Recurse, aimed at a drive root: c:\, c:/, c:, "c:\" or c:\*. A path below
+    // the root (c:\temp) is not matched, nor is Format-Table. The command arrives lowercased.
+    function windowsDriveWipe(command) {
+      const start = /(?:^|[\s;&|(])/.source
+      const drive = /["']?[a-z]:[\\/]?\*?["']?(?=\s|$|[;&|)])/.source
+      const flags = /(?:\s+\/[a-z])*/.source
+      if (new RegExp(start + /format(?:\.com)?\s+[a-z]:/.source).test(command)) return 'format <drive>'
+      if (new RegExp(start + /(?:rd|rmdir)/.source + flags + /\s+\/s/.source + flags + /\s+/.source + drive).test(command) ||
+        new RegExp(start + /(?:rd|rmdir)\s+/.source + drive + flags + /\s+\/s\b/.source).test(command)) return 'rd /s <drive>'
+      const remove = new RegExp(start + /(?:remove-item|ri|rm|del|erase|rmdir|rd)\b([^;&|\n]*)/.source, 'g')
+      const recurse = /(?:^|\s)-r(?:e|ec|ecu|ecur|ecurs|ecurse)?\b/
+      const target = new RegExp(/(?:^|\s)/.source + drive)
+      for (let m = remove.exec(command); m; m = remove.exec(command)) {
+        if (recurse.test(m[1]) && target.test(m[1])) return 'Remove-Item -Recurse <drive>'
+      }
+      return ''
+    }
     for (const d of dangerous) {
       if (d === 'rm -rf /' ? hasRootDelete(cmd) : d === ':(){:|:&};:' ? hasForkBomb(cmd) : cmd.includes(d)) {
         console.error(`[BLOCKED] Dangerous command detected: ${d}`);
         // Claude Code PreToolUse: exit 2 blocks execution; exit 1 is non-blocking.
         process.exit(2);
       }
+    }
+    const driveWipe = windowsDriveWipe(cmd);
+    if (driveWipe) {
+      console.error(`[BLOCKED] Dangerous command detected: ${driveWipe}`);
+      process.exit(2);
     }
     console.log('[OK] Command validated');
   },
