@@ -42,7 +42,7 @@ function getPackageVersion(): string {
 export const VERSION = getPackageVersion();
 
 /** Commands that only observe the running system and must not start or write anything. */
-export const OBSERVE_ONLY_COMMANDS: ReadonlySet<string> = new Set(['harness']);
+export const OBSERVE_ONLY_COMMANDS: ReadonlySet<string> = new Set(['harness', 'adaptive']);
 
 export function isObserveOnlyCommand(name: string | undefined): boolean {
   return name !== undefined && OBSERVE_ONLY_COMMANDS.has(name);
