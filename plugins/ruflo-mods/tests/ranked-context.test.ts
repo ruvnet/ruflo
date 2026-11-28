@@ -1,6 +1,6 @@
 import { describe, expect, test, tier } from 'claude-code/testing'
 
-import { parseRanked, rankedContext } from '../hooks/route/ranked-context'
+import { parseRanked, rankedContext, tokenize } from '../hooks/route/ranked-context'
 
 tier('user')
 
@@ -23,5 +23,9 @@ describe('ranked context', () => {
     const block = rankedContext('fix the auth token refresh login', parseRanked(file('JWT with refresh')))
 
     expect(block).toContain('JWT with refresh')
+  })
+
+  test('non-Latin words are kept, not stripped to nothing', () => {
+    expect(tokenize('Правила РАЗМЕТКИ, птицы!')).toEqual(['правила', 'разметки', 'птицы'])
   })
 })
