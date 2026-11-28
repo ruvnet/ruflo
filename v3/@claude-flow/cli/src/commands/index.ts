@@ -110,6 +110,7 @@ const commandLoaders: Record<string, CommandLoader> = {
   // ADR-406 command catalog and mission control (interim homes until mods.ts follow-up)
   catalog: () => import('./catalog.js'),
   mission: () => import('./mission.js'),
+  events: () => import('./events.js'),
   // Ruflo entries in Claude Code's companyAnnouncements startup rotation (ADR-319)
   announcements: () => import('./announcements.js'),
   // AGNTCY/Outshift runtime transport selection (ADR-324 §2) — optional,
